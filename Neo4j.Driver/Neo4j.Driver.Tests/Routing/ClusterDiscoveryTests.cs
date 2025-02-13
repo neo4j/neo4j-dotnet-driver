@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
@@ -64,7 +65,7 @@ public class ClusterDiscoveryTests
 
             var mockConn = new Mock<IConnection>();
             mockConn.Setup(
-                    x => x.GetRoutingTableAsync("test", sessionConfig, bookmarks, It.IsAny<IDictionary<IAuthToken, string>>()))
+                    x => x.GetRoutingTableAsync("test", sessionConfig, bookmarks, It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(routingTable);
 
             // When
@@ -74,7 +75,7 @@ public class ClusterDiscoveryTests
                 "test",
                 sessionConfig,
                 bookmarks,
-                It.IsAny<IDictionary<IAuthToken, string>>());
+                It.IsAny<IHomeDbCache>());
 
             // Then
             table.Database.Should().Be("test");

@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.Routing;
@@ -31,9 +32,13 @@ internal class ClusterDiscovery : IDiscovery
         string database,
         SessionConfig sessionConfig,
         Bookmarks bookmarks,
-        IDictionary<IAuthToken, string> homeDbCache)
+        IHomeDbCache homeDbCache)
     {
-        var routingTable = await connection.GetRoutingTableAsync(database, sessionConfig, bookmarks, homeDbCache)
+        var routingTable = await connection.GetRoutingTableAsync(
+                database,
+                sessionConfig,
+                bookmarks,
+                homeDbCache)
             .ConfigureAwait(false);
 
         return ParseDiscoveryResult(routingTable);

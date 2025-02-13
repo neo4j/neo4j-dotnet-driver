@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Connector.Resolvers;
 using Neo4j.Driver.Internal.Helpers;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Util;
 
@@ -68,5 +69,5 @@ internal sealed class DriverContext
     public IHostResolver HostResolver { get; }
     public IInternalMetrics Metrics { get; }
     public IDictionary<string, string> RoutingContext { get; }
-    public IDictionary<IAuthToken, string> HomeDbCache { get; } = new Dictionary<IAuthToken, string>();
+    public IHomeDbCache HomeDbCache { get; } = new HomeDbCache();
 }

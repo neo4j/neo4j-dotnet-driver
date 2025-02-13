@@ -54,6 +54,11 @@ internal class AuthToken : IAuthToken
 
     private bool Equals(AuthToken other)
     {
+        if(other is null)
+        {
+            return false;
+        }
+
         if (ReferenceEquals(this, other))
         {
             return true;
@@ -68,15 +73,6 @@ internal class AuthToken : IAuthToken
 
     public override int GetHashCode()
     {
-        return Content != null ? Content.GetHashCode() : 0;
-    }
-}
-
-internal abstract class FullTokenCacheKeyAuthToken : AuthToken
-{
-    /// <inheritdoc/>
-    public override int GetHashCode()
-    {
         // combine hash codes of all key-value pairs in the dictionary. We sort the dictionary by key to ensure
         // that the hash code is the same for all dictionaries that have the same key-value pairs but in different
         // order.
@@ -89,5 +85,14 @@ internal abstract class FullTokenCacheKeyAuthToken : AuthToken
         }
 
         return hash;
+    }
+    
+    public string Scheme => Content[SchemeKey] as string;
+    public string Principal => Content[PrincipalKey] as string;
+    public string Realm => Content[RealmKey] as string;
+
+    public override string ToString()
+    {
+        return $"BasicAuthToken[scheme: {Scheme}, principal: {Principal}]";
     }
 }

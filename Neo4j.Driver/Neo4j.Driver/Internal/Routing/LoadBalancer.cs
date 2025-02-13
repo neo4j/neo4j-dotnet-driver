@@ -20,6 +20,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.Logging;
 using static Neo4j.Driver.Internal.Util.ConnectionContext;
 
@@ -92,7 +93,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         string database,
         SessionConfig sessionConfig,
         Bookmarks bookmarks,
-        bool forceAuth = false)
+        bool forceAuth)
     {
         if (IsClosed)
         {
@@ -122,7 +123,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             var database = supportsMultiDb ? "system" : null;
             foreach (var uri in _initialServerAddressProvider.Get())
             {
-                return await _routingTableManager.GetServerInfoAsync(uri, database).ConfigureAwait(false);
+                return await _routingTableManager.GetServerInfoAsync(uri, database, null).ConfigureAwait(false);
             }
         }
         catch (ServiceUnavailableException e)
@@ -178,25 +179,6 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         _routingTableManager.ForgetWriter(uri, database);
     }
 
-    private async Task<(bool found, string database)> TryGetCachedHomeDatabase(SessionConfig sessionConfig)
-    {
-        var token = sessionConfig.AuthToken;
-        if (token == null && DriverContext?.AuthTokenManager != null)
-        {
-            token = await DriverContext.AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
-        }
-
-        if (token != null && DriverContext?.HomeDbCache != null)
-        {
-            if (DriverContext.HomeDbCache.TryGetValue(token, out var cachedDatabase))
-            {
-                return (true, cachedDatabase);
-            }
-        }
-
-        return (false, null);
-    }
-
     private async Task<T> CheckConnectionSupport<T>(Func<IConnection, T> check)
     {
         var uris = _initialServerAddressProvider.Get();
@@ -241,21 +223,31 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         bool forceAuth)
     {
         var cachedDatabaseUsed = false;
-        var databaseForRouting = database;
+        var databaseForRouting = sessionConfig.Database ?? database;
+        var cacheKey = HomeDbCacheKeyProvider.GetCacheKey(null, sessionConfig);
 
-        if (string.IsNullOrWhiteSpace(database) && _clusterConnectionPool.CanUseHomeDbCache())
+        if (string.IsNullOrWhiteSpace(databaseForRouting) && _clusterConnectionPool.CanUseHomeDbCache())
         {
-            (cachedDatabaseUsed, databaseForRouting) =
-                await TryGetCachedHomeDatabase(sessionConfig).ConfigureAwait(false);
+            _logger.Debug($"Checking cached home database for {cacheKey}");
+            cachedDatabaseUsed = DriverContext.HomeDbCache.TryGetCached(cacheKey, out databaseForRouting);
 
             if (cachedDatabaseUsed)
             {
-                _logger.Debug($"Using cached home database {databaseForRouting}.");
+                _logger.Debug($"Using cached home database {databaseForRouting} for {cacheKey}");
+            }
+            else
+            {
+                _logger.Debug($"No cached home database found for {cacheKey}");
             }
         }
 
         var routingTable = await _routingTableManager
-            .EnsureRoutingTableForModeAsync(mode, databaseForRouting, cachedDatabaseUsed, sessionConfig, bookmarks)
+            .EnsureRoutingTableForModeAsync(
+                mode,
+                databaseForRouting,
+                cachedDatabaseUsed,
+                sessionConfig,
+                bookmarks)
             .ConfigureAwait(false);
 
         while (true)
@@ -265,11 +257,11 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             switch (mode)
             {
                 case AccessMode.Read:
-                    uri = _loadBalancingStrategy.SelectReader(routingTable.Readers, database);
+                    uri = _loadBalancingStrategy.SelectReader(routingTable.Readers, database, databaseForRouting);
                     break;
 
                 case AccessMode.Write:
-                    uri = _loadBalancingStrategy.SelectWriter(routingTable.Writers, database);
+                    uri = _loadBalancingStrategy.SelectWriter(routingTable.Writers, database, databaseForRouting);
                     break;
 
                 default:

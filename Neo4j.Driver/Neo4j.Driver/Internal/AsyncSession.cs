@@ -89,6 +89,21 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         }
 
         TelemetryEnabled = telemetryEnabled;
+
+        config.OnPinDatabase = OnPinDatabase;
+    }
+
+    private void OnPinDatabase(string db)
+    {
+        if (string.IsNullOrWhiteSpace(_database))
+        {
+            _logger.Info($"Database '{db}' is pinned to the session.");
+            _database = db;
+        }
+        else
+        {
+            _logger.Info($"Database {_database} is already pinned to the session, ignoring {db}.");
+        }
     }
 
     internal bool TelemetryEnabled { get; set; }
@@ -181,7 +196,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                         {
                             Query = query,
                             Reactive = _reactive,
-                            Database = _database,
+                            Database = SessionConfig.Database ?? _database,
                             Bookmarks = LastBookmarks,
                             Config = options,
                             SessionConfig = SessionConfig,
@@ -398,11 +413,6 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                 LastBookmarks,
                 forceAuth)
             .ConfigureAwait(false);
-
-        // Update the database. If a routing request occurred it may have returned a differing DB alias name that needs to be used for the
-        // rest of the session's lifetime.
-        // if we passed a blank database we shouldn't do this until we get a success message
-        _database = _connection.Database;
     }
 
     protected override void Dispose(bool disposing)

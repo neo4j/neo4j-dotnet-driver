@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Protocol;
 
@@ -260,7 +261,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
-            IDictionary<IAuthToken, string> homeDbCache,
+            IHomeDbCache homeDbCache,
             out IState nextState);
 
         Task CommitAsync(
@@ -283,7 +284,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
-            IDictionary<IAuthToken, string> homeDbCache,
+            IHomeDbCache homeDbCache,
             out IState nextState)
         {
             nextState = Active;
@@ -318,7 +319,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
-            IDictionary<IAuthToken, string> homeDbCache,
+            IHomeDbCache homeDbCache,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -353,7 +354,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
-            IDictionary<IAuthToken, string> homeDbCache,
+            IHomeDbCache homeDbCache,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -388,7 +389,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
-            IDictionary<IAuthToken, string> homeDbCache,
+            IHomeDbCache homeDbCache,
             out IState nextState)
         {
             throw new TransactionTerminatedException(transaction.TransactionError);

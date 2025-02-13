@@ -20,6 +20,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Telemetry;
@@ -55,8 +56,9 @@ public class TransactionTests
                 x => x.BeginTransactionAsync(
                     It.IsAny<IConnection>(),
                     It.IsAny<BeginTransactionParams>(),
-                    null,
-                    It.IsAny<IDictionary<IAuthToken,string>>()),
+                    It.IsAny<HomeDbCacheKey>(),
+                    It.IsAny<IHomeDbCache>(),
+                    TODO),
                 Times.Once);
         }
     }
@@ -82,8 +84,9 @@ public class TransactionTests
                 x => x.BeginTransactionAsync(
                     It.IsAny<IConnection>(),
                     It.IsAny<BeginTransactionParams>(),
-                     null,
-                    It.IsAny<Dictionary<IAuthToken, string>>()),
+                    It.IsAny<HomeDbCacheKey>(),
+                    It.IsAny<IHomeDbCache>(),
+                    TODO),
                 Times.Once);
         }
     }
@@ -109,8 +112,9 @@ public class TransactionTests
                         false,
                         It.IsAny<long>(),
                         It.IsAny<IInternalAsyncTransaction>(),
-                        null,
-                        It.IsAny<IDictionary<IAuthToken,string>>()));
+                        It.IsAny<HomeDbCacheKey>(),
+                        It.IsAny<IHomeDbCache>(),
+                        TODO));
         }
 
         [Fact]
@@ -151,8 +155,9 @@ public class TransactionTests
                             false,
                             It.IsAny<long>(),
                             It.IsAny<IInternalAsyncTransaction>(),
-                            null,
-                            It.IsAny<IDictionary<IAuthToken, string>>()))
+                            It.IsAny<HomeDbCacheKey>(),
+                            It.IsAny<IHomeDbCache>(),
+                            TODO))
                 .Throws<Neo4jException>();
 
             var error = await ExceptionAsync(() => tx.RunAsync(query));

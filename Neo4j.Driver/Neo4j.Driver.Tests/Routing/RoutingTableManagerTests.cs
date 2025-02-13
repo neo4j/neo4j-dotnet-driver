@@ -21,6 +21,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Routing;
 using Xunit;
@@ -184,7 +185,7 @@ public static class RoutingTableManagerTests
                         It.IsAny<string>(),
                         It.IsAny<SessionConfig>(),
                         It.IsAny<Bookmarks>(),
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(Mock.Of<IRoutingTable>());
 
             var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object, discovery.Object);
@@ -233,7 +234,7 @@ public static class RoutingTableManagerTests
                         "",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken,string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(Mock.Of<IRoutingTable>());
 
             var manager =
@@ -275,14 +276,14 @@ public static class RoutingTableManagerTests
                         "",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .Throws<NotSupportedException>();
 
             var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object);
 
             // When
             var newRoutingTable =
-                await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmarks.Empty);
+                await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null);
 
             // Then
             newRoutingTable.Should().BeNull();
@@ -315,25 +316,25 @@ public static class RoutingTableManagerTests
                         null,
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .Callback(
-                    (IConnection c, string _, SessionConfig _, Bookmarks _, IDictionary<IAuthToken, string> _) =>
+                    (IConnection c, string _, SessionConfig _, Bookmarks _, IHomeDbCache _) =>
                         throw new NotSupportedException($"Unknown uri: {c.Server.Address}"));
 
             discovery.Setup(
-                    x => x.DiscoverAsync(connA, "", null, Bookmarks.Empty, It.IsAny<IDictionary<IAuthToken, string>>()))
-                .Callback((IConnection _, string _, SessionConfig _, Bookmarks _) => routingTable.Remove(uriA))
+                    x => x.DiscoverAsync(connA, "", null, Bookmarks.Empty, It.IsAny<IHomeDbCache>()))
+                .Callback((IConnection _, string _, SessionConfig _, Bookmarks _, IHomeDbCache _) => routingTable.Remove(uriA))
                 .Throws(new SessionExpiredException("failed init"));
 
             discovery.Setup(
-                    x => x.DiscoverAsync(connB, "", null, Bookmarks.Empty, It.IsAny<IDictionary<IAuthToken, string>>()))
+                    x => x.DiscoverAsync(connB, "", null, Bookmarks.Empty, It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(NewRoutingTable(new[] { uriA }, new[] { uriA }, new[] { uriA }));
 
             var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object);
 
             // When
             var newRoutingTable = await manager
-                .UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmarks.Empty);
+                .UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null);
 
             // Then
             newRoutingTable.All().Should().ContainInOrder(uriA);
@@ -357,7 +358,7 @@ public static class RoutingTableManagerTests
                         "",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .Throws(error);
 
             var logger = new Mock<ILogger>();
@@ -369,7 +370,7 @@ public static class RoutingTableManagerTests
                 discovery.Object,
                 logger: logger.Object);
 
-            await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmarks.Empty);
+            await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null);
 
             logger.Verify(x => x.Warn(error, It.IsAny<string>(), It.IsAny<object[]>()));
         }
@@ -391,7 +392,7 @@ public static class RoutingTableManagerTests
                         "",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .Throws(error);
 
             var logger = new Mock<ILogger>();
@@ -405,7 +406,7 @@ public static class RoutingTableManagerTests
 
             var exc = await Record.ExceptionAsync(
                 () =>
-                    manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmarks.Empty));
+                    manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null));
 
             exc.Should().Be(error);
             logger.Verify(x => x.Error(error, It.IsAny<string>(), It.IsAny<object[]>()));
@@ -428,7 +429,7 @@ public static class RoutingTableManagerTests
                         "",
                         null,
                         Bookmarks.From("Invalid bookmark"),
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .Throws(error);
 
             var logger = new Mock<ILogger>();
@@ -446,8 +447,7 @@ public static class RoutingTableManagerTests
                         routingTable,
                         AccessMode.Read,
                         "",
-                        null,
-                        Bookmarks.From("Invalid bookmark")));
+                        null));
 
             exc.Should().Be(error);
             logger.Verify(x => x.Error(error, It.IsAny<string>(), It.IsAny<object[]>()));
@@ -481,17 +481,17 @@ public static class RoutingTableManagerTests
                         "",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .Callback(
-                    (IConnection c, string _, SessionConfig _, Bookmarks _, IDictionary<IAuthToken, string> _) =>
+                    (IConnection c, string _, SessionConfig _, Bookmarks _, IHomeDbCache _) =>
                         throw new NotSupportedException($"Unknown uri: {c.Server.Address}"));
 
             discovery.Setup(
-                    x => x.DiscoverAsync(connA, "", null, Bookmarks.Empty, It.IsAny<IDictionary<IAuthToken, string>>()))
+                    x => x.DiscoverAsync(connA, "", null, Bookmarks.Empty, It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(NewRoutingTable(new[] { uriX }, new Uri[0], new[] { uriX }));
 
             discovery.Setup(
-                    x => x.DiscoverAsync(connB, "", null, Bookmarks.Empty, It.IsAny<IDictionary<IAuthToken, string>>()))
+                    x => x.DiscoverAsync(connB, "", null, Bookmarks.Empty, It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(NewRoutingTable(new[] { uriY }, new[] { uriY }, new[] { uriY }));
 
             var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object);
@@ -501,8 +501,7 @@ public static class RoutingTableManagerTests
                 routingTable,
                 AccessMode.Read,
                 "",
-                null,
-                Bookmarks.Empty);
+                null);
 
             // Then
             updateRoutingTable.All().Should().ContainInOrder(uriY);
@@ -529,13 +528,13 @@ public static class RoutingTableManagerTests
                         "",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .Callback(
-                    (IConnection c, string _, SessionConfig _, Bookmarks _, IDictionary<IAuthToken, string> _) =>
+                    (IConnection c, string _, SessionConfig _, Bookmarks _, IHomeDbCache _) =>
                         throw new NotSupportedException($"Unknown uri: {c.Server?.Address}"));
 
             discovery.Setup(
-                    x => x.DiscoverAsync(connA, "", null, Bookmarks.Empty, It.IsAny<IDictionary<IAuthToken, string>>()))
+                    x => x.DiscoverAsync(connA, "", null, Bookmarks.Empty, It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(NewRoutingTable(new[] { uriX }, new[] { uriX }));
 
             var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object);
@@ -545,8 +544,7 @@ public static class RoutingTableManagerTests
                 routingTable,
                 AccessMode.Read,
                 "",
-                null,
-                Bookmarks.Empty);
+                null);
 
             // Then
             updateRoutingTable.All().Should().ContainInOrder(uriX);
@@ -584,11 +582,11 @@ public static class RoutingTableManagerTests
                         "",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .Throws(new ServiceUnavailableException("something went wrong"));
 
             discovery
-                .Setup(x => x.DiscoverAsync(connE, "", null, Bookmarks.Empty, It.IsAny<IDictionary<IAuthToken, string>>()))
+                .Setup(x => x.DiscoverAsync(connE, "", null, Bookmarks.Empty, It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(routingTable);
 
             var logger = new Mock<ILogger>();
@@ -604,7 +602,7 @@ public static class RoutingTableManagerTests
 
             // When
             var result = await manager
-                .UpdateRoutingTableAsync(existingRoutingTable, AccessMode.Read, "", null, Bookmarks.Empty);
+                .UpdateRoutingTableAsync(existingRoutingTable, AccessMode.Read, "", null);
 
             // Then
             result.Should().Be(routingTable);
@@ -615,11 +613,11 @@ public static class RoutingTableManagerTests
                         "",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()),
+                        It.IsAny<IHomeDbCache>()),
                     Times.Exactly(4));
 
             discovery.Verify(
-                x => x.DiscoverAsync(connE, "", null, Bookmarks.Empty, It.IsAny<IDictionary<IAuthToken, string>>()),
+                x => x.DiscoverAsync(connE, "", null, Bookmarks.Empty, It.IsAny<IHomeDbCache>()),
                 Times.Once);
 
             logger.Verify(
@@ -659,11 +657,11 @@ public static class RoutingTableManagerTests
                         "",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .Throws(new ServiceUnavailableException("something went wrong"));
 
             discovery.Setup(
-                    x => x.DiscoverAsync(connE, "", null, Bookmarks.Empty, It.IsAny<IDictionary<IAuthToken, string>>()))
+                    x => x.DiscoverAsync(connE, "", null, Bookmarks.Empty, It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(routingTable);
 
             var logger = new Mock<ILogger>();
@@ -685,8 +683,7 @@ public static class RoutingTableManagerTests
                     existingRoutingTable,
                     AccessMode.Read,
                     "",
-                    null,
-                    Bookmarks.Empty);
+                    null);
 
             // Then
             result.Should().Be(routingTable);
@@ -697,11 +694,11 @@ public static class RoutingTableManagerTests
                         "",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()),
+                        It.IsAny<IHomeDbCache>()),
                     Times.Never);
 
             discovery.Verify(
-                x => x.DiscoverAsync(connE, "", null, Bookmarks.Empty, It.IsAny<IDictionary<IAuthToken, string>>()),
+                x => x.DiscoverAsync(connE, "", null, Bookmarks.Empty, It.IsAny<IHomeDbCache>()),
                 Times.Once);
 
             logger.Verify(
@@ -818,7 +815,7 @@ public static class RoutingTableManagerTests
                         "",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(defaultRoutingTable);
 
             discovery.Setup(
@@ -827,7 +824,7 @@ public static class RoutingTableManagerTests
                         "foo",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(fooRoutingTable);
 
             discovery.Setup(
@@ -836,7 +833,7 @@ public static class RoutingTableManagerTests
                         "bar",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(barRoutingTable);
 
             var poolManager = new Mock<IClusterConnectionPoolManager>();
@@ -887,7 +884,7 @@ public static class RoutingTableManagerTests
                         "foo",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(fooRoutingTable);
 
             discovery.Setup(
@@ -896,7 +893,7 @@ public static class RoutingTableManagerTests
                         "bar",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(barRoutingTable);
 
             var poolManager = new Mock<IClusterConnectionPoolManager>();
@@ -947,7 +944,7 @@ public static class RoutingTableManagerTests
                         "",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(defaultRoutingTable);
 
             discovery.Setup(
@@ -956,7 +953,7 @@ public static class RoutingTableManagerTests
                         "foo",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(fooRoutingTable);
 
             discovery.Setup(
@@ -965,7 +962,7 @@ public static class RoutingTableManagerTests
                         "bar",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .ThrowsAsync(new FatalDiscoveryException("message"));
 
             var poolManager = new Mock<IClusterConnectionPoolManager>();
@@ -1013,7 +1010,7 @@ public static class RoutingTableManagerTests
                         "bar",
                         null,
                         Bookmarks.Empty,
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .ThrowsAsync(error);
 
             var poolManager = new Mock<IClusterConnectionPoolManager>();
@@ -1051,7 +1048,7 @@ public static class RoutingTableManagerTests
                         "foo",
                         null,
                         bookmark,
-                        It.IsAny<IDictionary<IAuthToken, string>>()))
+                        It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(rt);
 
             var poolManager = new Mock<IClusterConnectionPoolManager>();
@@ -1078,7 +1075,7 @@ public static class RoutingTableManagerTests
                     "foo",
                     null,
                     bookmark,
-                    It.IsAny<IDictionary<IAuthToken, string>>()),
+                    It.IsAny<IHomeDbCache>()),
                 Times.Once);
         }
     }

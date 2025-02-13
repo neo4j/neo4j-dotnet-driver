@@ -14,10 +14,11 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Neo4j.Driver.Internal.Auth;
 
-internal class CustomAuthToken : FullTokenCacheKeyAuthToken
+internal class CustomAuthToken : AuthToken
 {
     public CustomAuthToken(
         string principal,
@@ -50,5 +51,16 @@ internal class CustomAuthToken : FullTokenCacheKeyAuthToken
         {
             Content[ParametersKey] = parameters;
         }
+    }
+
+    public override string ToString()
+    {
+        return $"CustomAuthToken[scheme: {Scheme}, principal: {Principal}, realm: {Realm}" +
+            // list of other keys present in Content
+            Content.Keys
+                .Where(key => key != SchemeKey && key != PrincipalKey && key != RealmKey)
+                .Select(key => $", {key}: Content[key]")
+                .Aggregate("", (acc, next) => acc + next) +
+            "]";
     }
 }

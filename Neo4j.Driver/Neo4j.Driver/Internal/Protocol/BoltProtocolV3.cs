@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol.Utility;
@@ -84,7 +85,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         string database,
         SessionConfig sessionConfig,
         Bookmarks bookmarks,
-        IDictionary<IAuthToken, string> homeDbCache)
+        IHomeDbCache homeDbCache)
     {
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
@@ -126,7 +127,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         IConnection connection,
         AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig,
-        IDictionary<IAuthToken, string> homeDbCache)
+        IHomeDbCache homeDbCache)
     {
         connection.SessionConfig = autoCommitParams.SessionConfig;
         ValidateImpersonatedUserForVersion(connection);
@@ -169,8 +170,9 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
     public async Task BeginTransactionAsync(
         IConnection connection,
         BeginTransactionParams beginParams,
-        IAuthToken cacheKey,
-        IDictionary<IAuthToken, string> homeDbCache)
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig)
     {
         connection.SessionConfig = beginParams.SessionConfig;
         ValidateImpersonatedUserForVersion(connection);
@@ -190,7 +192,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
 
         var responseHandler = _protocolHandlerFactory.NewBeginResponseHandler(
             cacheKey,
-            homeDbCache);
+            homeDbCache,
+            sessionConfig);
 
         await connection.EnqueueAsync(message, responseHandler).ConfigureAwait(false);
         if (beginParams.TransactionInfo.AwaitBegin)
@@ -205,8 +208,9 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         bool reactive,
         long _,
         IInternalAsyncTransaction transaction,
-        IAuthToken cacheKey,
-        IDictionary<IAuthToken, string> homeDbCache)
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig)
     {
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
         var streamBuilder = _protocolHandlerFactory.NewResultCursorBuilder(

@@ -21,6 +21,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.V3;
 using Neo4j.Driver.Internal.MessageHandling.V4;
@@ -124,7 +125,7 @@ public class BoltProtocolV3Tests
                     "db",
                     null,
                     null,
-                    It.IsAny<IDictionary<IAuthToken, string>>()));
+                    It.IsAny<IHomeDbCache>()));
 
             ex.Should().BeOfType<ProtocolException>();
         }
@@ -142,7 +143,7 @@ public class BoltProtocolV3Tests
                     "db",
                     new SessionConfig("Douglas Fir"),
                     null,
-                    It.IsAny<IDictionary<IAuthToken, string>>()));
+                    It.IsAny<IHomeDbCache>()));
 
             ex.Should().BeOfType<ArgumentException>();
         }
@@ -211,11 +212,13 @@ public class BoltProtocolV3Tests
                 "test",
                 null,
                 bm,
-                It.IsAny<IDictionary<IAuthToken, string>>());
+                It.IsAny<IHomeDbCache>());
 
             routingTable.Should().Contain(new KeyValuePair<string, object>("db", "test"));
 
-            handlerFactory.Verify(x => x.NewRouteResponseHandler(), Times.Never);
+            handlerFactory.Verify(
+                x => x.NewRouteResponseHandler(It.IsAny<HomeDbCacheKey>(), It.IsAny<IHomeDbCache>()),
+                Times.Never);
 
             msgFactory.Verify(
                 x =>
@@ -267,7 +270,7 @@ public class BoltProtocolV3Tests
                     mockConn.Object,
                     acp,
                     null,
-                    It.IsAny<IDictionary<IAuthToken, string>>()));
+                    It.IsAny<IHomeDbCache>()));
 
             exception.Should().BeOfType<ArgumentException>();
         }
@@ -292,7 +295,7 @@ public class BoltProtocolV3Tests
                     mockConn.Object,
                     acp,
                     new NotificationsDisabledConfig(),
-                    It.IsAny<IDictionary<IAuthToken, string>>()));
+                    It.IsAny<IHomeDbCache>()));
 
             exception.Should().BeOfType<ArgumentOutOfRangeException>();
         }
@@ -316,7 +319,7 @@ public class BoltProtocolV3Tests
                     mockConn.Object,
                     acp,
                     new NotificationsDisabledConfig(),
-                    It.IsAny<IDictionary<IAuthToken, string>>()));
+                    It.IsAny<IHomeDbCache>()));
 
             exception.Should().BeNull();
         }
@@ -337,7 +340,7 @@ public class BoltProtocolV3Tests
                     mockConn.Object,
                     acp,
                     null,
-                    It.IsAny<IDictionary<IAuthToken, string>>()));
+                    It.IsAny<IHomeDbCache>()));
 
             exception.Should().BeOfType<ClientException>();
         }
@@ -401,7 +404,7 @@ public class BoltProtocolV3Tests
                 mockConn.Object,
                 acp,
                 null,
-                It.IsAny<IDictionary<IAuthToken, string>>());
+                It.IsAny<IHomeDbCache>());
 
             handlerFactory.Verify(
                 x => x.NewResultCursorBuilder(
@@ -448,8 +451,9 @@ public class BoltProtocolV3Tests
                         null,
                         null,
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
-                    AuthTokens.None,
-                    It.IsAny<IDictionary<IAuthToken, string>>()));
+                    HomeDbCacheKey.Default,
+                    It.IsAny<IHomeDbCache>(),
+                    TODO));
 
             exception.Should().BeOfType<ArgumentException>();
         }
@@ -474,8 +478,9 @@ public class BoltProtocolV3Tests
                         null,
                         new NotificationsDisabledConfig(),
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
-                    AuthTokens.None,
-                    It.IsAny<IDictionary<IAuthToken, string>>()));
+                    HomeDbCacheKey.Default,
+                    It.IsAny<IHomeDbCache>(),
+                    TODO));
 
             exception.Should().BeOfType<ArgumentOutOfRangeException>();
         }
@@ -499,8 +504,9 @@ public class BoltProtocolV3Tests
                         null,
                         new NotificationsDisabledConfig(),
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
-                    AuthTokens.None,
-                    It.IsAny<IDictionary<IAuthToken, string>>()));
+                    HomeDbCacheKey.Default,
+                    It.IsAny<IHomeDbCache>(),
+                    TODO));
 
             exception.Should().BeNull();
         }
@@ -521,8 +527,9 @@ public class BoltProtocolV3Tests
                         null,
                         null,
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
-                    AuthTokens.None,
-                    It.IsAny<IDictionary<IAuthToken, string>>()));
+                    HomeDbCacheKey.Default,
+                    It.IsAny<IHomeDbCache>(),
+                    TODO));
 
             exception.Should().BeOfType<ClientException>();
         }
@@ -544,8 +551,9 @@ public class BoltProtocolV3Tests
                         null,
                         null,
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
-                    AuthTokens.None,
-                    It.IsAny<IDictionary<IAuthToken, string>>()));
+                    HomeDbCacheKey.Default,
+                    It.IsAny<IHomeDbCache>(),
+                    TODO));
 
             exception.Should().BeOfType<InvalidOperationException>();
         }
@@ -582,8 +590,9 @@ public class BoltProtocolV3Tests
                     null,
                     null,
                     new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
-                AuthTokens.None,
-                It.IsAny<IDictionary<IAuthToken, string>>());
+                HomeDbCacheKey.Default,
+                It.IsAny<IHomeDbCache>(),
+                TODO);
 
             msgFactory.Verify(
                 x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
@@ -629,8 +638,9 @@ public class BoltProtocolV3Tests
                     null,
                     null,
                     new TransactionInfo(QueryApiType.UnmanagedTransaction, false, false)),
-                AuthTokens.None,
-                It.IsAny<IDictionary<IAuthToken, string>>());
+                HomeDbCacheKey.Default,
+                It.IsAny<IHomeDbCache>(),
+                TODO);
 
             msgFactory.Verify(
                 x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
@@ -698,8 +708,9 @@ public class BoltProtocolV3Tests
                 false,
                 0L,
                 mockTransaction.Object,
-                AuthTokens.None,
-                It.IsAny<IDictionary<IAuthToken, string>>());
+                HomeDbCacheKey.Default,
+                It.IsAny<IHomeDbCache>(),
+                TODO);
 
             handlerFactory.Verify(
                 x => x.NewResultCursorBuilder(

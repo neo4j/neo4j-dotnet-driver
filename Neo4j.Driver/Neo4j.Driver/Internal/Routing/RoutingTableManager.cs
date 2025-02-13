@@ -79,7 +79,7 @@ internal class RoutingTableManager : IRoutingTableManager
         SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
-        database = database ?? string.Empty;
+        database ??= string.Empty;
 
         var semaphore = GetLock(database);
 
@@ -110,7 +110,7 @@ internal class RoutingTableManager : IRoutingTableManager
         }
     }
 
-    public async Task<IServerInfo> GetServerInfoAsync(Uri uri, string database)
+    public async Task<IServerInfo> GetServerInfoAsync(Uri uri, string database, Action<string> dbNameCallback)
     {
         var bufferedExceptions = new List<Exception>();
         var conn = await _poolManager.CreateClusterConnectionAsync(uri, null).ConfigureAwait(false);

@@ -14,19 +14,22 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.MessageHandling.Metadata;
 
 namespace Neo4j.Driver.Internal.MessageHandling.V4;
 
 internal sealed class BeginResponseHandler : MetadataCollectingResponseHandler
 {
-    private readonly IAuthToken _cacheKey;
-    private readonly IDictionary<IAuthToken, string> _homeDbCache;
+    private readonly HomeDbCacheKey _cacheKey;
+    private readonly IHomeDbCache _homeDbCache;
+    private readonly SessionConfig _sessionConfig;
 
-    public BeginResponseHandler(IAuthToken cacheKey, IDictionary<IAuthToken, string> homeDbCache)
+    public BeginResponseHandler(HomeDbCacheKey cacheKey, IHomeDbCache homeDbCache, SessionConfig sessionConfig)
     {
         _cacheKey = cacheKey;
         _homeDbCache = homeDbCache;
+        _sessionConfig = sessionConfig;
         AddMetadata<DatabaseInfoCollector, IDatabaseInfo>();
     }
 
@@ -37,7 +40,11 @@ internal sealed class BeginResponseHandler : MetadataCollectingResponseHandler
         var dbInfo = GetMetadata<DatabaseInfoCollector, IDatabaseInfo>();
         if (_homeDbCache != null && dbInfo?.Name != null)
         {
-            _homeDbCache[_cacheKey] = dbInfo.Name;
+            _sessionConfig.DriverContext.Logger?.Debug(
+                $"Caching database name '{dbInfo.Name}' for key '{_cacheKey}'");
+
+            _homeDbCache.AddOrUpdate(_cacheKey, dbInfo.Name);
+            _sessionConfig?.PinDatabase(dbInfo.Name);
         }
     }
 }

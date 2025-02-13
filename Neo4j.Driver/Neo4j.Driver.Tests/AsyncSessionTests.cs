@@ -23,6 +23,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
@@ -104,7 +105,7 @@ public class AsyncSessionTests
                 x => x.RunInAutoCommitTransactionAsync(
                     It.IsAny<AutoCommitParams>(),
                     It.IsAny<INotificationsConfig>(),
-                    It.IsAny<IDictionary<IAuthToken,string>>()),
+                    It.IsAny<IHomeDbCache>()),
                 Times.Once);
         }
     }
@@ -183,8 +184,9 @@ public class AsyncSessionTests
                     x.BeginTransactionAsync(
                         It.IsAny<IConnection>(),
                         It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == true),
-                        null,
-                        It.IsAny<IDictionary<IAuthToken,string>>()),
+                        It.IsAny<HomeDbCacheKey>(),
+                        It.IsAny<IHomeDbCache>(),
+                        TODO),
                 Times.Once);
         }
 
@@ -234,8 +236,9 @@ public class AsyncSessionTests
                         x.BeginTransactionAsync(
                             It.IsAny<IConnection>(),
                             It.IsAny<BeginTransactionParams>(),
-                            null,
-                            It.IsAny<IDictionary<IAuthToken,string>>()))
+                            It.IsAny<HomeDbCacheKey>(),
+                            It.IsAny<IHomeDbCache>(),
+                            TODO))
                 .Throws(new IOException("Triggered an error when beginTx"));
 
             var session = NewSession(mockConn.Object);
@@ -261,8 +264,9 @@ public class AsyncSessionTests
                         x.BeginTransactionAsync(
                             It.IsAny<IConnection>(),
                             It.IsAny<BeginTransactionParams>(),
-                            null,
-                            It.IsAny<IDictionary<IAuthToken,string>>()))
+                            It.IsAny<HomeDbCacheKey>(),
+                            It.IsAny<IHomeDbCache>(),
+                            TODO))
                 .Returns(Task.CompletedTask)
                 .Callback(
                     () =>
@@ -322,8 +326,9 @@ public class AsyncSessionTests
                     x.BeginTransactionAsync(
                         It.IsAny<IConnection>(),
                         It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == false),
-                        null,
-                        It.IsAny<IDictionary<IAuthToken,string>>()),
+                        It.IsAny<HomeDbCacheKey>(),
+                        It.IsAny<IHomeDbCache>(),
+                        TODO),
                 Times.Once);
         }
     }
@@ -340,8 +345,9 @@ public class AsyncSessionTests
                         x.BeginTransactionAsync(
                             It.IsAny<IConnection>(),
                             It.IsAny<BeginTransactionParams>(),
-                            null,
-                            It.IsAny<IDictionary<IAuthToken,string>>()))
+                            It.IsAny<HomeDbCacheKey>(),
+                            It.IsAny<IHomeDbCache>(),
+                            TODO))
                 .Throws(new IOException("Triggered an error when beginTx"));
 
             var session = NewSession(mockConn.Object);

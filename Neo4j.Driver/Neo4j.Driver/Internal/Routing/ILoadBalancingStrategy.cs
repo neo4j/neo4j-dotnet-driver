@@ -20,6 +20,6 @@ namespace Neo4j.Driver.Internal.Routing;
 
 internal interface ILoadBalancingStrategy
 {
-    Uri SelectReader(IList<Uri> knownReaders, string forDatabase);
-    Uri SelectWriter(IList<Uri> knownWriters, string forDatabase);
+    Uri SelectReader(IList<Uri> knownReaders, string forDatabase, string cachedDatabase = null);
+    Uri SelectWriter(IList<Uri> knownWriters, string forDatabase, string cachedDatabase = null);
 }

@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.V3;
 using Neo4j.Driver.Internal.MessageHandling.V4;
@@ -40,8 +41,9 @@ internal interface IBoltProtocolHandlerFactory
     RunResponseHandler NewRunResponseHandler(
         IResultCursorBuilder streamBuilder,
         SummaryBuilder summaryBuilder,
-        IAuthToken cacheKey,
-        IDictionary<IAuthToken, string> homeDbCache);
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig);
 
     PullResponseHandler NewPullResponseHandler(
         IConnection connection,
@@ -49,7 +51,12 @@ internal interface IBoltProtocolHandlerFactory
         IResultStreamBuilder cursorBuilder,
         SummaryBuilder summaryBuilder);
 
-    RouteResponseHandler NewRouteResponseHandler();
+    RouteResponseHandler NewRouteResponseHandler(
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig,
+        bool isDefaultRequest);
+
     HelloResponseHandler NewHelloResponseHandler(IConnection connection);
 
     CommitResponseHandler NewCommitResponseHandler(IBookmarksTracker bookmarksTracker);
@@ -64,7 +71,10 @@ internal interface IBoltProtocolHandlerFactory
 
     TelemetryResponseHandler NewTelemetryResponseHandler(TransactionInfo info);
 
-    BeginResponseHandler NewBeginResponseHandler(IAuthToken cacheKey, IDictionary<IAuthToken, string> homeDbCache);
+    BeginResponseHandler NewBeginResponseHandler(
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig);
 }
 
 internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
@@ -96,10 +106,11 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
     public RunResponseHandler NewRunResponseHandler(
         IResultCursorBuilder streamBuilder,
         SummaryBuilder summaryBuilder,
-        IAuthToken cacheKey,
-        IDictionary<IAuthToken, string> homeDbCache)
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig)
     {
-        return new RunResponseHandler(streamBuilder, summaryBuilder, cacheKey, homeDbCache);
+        return new RunResponseHandler(streamBuilder, summaryBuilder, cacheKey, homeDbCache, sessionConfig);
     }
 
     public PullResponseHandler NewPullResponseHandler(
@@ -115,9 +126,13 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
             connection.Version >= BoltProtocolVersion.V5_5);
     }
 
-    public RouteResponseHandler NewRouteResponseHandler()
+    public RouteResponseHandler NewRouteResponseHandler(
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig,
+        bool isDefaultRequest)
     {
-        return new RouteResponseHandler();
+        return new RouteResponseHandler(cacheKey, homeDbCache, sessionConfig, isDefaultRequest);
     }
 
     public HelloResponseHandler NewHelloResponseHandler(IConnection connection)
@@ -152,9 +167,10 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
 
     /// <inheritdoc/>
     public BeginResponseHandler NewBeginResponseHandler(
-        IAuthToken cacheKey,
-        IDictionary<IAuthToken, string> homeDbCache)
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig)
     {
-        return new BeginResponseHandler(cacheKey, homeDbCache);
+        return new BeginResponseHandler(cacheKey, homeDbCache, sessionConfig);
     }
 }

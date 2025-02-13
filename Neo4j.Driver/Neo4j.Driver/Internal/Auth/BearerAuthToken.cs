@@ -17,7 +17,7 @@ using System;
 
 namespace Neo4j.Driver.Internal.Auth;
 
-internal class BearerAuthToken : FullTokenCacheKeyAuthToken
+internal class BearerAuthToken : AuthToken
 {
     public BearerAuthToken(string token)
     {
@@ -28,5 +28,12 @@ internal class BearerAuthToken : FullTokenCacheKeyAuthToken
 
         Content[SchemeKey] = "bearer";
         Content[CredentialsKey] = token;
+    }
+
+    public string Token => Content[CredentialsKey] as string;
+
+    public override string ToString()
+    {
+        return $"BearerAuthToken{{scheme: {Scheme}, token: {Token.Substring(0, 5)}...}}";
     }
 }

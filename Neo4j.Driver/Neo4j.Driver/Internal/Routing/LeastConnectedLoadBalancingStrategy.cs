@@ -31,21 +31,22 @@ internal class LeastConnectedLoadBalancingStrategy : ILoadBalancingStrategy
         _logger = logger;
     }
 
-    public Uri SelectReader(IList<Uri> knownReaders, string forDatabase)
+    public Uri SelectReader(IList<Uri> knownReaders, string forDatabase, string cachedDatabase = null)
     {
-        return Select(knownReaders, _readersIndex, forDatabase, "reader");
+        return Select(knownReaders, _readersIndex, forDatabase, "reader", cachedDatabase);
     }
 
-    public Uri SelectWriter(IList<Uri> knownWriters, string forDatabase)
+    public Uri SelectWriter(IList<Uri> knownWriters, string forDatabase, string cachedDatabase = null)
     {
-        return Select(knownWriters, _writersIndex, forDatabase, "writer");
+        return Select(knownWriters, _writersIndex, forDatabase, "writer", cachedDatabase);
     }
 
     private Uri Select(
         IList<Uri> addresses,
         RoundRobinArrayIndex roundRobinIndex,
         string forDatabase,
-        string addressType)
+        string addressType,
+        string cachedDatabase) // this db only used for logging
     {
         var count = addresses.Count;
         if (count == 0)
@@ -84,8 +85,14 @@ internal class LeastConnectedLoadBalancingStrategy : ILoadBalancingStrategy
             }
         } while (index != startIndex);
 
-        LogDebug(
-            $"Selected {addressType} for database '{forDatabase}' with least connected address: '{leastConnectedAddress}' and active connections: {leastActiveConnections}");
+        string logMessage = cachedDatabase == null
+            ? $"Selected {addressType} for database '{forDatabase}' with least connected address: " +
+                $"'{leastConnectedAddress}' and active connections: {leastActiveConnections}"
+            : $"Selected {addressType} for database '{forDatabase}' (using cached routing table for " +
+                $"'{cachedDatabase}') with least connected address: '{leastConnectedAddress}' and active " +
+                $"connections: {leastActiveConnections}";
+
+        LogDebug(logMessage);
 
         return leastConnectedAddress;
     }

@@ -81,9 +81,16 @@ public sealed class SessionConfig
     /// </list>
     /// </remarks>
     /// <seealso cref="SessionConfigBuilder.WithDatabase"/>
-    public string Database { get; internal set; }
+    public string Database
+    {
+        get => _database;
+        internal set => _database = string.IsNullOrWhiteSpace(value) ? null : value;
+    }
 
-    /// <summary>
+    private string _database;
+
+
+/// <summary>
     /// The type of access required by the constructed session. This is used to route the requests originating from this
     /// session instance to the correct server in a clustered environment.
     /// <remarks>
@@ -153,19 +160,10 @@ public sealed class SessionConfig
 
     internal DriverContext DriverContext { get; set; }
 
-    internal async Task<IAuthToken> AuthTokenForHomeDbCache()
+    internal Action<string> OnPinDatabase { get; set; }
+    internal void PinDatabase(string database)
     {
-        if (AuthToken != null)
-        {
-            return AuthToken;
-        }
-
-        if(DriverContext?.AuthTokenManager != null)
-        {
-            return await DriverContext.AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
-        }
-
-        return null;
+        OnPinDatabase?.Invoke(database);
     }
 }
 

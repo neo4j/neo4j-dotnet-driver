@@ -25,8 +25,8 @@ internal class SimpleLogger : ILogger
     {
 
         Console.ForegroundColor = message[0] == '['
-            ? ConsoleColor.DarkGreen
-            : ConsoleColor.Green;
+            ? ConsoleColor.DarkMagenta
+            : ConsoleColor.DarkGreen;
 
         Console.WriteLine($"{Now} DBG: {message}", args);
         Console.ResetColor();
@@ -34,7 +34,7 @@ internal class SimpleLogger : ILogger
 
     public void Error(Exception error, string message, params object[] args)
     {
-        Console.ForegroundColor = ConsoleColor.Red;
+        Console.ForegroundColor = ConsoleColor.DarkRed;
         Console.WriteLine($"{Now} ERR: {message}", args);
         Console.ResetColor();
     }

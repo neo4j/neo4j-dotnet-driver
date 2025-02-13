@@ -80,6 +80,7 @@ internal static class SupportedFeatures
             //"Optimization:MinimalResets",
             "Optimization:AuthPipelining",
             "Optimization:PullPipelining",
+            //"Optimization:HomeDbCacheBasicPrincipalIsImpersonatedUser",
             "Optimization:HomeDatabaseCache"
             //"Optimization:ResultListFetchAll",
         };

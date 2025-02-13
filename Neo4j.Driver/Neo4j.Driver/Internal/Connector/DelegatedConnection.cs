@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
@@ -238,7 +239,7 @@ internal abstract class DelegatedConnection : IConnection
         string database,
         SessionConfig sessionConfig,
         Bookmarks bookmarks,
-        IDictionary<IAuthToken, string> homeDbCache)
+        IHomeDbCache homeDbCache)
     {
         return BoltProtocol.GetRoutingTableAsync(this, database, sessionConfig, bookmarks, homeDbCache);
     }
@@ -246,16 +247,17 @@ internal abstract class DelegatedConnection : IConnection
     public Task<IResultCursor> RunInAutoCommitTransactionAsync(
         AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig,
-        IDictionary<IAuthToken, string> homeDbCache)
+        IHomeDbCache homeDbCache)
     {
         return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams, notificationsConfig, homeDbCache);
     }
 
     public Task BeginTransactionAsync(
         BeginTransactionParams beginTransactionParams,
-        IDictionary<IAuthToken, string> homeDbCache)
+        IHomeDbCache homeDbCache)
     {
-        return BoltProtocol.BeginTransactionAsync(this, beginTransactionParams, AuthToken, homeDbCache);
+        var cacheKey = HomeDbCacheKeyProvider.GetCacheKey(AuthToken, beginTransactionParams.SessionConfig);
+        return BoltProtocol.BeginTransactionAsync(this, beginTransactionParams, cacheKey, homeDbCache, SessionConfig);
     }
 
     public Task<IResultCursor> RunInExplicitTransactionAsync(
@@ -263,16 +265,19 @@ internal abstract class DelegatedConnection : IConnection
         bool reactive,
         long fetchSize,
         IInternalAsyncTransaction transaction,
-        IDictionary<IAuthToken, string> homeDbCache)
+        IHomeDbCache homeDbCache)
     {
+        var cacheKey = HomeDbCacheKeyProvider.GetCacheKey(AuthToken, null);
+
         return BoltProtocol.RunInExplicitTransactionAsync(
             this,
             query,
             reactive,
             fetchSize,
             transaction,
-            AuthToken,
-            homeDbCache);
+            cacheKey,
+            homeDbCache,
+            SessionConfig);
     }
 
     public Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker)

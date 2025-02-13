@@ -13,15 +13,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.MessageHandling.Metadata;
 
 namespace Neo4j.Driver.Internal.MessageHandling;
 
 internal sealed class RouteResponseHandler : MetadataCollectingResponseHandler
 {
-    public RouteResponseHandler()
+    private readonly HomeDbCacheKey _cacheKey;
+    private readonly IHomeDbCache _homeDbCache;
+    private readonly SessionConfig _sessionConfig;
+    private readonly bool _isDefaultRequest;
+
+    public RouteResponseHandler(
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig,
+        bool isDefaultRequest)
     {
+        _cacheKey = cacheKey;
+        _homeDbCache = homeDbCache;
+        _sessionConfig = sessionConfig;
+        _isDefaultRequest = isDefaultRequest;
         AddMetadata<RoutingTableCollector, IDictionary<string, object>>();
     }
 
@@ -30,6 +45,14 @@ internal sealed class RouteResponseHandler : MetadataCollectingResponseHandler
     public override void OnSuccess(IDictionary<string, object> metadata)
     {
         base.OnSuccess(metadata);
+
+        if(_isDefaultRequest && metadata?["rt"] is IDictionary<string, object> rt && rt?["db"] is string db)
+        {
+            _sessionConfig.DriverContext.Logger?.Debug($"Caching database name '{db}' for key '{_cacheKey}'");
+            _homeDbCache.AddOrUpdate(_cacheKey, db);
+            _sessionConfig?.PinDatabase(db);
+        }
+
         RoutingInformation = GetMetadata<RoutingTableCollector, IDictionary<string, object>>();
     }
 }
