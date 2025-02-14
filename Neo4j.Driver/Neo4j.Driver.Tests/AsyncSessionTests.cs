@@ -186,7 +186,7 @@ public class AsyncSessionTests
                         It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == true),
                         It.IsAny<HomeDbCacheKey>(),
                         It.IsAny<IHomeDbCache>(),
-                        TODO),
+                        It.IsAny<Driver.SessionConfig>()),
                 Times.Once);
         }
 
@@ -238,7 +238,7 @@ public class AsyncSessionTests
                             It.IsAny<BeginTransactionParams>(),
                             It.IsAny<HomeDbCacheKey>(),
                             It.IsAny<IHomeDbCache>(),
-                            TODO))
+                            It.IsAny<Driver.SessionConfig>()))
                 .Throws(new IOException("Triggered an error when beginTx"));
 
             var session = NewSession(mockConn.Object);
@@ -266,7 +266,7 @@ public class AsyncSessionTests
                             It.IsAny<BeginTransactionParams>(),
                             It.IsAny<HomeDbCacheKey>(),
                             It.IsAny<IHomeDbCache>(),
-                            TODO))
+                            It.IsAny<Driver.SessionConfig>()))
                 .Returns(Task.CompletedTask)
                 .Callback(
                     () =>
@@ -328,7 +328,7 @@ public class AsyncSessionTests
                         It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == false),
                         It.IsAny<HomeDbCacheKey>(),
                         It.IsAny<IHomeDbCache>(),
-                        TODO),
+                        It.IsAny<Driver.SessionConfig>()),
                 Times.Once);
         }
     }
@@ -347,7 +347,7 @@ public class AsyncSessionTests
                             It.IsAny<BeginTransactionParams>(),
                             It.IsAny<HomeDbCacheKey>(),
                             It.IsAny<IHomeDbCache>(),
-                            TODO))
+                            It.IsAny<Driver.SessionConfig>()))
                 .Throws(new IOException("Triggered an error when beginTx"));
 
             var session = NewSession(mockConn.Object);

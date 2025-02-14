@@ -232,8 +232,9 @@ public class BoltProtocolTests
 
             var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
             handlerFactory.Setup(
-                    x => x.NewRouteResponseHandler(It.IsAny<HomeDbCacheKey>(), It.IsAny<IHomeDbCache>()))
-                .Returns(new RouteResponseHandler(HomeDbCacheKey.Default, null));
+                    x => x.NewRouteResponseHandler(It.IsAny<HomeDbCacheKey>(), It.IsAny<IHomeDbCache>(),
+                        It.IsAny<Driver.SessionConfig>(), It.IsAny<bool>()))
+                .Returns(new RouteResponseHandler(HomeDbCacheKey.Default, null, null, false));
 
             var mockV3 = new Mock<IBoltProtocol>();
             var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
@@ -254,7 +255,11 @@ public class BoltProtocolTests
                 Times.Once);
 
             handlerFactory.Verify(
-                x => x.NewRouteResponseHandler(It.IsAny<HomeDbCacheKey>(), It.IsAny<IHomeDbCache>()),
+                x => x.NewRouteResponseHandler(
+                    It.IsAny<HomeDbCacheKey>(),
+                    It.IsAny<IHomeDbCache>(),
+                    It.IsAny<SessionConfig>(),
+                    It.IsAny<bool>()),
                 Times.Once);
 
             mockConn.Verify(
@@ -280,11 +285,10 @@ public class BoltProtocolTests
                 .Setup(x => x.NewRouteMessageV43(mockConn.Object, It.IsNotNull<Bookmarks>(), "db"))
                 .Returns(new RouteMessageV43(null, null, null));
 
-            var cache = new HomeDbCache();
-            var rrHandler = new RouteResponseHandler(HomeDbCacheKey.Default, cache);
+            var rrHandler = new RouteResponseHandler(HomeDbCacheKey.Default, new HomeDbCache(), SessionConfig.Default,  false);
             rrHandler.RoutingInformation = new Dictionary<string, object>();
             var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
-            handlerFactory.Setup(x => x.NewRouteResponseHandler(It.IsAny<HomeDbCacheKey>(), cache))
+            handlerFactory.Setup(x => x.NewRouteResponseHandler(It.IsAny<HomeDbCacheKey>(), It.IsAny<IHomeDbCache>(), It.IsAny<SessionConfig>(), It.IsAny<bool>()))
                 .Returns(rrHandler);
 
             var mockV3 = new Mock<IBoltProtocol>();
@@ -293,9 +297,9 @@ public class BoltProtocolTests
             await protocol.GetRoutingTableAsync(
                 mockConn.Object,
                 "db",
-                null,
+                SessionConfig.Default,
                 new InternalBookmarks(),
-                cache);
+                new HomeDbCache());
 
             msgFactory.Verify(
                 x => x.NewRouteMessageV43(
@@ -305,7 +309,11 @@ public class BoltProtocolTests
                 Times.Once);
 
             handlerFactory.Verify(
-                x => x.NewRouteResponseHandler(It.IsAny<HomeDbCacheKey>(), It.IsAny<IHomeDbCache>()),
+                x => x.NewRouteResponseHandler(
+                    It.IsAny<HomeDbCacheKey>(),
+                    It.IsAny<IHomeDbCache>(),
+                    It.IsAny<Driver.SessionConfig>(),
+                    It.IsAny<bool>()),
                 Times.Once);
 
             mockConn.Verify(
@@ -333,10 +341,20 @@ public class BoltProtocolTests
 
             var mockRt = new Mock<IDictionary<string, object>>();
             mockRt.As<IReadOnlyDictionary<string, object>>();
-            var rrHandler = new RouteResponseHandler(HomeDbCacheKey.Default, new HomeDbCache());
+            var rrHandler = new RouteResponseHandler(
+                HomeDbCacheKey.Default,
+                new HomeDbCache(),
+                SessionConfig.Default,
+                false);
+
             rrHandler.RoutingInformation = mockRt.Object;
             var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
-            handlerFactory.Setup(x => x.NewRouteResponseHandler(It.IsAny<HomeDbCacheKey>(), It.IsAny<IHomeDbCache>()))
+            handlerFactory.Setup(
+                    x => x.NewRouteResponseHandler(
+                        It.IsAny<HomeDbCacheKey>(),
+                        It.IsAny<IHomeDbCache>(),
+                        It.IsAny<Driver.SessionConfig>(),
+                        It.IsAny<bool>()))
                 .Returns(rrHandler);
 
             var mockV3 = new Mock<IBoltProtocol>();
@@ -359,7 +377,7 @@ public class BoltProtocolTests
                 Times.Once);
 
             handlerFactory.Verify(
-                x => x.NewRouteResponseHandler(It.IsAny<HomeDbCacheKey>(), It.IsAny<IHomeDbCache>()),
+                x => x.NewRouteResponseHandler(It.IsAny<HomeDbCacheKey>(), It.IsAny<IHomeDbCache>(), It.IsAny<Driver.SessionConfig>(), It.IsAny<bool>()),
                 Times.Once);
 
             handlerFactory.Verify(
@@ -367,9 +385,9 @@ public class BoltProtocolTests
                     It.IsAny<IResultCursorBuilder>(),
                     It.IsAny<SummaryBuilder>(),
                     It.IsAny<HomeDbCacheKey>(),
-                    new Mock<IHomeDbCache>().Object,
-                    TODO,
-                    TODO),
+                    It.IsAny<IHomeDbCache>(),
+                    It.IsAny<Driver.SessionConfig>(),
+                    It.IsAny<bool>()),
                 Times.Never);
 
             mockConn.Verify(
@@ -457,7 +475,7 @@ public class BoltProtocolTests
             routingTable.Should().Contain(new KeyValuePair<string, object>("db", "test"));
 
             handlerFactory.Verify(
-                x => x.NewRouteResponseHandler(It.IsAny<HomeDbCacheKey>(), It.IsAny<IHomeDbCache>()),
+                x => x.NewRouteResponseHandler(It.IsAny<HomeDbCacheKey>(), It.IsAny<IHomeDbCache>(), It.IsAny<Driver.SessionConfig>(), It.IsAny<bool>()),
                 Times.Never);
 
             msgFactory.Verify(
@@ -564,13 +582,13 @@ public class BoltProtocolTests
             mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(4, 3));
 
             var msgFactory = new Mock<IBoltProtocolMessageFactory>();
-            var rrHandler = new RouteResponseHandler(HomeDbCacheKey.Default, new HomeDbCache())
+            var rrHandler = new RouteResponseHandler(HomeDbCacheKey.Default, new HomeDbCache(), SessionConfig.Default, false)
             {
                 RoutingInformation = new Dictionary<string, object>()
             };
 
             var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
-            handlerFactory.Setup(x => x.NewRouteResponseHandler(It.IsAny<HomeDbCacheKey>(), It.IsAny<IHomeDbCache>()))
+            handlerFactory.Setup(x => x.NewRouteResponseHandler(It.IsAny<HomeDbCacheKey>(), It.IsAny<IHomeDbCache>(), It.IsAny<Driver.SessionConfig>(), It.IsAny<bool>()))
                 .Returns(rrHandler);
 
             var mockV3 = new Mock<IBoltProtocol>();
@@ -601,8 +619,8 @@ public class BoltProtocolTests
 
             var msgFactory = new Mock<IBoltProtocolMessageFactory>();
             var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
-            handlerFactory.Setup(x => x.NewRouteResponseHandler(It.IsAny<HomeDbCacheKey>(), It.IsAny<IHomeDbCache>()))
-                .Returns(new RouteResponseHandler(HomeDbCacheKey.Default, new HomeDbCache()));
+            handlerFactory.Setup(x => x.NewRouteResponseHandler(It.IsAny<HomeDbCacheKey>(), It.IsAny<IHomeDbCache>(), It.IsAny<Driver.SessionConfig>(), It.IsAny<bool>()))
+                .Returns(new RouteResponseHandler(HomeDbCacheKey.Default, new HomeDbCache(), SessionConfig.Default, false));
 
             var mockV3 = new Mock<IBoltProtocol>();
             var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
@@ -762,14 +780,13 @@ public class BoltProtocolTests
                         It.IsNotNull<SummaryBuilder>(),
                         HomeDbCacheKey.Default,
                         It.IsAny<IHomeDbCache>(),
-                        TODO,
-                        TODO))
+                        It.IsAny<SessionConfig>(), It.IsAny<bool>()))
                 .Returns(
                     new RunResponseHandler(
                         resultCursorBuilderMock.Object,
                         new SummaryBuilder(new Query("..."), new ServerInfo(new Uri("http://0.0.0.0"))),
                         HomeDbCacheKey.Default,
-                        It.IsAny<IHomeDbCache>()));
+                        null, SessionConfig.Default, false));
 
             handlerFactory
                 .Setup(
@@ -836,8 +853,8 @@ public class BoltProtocolTests
                     It.IsNotNull<SummaryBuilder>(),
                     It.IsAny<HomeDbCacheKey>(),
                     It.IsAny<IHomeDbCache>(),
-                    TODO,
-                    TODO),
+                    It.IsAny<SessionConfig>(),
+                    It.IsAny<bool>()),
                 Times.Once);
 
             mockConn.Verify(
@@ -884,14 +901,13 @@ public class BoltProtocolTests
                         It.IsNotNull<SummaryBuilder>(),
                         HomeDbCacheKey.Default,
                         It.IsAny<IHomeDbCache>(),
-                        TODO,
-                        TODO))
+                        It.IsAny<SessionConfig>(), It.IsAny<bool>()))
                 .Returns(
                     new RunResponseHandler(
                         resultCursorBuilderMock.Object,
                         new SummaryBuilder(new Query("..."), new ServerInfo(new Uri("http://0.0.0.0"))),
                         HomeDbCacheKey.Default,
-                        It.IsAny<IHomeDbCache>()));
+                        null, SessionConfig.Default, false));
 
             handlerFactory.Setup(
                     x => x.NewResultCursorBuilder(
@@ -944,8 +960,8 @@ public class BoltProtocolTests
                     It.IsNotNull<SummaryBuilder>(),
                     It.IsAny<HomeDbCacheKey>(),
                     It.IsAny<IHomeDbCache>(),
-                    TODO,
-                    TODO),
+                    It.IsAny<SessionConfig>(),
+                    It.IsAny<bool>()),
                 Times.Once);
 
             mockConn.Verify(
@@ -991,7 +1007,7 @@ public class BoltProtocolTests
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
                     HomeDbCacheKey.Default,
                     It.IsAny<IHomeDbCache>(),
-                    TODO));
+                    SessionConfig.Default));
 
             exception.Should().BeOfType<ArgumentException>();
         }
@@ -1018,7 +1034,7 @@ public class BoltProtocolTests
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
                     HomeDbCacheKey.Default,
                     It.IsAny<IHomeDbCache>(),
-                    TODO));
+                    SessionConfig.Default));
 
             exception.Should().BeOfType<ArgumentOutOfRangeException>();
         }
@@ -1044,7 +1060,7 @@ public class BoltProtocolTests
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
                     HomeDbCacheKey.Default,
                     It.IsAny<IHomeDbCache>(),
-                    TODO));
+                    SessionConfig.Default));
 
             exception.Should().BeNull();
         }
@@ -1071,7 +1087,7 @@ public class BoltProtocolTests
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
                     HomeDbCacheKey.Default,
                     It.IsAny<IHomeDbCache>(),
-                    TODO));
+                    SessionConfig.Default));
 
             exception.Should().BeNull();
         }
@@ -1147,14 +1163,13 @@ public class BoltProtocolTests
                         It.IsNotNull<SummaryBuilder>(),
                         It.IsAny<HomeDbCacheKey>(),
                         It.IsAny<IHomeDbCache>(),
-                        TODO,
-                        TODO))
+                        It.IsAny<SessionConfig>(), It.IsAny<bool>()))
                 .Returns(
                     new RunResponseHandler(
                         resultCursorBuilderMock.Object,
                         new SummaryBuilder(new Query("..."), new ServerInfo(new Uri("http://0.0.0.0"))),
                         HomeDbCacheKey.Default,
-                        It.IsAny<IHomeDbCache>()));
+                        null, SessionConfig.Default, false));
 
             handlerFactory.Setup(
                     x => x.NewResultCursorBuilder(
@@ -1181,7 +1196,7 @@ public class BoltProtocolTests
                 new Mock<IInternalAsyncTransaction>().Object,
                 HomeDbCacheKey.Default,
                 It.IsAny<IHomeDbCache>(),
-                TODO);
+                SessionConfig.Default);
 
             msgFactory.Verify(
                 x => x.NewRunWithMetadataMessage(mockConn.Object, query, null),
@@ -1208,8 +1223,8 @@ public class BoltProtocolTests
                     It.IsNotNull<SummaryBuilder>(),
                     HomeDbCacheKey.Default,
                     It.IsAny<IHomeDbCache>(),
-                    TODO,
-                    TODO),
+                    It.IsAny<SessionConfig>(),
+                    It.IsAny<bool>()),
                 Times.Once);
 
             mockConn.Verify(
@@ -1250,14 +1265,13 @@ public class BoltProtocolTests
                         It.IsNotNull<SummaryBuilder>(),
                         It.IsAny<HomeDbCacheKey>(),
                         It.IsAny<IHomeDbCache>(),
-                        TODO,
-                        TODO))
+                        It.IsAny<SessionConfig>(), It.IsAny<bool>()))
                 .Returns(
                     new RunResponseHandler(
                         resultCursorBuilderMock.Object,
                         new SummaryBuilder(new Query("..."), new ServerInfo(new Uri("http://0.0.0.0"))),
                         HomeDbCacheKey.Default,
-                        It.IsAny<IHomeDbCache>()));
+                        null, SessionConfig.Default, false));
 
             handlerFactory
                 .Setup(
@@ -1300,7 +1314,7 @@ public class BoltProtocolTests
                 new Mock<IInternalAsyncTransaction>().Object,
                 HomeDbCacheKey.Default,
                 It.IsAny<IHomeDbCache>(),
-                TODO);
+                SessionConfig.Default);
 
             msgFactory.Verify(
                 x => x.NewRunWithMetadataMessage(mockConn.Object, query, null),
@@ -1327,8 +1341,8 @@ public class BoltProtocolTests
                     It.IsNotNull<SummaryBuilder>(),
                     HomeDbCacheKey.Default,
                     It.IsAny<IHomeDbCache>(),
-                    TODO,
-                    TODO),
+                    It.IsAny<SessionConfig>(),
+                    It.IsAny<bool>()),
                 Times.Once);
 
             mockConn.Verify(
@@ -1404,14 +1418,13 @@ public class BoltProtocolTests
                         It.IsNotNull<SummaryBuilder>(),
                         It.IsAny<HomeDbCacheKey>(),
                         It.IsAny<IHomeDbCache>(),
-                        TODO,
-                        TODO))
+                        It.IsAny<SessionConfig>(), It.IsAny<bool>()))
                 .Returns(
                     new RunResponseHandler(
                         resultCursorBuilderMock.Object,
                         sb,
                         HomeDbCacheKey.Default,
-                        It.IsAny<IHomeDbCache>()));
+                        null, SessionConfig.Default, false));
 
             handlerFactory
                 .Setup(
@@ -1479,14 +1492,13 @@ public class BoltProtocolTests
                         It.IsNotNull<SummaryBuilder>(),
                         It.IsAny<HomeDbCacheKey>(),
                         It.IsAny<IHomeDbCache>(),
-                        TODO,
-                        TODO))
+                        It.IsAny<SessionConfig>(), It.IsAny<bool>()))
                 .Returns(
                     new RunResponseHandler(
                         resultCursorBuilderMock.Object,
                         sb,
                         HomeDbCacheKey.Default,
-                        It.IsAny<IHomeDbCache>()));
+                        null, SessionConfig.Default, false));
 
             handlerFactory
                 .Setup(

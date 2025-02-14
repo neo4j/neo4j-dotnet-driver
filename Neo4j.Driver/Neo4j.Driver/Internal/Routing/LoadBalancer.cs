@@ -223,7 +223,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         bool forceAuth)
     {
         var cachedDatabaseUsed = false;
-        var databaseForRouting = sessionConfig.Database ?? database;
+        var databaseForRouting = sessionConfig?.Database ?? database;
         var cacheKey = HomeDbCacheKeyProvider.GetCacheKey(null, sessionConfig);
 
         if (string.IsNullOrWhiteSpace(databaseForRouting) && _clusterConnectionPool.CanUseHomeDbCache())

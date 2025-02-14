@@ -283,7 +283,7 @@ public static class RoutingTableManagerTests
 
             // When
             var newRoutingTable =
-                await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null);
+                await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmarks.Empty);
 
             // Then
             newRoutingTable.Should().BeNull();
@@ -334,7 +334,7 @@ public static class RoutingTableManagerTests
 
             // When
             var newRoutingTable = await manager
-                .UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null);
+                .UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmarks.Empty);
 
             // Then
             newRoutingTable.All().Should().ContainInOrder(uriA);
@@ -370,7 +370,7 @@ public static class RoutingTableManagerTests
                 discovery.Object,
                 logger: logger.Object);
 
-            await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null);
+            await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmarks.Empty);
 
             logger.Verify(x => x.Warn(error, It.IsAny<string>(), It.IsAny<object[]>()));
         }
@@ -406,7 +406,7 @@ public static class RoutingTableManagerTests
 
             var exc = await Record.ExceptionAsync(
                 () =>
-                    manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null));
+                    manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmarks.Empty));
 
             exc.Should().Be(error);
             logger.Verify(x => x.Error(error, It.IsAny<string>(), It.IsAny<object[]>()));
@@ -427,8 +427,8 @@ public static class RoutingTableManagerTests
                     x => x.DiscoverAsync(
                         It.IsAny<IConnection>(),
                         "",
-                        null,
-                        Bookmarks.From("Invalid bookmark"),
+                        It.IsAny<SessionConfig>(),
+                        It.IsAny<Bookmarks>(),
                         It.IsAny<IHomeDbCache>()))
                 .Throws(error);
 
@@ -447,7 +447,7 @@ public static class RoutingTableManagerTests
                         routingTable,
                         AccessMode.Read,
                         "",
-                        null));
+                        SessionConfig.Default, Bookmarks.From("Invalid bookmarks")));
 
             exc.Should().Be(error);
             logger.Verify(x => x.Error(error, It.IsAny<string>(), It.IsAny<object[]>()));
@@ -501,7 +501,8 @@ public static class RoutingTableManagerTests
                 routingTable,
                 AccessMode.Read,
                 "",
-                null);
+                null,
+                Bookmarks.Empty);
 
             // Then
             updateRoutingTable.All().Should().ContainInOrder(uriY);
@@ -544,7 +545,8 @@ public static class RoutingTableManagerTests
                 routingTable,
                 AccessMode.Read,
                 "",
-                null);
+                null,
+                Bookmarks.Empty);
 
             // Then
             updateRoutingTable.All().Should().ContainInOrder(uriX);
@@ -602,7 +604,7 @@ public static class RoutingTableManagerTests
 
             // When
             var result = await manager
-                .UpdateRoutingTableAsync(existingRoutingTable, AccessMode.Read, "", null);
+                .UpdateRoutingTableAsync(existingRoutingTable, AccessMode.Read, "", null, Bookmarks.Empty);
 
             // Then
             result.Should().Be(routingTable);
@@ -683,7 +685,8 @@ public static class RoutingTableManagerTests
                     existingRoutingTable,
                     AccessMode.Read,
                     "",
-                    null);
+                    null,
+                    Bookmarks.Empty);
 
             // Then
             result.Should().Be(routingTable);

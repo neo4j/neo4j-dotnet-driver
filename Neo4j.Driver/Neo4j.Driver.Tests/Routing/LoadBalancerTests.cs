@@ -93,7 +93,7 @@ public class LoadBalancerTests
             var balancer = new LoadBalancer(mockClusterConnectionPool.Object, mockRoutingTableManager.Object);
 
             // When
-            var error = await Record.ExceptionAsync(() => balancer.AcquireAsync(mode, null, null, Bookmarks.Empty));
+            var error = await Record.ExceptionAsync(() => balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false));
 
             // Then
             error.Should().BeOfType<SessionExpiredException>();
@@ -137,7 +137,7 @@ public class LoadBalancerTests
             var balancer = new LoadBalancer(clusterPoolMock.Object, mock.Object);
 
             // When
-            var acquiredConn = await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty);
+            var acquiredConn = await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false);
 
             // Then
             acquiredConn.Server.Address.Should().Be(uri.ToString());
@@ -172,7 +172,7 @@ public class LoadBalancerTests
             var balancer = new LoadBalancer(clusterPoolMock.Object, mockManager.Object);
 
             // When
-            var acquiredConn = await balancer.AcquireAsync(mode, dbName, null, Bookmarks.Empty);
+            var acquiredConn = await balancer.AcquireAsync(mode, dbName, null, Bookmarks.Empty, false);
 
             // Then
             acquiredConn.Database.Should().Be(desiredResult);
@@ -193,7 +193,7 @@ public class LoadBalancerTests
                         It.IsAny<string>(),
                         It.IsAny<bool>(),
                         It.IsAny<SessionConfig>(),
-                        Bookmarks.Empty))
+                        It.IsAny<Bookmarks>()))
                 .ReturnsAsync(routingTableMock.Object);
 
             mock.Setup(x => x.ForgetServer(It.IsAny<Uri>(), It.IsAny<string>()))
@@ -216,7 +216,7 @@ public class LoadBalancerTests
             var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
 
             // When & Then
-            balancer.Awaiting(b => b.AcquireAsync(mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), Bookmarks.Empty))
+            balancer.Awaiting(b => b.AcquireAsync(mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), It.IsAny<Bookmarks>(), It.IsAny<bool>()))
                 .Should()
                 .Throw<SessionExpiredException>()
                 .WithMessage("Failed to connect to any*");
@@ -254,7 +254,7 @@ public class LoadBalancerTests
             var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
 
             // When
-            var error = await Record.ExceptionAsync(() => balancer.AcquireAsync(mode, null, null, Bookmarks.Empty));
+            var error = await Record.ExceptionAsync(() => balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false));
 
             // Then
             error.Should().BeOfType<SecurityException>();
@@ -298,7 +298,7 @@ public class LoadBalancerTests
             var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
 
             // When
-            balancer.Awaiting(b => b.AcquireAsync(mode, null, null, Bookmarks.Empty))
+            balancer.Awaiting(b => b.AcquireAsync(mode, null, null, Bookmarks.Empty, false))
                 .Should()
                 .Throw<ProtocolException>()
                 .WithMessage("*do not understand struct 0x01*");
@@ -338,36 +338,36 @@ public class LoadBalancerTests
 
             if (mode == AccessMode.Read)
             {
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("reader:1");
 
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("reader:2");
 
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("reader:3");
 
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("reader:1");
 
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("reader:2");
 
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("reader:3");
             }
             else if (mode == AccessMode.Write)
             {
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("writer:1");
 
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("writer:2");
 
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("writer:1");
 
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("writer:2");
             }
             else

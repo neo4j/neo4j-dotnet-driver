@@ -58,7 +58,7 @@ public class TransactionTests
                     It.IsAny<BeginTransactionParams>(),
                     It.IsAny<HomeDbCacheKey>(),
                     It.IsAny<IHomeDbCache>(),
-                    TODO),
+                    It.IsAny<SessionConfig>()),
                 Times.Once);
         }
     }
@@ -86,7 +86,7 @@ public class TransactionTests
                     It.IsAny<BeginTransactionParams>(),
                     It.IsAny<HomeDbCacheKey>(),
                     It.IsAny<IHomeDbCache>(),
-                    TODO),
+                    It.IsAny<SessionConfig>()),
                 Times.Once);
         }
     }
@@ -114,7 +114,7 @@ public class TransactionTests
                         It.IsAny<IInternalAsyncTransaction>(),
                         It.IsAny<HomeDbCacheKey>(),
                         It.IsAny<IHomeDbCache>(),
-                        TODO));
+                        It.IsAny<SessionConfig>()));
         }
 
         [Fact]
@@ -157,7 +157,7 @@ public class TransactionTests
                             It.IsAny<IInternalAsyncTransaction>(),
                             It.IsAny<HomeDbCacheKey>(),
                             It.IsAny<IHomeDbCache>(),
-                            TODO))
+                            It.IsAny<SessionConfig>()))
                 .Throws<Neo4jException>();
 
             var error = await ExceptionAsync(() => tx.RunAsync(query));
