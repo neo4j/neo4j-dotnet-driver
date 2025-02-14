@@ -102,7 +102,7 @@ internal sealed class BoltHandshaker : IBoltHandshaker
         return numProtocolVersions.Value;
     }
     
-    private async Task<List<BoltProtocolVersion>> ParseSupportedProtocolVersions(
+    private static async Task<List<BoltProtocolVersion>> ParseSupportedProtocolVersions(
         ITcpSocketClient sockeClient,
         ILogger logger,
         CancellationToken cancellationToken)
@@ -144,7 +144,7 @@ internal sealed class BoltHandshaker : IBoltHandshaker
         return protocolVersions;
     }
 
-    private async Task<long> ParseCapabilityBitmask(
+    private static async Task<long> ParseCapabilityBitmask(
         ITcpSocketClient socketClient,
         ILogger logger,
         CancellationToken cancellationToken)
@@ -153,13 +153,13 @@ internal sealed class BoltHandshaker : IBoltHandshaker
         return bitmask.Value;
     }
 
-    private BoltProtocolVersion SelectProtocolVersion(List<BoltProtocolVersion> protocolVersions)
+    private static BoltProtocolVersion SelectProtocolVersion(List<BoltProtocolVersion> protocolVersions)
     {
         //We iterate through the versions supplied by the server in the manifest and select the newest one (highest version number)
         return protocolVersions.Max();    
     }
 
-    private async Task EncodeAndSendHandshakeResponseAsync(
+    private static async Task EncodeAndSendHandshakeResponseAsync(
         ITcpSocketClient socketClient,
         BoltProtocolVersion selectedVersion,
         long capabilitiesBitMask,
@@ -183,7 +183,7 @@ internal sealed class BoltHandshaker : IBoltHandshaker
         logger.Debug("C: [HANDSHAKE] Selected version and capabilities {0}", byteData.ToHexString());
     }
 
-    private void CheckManifestVersion(BoltProtocolVersion version, Uri connectionUri)
+    private static void CheckManifestVersion(BoltProtocolVersion version, Uri connectionUri)
     {
         if (version.MinorVersion != BoltProtocolVersion.ManifestVersion)
         {
