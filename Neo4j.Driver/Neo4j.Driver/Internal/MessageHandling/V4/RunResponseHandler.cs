@@ -29,19 +29,22 @@ internal sealed class RunResponseHandler : MetadataCollectingResponseHandler
     private readonly SessionConfig _sessionConfig;
     private readonly IResultStreamBuilder _streamBuilder;
     private readonly SummaryBuilder _summaryBuilder;
+    private readonly bool _isDefaultDatabase;
 
     public RunResponseHandler(
         IResultStreamBuilder streamBuilder,
         SummaryBuilder summaryBuilder,
         HomeDbCacheKey cacheKey,
         IHomeDbCache homeDbCache,
-        SessionConfig sessionConfig)
+        SessionConfig sessionConfig,
+        bool isDefaultDatabase)
     {
         _streamBuilder = streamBuilder ?? throw new ArgumentNullException(nameof(streamBuilder));
         _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
         _cacheKey = cacheKey;
         _homeDbCache = homeDbCache;
         _sessionConfig = sessionConfig;
+        _isDefaultDatabase = isDefaultDatabase;
 
         AddMetadata<FieldsCollector, string[]>();
         AddMetadata<QueryIdCollector, long>();
@@ -61,7 +64,7 @@ internal sealed class RunResponseHandler : MetadataCollectingResponseHandler
             null);
 
         var dbInfo = GetMetadata<DatabaseInfoCollector, IDatabaseInfo>();
-        if (_homeDbCache != null && dbInfo?.Name != null)
+        if (_isDefaultDatabase && _homeDbCache != null && dbInfo?.Name != null)
         {
             _sessionConfig.DriverContext.Logger?.Debug($"Caching database name '{dbInfo.Name}' for key '{_cacheKey}'");
             _homeDbCache.AddOrUpdate(_cacheKey, dbInfo.Name);

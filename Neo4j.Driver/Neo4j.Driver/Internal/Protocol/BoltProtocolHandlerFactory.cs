@@ -43,7 +43,8 @@ internal interface IBoltProtocolHandlerFactory
         SummaryBuilder summaryBuilder,
         HomeDbCacheKey cacheKey,
         IHomeDbCache homeDbCache,
-        SessionConfig sessionConfig);
+        SessionConfig sessionConfig,
+        bool isDefaultDatabase);
 
     PullResponseHandler NewPullResponseHandler(
         IConnection connection,
@@ -74,7 +75,8 @@ internal interface IBoltProtocolHandlerFactory
     BeginResponseHandler NewBeginResponseHandler(
         HomeDbCacheKey cacheKey,
         IHomeDbCache homeDbCache,
-        SessionConfig sessionConfig);
+        SessionConfig sessionConfig,
+        bool isDefaultDatabase);
 }
 
 internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
@@ -108,9 +110,16 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
         SummaryBuilder summaryBuilder,
         HomeDbCacheKey cacheKey,
         IHomeDbCache homeDbCache,
-        SessionConfig sessionConfig)
+        SessionConfig sessionConfig,
+        bool isDefaultDatabase)
     {
-        return new RunResponseHandler(streamBuilder, summaryBuilder, cacheKey, homeDbCache, sessionConfig);
+        return new RunResponseHandler(
+            streamBuilder,
+            summaryBuilder,
+            cacheKey,
+            homeDbCache,
+            sessionConfig,
+            isDefaultDatabase);
     }
 
     public PullResponseHandler NewPullResponseHandler(
@@ -169,8 +178,9 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
     public BeginResponseHandler NewBeginResponseHandler(
         HomeDbCacheKey cacheKey,
         IHomeDbCache homeDbCache,
-        SessionConfig sessionConfig)
+        SessionConfig sessionConfig,
+        bool isDefaultDatabase)
     {
-        return new BeginResponseHandler(cacheKey, homeDbCache, sessionConfig);
+        return new BeginResponseHandler(cacheKey, homeDbCache, sessionConfig, isDefaultDatabase);
     }
 }

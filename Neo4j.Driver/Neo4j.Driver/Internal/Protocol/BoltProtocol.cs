@@ -127,7 +127,8 @@ internal sealed class BoltProtocol : IBoltProtocol
             summaryBuilder,
             cacheKey,
             homeDbCache,
-            autoCommitParams.SessionConfig);
+            autoCommitParams.SessionConfig,
+            autoCommitParams.Database == null);
 
         await AddTelemetryAsync(connection, autoCommitParams.TransactionInfo).ConfigureAwait(false);
 
@@ -195,7 +196,8 @@ internal sealed class BoltProtocol : IBoltProtocol
             summaryBuilder,
             cacheKey,
             homeDbCache,
-            sessionConfig);
+            sessionConfig,
+            false);
 
         if (!reactive)
         {

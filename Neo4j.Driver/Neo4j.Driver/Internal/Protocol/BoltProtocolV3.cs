@@ -193,7 +193,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         var responseHandler = _protocolHandlerFactory.NewBeginResponseHandler(
             cacheKey,
             homeDbCache,
-            sessionConfig);
+            sessionConfig,
+            beginParams.Database == null);
 
         await connection.EnqueueAsync(message, responseHandler).ConfigureAwait(false);
         if (beginParams.TransactionInfo.AwaitBegin)

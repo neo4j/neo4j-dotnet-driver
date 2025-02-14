@@ -24,12 +24,18 @@ internal sealed class BeginResponseHandler : MetadataCollectingResponseHandler
     private readonly HomeDbCacheKey _cacheKey;
     private readonly IHomeDbCache _homeDbCache;
     private readonly SessionConfig _sessionConfig;
+    private readonly bool _isDefaultDatabase;
 
-    public BeginResponseHandler(HomeDbCacheKey cacheKey, IHomeDbCache homeDbCache, SessionConfig sessionConfig)
+    public BeginResponseHandler(
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig,
+        bool isDefaultDatabase)
     {
         _cacheKey = cacheKey;
         _homeDbCache = homeDbCache;
         _sessionConfig = sessionConfig;
+        _isDefaultDatabase = isDefaultDatabase;
         AddMetadata<DatabaseInfoCollector, IDatabaseInfo>();
     }
 
@@ -38,7 +44,7 @@ internal sealed class BeginResponseHandler : MetadataCollectingResponseHandler
         base.OnSuccess(metadata);
 
         var dbInfo = GetMetadata<DatabaseInfoCollector, IDatabaseInfo>();
-        if (_homeDbCache != null && dbInfo?.Name != null)
+        if (_isDefaultDatabase && _homeDbCache != null && dbInfo?.Name != null)
         {
             _sessionConfig.DriverContext.Logger?.Debug(
                 $"Caching database name '{dbInfo.Name}' for key '{_cacheKey}'");

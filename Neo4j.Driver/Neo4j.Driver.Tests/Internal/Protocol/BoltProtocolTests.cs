@@ -368,6 +368,7 @@ public class BoltProtocolTests
                     It.IsAny<SummaryBuilder>(),
                     It.IsAny<HomeDbCacheKey>(),
                     new Mock<IHomeDbCache>().Object,
+                    TODO,
                     TODO),
                 Times.Never);
 
@@ -761,6 +762,7 @@ public class BoltProtocolTests
                         It.IsNotNull<SummaryBuilder>(),
                         HomeDbCacheKey.Default,
                         It.IsAny<IHomeDbCache>(),
+                        TODO,
                         TODO))
                 .Returns(
                     new RunResponseHandler(
@@ -834,6 +836,7 @@ public class BoltProtocolTests
                     It.IsNotNull<SummaryBuilder>(),
                     It.IsAny<HomeDbCacheKey>(),
                     It.IsAny<IHomeDbCache>(),
+                    TODO,
                     TODO),
                 Times.Once);
 
@@ -881,6 +884,7 @@ public class BoltProtocolTests
                         It.IsNotNull<SummaryBuilder>(),
                         HomeDbCacheKey.Default,
                         It.IsAny<IHomeDbCache>(),
+                        TODO,
                         TODO))
                 .Returns(
                     new RunResponseHandler(
@@ -940,6 +944,7 @@ public class BoltProtocolTests
                     It.IsNotNull<SummaryBuilder>(),
                     It.IsAny<HomeDbCacheKey>(),
                     It.IsAny<IHomeDbCache>(),
+                    TODO,
                     TODO),
                 Times.Once);
 
@@ -1142,6 +1147,7 @@ public class BoltProtocolTests
                         It.IsNotNull<SummaryBuilder>(),
                         It.IsAny<HomeDbCacheKey>(),
                         It.IsAny<IHomeDbCache>(),
+                        TODO,
                         TODO))
                 .Returns(
                     new RunResponseHandler(
@@ -1202,6 +1208,7 @@ public class BoltProtocolTests
                     It.IsNotNull<SummaryBuilder>(),
                     HomeDbCacheKey.Default,
                     It.IsAny<IHomeDbCache>(),
+                    TODO,
                     TODO),
                 Times.Once);
 
@@ -1243,6 +1250,7 @@ public class BoltProtocolTests
                         It.IsNotNull<SummaryBuilder>(),
                         It.IsAny<HomeDbCacheKey>(),
                         It.IsAny<IHomeDbCache>(),
+                        TODO,
                         TODO))
                 .Returns(
                     new RunResponseHandler(
@@ -1319,6 +1327,7 @@ public class BoltProtocolTests
                     It.IsNotNull<SummaryBuilder>(),
                     HomeDbCacheKey.Default,
                     It.IsAny<IHomeDbCache>(),
+                    TODO,
                     TODO),
                 Times.Once);
 
@@ -1395,6 +1404,7 @@ public class BoltProtocolTests
                         It.IsNotNull<SummaryBuilder>(),
                         It.IsAny<HomeDbCacheKey>(),
                         It.IsAny<IHomeDbCache>(),
+                        TODO,
                         TODO))
                 .Returns(
                     new RunResponseHandler(
@@ -1469,6 +1479,7 @@ public class BoltProtocolTests
                         It.IsNotNull<SummaryBuilder>(),
                         It.IsAny<HomeDbCacheKey>(),
                         It.IsAny<IHomeDbCache>(),
+                        TODO,
                         TODO))
                 .Returns(
                     new RunResponseHandler(
