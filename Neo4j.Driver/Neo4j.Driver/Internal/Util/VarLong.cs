@@ -23,7 +23,7 @@ public class VarLong
     private byte _position = 0;
     private const string ExceptionMessage = "VarLong Segment overflow";
 
-    public void AddSegment(long segment)
+    public void AddSegment(byte segment)
     {
         if (_position > 7)
         {
@@ -31,8 +31,8 @@ public class VarLong
         }
 
         segment &= 0x7F;
-        segment = segment << (_position * 7);
-        Value |= segment;
+        var shiftedSegment = (long)(segment << (_position * 7));
+        Value |= shiftedSegment;
         _position++;
     }       
 }

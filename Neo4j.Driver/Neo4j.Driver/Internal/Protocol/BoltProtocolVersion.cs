@@ -107,6 +107,8 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>, ICo
 
     public int CompareTo(BoltProtocolVersion other)
     {
+        // If other is not a valid object reference, this instance is greater so return 1.
+        // If it is a valid reference then proceed to do the comparison. Implementation needed for IComparable
         return other == null ? 1 : _compValue.CompareTo(other._compValue);
     }
 
