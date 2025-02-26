@@ -32,6 +32,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
 {
     private DriverContext DriverContext { get; }
     private readonly ILogger _logger;
+    public Uri ConnectionUri { get; private set; }
 
     private Socket _client;
 
@@ -46,6 +47,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
 
     public async Task ConnectAsync(Uri uri, CancellationToken cancellationToken = default)
     {
+        ConnectionUri = uri;
         await ConnectSocketAsync(uri, cancellationToken).ConfigureAwait(false);
 
         ReaderStream = new NetworkStream(_client);
