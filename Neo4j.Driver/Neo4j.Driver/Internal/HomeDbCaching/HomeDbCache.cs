@@ -25,6 +25,8 @@ internal class HomeDbCache : IHomeDbCache
         var found = _cacheLookup.TryGetValue(key, out var node);
         if (found)
         {
+            _cachedItems.Remove(node);
+            _cachedItems.AddFirst(node);
             value = node.Value.DatabaseName;
             return true;
         }

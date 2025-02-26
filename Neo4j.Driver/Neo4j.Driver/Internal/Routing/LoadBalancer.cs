@@ -123,7 +123,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             var database = supportsMultiDb ? "system" : null;
             foreach (var uri in _initialServerAddressProvider.Get())
             {
-                return await _routingTableManager.GetServerInfoAsync(uri, database, null).ConfigureAwait(false);
+                return await _routingTableManager.GetServerInfoAsync(uri, database).ConfigureAwait(false);
             }
         }
         catch (ServiceUnavailableException e)

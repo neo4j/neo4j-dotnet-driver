@@ -61,15 +61,14 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         long defaultFetchSize,
         SessionConfig config,
         bool reactive,
-        bool telemetryEnabled,
-        DriverContext driverContext)
+        bool telemetryEnabled)
     {
         SessionConfig = config;
         _connectionProvider = provider;
         _logger = logger;
         _retryLogic = retryLogic;
         _reactive = reactive;
-        _driverContext = driverContext;
+        _driverContext = config.DriverContext;;
 
         _database = config.Database;
         _defaultMode = config.DefaultAccessMode;

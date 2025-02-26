@@ -110,7 +110,7 @@ internal class RoutingTableManager : IRoutingTableManager
         }
     }
 
-    public async Task<IServerInfo> GetServerInfoAsync(Uri uri, string database, Action<string> dbNameCallback)
+    public async Task<IServerInfo> GetServerInfoAsync(Uri uri, string database)
     {
         var bufferedExceptions = new List<Exception>();
         var conn = await _poolManager.CreateClusterConnectionAsync(uri, null).ConfigureAwait(false);
