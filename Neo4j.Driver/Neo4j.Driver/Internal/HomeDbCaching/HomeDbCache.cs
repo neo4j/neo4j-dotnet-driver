@@ -4,6 +4,9 @@ namespace Neo4j.Driver.Internal.HomeDbCaching;
 
 internal class HomeDbCache : IHomeDbCache
 {
+    private const int PurgeThreshold = 10_000;
+    private const int PurgeAmount = PurgeThreshold / 10;
+
     private class CacheItem
     {
         public HomeDbCacheKey Key { get; }
@@ -23,15 +26,16 @@ internal class HomeDbCache : IHomeDbCache
     {
         value = null;
         var found = _cacheLookup.TryGetValue(key, out var node);
-        if (found)
+        if (!found)
         {
-            _cachedItems.Remove(node);
-            _cachedItems.AddFirst(node);
-            value = node.Value.DatabaseName;
-            return true;
+            return false;
         }
 
-        return false;
+        _cachedItems.Remove(node);
+        _cachedItems.AddFirst(node);
+        value = node.Value.DatabaseName;
+        return true;
+
     }
 
     public void AddOrUpdate(HomeDbCacheKey key, string value)
@@ -50,20 +54,32 @@ internal class HomeDbCache : IHomeDbCache
 
         node.Value.DatabaseName = value;
         _cachedItems.AddFirst(node);
+        PurgeOldItems();
     }
 
-    public void RemoveItems(int itemsToRemove)
+    private void PurgeOldItems()
     {
-        for (var i = 0; i < itemsToRemove; i++)
+        if (_cachedItems.Count < PurgeThreshold)
         {
-            if (_cachedItems.Count == 0)
-            {
-                return;
-            }
-
-            var last = _cachedItems.Last;
-            _cacheLookup.Remove(last!.Value.Key);
-            _cachedItems.RemoveLast();
+            return;
         }
+
+        for (var i = 0; i < PurgeAmount; i++)
+        {
+            RemoveLastItem();
+        }
+    }
+
+    private void RemoveLastItem()
+    {
+        var last = _cachedItems.Last;
+
+        if(last == null)
+        {
+            return;
+        }
+
+        _cacheLookup.Remove(last!.Value.Key);
+        _cachedItems.RemoveLast();
     }
 }
