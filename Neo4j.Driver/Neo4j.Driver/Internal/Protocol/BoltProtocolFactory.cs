@@ -56,7 +56,8 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
         BoltProtocolVersion.V5_4,
         BoltProtocolVersion.V5_5,
         BoltProtocolVersion.V5_6,
-        BoltProtocolVersion.V5_7
+        BoltProtocolVersion.V5_7,
+        BoltProtocolVersion.V5_8
     };
 
     private static readonly Lazy<byte[]> HandshakeBytesLazy =
