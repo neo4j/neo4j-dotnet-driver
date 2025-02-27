@@ -302,7 +302,7 @@ public class AsyncSessionTests
 
             var session = new AsyncSession(
                 new TestConnectionProvider(mockConn.Object),
-                null,
+                NullLogger.Instance,
                 new AsyncRetryLogic(TimeSpan.Zero, null),
                 0,
                 new Driver.SessionConfig(),

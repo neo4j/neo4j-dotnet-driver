@@ -177,7 +177,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
                 _sessionConfig,
                 _notificationsConfig,
                 transactionInfo),
-            _driverContext.HomeDbCache);
+            _driverContext?.HomeDbCache);
     }
 
     public async Task MarkToCloseAsync()

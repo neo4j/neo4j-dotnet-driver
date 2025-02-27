@@ -208,7 +208,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                                 false)
                         },
                         _notificationsConfig,
-                        _driverContext.HomeDbCache)
+                        _driverContext?.HomeDbCache)
                     .ConfigureAwait(false);
             });
 
