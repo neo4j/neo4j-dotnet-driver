@@ -18,27 +18,51 @@ using System;
 namespace Neo4j.Driver.Internal.Protocol;
 
 //TODO: Consider converting to struct.
-internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
+internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>, IComparable<BoltProtocolVersion>
 {
-    // The int 1213486160 is 0x‭48 54 54 50 - or HTTP in ascii codes... this determines the max major and minor versions supported.
-    public const int MaxMajorVersion = 80;
-    public const int MaxMinorVersion = 84;
+    // The int 1213486160 is 0x‭48 54 54 50 - or HTTP in ascii codes... determines the reserved version. It should never be sent by the server
+    private const int MaxMajorVersion = 255;
+    private const int MaxMinorVersion = 255;
+    public const int ManifestSchema = 255;
+    public const int ManifestVersion = 1;
 
     private const int PackingIntValue = 0x00FF;
 
     public static readonly BoltProtocolVersion Unknown = new(1, 0);
 
+    // ReSharper disable InconsistentNaming
+    public static readonly BoltProtocolVersion V3_0 = new(3, 0);
+    public static readonly BoltProtocolVersion V4_0 = new(4, 0);
+    public static readonly BoltProtocolVersion V4_1 = new(4, 1);
+    public static readonly BoltProtocolVersion V4_2 = new(4, 2);
+    public static readonly BoltProtocolVersion V4_3 = new(4, 3);
+    public static readonly BoltProtocolVersion V4_4 = new(4, 4);
+    public static readonly BoltProtocolVersion V5_0 = new(5, 0);
+    public static readonly BoltProtocolVersion V5_1 = new(5, 1);
+    public static readonly BoltProtocolVersion V5_2 = new(5, 2);
+    public static readonly BoltProtocolVersion V5_3 = new(5, 3);
+    public static readonly BoltProtocolVersion V5_4 = new(5, 4);
+    public static readonly BoltProtocolVersion V5_5 = new(5, 5);
+    public static readonly BoltProtocolVersion V5_6 = new(5, 6);
+    public static readonly BoltProtocolVersion V5_7 = new(5, 7);
+    public static readonly BoltProtocolVersion V5_8 = new(5, 8);
+
+    public static readonly BoltProtocolVersion LatestVersion = V5_8;
+    public static readonly BoltProtocolVersion HandshakeManifestV1 = new(ManifestSchema, ManifestVersion);
+    // ReSharper restore InconsistentNaming
+
     private readonly int _compValue;
+
+    private bool IsVersionValid(int majorVersion, int minorVersion)
+    {
+        return (majorVersion is <= MaxMajorVersion and >= 0 && minorVersion is <= MaxMinorVersion and >= 0);
+    }
 
     public BoltProtocolVersion(int majorVersion, int minorVersion)
     {
-        if (majorVersion > MaxMajorVersion || minorVersion > MaxMinorVersion || majorVersion < 0 || minorVersion < 0)
+        if (!IsVersionValid(majorVersion, minorVersion))
         {
-            throw new NotSupportedException(
-                "Attempting to create a BoltProtocolVersion with out of bounds major: " +
-                majorVersion +
-                " or minor: " +
-                minorVersion);
+            throw new NotSupportedException($"Attempting to create a BoltProtocolVersion with out of bounds major: {majorVersion} or minor: {minorVersion}");
         }
 
         MajorVersion = majorVersion;
@@ -53,7 +77,7 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
         MinorVersion = UnpackMinor(largeVersion);
         _compValue = MajorVersion * 1000000 + MinorVersion;
 
-        if (MajorVersion is < MaxMajorVersion and >= 0 && MinorVersion is < MaxMinorVersion and >= 0)
+        if (!IsVersionValid(MajorVersion, MinorVersion))
         {
             throw new NotSupportedException(
                 "Attempting to create a BoltProtocolVersion with a large (error code) version number.  " +
@@ -82,6 +106,13 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
         return _compValue == rhs._compValue;
     }
 
+    public int CompareTo(BoltProtocolVersion other)
+    {
+        // If other is not a valid object reference, this instance is greater so return 1.
+        // If it is a valid reference then proceed to do the comparison. Implementation needed for IComparable
+        return other == null ? 1 : _compValue.CompareTo(other._compValue);
+    }
+
     private static int UnpackMajor(int rawVersion)
     {
         return rawVersion & PackingIntValue;
@@ -95,6 +126,12 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
     public static BoltProtocolVersion FromPackedInt(int rawVersion)
     {
         return new BoltProtocolVersion(UnpackMajor(rawVersion), UnpackMinor(rawVersion));
+    }
+
+    public static int RangeFromPackedInt(int rawVersion)
+    {
+        var shiftedRawVersion = rawVersion >> 16;
+        return UnpackMajor(shiftedRawVersion);
     }
 
     public void CheckVersionRange(BoltProtocolVersion minVersion)
@@ -173,23 +210,4 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
     {
         return $"{MajorVersion}.{MinorVersion}";
     }
-
-    // ReSharper disable InconsistentNaming
-    public static readonly BoltProtocolVersion V3_0 = new(3, 0);
-    public static readonly BoltProtocolVersion V4_0 = new(4, 0);
-    public static readonly BoltProtocolVersion V4_1 = new(4, 1);
-    public static readonly BoltProtocolVersion V4_2 = new(4, 2);
-    public static readonly BoltProtocolVersion V4_3 = new(4, 3);
-    public static readonly BoltProtocolVersion V4_4 = new(4, 4);
-    public static readonly BoltProtocolVersion V5_0 = new(5, 0);
-    public static readonly BoltProtocolVersion V5_1 = new(5, 1);
-    public static readonly BoltProtocolVersion V5_2 = new(5, 2);
-    public static readonly BoltProtocolVersion V5_3 = new(5, 3);
-    public static readonly BoltProtocolVersion V5_4 = new(5, 4);
-    public static readonly BoltProtocolVersion V5_5 = new(5, 5);
-    public static readonly BoltProtocolVersion V5_6 = new(5, 6);
-    public static readonly BoltProtocolVersion V5_7 = new(5, 7);
-
-    public static readonly BoltProtocolVersion V5_8 = new(5, 8);
-    // ReSharper restore InconsistentNaming
 }

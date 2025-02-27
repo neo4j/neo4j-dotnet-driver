@@ -27,6 +27,10 @@ internal interface IBoltProtocolFactory
 
 internal class BoltProtocolFactory : IBoltProtocolFactory
 {
+    private const int HTTPReservedMajorVersion = 80;
+    private const int HTTPReservedMinorVersion = 84;
+    public static readonly BoltProtocolVersion HttpReservedVersion = new(HTTPReservedMajorVersion, HTTPReservedMinorVersion);
+
     private const string HttpErrorMessage =
         "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
         "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)";
@@ -35,9 +39,25 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
         "The Neo4j server does not support any of the protocol versions supported by this client. " +
         "Ensure that you are using driver and server versions that are compatible with one another.";
 
-    // 0x‭48 54 54 50 - or HTTP ascii codes...
-    private static readonly BoltProtocolVersion HttpBoltVersion = new(1213486160);
     internal static readonly BoltProtocolFactory Default = new();
+
+    public static readonly BoltProtocolVersion[] SupportedVersions = new BoltProtocolVersion[]
+    {
+        BoltProtocolVersion.V3_0,
+        BoltProtocolVersion.V4_0,
+        BoltProtocolVersion.V4_1,
+        BoltProtocolVersion.V4_2,
+        BoltProtocolVersion.V4_3,
+        BoltProtocolVersion.V4_4,
+        BoltProtocolVersion.V5_0,
+        BoltProtocolVersion.V5_1,
+        BoltProtocolVersion.V5_2,
+        BoltProtocolVersion.V5_3,
+        BoltProtocolVersion.V5_4,
+        BoltProtocolVersion.V5_5,
+        BoltProtocolVersion.V5_6,
+        BoltProtocolVersion.V5_7
+    };
 
     private static readonly Lazy<byte[]> HandshakeBytesLazy =
         new(
@@ -50,10 +70,13 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
                 var versions = new[]
                 {
                     goGoBolt,
-                    // 4 versions max.
+                    
+                    //Announce support for the new handshake format with no manifest range supplied.
+                    BoltProtocolVersion.HandshakeManifestV1.PackToInt(), 
+                    
+                    // 3 more versions max.
                     BoltProtocolVersion.V5_8.PackToIntRange(BoltProtocolVersion.V5_0),
                     BoltProtocolVersion.V4_4.PackToIntRange(BoltProtocolVersion.V4_2),
-                    BoltProtocolVersion.V4_1.PackToInt(),
                     BoltProtocolVersion.V3_0.PackToInt()
                 };
 
@@ -67,7 +90,7 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
 
     public IBoltProtocol ForVersion(BoltProtocolVersion version)
     {
-        if (version == HttpBoltVersion)
+        if (version == HttpReservedVersion)
         {
             throw new NotSupportedException(HttpErrorMessage);
         }
@@ -83,10 +106,12 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
                 $"Protocol error, server suggested unexpected protocol version: {version}")
         };
     }
-
-    public static BoltProtocolVersion UnpackAgreedVersion(byte[] data)
+    
+    public static (BoltProtocolVersion version, int range) UnpackAgreedVersion(byte[] data)
     {
-        return BoltProtocolVersion.FromPackedInt(PackStreamBitConverter.ToInt32(data));
+        var packedInt = PackStreamBitConverter.ToInt32(data);
+        return (BoltProtocolVersion.FromPackedInt(packedInt),
+                BoltProtocolVersion.RangeFromPackedInt(packedInt));
     }
 
     public static byte[] PackSupportedVersions()
