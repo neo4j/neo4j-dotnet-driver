@@ -46,11 +46,12 @@ internal sealed class RouteResponseHandler : MetadataCollectingResponseHandler
     {
         base.OnSuccess(metadata);
 
-        if(_isDefaultRequest && metadata?["rt"] is IDictionary<string, object> rt && rt?["db"] is string db)
+        if(_isDefaultRequest && metadata?["rt"] is IDictionary<string, object> rt && rt.TryGetValue("db", out var db))
         {
-            _sessionConfig.DriverContext.Logger?.Debug($"Caching database name '{db}' for key '{_cacheKey}'");
-            _homeDbCache.AddOrUpdate(_cacheKey, db);
-            _sessionConfig?.PinDatabase(db);
+            var dbName = (string) db;
+            _sessionConfig.DriverContext.Logger?.Debug($"Caching database name '{dbName}' for key '{_cacheKey}'");
+            _homeDbCache.AddOrUpdate(_cacheKey, dbName);
+            _sessionConfig?.PinDatabase(dbName);
         }
 
         RoutingInformation = GetMetadata<RoutingTableCollector, IDictionary<string, object>>();
