@@ -30,7 +30,7 @@ internal class BearerAuthToken : AuthToken
         Content[CredentialsKey] = token;
     }
 
-    public string Token => Content[CredentialsKey] as string;
+    public string Token => Content[CredentialsKey] as string ?? string.Empty;
 
     public override string ToString()
     {

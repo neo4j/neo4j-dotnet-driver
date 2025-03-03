@@ -55,11 +55,14 @@ internal class CustomAuthToken : AuthToken
 
     public override string ToString()
     {
-        return $"CustomAuthToken[scheme: {Scheme}, principal: {Principal}, realm: {Realm}" +
+        var scheme = Content.ContainsKey(SchemeKey) ? Content[SchemeKey] ?? "(null)" : "(none)";
+        var principal = Content.ContainsKey(PrincipalKey) ? Content[PrincipalKey] ?? "(null)" : "(none)";
+        var realm = Content.ContainsKey(RealmKey) ? Content[RealmKey] ?? "(null)" : "(none)";
+        return $"CustomAuthToken[scheme: {scheme}, principal: {principal}, realm: {realm}" +
             // list of other keys present in Content
             Content.Keys
                 .Where(key => key != SchemeKey && key != PrincipalKey && key != RealmKey)
-                .Select(key => $", {key}: Content[key]")
+                .Select(key => $", {key}: {Content[key] ?? "(null)"}")
                 .Aggregate("", (acc, next) => acc + next) +
             "]";
     }

@@ -86,13 +86,16 @@ internal class AuthToken : IAuthToken
 
         return hash;
     }
-    
-    public string Scheme => Content[SchemeKey] as string;
-    public string Principal => Content[PrincipalKey] as string;
-    public string Realm => Content[RealmKey] as string;
+
+    public string Scheme => Content.GetValueOrDefault(SchemeKey) as string;
+    public string Principal => Content.GetValueOrDefault(PrincipalKey) as string;
+    public string Realm => Content.GetValueOrDefault(RealmKey) as string;
 
     public override string ToString()
     {
-        return $"BasicAuthToken[scheme: {Scheme}, principal: {Principal}]";
+        var scheme = Content.ContainsKey(SchemeKey) ? Content[SchemeKey] ?? "(null)" : "(none)";
+        var principal = Content.ContainsKey(PrincipalKey) ? Content[PrincipalKey] ?? "(null)" : "(none)";
+        var realm = Content.ContainsKey(RealmKey) ? Content[RealmKey] ?? "(null)" : "(none)";
+        return $"BasicAuthToken[scheme: {scheme}, principal: {principal}, realm: {realm}]";
     }
 }
