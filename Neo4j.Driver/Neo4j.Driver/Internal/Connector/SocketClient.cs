@@ -100,7 +100,7 @@ internal sealed class SocketClient : ISocketClient
         }
         catch (Exception ex)
         {
-            _logger.Warn(ex, $"Unable to send message to server {_uri}, connection will be terminated.");
+            _logger.Warn(ex, $"Unable to send message to server {_uri}, connection will be terminated. ({ex.Message})");
             await DisposeAsync().ConfigureAwait(false);
             throw;
         }
@@ -122,7 +122,9 @@ internal sealed class SocketClient : ISocketClient
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, $"Unable to read message from server {_uri}, connection will be terminated.");
+            _logger.Error(
+                ex,
+                $"Unable to read message from server {_uri}, connection will be terminated. ({ex.Message})");
             await DisposeAsync().ConfigureAwait(false);
             throw;
         }
