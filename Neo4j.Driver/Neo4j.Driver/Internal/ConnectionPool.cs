@@ -233,6 +233,9 @@ internal sealed class ConnectionPool : IConnectionPool
         return connection.Server;
     }
 
+    /// <inheritdoc />
+    public bool IsDirectDriver => true;
+
     public DriverContext DriverContext { get; }
 
     public Task<bool> SupportsMultiDbAsync()

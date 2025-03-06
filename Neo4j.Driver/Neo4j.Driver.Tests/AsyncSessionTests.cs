@@ -446,6 +446,9 @@ public class AsyncSessionTests
             throw new NotSupportedException();
         }
 
+        /// <inheritdoc />
+        public bool IsDirectDriver => false;
+
         public DriverContext DriverContext => new(
             new Uri("neo4j://myTest.org"),
             AuthTokenManagers.Static(AuthTokens.None),

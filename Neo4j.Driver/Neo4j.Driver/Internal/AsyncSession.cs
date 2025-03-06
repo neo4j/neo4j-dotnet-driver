@@ -94,6 +94,12 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
 
     private void OnPinDatabase(string db)
     {
+        if(_connectionProvider.IsDirectDriver)
+        {
+            // don't pin
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(_database))
         {
             _logger.Info($"Database '{db}' is pinned to the session.");

@@ -139,6 +139,9 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             "ensure the database is running and that there is a working network connection to it.");
     }
 
+    /// <inheritdoc />
+    public bool IsDirectDriver => false;
+
     public DriverContext DriverContext { get; }
 
     public Task<bool> SupportsMultiDbAsync()
