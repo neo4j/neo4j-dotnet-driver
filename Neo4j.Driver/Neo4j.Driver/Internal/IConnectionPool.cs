@@ -23,6 +23,8 @@ internal interface IConnectionPool : IConnectionProvider, IConnectionReleaseMana
     int NumberOfIdleConnections { get; }
     int NumberOfConnectionsWithSsrEnabled { get; }
     int NumberOfConnectionsWithSsrDisabled { get; }
+
+    int TotalNumberOfConnections { get; }
     ConnectionPoolStatus Status { get; }
     Task DeactivateAsync();
     void Activate();

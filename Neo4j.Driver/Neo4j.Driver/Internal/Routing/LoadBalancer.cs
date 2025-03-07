@@ -102,8 +102,20 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
                 "Failed to acquire a new connection as the driver has already been disposed.");
         }
 
+        _logger.Debug($"LoadBalancer - Acquiring connection for '{database}'");
         var conn = await AcquireConnectionAsync(mode, database, sessionConfig, bookmarks, forceAuth)
             .ConfigureAwait(false);
+
+        //If a non ssr connection is detected then the connection is not used and returned to the pool. Connection
+        //acquisition is then repeated with the cache not being used. 
+        if (!conn.SsrEnabled && _clusterConnectionPool.TotalNumberOfConnections() != 0)
+        {
+            _logger.Debug($"LoadBalancer - Mixed cluster detected, some connections have no SSR. Re-acquiring " +
+                $"connection without homeDB cache");
+            await conn.CloseAsync().ConfigureAwait(false);
+            conn = await AcquireConnectionAsync(mode, database, sessionConfig, bookmarks, forceAuth)
+                .ConfigureAwait(false);
+        }
 
         if (IsClosed)
         {
@@ -285,7 +297,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
                     bookmarks,
                     forceAuth)
                 .ConfigureAwait(false);
-
+           
             if (conn != null)
             {
                 return conn;

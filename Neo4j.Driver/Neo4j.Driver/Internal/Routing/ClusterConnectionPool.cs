@@ -132,6 +132,11 @@ internal class ClusterConnectionPool : IClusterConnectionPool
         return 0;
     }
 
+    public int TotalNumberOfConnections()
+    {
+        return _pools.Values.Sum(pool => pool.TotalNumberOfConnections);
+    }
+
     /// <inheritdoc/>
     public bool CanUseHomeDbCache()
     {

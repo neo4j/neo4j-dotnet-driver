@@ -108,6 +108,7 @@ internal sealed class ConnectionPool : IConnectionPool
     public int NumberOfIdleConnections => _idleConnections.Count;
     public int NumberOfConnectionsWithSsrEnabled => _connectionsWithSsrEnabled;
     public int NumberOfConnectionsWithSsrDisabled => _connectionsWithSsrDisabled;
+    public int TotalNumberOfConnections => _connectionsWithSsrDisabled + _connectionsWithSsrEnabled;
 
     public ConnectionPoolStatus Status
     {
