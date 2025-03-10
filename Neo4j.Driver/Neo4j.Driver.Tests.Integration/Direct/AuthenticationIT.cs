@@ -92,6 +92,6 @@ public sealed class AuthenticationIT : DirectDriverTestBase
         var cursor = await session.RunAsync("RETURN 2 as Number");
         var records = await cursor.ToListAsync(r => r["Number"].As<int>());
 
-        records.Should().BeEquivalentTo(2);
+        records.Should().BeEquivalentTo(new []{2});
     }
 }

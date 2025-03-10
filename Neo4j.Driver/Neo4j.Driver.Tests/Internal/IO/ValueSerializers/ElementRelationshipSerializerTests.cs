@@ -93,11 +93,7 @@ public class ElementRelationshipSerializerTests : PackStreamSerializerTests
             .BeOfType<Relationship>()
             .Which.Properties.Should()
             .HaveCount(1)
-            .And.Contain(
-                new[]
-                {
-                    new KeyValuePair<string, object>("prop3", true)
-                });
+            .And.Contain(new KeyValuePair<string, object>("prop3", true));
 
         value.Should().BeOfType<Relationship>().Which.ElementId.Should().Be("r1");
         value.Should().BeOfType<Relationship>().Which.StartNodeElementId.Should().Be("n1");

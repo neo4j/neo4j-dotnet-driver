@@ -23,12 +23,6 @@ namespace Neo4j.Driver.Tests.Mapping;
 
 public class OptionalMappingTests
 {
-    private class ClassWithOptionalProperty
-    {
-        [MappingOptional]
-        public int Value { get; set; } = 1234;
-    }
-
     [Fact]
     public void ShouldNotThrowIfOptionalPropertyIsNotPresent()
     {
@@ -38,12 +32,6 @@ public class OptionalMappingTests
         mapped.Value.Should().Be(1234);
     }
 
-    private class ClassWithPropertyWithDefaultValue
-    {
-        [MappingDefaultValue(42)]
-        public int Value { get; set; }
-    }
-
     [Fact]
     public void ShouldUseDefaultValueIfOptionalPropertyIsNotPresent()
     {
@@ -51,16 +39,6 @@ public class OptionalMappingTests
         var mapped = record.AsObject<ClassWithPropertyWithDefaultValue>();
 
         mapped.Value.Should().Be(42);
-    }
-
-    private class ClassWithConstructorParameterWithDefaultValue
-    {
-        public int Value { get; }
-
-        public ClassWithConstructorParameterWithDefaultValue([MappingDefaultValue(42)] int value)
-        {
-            Value = value;
-        }
     }
 
     [Fact]
@@ -89,20 +67,12 @@ public class OptionalMappingTests
 
         mapped.Value.Should().Be(69);
     }
-    
-    private class ClassWithPropertyWithoutDefaultValue
-    {
-        public int Value { get; set; }
-    }
 
     [Fact]
     public void ShouldFailToCreateObject()
     {
         var record = TestRecord.Create(["NotTheValue"], [69]);
-        var act = () =>
-        {
-            _ = record.AsObject<ClassWithPropertyWithoutDefaultValue>();
-        };
+        var act = () => { _ = record.AsObject<ClassWithPropertyWithoutDefaultValue>(); };
 
         act.Should().Throw<MappingFailedException>();
     }
@@ -117,12 +87,35 @@ public class OptionalMappingTests
             TestRecord.Create(["Value"], [3])
         };
 
-        var act = () =>
-        {
-            _ = records.Select(r => r.AsObject<ClassWithPropertyWithoutDefaultValue>()).ToList();
-        };
+        var act = () => { _ = records.Select(r => r.AsObject<ClassWithPropertyWithoutDefaultValue>()).ToList(); };
 
         act.Should().Throw<MappingFailedException>();
     }
 
+    private class ClassWithOptionalProperty
+    {
+        [MappingOptional]
+        public int Value { get; } = 1234;
+    }
+
+    private class ClassWithPropertyWithDefaultValue
+    {
+        [MappingDefaultValue(42)]
+        public int Value { get; set; }
+    }
+
+    private class ClassWithConstructorParameterWithDefaultValue
+    {
+        public ClassWithConstructorParameterWithDefaultValue([MappingDefaultValue(42)] int value)
+        {
+            Value = value;
+        }
+
+        public int Value { get; }
+    }
+
+    private class ClassWithPropertyWithoutDefaultValue
+    {
+        public int Value { get; set; }
+    }
 }

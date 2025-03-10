@@ -56,12 +56,6 @@ public class MappableValueProviderTests
         value.Should().Be("test-value");
     }
 
-    private class Person
-    {
-        public string Name { get; set; } = null!;
-        public int Age { get; set; }
-    }
-
     [Fact]
     public void ShouldApplyMappingToEntities()
     {
@@ -275,5 +269,11 @@ public class MappableValueProviderTests
             typeof(string));
 
         result.Should().Be("123");
+    }
+
+    private class Person
+    {
+        public string Name { get; set; } = null!;
+        public int Age { get; set; }
     }
 }

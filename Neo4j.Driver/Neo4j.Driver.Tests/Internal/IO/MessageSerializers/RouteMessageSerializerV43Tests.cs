@@ -32,7 +32,7 @@ public class RouteMessageSerializerV43Tests
     [Fact]
     public void ShouldHaveWriteableTypesAsRouteMessageV43Message()
     {
-        RouteMessageSerializerV43.Instance.WritableTypes.Should().BeEquivalentTo(typeof(RouteMessageV43));
+        RouteMessageSerializerV43.Instance.WritableTypes.Should().BeEquivalentTo([typeof(RouteMessageV43)]);
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public class RouteMessageSerializerV43Tests
         headerBytes[1].Should().Be(0x66);
 
         var meta = reader.ReadMap();
-        meta.Should().ContainKey("a").WhichValue.Should().Be("b");
+        meta.Should().ContainKey("a").WhoseValue.Should().Be("b");
 
         var bookmarks = reader.ReadList();
         bookmarks.Should().BeEquivalentTo(new[] { "bm:a" });

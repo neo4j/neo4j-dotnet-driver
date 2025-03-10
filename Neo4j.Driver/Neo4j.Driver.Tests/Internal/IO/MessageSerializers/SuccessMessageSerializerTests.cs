@@ -64,7 +64,8 @@ public class SuccessMessageSerializerTests
             .BeOfType<SuccessMessage>()
             .Which.Meta.Should()
             .ContainKey("unknown")
-            .WhichValue.Should()
+            .WhoseValue
+            .Should()
             .Be(1L);
     }
 }

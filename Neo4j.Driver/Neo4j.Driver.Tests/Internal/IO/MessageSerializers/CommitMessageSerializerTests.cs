@@ -30,7 +30,7 @@ public class CommitMessageSerializerTests
     [Fact]
     public void ShouldHaveWriteableTypesAsCommitMessage()
     {
-        CommitMessageSerializer.Instance.WritableTypes.Should().BeEquivalentTo(typeof(CommitMessage));
+        CommitMessageSerializer.Instance.WritableTypes.Should().BeEquivalentTo([typeof(CommitMessage)]);
     }
 
     [Fact]

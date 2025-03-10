@@ -42,6 +42,7 @@ public class ElementUnboundRelationshipSerializerTests : PackStreamSerializerTes
             {
                 { "prop3", true }
             });
+
         writer.Write("r1");
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -64,6 +65,7 @@ public class ElementUnboundRelationshipSerializerTests : PackStreamSerializerTes
             {
                 { "prop3", true }
             });
+
         writer.Write("r1");
 
         var readerMachine = CreateSpanReader(writerMachine.GetOutput());
@@ -83,11 +85,7 @@ public class ElementUnboundRelationshipSerializerTests : PackStreamSerializerTes
             .BeOfType<Relationship>()
             .Which.Properties.Should()
             .HaveCount(1)
-            .And.Contain(
-                new[]
-                {
-                    new KeyValuePair<string, object>("prop3", true)
-                });
+            .And.Contain(new KeyValuePair<string, object>("prop3", true));
 
         value.Should().BeOfType<Relationship>().Which.ElementId.Should().Be("r1");
         value.Should().BeOfType<Relationship>().Which.StartNodeElementId.Should().Be("-1");

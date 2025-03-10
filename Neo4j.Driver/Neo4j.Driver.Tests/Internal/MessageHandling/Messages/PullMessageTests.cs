@@ -34,7 +34,7 @@ public class PullMessageTests
     {
         var message = new PullMessage(10);
 
-        message.Metadata.Should().ContainKey("n").WhichValue.Should().Be(10);
+        message.Metadata.Should().ContainKey("n").WhoseValue.Should().Be(10);
         message.Metadata.Should().NotContainKey("qid");
         message.ToString().Should().Be("PULL [{n, 10}]");
     }
@@ -43,8 +43,8 @@ public class PullMessageTests
     public void ShouldHandleQueryId()
     {
         var message = new PullMessage(42, 10);
-        message.Metadata.Should().ContainKey("n").WhichValue.Should().Be(10);
-        message.Metadata.Should().ContainKey("qid").WhichValue.Should().Be(42);
+        message.Metadata.Should().ContainKey("n").WhoseValue.Should().Be(10);
+        message.Metadata.Should().ContainKey("qid").WhoseValue.Should().Be(42);
         message.ToString().Should().Be("PULL [{n, 10}, {qid, 42}]");
     }
 }

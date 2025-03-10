@@ -31,7 +31,7 @@ public class BeginMessageSerializerTests
     [Fact]
     public void ShouldHaveWriteableTypesAsCommitMessage()
     {
-        BeginMessageSerializer.Instance.WritableTypes.Should().BeEquivalentTo(typeof(BeginMessage));
+        BeginMessageSerializer.Instance.WritableTypes.Should().BeEquivalentTo([typeof(BeginMessage)]);
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public class BeginMessageSerializerTests
         headerBytes[1].Should().Be(0x11);
 
         var meta = reader.ReadMap();
-        meta.Should().ContainKey("db").WhichValue.Should().Be("neo4j");
-        meta.Should().ContainKey("bookmarks").WhichValue.Should().BeEquivalentTo(new[] { "a" });
+        meta.Should().ContainKey("db").WhoseValue.Should().Be("neo4j");
+        meta.Should().ContainKey("bookmarks").WhoseValue.Should().BeEquivalentTo(new[] { "a" });
     }
 }

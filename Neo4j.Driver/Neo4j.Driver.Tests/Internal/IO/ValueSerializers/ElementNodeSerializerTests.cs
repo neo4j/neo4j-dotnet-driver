@@ -63,12 +63,9 @@ public class ElementNodeSerializerTests : PackStreamSerializerTests
             .Which.Properties.Should()
             .HaveCount(3)
             .And.Contain(
-                new[]
-                {
-                    new KeyValuePair<string, object>("prop1", "something"),
-                    new KeyValuePair<string, object>("prop2", 15L),
-                    new KeyValuePair<string, object>("prop3", true)
-                });
+                new KeyValuePair<string, object>("prop1", "something"),
+                new KeyValuePair<string, object>("prop2", 15L),
+                new KeyValuePair<string, object>("prop3", true));
 
         value.Should().BeOfType<Node>().Which.ElementId.Should().Be("1");
     }
@@ -89,6 +86,7 @@ public class ElementNodeSerializerTests : PackStreamSerializerTests
                 { "prop2", 15 },
                 { "prop3", true }
             });
+
         writer.Write("1");
 
         var readerMachine = CreateSpanReader(writerMachine.GetOutput());

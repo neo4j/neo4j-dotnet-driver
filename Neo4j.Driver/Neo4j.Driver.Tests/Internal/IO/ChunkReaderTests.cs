@@ -280,7 +280,11 @@ public class ChunkReaderTests
     {
         var buffer = Enumerable.Range(0, messageSize).Select(i => i % byte.MaxValue).Select(i => (byte)i).ToArray();
         var stream = new MemoryStream();
-        var cs = new DriverContext(new Uri("bolt://localhost:7687"), new StaticAuthTokenManager(AuthTokens.None), new Config());
+        var cs = new DriverContext(
+            new Uri("bolt://localhost:7687"),
+            new StaticAuthTokenManager(AuthTokens.None),
+            new Config());
+
         var writer = new ChunkWriter(stream, cs, new Mock<ILogger>().Object);
 
         writer.OpenChunk();

@@ -89,5 +89,4 @@ public class OffsetTimeSerializerTests : PackStreamSerializerTests
             .Which.OffsetSeconds.Should()
             .Be((int)TimeSpan.FromMinutes(150).TotalSeconds);
     }
-
 }

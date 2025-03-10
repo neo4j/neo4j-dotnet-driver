@@ -115,7 +115,9 @@ public class SessionConfigBuilderTests
     {
         var configBuilder = new SessionConfigBuilder(new SessionConfig());
 
-        configBuilder.WithNotifications(null, disabledClassifications: [Classification.Deprecation, Classification.Hint]);
+        configBuilder.WithNotifications(
+            null,
+            disabledClassifications: [Classification.Deprecation, Classification.Hint]);
 
         var config = configBuilder.Build()
             .NotificationsConfig.Should()

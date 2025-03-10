@@ -57,6 +57,6 @@ public class RecordMessageSerializerTests
 
         var message = RecordMessageSerializer.Instance.Deserialize(reader);
 
-        message.Should().BeOfType<RecordMessage>().Which.Fields.Should().BeEquivalentTo(0L, "a");
+        message.Should().BeOfType<RecordMessage>().Which.Fields.Should().BeEquivalentTo(new object[] { 0L, "a" });
     }
 }

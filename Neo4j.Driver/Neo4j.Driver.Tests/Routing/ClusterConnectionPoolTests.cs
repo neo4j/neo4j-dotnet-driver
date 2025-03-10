@@ -110,7 +110,7 @@ public class ClusterConnectionPoolTests
             // Then
             connection.Should().NotBeNull();
             var exception =
-                await Record.ExceptionAsync(() => connection.InitAsync(null));
+                await Record.ExceptionAsync(() => connection.InitAsync());
 
             mockedConnection.Verify(
                 c => c.InitAsync(It.IsAny<SessionConfig>(), CancellationToken.None),

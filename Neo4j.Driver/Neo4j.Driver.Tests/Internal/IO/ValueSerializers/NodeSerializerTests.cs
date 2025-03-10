@@ -56,7 +56,7 @@ public class NodeSerializerTests : PackStreamSerializerTests
         var value = readerMachine.Reader().Read();
 
         value.Should().NotBeNull();
-        value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
+        value.Should().BeAssignableTo<IList<object>>().Which.Should().HaveCount(1);
 
         VerifySerializedNode(value.Should().BeAssignableTo<IList>().Which[0]);
     }
@@ -109,14 +109,11 @@ public class NodeSerializerTests : PackStreamSerializerTests
             .Which.Properties.Should()
             .HaveCount(3)
             .And.Contain(
-                new[]
-                {
-                    new KeyValuePair<string, object>("prop1", "something"),
-                    new KeyValuePair<string, object>("prop2", 15L),
-                    new KeyValuePair<string, object>("prop3", true)
-                });
+                new KeyValuePair<string, object>("prop1", "something"),
+                new KeyValuePair<string, object>("prop2", 15L),
+                new KeyValuePair<string, object>("prop3", true));
     }
-        
+
     [Fact]
     public void ShouldDeserializeSpan()
     {
@@ -144,7 +141,7 @@ public class NodeSerializerTests : PackStreamSerializerTests
         var value = readerMachine.Read();
 
         value.Should().NotBeNull();
-        value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
+        value.Should().BeAssignableTo<IList>().Which.Count.Should().Be(1);
 
         VerifySerializedNode(value.Should().BeAssignableTo<IList>().Which[0]);
     }

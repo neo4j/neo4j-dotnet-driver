@@ -28,7 +28,7 @@ public static class Assertions
         T accuracy,
         string because = "",
         params object[] becauseArgs)
-        where T : struct, IConvertible
+        where T : struct, IConvertible, IComparable<T>
     {
         var expectedAsDouble = Convert.ToDouble(expected);
         var accuracyAsDouble = Convert.ToDouble(accuracy);

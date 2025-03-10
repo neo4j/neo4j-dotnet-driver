@@ -71,8 +71,10 @@ public class AsyncEnumerableExtensionsTests
         var result = await GetRecordsAsync().ToListAsync((string name, int age) => new { name, age });
         result.Should()
             .BeEquivalentTo(
+            [
                 new { name = "Alice", age = 25 },
-                new { name = "Bob", age = 30 });
+                new { name = "Bob", age = 30 }
+            ]);
     }
 
     [Fact]
@@ -97,8 +99,10 @@ public class AsyncEnumerableExtensionsTests
 
         result.Should()
             .BeEquivalentTo(
+            [
                 new { name = "Alice", age = 25, city = "New York" },
-                new { name = "Bob", age = 30, city = "Los Angeles" });
+                new { name = "Bob", age = 30, city = "Los Angeles" }
+            ]);
     }
 
     [Fact]
@@ -123,8 +127,10 @@ public class AsyncEnumerableExtensionsTests
 
         result.Should()
             .BeEquivalentTo(
+            [
                 new { name = "Alice", age = 25, city = "New York", country = "USA" },
-                new { name = "Bob", age = 30, city = "Los Angeles", country = "USA" });
+                new { name = "Bob", age = 30, city = "Los Angeles", country = "USA" }
+            ]);
     }
 
     [Fact]
@@ -162,8 +168,10 @@ public class AsyncEnumerableExtensionsTests
 
         result.Should()
             .BeEquivalentTo(
+            [
                 new { name = "Alice", age = 25, city = "New York", country = "USA", job = "Engineer" },
-                new { name = "Bob", age = 30, city = "Los Angeles", country = "USA", job = "Doctor" });
+                new { name = "Bob", age = 30, city = "Los Angeles", country = "USA", job = "Doctor" }
+            ]);
     }
 
     [Fact]
@@ -203,6 +211,7 @@ public class AsyncEnumerableExtensionsTests
 
         result.Should()
             .BeEquivalentTo(
+            [
                 new
                 {
                     name = "Alice", age = 25, city = "New York", country = "USA", job = "Engineer", hobby = "Reading"
@@ -210,7 +219,8 @@ public class AsyncEnumerableExtensionsTests
                 new
                 {
                     name = "Bob", age = 30, city = "Los Angeles", country = "USA", job = "Doctor", hobby = "Swimming"
-                });
+                }
+            ]);
     }
 
     [Fact]
@@ -252,6 +262,7 @@ public class AsyncEnumerableExtensionsTests
 
         result.Should()
             .BeEquivalentTo(
+            [
                 new
                 {
                     name = "Alice", age = 25, city = "New York", country = "USA", job = "Engineer", hobby = "Reading",
@@ -261,7 +272,8 @@ public class AsyncEnumerableExtensionsTests
                 {
                     name = "Bob", age = 30, city = "Los Angeles", country = "USA", job = "Doctor", hobby = "Swimming",
                     pet = "Cat"
-                });
+                }
+            ]);
     }
 
     [Fact]
@@ -305,6 +317,7 @@ public class AsyncEnumerableExtensionsTests
 
         result.Should()
             .BeEquivalentTo(
+            [
                 new
                 {
                     name = "Alice", age = 25, city = "New York", country = "USA", job = "Engineer", hobby = "Reading",
@@ -314,7 +327,8 @@ public class AsyncEnumerableExtensionsTests
                 {
                     name = "Bob", age = 30, city = "Los Angeles", country = "USA", job = "Doctor", hobby = "Swimming",
                     pet = "Cat", car = "BMW"
-                });
+                }
+            ]);
     }
 
     [Fact]
@@ -368,6 +382,7 @@ public class AsyncEnumerableExtensionsTests
 
         result.Should()
             .BeEquivalentTo(
+            [
                 new
                 {
                     name = "Alice", age = 25, city = "New York", country = "USA", job = "Engineer", hobby = "Reading",
@@ -377,7 +392,8 @@ public class AsyncEnumerableExtensionsTests
                 {
                     name = "Bob", age = 30, city = "Los Angeles", country = "USA", job = "Doctor", hobby = "Swimming",
                     pet = "Cat", car = "BMW", food = "Burger"
-                });
+                }
+            ]);
     }
 
     [Fact]
@@ -434,6 +450,7 @@ public class AsyncEnumerableExtensionsTests
 
         result.Should()
             .BeEquivalentTo(
+            [
                 new
                 {
                     name = "Alice", age = 25, city = "New York", country = "USA", job = "Engineer", hobby = "Reading",
@@ -443,7 +460,8 @@ public class AsyncEnumerableExtensionsTests
                 {
                     name = "Bob", age = 30, city = "Los Angeles", country = "USA", job = "Doctor", hobby = "Swimming",
                     pet = "Cat", car = "BMW", food = "Burger", sport = "Football"
-                });
+                }
+            ]);
     }
 
     [Fact]

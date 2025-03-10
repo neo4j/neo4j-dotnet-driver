@@ -59,9 +59,9 @@ public sealed class SessionIT : DirectDriverTestBase
         }
 
         // Then
-        var error = Record.Exception(() => driver.AsyncSession());
-        error.Should()
-            .BeOfType<ObjectDisposedException>()
+        var createSession = () => driver.AsyncSession();
+        createSession.Should()
+            .Throw<ObjectDisposedException>()
             .Which
             .Message.Should()
             .Contain("Cannot open a new session on a driver that is already disposed.");
@@ -77,12 +77,12 @@ public sealed class SessionIT : DirectDriverTestBase
 
         driver.Dispose();
 
-        var error = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
-        error.Should()
-            .BeOfType<ObjectDisposedException>()
-            .Which
-            .Message.Should()
-            .StartWith("Failed to acquire a new connection as the driver has already been disposed.");
+        await session.Awaiting(x => x.RunAsync("RETURN 1"))
+            .Should()
+            .ThrowAsync<ObjectDisposedException>()
+            .Where(
+                x => x.Message.StartsWith(
+                    "Failed to acquire a new connection as the driver has already been disposed."));
 
         await session.CloseAsync();
     }
@@ -126,9 +126,11 @@ public sealed class SessionIT : DirectDriverTestBase
     {
         await using (var session = Driver.AsyncSession())
         {
-            var ex = await Record.ExceptionAsync(() => session.RunAndConsumeAsync("Invalid Cypher"));
+            var exc = await session.Awaiting(x => x.RunAndConsumeAsync("Invalid Cypher"))
+                .Should()
+                .ThrowAsync<ClientException>();
 
-            ex.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
+            exc.Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
         }
 
         await using (var session = Driver.AsyncSession())

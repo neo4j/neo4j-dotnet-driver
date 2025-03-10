@@ -120,7 +120,14 @@ public class LoadBalancerTests
             mockedConn.Setup(x => x.Mode).Returns(mode);
             var conn = mockedConn.Object;
             clusterPoolMock
-                .Setup(x => x.AcquireAsync(uri, mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), Bookmarks.Empty, false))
+                .Setup(
+                    x => x.AcquireAsync(
+                        uri,
+                        mode,
+                        It.IsAny<string>(),
+                        It.IsAny<SessionConfig>(),
+                        Bookmarks.Empty,
+                        false))
                 .ReturnsAsync(conn);
 
             var balancer = new LoadBalancer(clusterPoolMock.Object, mock.Object);
@@ -192,7 +199,12 @@ public class LoadBalancerTests
 
             var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
             clusterConnPoolMock.Setup(
-                    x => x.AcquireAsync(uri, mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), Bookmarks.Empty,
+                    x => x.AcquireAsync(
+                        uri,
+                        mode,
+                        It.IsAny<string>(),
+                        It.IsAny<SessionConfig>(),
+                        Bookmarks.Empty,
                         false))
                 .Returns(Task.FromException<IConnection>(new ServiceUnavailableException("failed init")));
 
@@ -201,7 +213,7 @@ public class LoadBalancerTests
             // When & Then
             balancer.Awaiting(b => b.AcquireAsync(mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), Bookmarks.Empty))
                 .Should()
-                .Throw<SessionExpiredException>()
+                .ThrowAsync<SessionExpiredException>()
                 .WithMessage("Failed to connect to any*");
 
             // should be removed
@@ -223,7 +235,12 @@ public class LoadBalancerTests
 
             var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
             clusterConnPoolMock.Setup(
-                    x => x.AcquireAsync(uri, mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), Bookmarks.Empty,
+                    x => x.AcquireAsync(
+                        uri,
+                        mode,
+                        It.IsAny<string>(),
+                        It.IsAny<SessionConfig>(),
+                        Bookmarks.Empty,
                         false))
                 .Returns(
                     Task.FromException<IConnection>(
@@ -262,8 +279,14 @@ public class LoadBalancerTests
 
             var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
             clusterConnPoolMock
-                .Setup(x => x.AcquireAsync(uri, mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), Bookmarks.Empty,
-                    false))
+                .Setup(
+                    x => x.AcquireAsync(
+                        uri,
+                        mode,
+                        It.IsAny<string>(),
+                        It.IsAny<SessionConfig>(),
+                        Bookmarks.Empty,
+                        false))
                 .Returns(Task.FromException<IConnection>(new ProtocolException("do not understand struct 0x01")));
 
             var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
@@ -271,7 +294,7 @@ public class LoadBalancerTests
             // When
             balancer.Awaiting(b => b.AcquireAsync(mode, null, null, Bookmarks.Empty))
                 .Should()
-                .Throw<ProtocolException>()
+                .ThrowAsync<ProtocolException>()
                 .WithMessage("*do not understand struct 0x01*");
 
             // while the server is not removed

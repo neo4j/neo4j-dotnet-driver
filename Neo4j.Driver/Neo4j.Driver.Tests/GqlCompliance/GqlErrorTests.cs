@@ -45,7 +45,7 @@ public class GqlErrorTests
             }
         };
 
-        int majorVersion = 4;
+        var majorVersion = 4;
 
         // Act
         var result = FailureMessageSerializer.BuildFailureMessage(values, majorVersion);
@@ -73,7 +73,7 @@ public class GqlErrorTests
         result.GqlClassification.Should().Be("UNKNOWN");
     }
 
-        [Fact]
+    [Fact]
     public void GetException_ShouldHandleNestedFailureMessages()
     {
         // Arrange

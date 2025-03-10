@@ -30,7 +30,8 @@ public class BoltAgentBuilderTests
             .And.ContainKey("platform")
             .And.ContainKey("language_details")
             .And.ContainKey("product")
-            .WhichValue.Should()
+            .WhoseValue
+            .Should()
             .MatchRegex(@"^neo4j-dotnet/\d\.\d+\.\d+$");
     }
 }

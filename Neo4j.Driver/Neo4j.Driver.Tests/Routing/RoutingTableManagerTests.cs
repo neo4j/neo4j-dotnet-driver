@@ -150,7 +150,7 @@ public static class RoutingTableManagerTests
                     m =>
                         m.UpdateRoutingTableAsync(AccessMode.Read, "", null, Bookmarks.Empty))
                 .Should()
-                .Throw<ServiceUnavailableException>();
+                .ThrowAsync<ServiceUnavailableException>();
 
             // Then
             poolManagerMock.Verify(x => x.AddConnectionPoolAsync(It.IsAny<IEnumerable<Uri>>()), Times.Once);
@@ -283,8 +283,10 @@ public static class RoutingTableManagerTests
             // This ensures that uri and uri2 will return in order
             var routingTable = new RoutingTable(null, new List<Uri> { uriA, uriB });
             var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
-            poolManagerMock.SetupSequence(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(),
-                    It.IsAny<SessionConfig>()))
+            poolManagerMock.SetupSequence(
+                    x => x.CreateClusterConnectionAsync(
+                        It.IsAny<Uri>(),
+                        It.IsAny<SessionConfig>()))
                 .ReturnsAsync(connA)
                 .ReturnsAsync(connB);
 
@@ -380,8 +382,7 @@ public static class RoutingTableManagerTests
                 .ReturnsAsync(new Mock<IConnection>().Object);
 
             var discovery = new Mock<IDiscovery>();
-            discovery.Setup(
-                    x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.From("Invalid bookmark")))
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.From("Invalid bookmark")))
                 .Throws(error);
 
             var logger = new Mock<ILogger>();
@@ -420,8 +421,10 @@ public static class RoutingTableManagerTests
 
             var routingTable = new RoutingTable(null, new List<Uri> { uriA, uriB });
             var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
-            poolManagerMock.SetupSequence(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(),
-                    It.IsAny<SessionConfig>()))
+            poolManagerMock.SetupSequence(
+                    x => x.CreateClusterConnectionAsync(
+                        It.IsAny<Uri>(),
+                        It.IsAny<SessionConfig>()))
                 .ReturnsAsync(connA)
                 .ReturnsAsync(connB);
 
@@ -649,17 +652,17 @@ public static class RoutingTableManagerTests
 
             manager.ForgetServer(server05, "foo");
 
-            manager.RoutingTableFor("foo").Routers.Should().BeEquivalentTo(server04);
+            manager.RoutingTableFor("foo").Routers.Should().BeEquivalentTo([server04]);
             manager.RoutingTableFor("foo").Readers.Should().BeEmpty();
-            manager.RoutingTableFor("foo").Writers.Should().BeEquivalentTo(server06);
+            manager.RoutingTableFor("foo").Writers.Should().BeEquivalentTo([server06]);
 
-            manager.RoutingTableFor("").Routers.Should().BeEquivalentTo(server01);
-            manager.RoutingTableFor("").Readers.Should().BeEquivalentTo(server02, server05);
-            manager.RoutingTableFor("").Writers.Should().BeEquivalentTo(server03);
+            manager.RoutingTableFor("").Routers.Should().BeEquivalentTo([server01]);
+            manager.RoutingTableFor("").Readers.Should().BeEquivalentTo([server02, server05]);
+            manager.RoutingTableFor("").Writers.Should().BeEquivalentTo([server03]);
 
-            manager.RoutingTableFor("bar").Routers.Should().BeEquivalentTo(server07);
-            manager.RoutingTableFor("bar").Readers.Should().BeEquivalentTo(server08);
-            manager.RoutingTableFor("bar").Writers.Should().BeEquivalentTo(server09, server05);
+            manager.RoutingTableFor("bar").Routers.Should().BeEquivalentTo([server07]);
+            manager.RoutingTableFor("bar").Readers.Should().BeEquivalentTo([server08]);
+            manager.RoutingTableFor("bar").Writers.Should().BeEquivalentTo([server09, server05]);
         }
 
         [Fact]
@@ -691,17 +694,17 @@ public static class RoutingTableManagerTests
 
             manager.ForgetWriter(server06, "foo");
 
-            manager.RoutingTableFor("foo").Routers.Should().BeEquivalentTo(server04, server06);
-            manager.RoutingTableFor("foo").Readers.Should().BeEquivalentTo(server05);
-            manager.RoutingTableFor("foo").Writers.Should().BeEquivalentTo(server04);
+            manager.RoutingTableFor("foo").Routers.Should().BeEquivalentTo([server04, server06]);
+            manager.RoutingTableFor("foo").Readers.Should().BeEquivalentTo([server05]);
+            manager.RoutingTableFor("foo").Writers.Should().BeEquivalentTo([server04]);
 
-            manager.RoutingTableFor("").Routers.Should().BeEquivalentTo(server01);
-            manager.RoutingTableFor("").Readers.Should().BeEquivalentTo(server02, server05);
-            manager.RoutingTableFor("").Writers.Should().BeEquivalentTo(server03);
+            manager.RoutingTableFor("").Routers.Should().BeEquivalentTo([server01]);
+            manager.RoutingTableFor("").Readers.Should().BeEquivalentTo([server02, server05]);
+            manager.RoutingTableFor("").Writers.Should().BeEquivalentTo([server03]);
 
-            manager.RoutingTableFor("bar").Routers.Should().BeEquivalentTo(server07);
-            manager.RoutingTableFor("bar").Readers.Should().BeEquivalentTo(server08);
-            manager.RoutingTableFor("bar").Writers.Should().BeEquivalentTo(server09, server05);
+            manager.RoutingTableFor("bar").Routers.Should().BeEquivalentTo([server07]);
+            manager.RoutingTableFor("bar").Readers.Should().BeEquivalentTo([server08]);
+            manager.RoutingTableFor("bar").Writers.Should().BeEquivalentTo([server09, server05]);
         }
     }
 
@@ -854,16 +857,17 @@ public static class RoutingTableManagerTests
             routingTable1.Should().Be(defaultRoutingTable);
             routingTable2.Should().Be(fooRoutingTable);
 
-            manager.Awaiting(m => m.EnsureRoutingTableForModeAsync(AccessMode.Write, "bar", null, Bookmarks.Empty))
+            await manager.Awaiting(
+                    m => m.EnsureRoutingTableForModeAsync(AccessMode.Write, "bar", null, Bookmarks.Empty))
                 .Should()
-                .Throw<FatalDiscoveryException>();
+                .ThrowAsync<FatalDiscoveryException>();
 
             manager.RoutingTableFor("").Should().Be(defaultRoutingTable);
             manager.RoutingTableFor("foo").Should().Be(fooRoutingTable);
         }
 
         [Fact]
-        public void ShouldThrowOnFatalDiscovery()
+        public async Task ShouldThrowOnFatalDiscovery()
         {
             var error = new FatalDiscoveryException("message");
 
@@ -887,9 +891,8 @@ public static class RoutingTableManagerTests
 
             manager.Awaiting(m => m.EnsureRoutingTableForModeAsync(AccessMode.Write, "bar", null, Bookmarks.Empty))
                 .Should()
-                .Throw<FatalDiscoveryException>()
-                .Which.Should()
-                .Be(error);
+                .ThrowAsync<FatalDiscoveryException>()
+                .WithMessage(error.Message);
         }
 
         [Fact]

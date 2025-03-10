@@ -156,7 +156,7 @@ public sealed class BoltV4IT : DirectDriverTestBase
     {
         this.Awaiting(_ => VerifyDatabaseNameOnSummary("bar", "bar"))
             .Should()
-            .Throw<ClientException>()
+            .ThrowAsync<ClientException>()
             .WithMessage("*database does not exist.*");
     }
 
@@ -165,7 +165,7 @@ public sealed class BoltV4IT : DirectDriverTestBase
     {
         this.Awaiting(_ => VerifyDatabaseNameOnSummaryTx("bar", "bar"))
             .Should()
-            .Throw<ClientException>()
+            .ThrowAsync<ClientException>()
             .WithMessage("*database does not exist.*");
     }
 
@@ -174,7 +174,7 @@ public sealed class BoltV4IT : DirectDriverTestBase
     {
         this.Awaiting(_ => VerifyDatabaseNameOnSummaryTxFunc("bar", "bar"))
             .Should()
-            .Throw<ClientException>()
+            .ThrowAsync<ClientException>()
             .WithMessage("*database does not exist.*");
     }
 
@@ -183,7 +183,7 @@ public sealed class BoltV4IT : DirectDriverTestBase
     {
         this.Awaiting(_ => VerifyDatabaseNameOnSummary("bar", "bar"))
             .Should()
-            .Throw<ClientException>()
+            .ThrowAsync<ClientException>()
             .WithMessage("*to a server that does not support multiple databases.*");
     }
 
@@ -192,7 +192,7 @@ public sealed class BoltV4IT : DirectDriverTestBase
     {
         this.Awaiting(_ => VerifyDatabaseNameOnSummaryTx("bar", "bar"))
             .Should()
-            .Throw<ClientException>()
+            .ThrowAsync<ClientException>()
             .WithMessage("*to a server that does not support multiple databases.*");
     }
 
@@ -201,7 +201,7 @@ public sealed class BoltV4IT : DirectDriverTestBase
     {
         this.Awaiting(_ => VerifyDatabaseNameOnSummaryTxFunc("bar", "bar"))
             .Should()
-            .Throw<ClientException>()
+            .ThrowAsync<ClientException>()
             .WithMessage("*to a server that does not support multiple databases.*");
     }
 

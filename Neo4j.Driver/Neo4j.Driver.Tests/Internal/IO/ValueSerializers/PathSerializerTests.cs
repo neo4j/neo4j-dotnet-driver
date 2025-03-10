@@ -59,7 +59,7 @@ public class PathSerializerTests : PackStreamSerializerTests
 
         VerifySerializedPath(value);
     }
-        
+
     [Fact]
     public void ShouldDeserializeReverse()
     {
@@ -84,7 +84,7 @@ public class PathSerializerTests : PackStreamSerializerTests
 
         var reader = CreateSpanReader(writerMachine.GetOutput());
         var value = reader.Read();
-            
+
         VerifySerializedPathReverse(value);
     }
 
@@ -101,7 +101,7 @@ public class PathSerializerTests : PackStreamSerializerTests
         var value = readerMachine.Reader().Read();
 
         value.Should().NotBeNull();
-        value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
+        value.Should().BeAssignableTo<IList>().Which.Count.Should().Be(1);
 
         VerifySerializedPath(value.Should().BeAssignableTo<IList>().Which[0]);
     }
@@ -119,11 +119,11 @@ public class PathSerializerTests : PackStreamSerializerTests
         var value = reader.Read();
 
         value.Should().NotBeNull();
-        value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
+        value.Should().BeAssignableTo<IList>().Which.Count.Should().Be(1);
 
         VerifySerializedPath(value.Should().BeAssignableTo<IList>().Which[0]);
     }
-        
+
     [Fact]
     public void ShouldDeserializeWhenInMap()
     {
@@ -171,7 +171,7 @@ public class PathSerializerTests : PackStreamSerializerTests
 
         VerifySerializedPath(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
     }
-        
+
     private static void SerializePath(PackStreamWriter writer, bool reverse = false)
     {
         writer.WriteStructHeader(3, PathSerializer.Path);

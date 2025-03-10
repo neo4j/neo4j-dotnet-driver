@@ -20,7 +20,7 @@
     <ItemGroup>
         <Content Include="App.config" />
         <PackageReference Include="Castle.Core" Version="5.1.1" />
-        <PackageReference Include="FluentAssertions" Version="5.10.3" />
+        <PackageReference Include="FluentAssertions" Version="[7.0.0]" />
         <PackageReference Include="Microsoft.Reactive.Testing" Version="5.0.0" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
         <PackageReference Include="Moq" Version="4.20.69" />

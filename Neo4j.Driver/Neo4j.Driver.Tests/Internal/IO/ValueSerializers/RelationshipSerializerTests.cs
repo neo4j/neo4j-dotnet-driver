@@ -56,7 +56,7 @@ public class RelationshipSerializerTests : PackStreamSerializerTests
         var value = readerMachine.Reader().Read();
 
         value.Should().NotBeNull();
-        value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
+        value.Should().BeAssignableTo<List<object>>().Subject.Should().HaveCount(1);
 
         VerifySerializedRelationship(value.Should().BeAssignableTo<IList>().Which[0]);
     }
@@ -112,7 +112,7 @@ public class RelationshipSerializerTests : PackStreamSerializerTests
         var value = reader.Read();
 
         value.Should().NotBeNull();
-        value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
+        value.Should().BeAssignableTo<IList>().Which.Count.Should().Be(1);
 
         VerifySerializedRelationship(value.Should().BeAssignableTo<IList>().Which[0]);
     }
@@ -140,7 +140,7 @@ public class RelationshipSerializerTests : PackStreamSerializerTests
 
         VerifySerializedRelationship(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
     }
-        
+
     private static void SerializeRelationship(PackStreamWriter writer)
     {
         writer.WriteStructHeader(5, RelationshipSerializer.Relationship);
@@ -169,11 +169,8 @@ public class RelationshipSerializerTests : PackStreamSerializerTests
             .Which.Properties.Should()
             .HaveCount(3)
             .And.Contain(
-                new[]
-                {
-                    new KeyValuePair<string, object>("prop1", "something"),
-                    new KeyValuePair<string, object>("prop2", 2.0),
-                    new KeyValuePair<string, object>("prop3", false)
-                });
+                new KeyValuePair<string, object>("prop1", "something"),
+                new KeyValuePair<string, object>("prop2", 2.0),
+                new KeyValuePair<string, object>("prop3", false));
     }
 }

@@ -159,7 +159,7 @@ public sealed class CertificateTrustIT : IClassFixture<CertificateTrustIT.Certif
         var cursor = await session.RunAsync("RETURN 1");
         var records = await cursor.ToListAsync(r => r[0].As<int>());
 
-        records.Should().BeEquivalentTo(1);
+        records.Should().BeEquivalentTo(new []{1});
     }
 
     private IDriver SetupWithCustomResolver(Uri overridenUri, Config config)

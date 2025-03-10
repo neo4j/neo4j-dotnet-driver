@@ -31,7 +31,7 @@ public class DiscardMessageSerializerTests
     [Fact]
     public void ShouldHaveWriteableTypesAsDiscardMessage()
     {
-        DiscardMessageSerializer.Instance.WritableTypes.Should().BeEquivalentTo(typeof(DiscardMessage));
+        DiscardMessageSerializer.Instance.WritableTypes.Should().BeEquivalentTo([typeof(DiscardMessage)]);
     }
 
     [Fact]

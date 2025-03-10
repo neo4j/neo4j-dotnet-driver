@@ -32,7 +32,7 @@ public class ResetMessageSerializerTests
     {
         ResetMessageSerializer.Instance.WritableTypes
             .Should()
-            .BeEquivalentTo(typeof(ResetMessage));
+            .BeEquivalentTo([typeof(ResetMessage)]);
     }
 
     [Fact]

@@ -22,13 +22,6 @@ namespace Neo4j.Driver.Tests.Mapping;
 
 public class MappingBuilderTests
 {
-    private class TestClass
-    {
-        public int Settable { get; set; }
-        public int NotSettable { get; } = -1;
-        public int NotAProperty = 0x6060B017;
-    }
-
     [Fact]
     public void ShouldThrowIfNotAMemberExpression()
     {
@@ -51,5 +44,12 @@ public class MappingBuilderTests
         var subject = new MappingBuilder<TestClass>();
         var act = () => subject.Map(x => x.NotSettable, "foo");
         act.Should().Throw<ArgumentException>();
+    }
+
+    private class TestClass
+    {
+        public readonly int NotAProperty = 0x6060B017;
+        public int Settable { get; set; }
+        public int NotSettable { get; } = -1;
     }
 }

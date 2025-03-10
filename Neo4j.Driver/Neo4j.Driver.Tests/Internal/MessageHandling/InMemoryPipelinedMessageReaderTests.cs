@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -62,8 +60,11 @@ public class InMemoryPipelinedMessageReaderTests
         var pipereader = new PipelinedMessageReader(memoryStream, TestDriverContext.MockContext, -1);
         var pipeline = MockPipeline();
 
-        await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0,
-            TestDriverContext.MockContext));
+        await pipereader.ReadAsync(
+            pipeline.Object,
+            new MessageFormat(
+                BoltProtocolVersion.V5_0,
+                TestDriverContext.MockContext));
 
         pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Once);
     }
@@ -86,8 +87,11 @@ public class InMemoryPipelinedMessageReaderTests
         memoryStream.Position = 0L;
         var pipereader = new PipelinedMessageReader(memoryStream, TestDriverContext.MockContext, -1);
         var pipeline = MockPipeline();
-        await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0,
-            TestDriverContext.MockContext));
+        await pipereader.ReadAsync(
+            pipeline.Object,
+            new MessageFormat(
+                BoltProtocolVersion.V5_0,
+                TestDriverContext.MockContext));
 
         pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Once);
     }
@@ -111,8 +115,11 @@ public class InMemoryPipelinedMessageReaderTests
         memoryStream.Position = 0L;
         var pipereader = new PipelinedMessageReader(memoryStream, TestDriverContext.MockContext, -1);
         var pipeline = MockPipeline();
-        await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0,
-            TestDriverContext.MockContext));
+        await pipereader.ReadAsync(
+            pipeline.Object,
+            new MessageFormat(
+                BoltProtocolVersion.V5_0,
+                TestDriverContext.MockContext));
 
         pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Once);
     }
@@ -144,8 +151,11 @@ public class InMemoryPipelinedMessageReaderTests
         memoryStream.Position = 0L;
         var pipereader = new PipelinedMessageReader(memoryStream, TestDriverContext.MockContext, -1);
         var pipeline = MockPipeline();
-        await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0,
-            TestDriverContext.MockContext));
+        await pipereader.ReadAsync(
+            pipeline.Object,
+            new MessageFormat(
+                BoltProtocolVersion.V5_0,
+                TestDriverContext.MockContext));
 
         pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Once);
     }
@@ -163,7 +173,7 @@ public class InMemoryPipelinedMessageReaderTests
                 // 5 bytes
                 0x00, 0x00, 0x00, 0x00,
                 // 9 bytes
-                PackStream.String8, 1, Encoding.UTF8.GetBytes("a")[0], PackStream.String8, 7, 
+                PackStream.String8, 1, Encoding.UTF8.GetBytes("a")[0], PackStream.String8, 7,
                 // 14 bytes
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                 // 21 bytes
@@ -175,14 +185,19 @@ public class InMemoryPipelinedMessageReaderTests
                 PackStream.TinyStruct, MessageFormat.MsgIgnored,
                 0x00, 0x00
             };
+
         Encoding.UTF8.GetBytes("code").CopyTo(message.AsSpan().Slice(2 + 5));
         Encoding.UTF8.GetBytes("message").CopyTo(message.AsSpan().Slice(2 + 14));
-            
+
         var memoryStream = new MemoryStream(message);
         var pipereader = new PipelinedMessageReader(memoryStream, TestDriverContext.MockContext, -1);
         var pipeline = MockPipeline();
-        await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0,
-            TestDriverContext.MockContext));
+        await pipereader.ReadAsync(
+            pipeline.Object,
+            new MessageFormat(
+                BoltProtocolVersion.V5_0,
+                TestDriverContext.MockContext));
+
         pipeline.Verify(x => x.OnFailure(It.IsAny<FailureMessage>()), Times.Once);
         pipeline.Verify(x => x.OnIgnored(), Times.Never);
     }
@@ -195,8 +210,11 @@ public class InMemoryPipelinedMessageReaderTests
         var pipereader = new PipelinedMessageReader(memoryStream, TestDriverContext.MockContext, -1);
 
         var pipeline = MockPipeline();
-        await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0,
-            TestDriverContext.MockContext));
+        await pipereader.ReadAsync(
+            pipeline.Object,
+            new MessageFormat(
+                BoltProtocolVersion.V5_0,
+                TestDriverContext.MockContext));
 
         pipeline.Verify(
             x => x.OnSuccess(It.Is<Dictionary<string, object>>(y => y["a"].As<byte[]>().Length == 500_000)),

@@ -171,7 +171,6 @@ public class ElementPathSerializerTests : PackStreamSerializerTests
         relationships[0].EndNodeElementId.Should().Be("2");
     }
 
-
     private static void ValidatePath(AndWhichConstraint<ObjectAssertions, Path> path)
     {
         path.Which.Nodes.Should().AllBeOfType<Node>();

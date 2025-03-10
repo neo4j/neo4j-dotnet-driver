@@ -260,7 +260,7 @@ public class BoltProtocolVersionTests
         var lowerVersion = new BoltProtocolVersion(lowerMajor, lowerMinor);
 
         var packedValue = version.PackToIntRange(lowerVersion);
-        packedValue.Should().Equals(expectedValue);
+        packedValue.Should().Be(expectedValue);
     }
 
     [Theory]

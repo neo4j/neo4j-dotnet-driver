@@ -32,7 +32,7 @@ public class RunWithMetadataMessageSerializerTests
     {
         RunWithMetadataMessageSerializer.Instance.WritableTypes
             .Should()
-            .BeEquivalentTo(typeof(RunWithMetadataMessage));
+            .BeEquivalentTo([typeof(RunWithMetadataMessage)]);
     }
 
     [Fact]
@@ -80,8 +80,8 @@ public class RunWithMetadataMessageSerializerTests
         var query = reader.ReadString();
         query.Should().Be("...");
         var parameters = reader.ReadMap();
-        parameters.Should().ContainKey("x").WhichValue.Should().Be(10L);
+        parameters.Should().ContainKey("x").WhoseValue.Should().Be(10L);
         var metadata = reader.ReadMap();
-        metadata.Should().ContainKey("db").WhichValue.Should().Be("neo4j");
+        metadata.Should().ContainKey("db").WhoseValue.Should().Be("neo4j");
     }
 }

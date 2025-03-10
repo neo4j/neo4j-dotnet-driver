@@ -718,7 +718,8 @@ public class BoltProtocolTests
                     new PullResponseHandler(
                         resultCursorBuilderMock.Object,
                         new SummaryBuilder(new Query("..."), new ServerInfo(new Uri("http://0.0.0.0"))),
-                        mockBt.Object, true));
+                        mockBt.Object,
+                        true));
 
             handlerFactory.Setup(
                     x => x.NewResultCursorBuilder(

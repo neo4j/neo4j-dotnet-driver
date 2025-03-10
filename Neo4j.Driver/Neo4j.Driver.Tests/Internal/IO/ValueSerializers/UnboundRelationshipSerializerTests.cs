@@ -63,7 +63,7 @@ public class UnboundRelationshipSerializerTests : PackStreamSerializerTests
         var value = readerMachine.Reader().Read();
 
         value.Should().NotBeNull();
-        value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
+        value.Should().BeAssignableTo<IList>().Which.Count.Should().Be(1);
 
         VerifySerializedUnboundRelationship(value.Should().BeAssignableTo<IList>().Which[0]);
     }
@@ -119,7 +119,8 @@ public class UnboundRelationshipSerializerTests : PackStreamSerializerTests
         var value = reader.Read();
 
         value.Should().NotBeNull();
-        value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
+        value.Should().BeAssignableTo<IList>().Which.Count.Should().Be(1);
+        ;
 
         VerifySerializedUnboundRelationship(value.Should().BeAssignableTo<IList>().Which[0]);
     }
@@ -147,7 +148,7 @@ public class UnboundRelationshipSerializerTests : PackStreamSerializerTests
 
         VerifySerializedUnboundRelationship(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
     }
-        
+
     private static void SerializeUnboundRelationship(PackStreamWriter writer)
     {
         writer.WriteStructHeader(3, UnboundRelationshipSerializer.UnboundRelationship);
@@ -174,11 +175,8 @@ public class UnboundRelationshipSerializerTests : PackStreamSerializerTests
             .Which.Properties.Should()
             .HaveCount(3)
             .And.Contain(
-                new[]
-                {
-                    new KeyValuePair<string, object>("prop1", "something"),
-                    new KeyValuePair<string, object>("prop2", 2.0),
-                    new KeyValuePair<string, object>("prop3", false)
-                });
+                new KeyValuePair<string, object>("prop1", "something"),
+                new KeyValuePair<string, object>("prop2", 2.0),
+                new KeyValuePair<string, object>("prop3", false));
     }
 }

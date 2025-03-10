@@ -45,8 +45,10 @@ public class BasePackStreamTests : PackStreamTestSpecs
 
     internal override PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version = null)
     {
-        return CreateWriterMachine(new MessageFormat(version ?? BoltProtocolVersion.V3_0,
-            TestDriverContext.MockContext).WriteStructHandlers);
+        return CreateWriterMachine(
+            new MessageFormat(
+                version ?? BoltProtocolVersion.V3_0,
+                TestDriverContext.MockContext).WriteStructHandlers);
     }
 
     internal override PackStreamReaderMachine CreateReaderMachine(byte[] data, BoltProtocolVersion version = null)
@@ -89,8 +91,7 @@ public class BasePackStreamTests : PackStreamTestSpecs
 
         var structValue = (StructType)value;
         structValue.Values.Should().NotBeNull();
-        structValue.Values.Should().HaveCount(5);
-        structValue.Values.Should().Equal(1L, 2L, true, 3.0, "something");
+        structValue.Values.Should().BeEquivalentTo(new object[] { 1L, 2L, true, 3.0, "something" });
     }
 
     [Fact]
@@ -154,7 +155,11 @@ public class BasePackStreamTests : PackStreamTestSpecs
             }
         }
 
-        public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+        public (object, int) DeserializeSpan(
+            BoltProtocolVersion version,
+            SpanPackStreamReader reader,
+            byte signature,
+            int size)
         {
             throw new NotImplementedException();
         }

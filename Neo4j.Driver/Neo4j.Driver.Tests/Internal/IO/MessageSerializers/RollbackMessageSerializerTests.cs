@@ -32,7 +32,7 @@ public class RollbackMessageSerializerTests
     {
         RollbackMessageSerializer.Instance.WritableTypes
             .Should()
-            .BeEquivalentTo(typeof(RollbackMessage));
+            .BeEquivalentTo([typeof(RollbackMessage)]);
     }
 
     [Fact]

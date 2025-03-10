@@ -70,7 +70,7 @@ public class PullMessageSerializerTests
 
         var metadata = reader.ReadMap();
 
-        metadata.Should().ContainKey("qid").WhichValue.Should().Be(42);
-        metadata.Should().ContainKey("n").WhichValue.Should().Be(10);
+        metadata.Should().ContainKey("qid").WhoseValue.Should().Be(42);
+        metadata.Should().ContainKey("n").WhoseValue.Should().Be(10);
     }
 }

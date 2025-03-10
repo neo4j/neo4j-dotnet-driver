@@ -32,25 +32,27 @@ public class NotificationTests
             new InputPosition(0, 1, 2),
             "WARNING",
             "HINT");
-        
+
         var text = JsonConvert.SerializeObject(notification, Formatting.Indented).ReplaceLineEndings();
-        
-        text.Should().BeEquivalentTo("""
-                        {
-                          "RawSeverityLevel": "WARNING",
-                          "SeverityLevel": 1,
-                          "RawCategory": "HINT",
-                          "Category": 1,
-                          "Code": "code",
-                          "Title": "title",
-                          "Description": "description",
-                          "Position": {
-                            "Offset": 0,
-                            "Line": 1,
-                            "Column": 2
-                          },
-                          "Severity": "WARNING"
-                        }
-                        """.ReplaceLineEndings());
+
+        text.Should()
+            .BeEquivalentTo(
+                """
+                    {
+                      "RawSeverityLevel": "WARNING",
+                      "SeverityLevel": 1,
+                      "RawCategory": "HINT",
+                      "Category": 1,
+                      "Code": "code",
+                      "Title": "title",
+                      "Description": "description",
+                      "Position": {
+                        "Offset": 0,
+                        "Line": 1,
+                        "Column": 2
+                      },
+                      "Severity": "WARNING"
+                    }
+                    """.ReplaceLineEndings());
     }
 }

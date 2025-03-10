@@ -72,6 +72,6 @@ public class HelloMessageSerializerTests
         bytes[1].Should().Be(0x01);
 
         var meta = reader.ReadMap();
-        meta.Should().ContainKey("user_agent").WhichValue.Should().Be("user");
+        meta.Should().ContainKey("user_agent").WhoseValue.Should().Be("user");
     }
 }

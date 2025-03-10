@@ -375,6 +375,6 @@ public class UtcZonedDateTimeSerializerTests : PackStreamSerializerTests
         reader.Read();
         reader.Read().Should().Be(0);
 
-        bstSecs.Should().Equals(utcSecs);
+        bstSecs.Should().Be(utcSecs);
     }
 }

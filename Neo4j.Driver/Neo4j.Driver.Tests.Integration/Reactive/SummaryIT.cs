@@ -17,6 +17,7 @@ using System;
 using System.Linq;
 using System.Reactive.Linq;
 using FluentAssertions;
+using FluentAssertions.Equivalency;
 using Microsoft.Reactive.Testing;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
@@ -236,9 +237,9 @@ public abstract class SummaryIT
                         HasProfile = false,
                         Profile = default(IProfiledPlan)
                     },
-                    opts => opts.Excluding(x => x.SelectedMemberPath == "Plan.OperatorType")
-                        .Excluding(x => x.SelectedMemberPath == "Plan.Arguments")
-                        .Excluding(x => x.SelectedMemberPath == "Plan.Children")));
+                    opts => opts.Excluding(x => x.Path == "Plan.OperatorType")
+                        .Excluding(x => x.Path == "Plan.Arguments")
+                        .Excluding(x => x.Path == "Plan.Children")));
         }
 
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
@@ -271,9 +272,9 @@ public abstract class SummaryIT
                         }
                     },
                     options => options.ExcludingMissingMembers()
-                        .Excluding(x => x.SelectedMemberPath == "Notifications[0].Position")
-                        .Excluding(x => x.SelectedMemberPath == "Notifications[0].Title")
-                        .Excluding(x => x.SelectedMemberPath == "Notifications[0].Description")));
+                        .Excluding(x => x.Path == "Notifications[0].Position")
+                        .Excluding(x => x.Path == "Notifications[0].Title")
+                        .Excluding(x => x.Path == "Notifications[0].Description")));
         }
 
 
@@ -298,9 +299,9 @@ public abstract class SummaryIT
                         }
                     },
                     options => options.ExcludingMissingMembers()
-                        .Excluding(x => x.SelectedMemberPath == "Notifications[0].Position")
-                        .Excluding(x => x.SelectedMemberPath == "Notifications[0].Title")
-                        .Excluding(x => x.SelectedMemberPath == "Notifications[0].Description")));
+                        .Excluding(x => x.Path == "Notifications[0].Position")
+                        .Excluding(x => x.Path == "Notifications[0].Title")
+                        .Excluding(x => x.Path == "Notifications[0].Description")));
         }
 
         private void VerifySummaryQueryTextAndParams(string query, object parameters)

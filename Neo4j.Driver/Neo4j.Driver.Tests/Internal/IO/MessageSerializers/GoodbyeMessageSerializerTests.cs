@@ -30,7 +30,7 @@ public class GoodbyeMessageSerializerTests
     [Fact]
     public void ShouldHaveWriteableTypesAsGoodbyeMessage()
     {
-        GoodbyeMessageSerializer.Instance.WritableTypes.Should().BeEquivalentTo(typeof(GoodbyeMessage));
+        GoodbyeMessageSerializer.Instance.WritableTypes.Should().BeEquivalentTo([typeof(GoodbyeMessage)]);
     }
 
     [Fact]

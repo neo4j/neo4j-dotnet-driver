@@ -72,8 +72,7 @@ public class AsyncSessionTests
                     It.IsAny<IRequestMessage>(),
                     It.IsAny<IResponseHandler>()))
             .Returns(Task.CompletedTask)
-            .Callback(
-                (IRequestMessage _, IResponseHandler h1) => { h1.OnSuccess(new Dictionary<string, object>()); });
+            .Callback((IRequestMessage _, IResponseHandler h1) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
         if (protocol == null)
         {
@@ -299,7 +298,9 @@ public class AsyncSessionTests
                 false,
                 false);
 
-            await session.PipelinedExecuteReadAsync(_ => Task.FromResult(null as EagerResult<IRecord[]>), new TransactionConfig());
+            await session.PipelinedExecuteReadAsync(
+                _ => Task.FromResult(null as EagerResult<IRecord[]>),
+                new TransactionConfig());
 
             mockProtocol.Verify(
                 x =>
