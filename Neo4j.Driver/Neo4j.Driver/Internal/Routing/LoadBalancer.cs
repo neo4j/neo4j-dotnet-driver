@@ -61,8 +61,10 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
     /// <param name="routingTableManager"></param>
     internal LoadBalancer(
         IClusterConnectionPool clusterConnPool,
-        IRoutingTableManager routingTableManager)
+        IRoutingTableManager routingTableManager,
+        DriverContext driverContext = null)
     {
+        DriverContext = driverContext;
         _logger = NullLogger.Instance;
         _clusterConnectionPool = clusterConnPool;
         _routingTableManager = routingTableManager;
@@ -107,8 +109,8 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             .ConfigureAwait(false);
 
         //If a non ssr connection is detected then the connection is not used and returned to the pool. Connection
-        //acquisition is then repeated with the cache not being used. 
-        if (!conn.SsrEnabled && _clusterConnectionPool.TotalNumberOfConnections() != 0)
+        //acquisition is then repeated with the cache not being used.
+        if (!conn.SsrEnabled && !_clusterConnectionPool.CanUseHomeDbCache())
         {
             _logger.Debug($"LoadBalancer - Mixed cluster detected, some connections have no SSR. Re-acquiring " +
                 $"connection without homeDB cache");

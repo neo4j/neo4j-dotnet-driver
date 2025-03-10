@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Routing;
 using Xunit;
@@ -334,7 +335,14 @@ public class LoadBalancerTests
                 .ReturnsAsync(
                     (Uri uri, AccessMode m, string _, string _, Bookmarks _, bool _) => NewConnectionMock(uri, m));
 
-            var balancer = new LoadBalancer(clusterPoolMock.Object, routingTableManager.Object);
+            clusterPoolMock.Setup(x => x.CanUseHomeDbCache()).Returns(true);
+
+            var uri = new Uri("bolt://123:456");
+            var driverContext = new DriverContext(
+                uri,
+                AuthTokenManagers.None,
+                new Config());
+            var balancer = new LoadBalancer(clusterPoolMock.Object, routingTableManager.Object, driverContext);
 
             if (mode == AccessMode.Read)
             {
