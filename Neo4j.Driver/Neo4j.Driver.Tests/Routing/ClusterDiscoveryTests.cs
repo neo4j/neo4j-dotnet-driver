@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
@@ -63,12 +64,18 @@ public class ClusterDiscoveryTests
             var sessionConfig = new SessionConfig("fake-person");
 
             var mockConn = new Mock<IConnection>();
-            mockConn.Setup(x => x.GetRoutingTableAsync("test", sessionConfig, bookmarks))
+            mockConn.Setup(
+                    x => x.GetRoutingTableAsync("test", sessionConfig, bookmarks, It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(routingTable);
 
             // When
             var manager = new ClusterDiscovery();
-            var table = await manager.DiscoverAsync(mockConn.Object, "test", sessionConfig, bookmarks);
+            var table = await manager.DiscoverAsync(
+                mockConn.Object,
+                "test",
+                sessionConfig,
+                bookmarks,
+                It.IsAny<IHomeDbCache>());
 
             // Then
             table.Database.Should().Be("test");

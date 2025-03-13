@@ -43,8 +43,7 @@ internal static class SummaryJsonSerializer
                     profile = MapToProfilePlan(summary.Profile),
                     resultAvailableAfter = GetTotalMilliseconds(summary.ResultAvailableAfter),
                     resultConsumedAfter = GetTotalMilliseconds(summary.ResultConsumedAfter),
-                    gqlStatusObjects = MapGqlStatusObjects(
-                        summary.GqlStatusObjects)
+                    gqlStatusObjects = MapGqlStatusObjects(summary.GqlStatusObjects)
                 }));
     }
 
@@ -225,7 +224,9 @@ internal static class SummaryJsonSerializer
                 {
                     ["gqlStatus"] = x.GqlStatus,
                     ["statusDescription"] = x.StatusDescription,
-                    ["diagnosticRecord"] = x.DiagnosticRecord.ToDictionary(y => y.Key, y => NativeToCypher.Convert(y.Value)),
+                    ["diagnosticRecord"] = x.DiagnosticRecord.ToDictionary(
+                        y => y.Key,
+                        y => NativeToCypher.Convert(y.Value)),
                     ["classification"] = x.Classification.ToString().ToUpper(),
                     ["rawClassification"] = x.RawClassification,
                     ["rawSeverity"] = x.RawSeverity,

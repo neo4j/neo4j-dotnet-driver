@@ -1,12 +1,12 @@
 ﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
-//
+// 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -284,7 +284,7 @@ public class LambdaMappingRecordExtensionsTests
         result.e.Should().Be(123L);
         result.f.Should().Be('x');
         result.g.Should().Be(123.45m);
-        result.h.Should().Be((byte)123);
+        result.h.Should().Be(123);
     }
 
     [Fact]
@@ -349,8 +349,8 @@ public class LambdaMappingRecordExtensionsTests
         result.e.Should().Be(123L);
         result.f.Should().Be('x');
         result.g.Should().Be(123.45m);
-        result.h.Should().Be((byte)123);
-        result.i.Should().Be((short)12345);
+        result.h.Should().Be(123);
+        result.i.Should().Be(12345);
     }
 
     [Fact]
@@ -420,9 +420,9 @@ public class LambdaMappingRecordExtensionsTests
         result.e.Should().Be(123L);
         result.f.Should().Be('x');
         result.g.Should().Be(123.45m);
-        result.h.Should().Be((byte)123);
-        result.i.Should().Be((short)12345);
-        result.j.Should().Be((ushort)12345);
+        result.h.Should().Be(123);
+        result.i.Should().Be(12345);
+        result.j.Should().Be(12345);
     }
 
     [Fact]

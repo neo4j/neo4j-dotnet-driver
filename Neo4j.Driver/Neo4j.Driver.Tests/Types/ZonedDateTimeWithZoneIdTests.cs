@@ -158,8 +158,7 @@ public class ZonedDateTimeWithZoneIdTests
     [InlineData(999_999_999 + 1)]
     public void ShouldThrowOnInvalidNanosecond(int nanosecond)
     {
-        var ex = Record.Exception(
-            () => new ZonedDateTime(1990, 1, 1, 0, 0, 0, nanosecond, Zone.Of("Europe/Athens")));
+        var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, 0, 0, 0, nanosecond, Zone.Of("Europe/Athens")));
 
         ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
     }
@@ -452,6 +451,7 @@ public class ZonedDateTimeWithZoneIdTests
     public void ShouldNotThrowExceptionWhenNonMonotonicTimeProvidedAndUnknownZoneId()
     {
         Record.Exception(() => new ZonedDateTime(new LocalDateTime(DateTime.Now), new ZoneId("Europe/Neo4j")))
-            .Should().BeNull();
+            .Should()
+            .BeNull();
     }
 }

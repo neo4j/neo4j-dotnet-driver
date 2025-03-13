@@ -26,15 +26,14 @@ namespace Neo4j.Driver.Internal.Connector;
 
 internal sealed class SocketClient : ISocketClient
 {
-    public DriverContext Context { get; }
     private const string MessagePattern = "C: {0}";
     private readonly IConnectionIoFactory _connectionIoFactory;
     private readonly IBoltHandshaker _handshaker;
-
-    private readonly Uri _uri;
     private readonly ILogger _logger;
     private readonly IPackStreamFactory _packstreamFactory;
     private readonly ITcpSocketClient _tcpSocketClient;
+
+    private readonly Uri _uri;
     private IChunkWriter _chunkWriter;
 
     private int _closedMarker = -1;
@@ -62,6 +61,8 @@ internal sealed class SocketClient : ISocketClient
 
         _tcpSocketClient = _connectionIoFactory.TcpSocketClient(context, _logger);
     }
+
+    public DriverContext Context { get; }
 
     public bool IsOpen => _closedMarker == 0;
 
@@ -99,7 +100,7 @@ internal sealed class SocketClient : ISocketClient
         }
         catch (Exception ex)
         {
-            _logger.Warn(ex, $"Unable to send message to server {_uri}, connection will be terminated.");
+            _logger.Warn(ex, $"Unable to send message to server {_uri}, connection will be terminated. ({ex.Message})");
             await DisposeAsync().ConfigureAwait(false);
             throw;
         }
@@ -121,7 +122,9 @@ internal sealed class SocketClient : ISocketClient
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, $"Unable to read message from server {_uri}, connection will be terminated.");
+            _logger.Error(
+                ex,
+                $"Unable to read message from server {_uri}, connection will be terminated. ({ex.Message})");
             await DisposeAsync().ConfigureAwait(false);
             throw;
         }

@@ -308,8 +308,7 @@ public class CollectionExtensionsTests
             innerCollection.Should()
                 .Contain(
                     o => o is IDictionary<string, object> &&
-                        ((IDictionary<string, object>)o).Contains(
-                            new KeyValuePair<string, object>("Key1", "value1")));
+                        ((IDictionary<string, object>)o).Contains(new KeyValuePair<string, object>("Key1", "value1")));
         }
 
         [Fact]

@@ -78,7 +78,9 @@ internal class ExecuteQuery : ProtocolObject
         var transactionConfig = new TransactionConfig
         {
             Timeout = data.config.timeout.HasValue ? TimeSpan.FromMilliseconds(data.config.timeout.Value) : null,
-            Metadata = data.config.txMeta != null ? CypherToNativeObject.ConvertDictionaryToNative(data.config.txMeta) : new Dictionary<string, object>()
+            Metadata = data.config.txMeta != null
+                ? CypherToNativeObject.ConvertDictionaryToNative(data.config.txMeta)
+                : new Dictionary<string, object>()
         };
 
         var authToken = data.config.authorizationToken switch
@@ -138,8 +140,10 @@ internal class ExecuteQuery : ProtocolObject
         public string impersonatedUser { get; set; }
         public string bookmarkManagerId { get; set; }
         public int? timeout { get; set; }
+
         [JsonConverter(typeof(QueryParameterConverter))]
         public Dictionary<string, CypherToNativeObject> txMeta { get; set; }
+
         public AuthorizationToken authorizationToken { get; set; }
     }
 }

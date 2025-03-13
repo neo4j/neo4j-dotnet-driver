@@ -14,8 +14,10 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.V3;
 using Neo4j.Driver.Internal.MessageHandling.V4;
@@ -36,7 +38,13 @@ internal interface IBoltProtocolHandlerFactory
         bool reactive,
         IInternalAsyncTransaction transaction);
 
-    RunResponseHandler NewRunResponseHandler(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder);
+    RunResponseHandler NewRunResponseHandler(
+        IResultCursorBuilder streamBuilder,
+        SummaryBuilder summaryBuilder,
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig,
+        bool isDefaultDatabase);
 
     PullResponseHandler NewPullResponseHandler(
         IConnection connection,
@@ -44,7 +52,12 @@ internal interface IBoltProtocolHandlerFactory
         IResultStreamBuilder cursorBuilder,
         SummaryBuilder summaryBuilder);
 
-    RouteResponseHandler NewRouteResponseHandler();
+    RouteResponseHandler NewRouteResponseHandler(
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig,
+        bool isDefaultRequest);
+
     HelloResponseHandler NewHelloResponseHandler(IConnection connection);
 
     CommitResponseHandler NewCommitResponseHandler(IBookmarksTracker bookmarksTracker);
@@ -58,6 +71,12 @@ internal interface IBoltProtocolHandlerFactory
         IBookmarksTracker bookmarksTracker);
 
     TelemetryResponseHandler NewTelemetryResponseHandler(TransactionInfo info);
+
+    BeginResponseHandler NewBeginResponseHandler(
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig,
+        bool isDefaultDatabase);
 }
 
 internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
@@ -86,9 +105,21 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
             transaction);
     }
 
-    public RunResponseHandler NewRunResponseHandler(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder)
+    public RunResponseHandler NewRunResponseHandler(
+        IResultCursorBuilder streamBuilder,
+        SummaryBuilder summaryBuilder,
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig,
+        bool isDefaultDatabase)
     {
-        return new RunResponseHandler(streamBuilder, summaryBuilder);
+        return new RunResponseHandler(
+            streamBuilder,
+            summaryBuilder,
+            cacheKey,
+            homeDbCache,
+            sessionConfig,
+            isDefaultDatabase);
     }
 
     public PullResponseHandler NewPullResponseHandler(
@@ -97,12 +128,20 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
         IResultStreamBuilder cursorBuilder,
         SummaryBuilder summaryBuilder)
     {
-        return new PullResponseHandler(cursorBuilder, summaryBuilder, bookmarksTracker, connection.Version >= BoltProtocolVersion.V5_5);
+        return new PullResponseHandler(
+            cursorBuilder,
+            summaryBuilder,
+            bookmarksTracker,
+            connection.Version >= BoltProtocolVersion.V5_5);
     }
 
-    public RouteResponseHandler NewRouteResponseHandler()
+    public RouteResponseHandler NewRouteResponseHandler(
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig,
+        bool isDefaultRequest)
     {
-        return new RouteResponseHandler();
+        return new RouteResponseHandler(cacheKey, homeDbCache, sessionConfig, isDefaultRequest);
     }
 
     public HelloResponseHandler NewHelloResponseHandler(IConnection connection)
@@ -133,5 +172,15 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
     public TelemetryResponseHandler NewTelemetryResponseHandler(TransactionInfo info)
     {
         return new TelemetryResponseHandler(info);
+    }
+
+    /// <inheritdoc/>
+    public BeginResponseHandler NewBeginResponseHandler(
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig,
+        bool isDefaultDatabase)
+    {
+        return new BeginResponseHandler(cacheKey, homeDbCache, sessionConfig, isDefaultDatabase);
     }
 }

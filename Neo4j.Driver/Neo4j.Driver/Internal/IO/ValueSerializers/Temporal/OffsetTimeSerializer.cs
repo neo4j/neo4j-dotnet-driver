@@ -49,7 +49,11 @@ internal sealed class OffsetTimeSerializer : IPackStreamSerializer
         writer.WriteInt(time.OffsetSeconds);
     }
 
-    public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    public (object, int) DeserializeSpan(
+        BoltProtocolVersion version,
+        SpanPackStreamReader reader,
+        byte signature,
+        int size)
     {
         PackStream.EnsureStructSize("Time", StructSize, size);
 

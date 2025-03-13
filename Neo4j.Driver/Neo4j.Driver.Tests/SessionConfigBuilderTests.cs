@@ -47,7 +47,7 @@ public class SessionConfigBuilderTests
         config
             .Which
             .DisabledCategories.Should()
-            .BeEquivalentTo([category]);
+            .BeEquivalentTo(category);
 
         config
             .Which
@@ -80,7 +80,7 @@ public class SessionConfigBuilderTests
         config
             .Which
             .DisabledCategories.Should()
-            .BeEquivalentTo([outCat]);
+            .BeEquivalentTo(outCat);
 
         config
             .Which
@@ -102,7 +102,7 @@ public class SessionConfigBuilderTests
         config
             .Which
             .DisabledCategories.Should()
-            .BeEquivalentTo([Category.Deprecation, Category.Hint]);
+            .BeEquivalentTo(Category.Deprecation, Category.Hint);
 
         config
             .Which
@@ -124,7 +124,7 @@ public class SessionConfigBuilderTests
         config
             .Which
             .DisabledCategories.Should()
-            .BeEquivalentTo([Category.Deprecation, Category.Hint]);
+            .BeEquivalentTo(Category.Deprecation, Category.Hint);
 
         config
             .Which

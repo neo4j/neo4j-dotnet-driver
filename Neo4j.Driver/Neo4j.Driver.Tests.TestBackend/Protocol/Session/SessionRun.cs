@@ -25,7 +25,8 @@ internal class SessionRun : ProtocolObject
 {
     public SessionRunType data { get; set; } = new();
 
-    [JsonIgnore] private string ResultId { get; set; }
+    [JsonIgnore]
+    private string ResultId { get; set; }
 
     public override async Task Process()
     {

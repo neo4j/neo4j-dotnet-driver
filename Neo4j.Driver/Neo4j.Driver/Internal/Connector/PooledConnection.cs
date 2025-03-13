@@ -32,7 +32,7 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
         : base(conn)
     {
         _releaseManager = releaseManager;
-        
+
         // IdleTimer starts to count when the connection is put back to the pool.
         IdleTimer = DateTimeProvider.StaticInstance.NewTimer();
         // LifetimeTimer starts to count once the connection is created.

@@ -1,12 +1,12 @@
 ﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
-//
+// 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -297,35 +297,6 @@ public class DelegateMapperTests
         result.Should().Be("AAA");
     }
 
-    private abstract class SpokenStatement
-    {
-        public abstract bool IsTrue { get; }
-        public string Description { get; }
-
-        protected SpokenStatement(string description)
-        {
-            Description = description;
-        }
-    }
-
-    private class Truth : SpokenStatement
-    {
-        public override bool IsTrue => true;
-
-        public Truth(string description) : base(description)
-        {
-        }
-    }
-
-    private class Myth : SpokenStatement
-    {
-        public override bool IsTrue => false;
-
-        public Myth(string description) : base(description)
-        {
-        }
-    }
-
     [Fact]
     public void ShouldSucceedForExampleGivenInDocumentation()
     {
@@ -338,8 +309,6 @@ public class DelegateMapperTests
         spokenStatement.Should().BeOfType<Truth>();
         spokenStatement.Description.Should().Be("This is true");
     }
-
-    private record Person([MappingSource("name")] string Name, [MappingSource("age")] int Age);
 
     [Fact]
     public void ShouldPassMappedObjectsToLambdaWhenRequired()
@@ -370,7 +339,11 @@ public class DelegateMapperTests
     public void ShouldSucceedWithMethodInsteadOfLambda()
     {
         var record = TestRecord.Create(("country", "Sweden"), ("population", 1234));
-        string MakeStatement(string c,int p) => $"{c} has a population of {p}";
+
+        string MakeStatement(string c, int p)
+        {
+            return $"{c} has a population of {p}";
+        }
 
         var result = record.AsObject((string country, int population) => MakeStatement(country, population));
 
@@ -382,16 +355,48 @@ public class DelegateMapperTests
     {
         var record = TestRecord.Create(("x", 69));
 
-        Action act = () => record.AsObject((int x) =>
-        {
-            if(x == 69)
+        Action act = () => record.AsObject(
+            (int x) =>
             {
-                throw new Exception("Test exception");
-            }
+                if (x == 69)
+                {
+                    throw new Exception("Test exception");
+                }
 
-            return new string('A', x);
-        });
+                return new string('A', x);
+            });
 
         act.Should().Throw<MappingFailedException>().WithInnerException<Exception>().WithMessage("Test exception");
     }
+
+    private abstract class SpokenStatement
+    {
+        protected SpokenStatement(string description)
+        {
+            Description = description;
+        }
+
+        public abstract bool IsTrue { get; }
+        public string Description { get; }
+    }
+
+    private class Truth : SpokenStatement
+    {
+        public Truth(string description) : base(description)
+        {
+        }
+
+        public override bool IsTrue => true;
+    }
+
+    private class Myth : SpokenStatement
+    {
+        public Myth(string description) : base(description)
+        {
+        }
+
+        public override bool IsTrue => false;
+    }
+
+    private record Person([MappingSource("name")] string Name, [MappingSource("age")] int Age);
 }

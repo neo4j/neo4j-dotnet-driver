@@ -86,6 +86,7 @@ public sealed class CausalClusterStressTests : StressTest
         {
             throw new Exception("Context of wrong type");
         }
+
         VerifyServedReadQueries(clusterContext, clusterAddresses);
         VerifyServedSimilarAmountOfReadQueries(clusterContext, clusterAddresses);
     }
@@ -103,6 +104,7 @@ public sealed class CausalClusterStressTests : StressTest
                     {
                         throw new Exception("Context of wrong type");
                     }
+
                     clusterContext.LeaderSwitched();
                     return true;
                 }

@@ -30,8 +30,23 @@ public class ConnectionValidatorTests
         TimeSpan? maxConnLifetime = null,
         TimeSpan? livelinessCheckTimeout = null)
     {
-        return new ConnectionValidator(connIdleTimeout ?? Config.InfiniteInterval,
-            maxConnLifetime ?? Config.InfiniteInterval, livelinessCheckTimeout);
+        return new ConnectionValidator(
+            connIdleTimeout ?? Config.InfiniteInterval,
+            maxConnLifetime ?? Config.InfiniteInterval,
+            livelinessCheckTimeout);
+    }
+
+    private static (Mock<IPooledConnection> conn, Mock<ITimer> idle, Mock<ITimer> life) Mock()
+    {
+        var conn = new Mock<IPooledConnection>();
+        conn.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
+
+        var idleTimer = new Mock<ITimer>();
+        var lifeTimer = new Mock<ITimer>();
+
+        conn.Setup(x => x.IdleTimer).Returns(idleTimer.Object);
+        conn.Setup(x => x.LifetimeTimer).Returns(lifeTimer.Object);
+        return (conn, idleTimer, lifeTimer);
     }
 
     public class IsConnectionReusableTests
@@ -130,18 +145,5 @@ public class ConnectionValidatorTests
             validator.GetConnectionLifetimeStatus(conn.Object).Should().Be(AcquireStatus.RequiresLivenessProbe);
             idleTimer.Verify(x => x.Reset(), Times.Once);
         }
-    }
-
-    private static (Mock<IPooledConnection> conn, Mock<ITimer> idle, Mock<ITimer> life) Mock()
-    {
-        var conn = new Mock<IPooledConnection>();
-        conn.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
-
-        var idleTimer = new Mock<ITimer>();
-        var lifeTimer = new Mock<ITimer>();
-
-        conn.Setup(x => x.IdleTimer).Returns(idleTimer.Object);
-        conn.Setup(x => x.LifetimeTimer).Returns(lifeTimer.Object);
-        return (conn, idleTimer, lifeTimer);
     }
 }

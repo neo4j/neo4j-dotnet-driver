@@ -25,35 +25,6 @@ namespace Neo4j.Driver.Tests.Mapping;
 
 public class RecordMappingTests
 {
-    private class TestPerson
-    {
-        [MappingDefaultValue("A. Test Name")]
-        [MappingSource("person.name")]
-        public string Name { get; set; }
-
-        [MappingOptional]
-        [MappingSource("person.born")]
-        public int? Born { get; set; }
-
-        [MappingOptional]
-        [MappingSource("hobbies")]
-        public List<string> Hobbies { get; set; } = null!;
-    }
-
-    private class SimpleTestPerson
-    {
-        [MappingOptional]
-        [MappingSource("name")]
-        public string Name { get; set; } = "A. Test Name";
-
-        [MappingOptional]
-        [MappingSource("born")]
-        public int? Born { get; set; }
-
-        [MappingOptional]
-        public List<string> Hobbies { get; set; } = null!;
-    }
-
     [Fact]
     public void ShouldMapPrimitives()
     {
@@ -69,15 +40,6 @@ public class RecordMappingTests
         var record = TestRecord.Create(["hobbies"], [new List<string> { "Coding", "Swimming" }]);
         var person = record.AsObject<TestPerson>();
         person.Hobbies.Should().BeEquivalentTo("Coding", "Swimming");
-    }
-
-    private class PersonInDict
-    {
-        [MappingSource("person.name")]
-        public string Name { get; set; } = "";
-
-        [MappingSource("person.born")]
-        public int Born { get; set; }
     }
 
     [Fact]
@@ -99,43 +61,6 @@ public class RecordMappingTests
         person.Should().NotBeNull();
         person!.Name.Should().Be("A. Test Name");
         person!.Born.Should().Be(1977);
-    }
-
-    private class Movie
-    {
-        [MappingSource("title")]
-        public string Title { get; set; } = "";
-
-        [MappingSource("released")]
-        public int Released { get; set; }
-
-        [MappingOptional]
-        [MappingSource("tagline")]
-        public string Tagline { get; set; }
-    }
-
-    private class Person
-    {
-        [MappingSource("name")]
-        public string Name { get; set; } = "";
-
-        [MappingSource("born")]
-        public int? Born { get; set; }
-    }
-
-    private class ProducingCareer
-    {
-        [MappingSource("person")]
-        public Person Producer { get; set; } = null!;
-
-        [MappingSource("titles")]
-        public List<string> MovieTitleIdeas { get; set; } = null!;
-
-        [MappingSource("movies")]
-        public List<Movie> HistoricalMovies { get; set; } = null!;
-
-        [MappingSource("moviesDict")]
-        public List<Movie> OtherMovies { get; set; } = null!;
     }
 
     [Fact]
@@ -365,37 +290,6 @@ public class RecordMappingTests
                 new SimpleTestPerson { Name = "Eve", Born = 1999 });
     }
 
-    private class CarAndPainting
-    {
-        [MappingSource("car")]
-        public Car Car { get; set; } = null!;
-
-        [MappingSource("painting")]
-        public Painting Painting { get; set; } = null!;
-    }
-
-    private class Painting
-    {
-        [MappingSource("painting.artist")]
-        public string Artist { get; set; } = "";
-
-        [MappingSource("painting.title")]
-        public string Title { get; set; } = "";
-    }
-
-    private class Car
-    {
-        [MappingSource("car.make")]
-        public string Make { get; set; } = "";
-
-        [MappingSource("car.model")]
-        public string Model { get; set; } = "";
-
-        [MappingDefaultValue("unset")]
-        [MappingSource("car.madeup")]
-        public string MadeUp { get; set; }
-    }
-
     [Fact]
     public void ShouldMapSubNodesWithAbsolutePaths()
     {
@@ -428,14 +322,6 @@ public class RecordMappingTests
         mappedObject.Car.MadeUp.Should().Be("unset");
     }
 
-    private class PersonWithoutBornSetter
-    {
-        [MappingSource("name")]
-        public string Name { get; set; } = "";
-
-        public int? Born { get; } = 1999; // no setter
-    }
-
     [Fact]
     public void DefaultMapperShouldIgnorePropertiesWithoutSetter()
     {
@@ -445,15 +331,6 @@ public class RecordMappingTests
         person.Born.Should().Be(1999);
     }
 
-    private class TestPersonWithoutBornMapped
-    {
-        [MappingSource("name")]
-        public string Name { get; set; } = "A. Test Name";
-
-        [MappingIgnored]
-        public int? Born { get; set; } = 9999;
-    }
-
     [Fact]
     public void ShouldIgnorePropertiesWithDoNotMapAttribute()
     {
@@ -461,21 +338,6 @@ public class RecordMappingTests
         var person = record.AsObject<TestPersonWithoutBornMapped>();
         person.Name.Should().Be("Bob");
         person.Born.Should().Be(9999);
-    }
-
-    private class Book
-    {
-        [MappingSource("title")]
-        public string Title { get; set; }
-    }
-
-    private class Author
-    {
-        [MappingSource("author.name")]
-        public string Name { get; set; }
-
-        [MappingSource("author.books")]
-        public List<Book> Books { get; set; }
     }
 
     [Fact]
@@ -501,11 +363,6 @@ public class RecordMappingTests
         mappedObject.Books[0].Title.Should().Be("The Green Man");
         mappedObject.Books[1].Title.Should().Be("The Thin End");
     }
-
-    private record Song(
-        [MappingSource("recordingArtist")] string Artist,
-        [MappingSource("title")] string Title,
-        [MappingSource("year")] int Year);
 
     [Fact]
     public void ShouldMapToRecords()
@@ -544,15 +401,6 @@ public class RecordMappingTests
         act.Should().Throw<MappingFailedException>();
     }
 
-    private class ClassWithInitProperties
-    {
-        [MappingSource("name")]
-        public string Name { get; init; } = "";
-
-        [MappingSource("age")]
-        public int Age { get; init; }
-    }
-
     [Fact]
     public void ShouldMapToInitProperties()
     {
@@ -562,12 +410,6 @@ public class RecordMappingTests
         person.Age.Should().Be(1977);
     }
 
-    private class ClassWithDefaultConstructor(string forename, int age)
-    {
-        public string Name => forename;
-        public int Age => age;
-    }
-
     [Fact]
     public void ShouldMapToDefaultConstructorParameters()
     {
@@ -575,12 +417,6 @@ public class RecordMappingTests
         var person = record.AsObject<ClassWithDefaultConstructor>();
         person.Name.Should().Be("Bob");
         person.Age.Should().Be(1977);
-    }
-
-    private class ClassWithDefaultConstructorWithAttributes([MappingSource("forename")] string name, int age)
-    {
-        public string Name => name;
-        public int Age => age;
     }
 
     [Fact]
@@ -653,10 +489,6 @@ public class RecordMappingTests
         result.y.Should().Be("test");
     }
 
-    private record TestXY(int X, string Y)
-    {
-    }
-
     [Fact]
     public void ShouldMapToAnonymousTypeWithTypedLambda()
     {
@@ -678,5 +510,173 @@ public class RecordMappingTests
 
         result.Should().BeOfType(expectedPerson.GetType());
         result.Should().BeEquivalentTo(expectedPerson);
+    }
+
+    private class TestPerson
+    {
+        [MappingDefaultValue("A. Test Name")]
+        [MappingSource("person.name")]
+        public string Name { get; set; }
+
+        [MappingOptional]
+        [MappingSource("person.born")]
+        public int? Born { get; set; }
+
+        [MappingOptional]
+        [MappingSource("hobbies")]
+        public List<string> Hobbies { get; set; } = null!;
+    }
+
+    private class SimpleTestPerson
+    {
+        [MappingOptional]
+        [MappingSource("name")]
+        public string Name { get; set; } = "A. Test Name";
+
+        [MappingOptional]
+        [MappingSource("born")]
+        public int? Born { get; set; }
+
+        [MappingOptional]
+        public List<string> Hobbies { get; set; } = null!;
+    }
+
+    private class PersonInDict
+    {
+        [MappingSource("person.name")]
+        public string Name { get; set; } = "";
+
+        [MappingSource("person.born")]
+        public int Born { get; set; }
+    }
+
+    private class Movie
+    {
+        [MappingSource("title")]
+        public string Title { get; set; } = "";
+
+        [MappingSource("released")]
+        public int Released { get; set; }
+
+        [MappingOptional]
+        [MappingSource("tagline")]
+        public string Tagline { get; set; }
+    }
+
+    private class Person
+    {
+        [MappingSource("name")]
+        public string Name { get; set; } = "";
+
+        [MappingSource("born")]
+        public int? Born { get; set; }
+    }
+
+    private class ProducingCareer
+    {
+        [MappingSource("person")]
+        public Person Producer { get; set; } = null!;
+
+        [MappingSource("titles")]
+        public List<string> MovieTitleIdeas { get; set; } = null!;
+
+        [MappingSource("movies")]
+        public List<Movie> HistoricalMovies { get; set; } = null!;
+
+        [MappingSource("moviesDict")]
+        public List<Movie> OtherMovies { get; set; } = null!;
+    }
+
+    private class CarAndPainting
+    {
+        [MappingSource("car")]
+        public Car Car { get; set; } = null!;
+
+        [MappingSource("painting")]
+        public Painting Painting { get; set; } = null!;
+    }
+
+    private class Painting
+    {
+        [MappingSource("painting.artist")]
+        public string Artist { get; set; } = "";
+
+        [MappingSource("painting.title")]
+        public string Title { get; set; } = "";
+    }
+
+    private class Car
+    {
+        [MappingSource("car.make")]
+        public string Make { get; set; } = "";
+
+        [MappingSource("car.model")]
+        public string Model { get; set; } = "";
+
+        [MappingDefaultValue("unset")]
+        [MappingSource("car.madeup")]
+        public string MadeUp { get; set; }
+    }
+
+    private class PersonWithoutBornSetter
+    {
+        [MappingSource("name")]
+        public string Name { get; set; } = "";
+
+        public int? Born { get; } = 1999; // no setter
+    }
+
+    private class TestPersonWithoutBornMapped
+    {
+        [MappingSource("name")]
+        public string Name { get; set;  } = "A. Test Name";
+
+        [MappingIgnored]
+        public int? Born { get; set; } = 9999;
+    }
+
+    private class Book
+    {
+        [MappingSource("title")]
+        public string Title { get; set; }
+    }
+
+    private class Author
+    {
+        [MappingSource("author.name")]
+        public string Name { get; set; }
+
+        [MappingSource("author.books")]
+        public List<Book> Books { get; set; }
+    }
+
+    private record Song(
+        [MappingSource("recordingArtist")] string Artist,
+        [MappingSource("title")] string Title,
+        [MappingSource("year")] int Year);
+
+    private class ClassWithInitProperties
+    {
+        [MappingSource("name")]
+        public string Name { get; set; } = "";
+
+        [MappingSource("age")]
+        public int Age { get; init; }
+    }
+
+    private class ClassWithDefaultConstructor(string forename, int age)
+    {
+        public string Name => forename;
+        public int Age => age;
+    }
+
+    private class ClassWithDefaultConstructorWithAttributes([MappingSource("forename")] string name, int age)
+    {
+        public string Name => name;
+        public int Age => age;
+    }
+
+    private record TestXY(int X, string Y)
+    {
     }
 }

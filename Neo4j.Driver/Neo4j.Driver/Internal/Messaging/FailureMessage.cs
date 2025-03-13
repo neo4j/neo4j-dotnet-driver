@@ -32,46 +32,33 @@ internal sealed class FailureMessage : IResponseMessage
         Message = message;
     }
 
-    /// <summary>
-    /// Code is the Neo4j-specific error code, to be deprecated in favor of GqlStatus.
-    /// </summary>
+    /// <summary>Code is the Neo4j-specific error code, to be deprecated in favor of GqlStatus.</summary>
     public string Code { get; set; }
 
-    /// <summary>
-    /// The specific error message describing the failure.
-    /// </summary>
+    /// <summary>The specific error message describing the failure.</summary>
     public string Message { get; set; }
 
-    /// <summary>
-    /// Returns the GQLSTATUS.
-    /// </summary>
+    /// <summary>Returns the GQLSTATUS.</summary>
     public string GqlStatus { get; set; }
 
-    /// <summary>
-    /// Provides a standard description for the associated GQLStatus code.
-    /// </summary>
+    /// <summary>Provides a standard description for the associated GQLStatus code.</summary>
     public string GqlStatusDescription { get; set; }
 
-    /// <summary>
-    /// A high-level categorization of the error, specific to GQL error handling.
-    /// </summary>
+    /// <summary>A high-level categorization of the error, specific to GQL error handling.</summary>
     public string GqlClassification { get; set; }
 
-    /// <summary>
-    /// The raw classification as received from the server.
-    /// </summary>
+    /// <summary>The raw classification as received from the server.</summary>
     public string GqlRawClassification { get; set; }
 
     /// <summary>
-    /// GqlDiagnosticRecord returns further information about the status for diagnostic purposes.
-    /// GqlDiagnosticRecord is part of the GQL compliant errors preview feature.
+    /// GqlDiagnosticRecord returns further information about the status for diagnostic purposes. GqlDiagnosticRecord
+    /// is part of the GQL compliant errors preview feature.
     /// </summary>
     public Dictionary<string, object> GqlDiagnosticRecord { get; set; }
 
     /// <summary>
-    /// GqlCause represents the underlying error, if any, which caused the current error.
-    /// GqlCause is part of the GQL compliant errors preview feature
-    /// (see README on what it means in terms of support and compatibility guarantees)
+    /// GqlCause represents the underlying error, if any, which caused the current error. GqlCause is part of the GQL
+    /// compliant errors preview feature (see README on what it means in terms of support and compatibility guarantees)
     /// </summary>
     public FailureMessage GqlCause { get; set; }
 
@@ -86,6 +73,4 @@ internal sealed class FailureMessage : IResponseMessage
     {
         return $"FAILURE code={Code}, message={Message}";
     }
-
-
 }

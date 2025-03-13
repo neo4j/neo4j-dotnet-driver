@@ -20,16 +20,13 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Mapping;
 
-/// <summary>
-/// Contains extension methods for <see cref="IAsyncEnumerable{T}"/>.
-/// </summary>
+/// <summary>Contains extension methods for <see cref="IAsyncEnumerable{T}"/>.</summary>
 public static class AsyncEnumerableExtensions
 {
     /// <summary>
-    /// Materializes the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type
-    /// <typeparamref name="T"/>, by mapping each record in the enumerable to an object.
-    /// If no custom mapper is defined for type <typeparamref name="T"/>, the default
-    /// mapper will be used.
+    /// Materializes the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type <typeparamref name="T"/>, by
+    /// mapping each record in the enumerable to an object. If no custom mapper is defined for type <typeparamref name="T"/>,
+    /// the default mapper will be used.
     /// </summary>
     /// <seealso cref="RecordObjectMapping.Map{T}"/>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
@@ -50,10 +47,10 @@ public static class AsyncEnumerableExtensions
     }
 
     /// <summary>
-    /// Materializes the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type
-    /// <typeparamref name="T"/>, by mapping each record in the enumerable to an object of the
-    /// same type as <paramref name="blueprint"/>. This object could be anononymously typed.
-    /// If no custom mapper is defined for type <typeparamref name="T"/>, the default mapper will be used.
+    /// Materializes the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type <typeparamref name="T"/>, by
+    /// mapping each record in the enumerable to an object of the same type as <paramref name="blueprint"/>. This object could
+    /// be anononymously typed. If no custom mapper is defined for type <typeparamref name="T"/>, the default mapper will be
+    /// used.
     /// </summary>
     /// <seealso cref="RecordObjectMapping.Map{T}"/>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
@@ -76,8 +73,8 @@ public static class AsyncEnumerableExtensions
     }
 
     /// <summary>
-    /// Converts the <see cref="IAsyncEnumerable{IRecord}"/> to an <see cref="IAsyncEnumerable{T}"/> of objects of type
-    /// <typeparamref name="T"/>, by mapping each record in the enumerable to an object. If no custom mapper is defined
+    /// Converts the <see cref="IAsyncEnumerable{IRecord}"/> to an <see cref="IAsyncEnumerable{T}"/> of objects of
+    /// type <typeparamref name="T"/>, by mapping each record in the enumerable to an object. If no custom mapper is defined
     /// for type <typeparamref name="T"/>, the default mapper will be used.
     /// </summary>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
@@ -95,10 +92,10 @@ public static class AsyncEnumerableExtensions
     }
 
     /// <summary>
-    /// Converts the <see cref="IAsyncEnumerable{IRecord}"/> to an <see cref="IAsyncEnumerable{T}"/> of objects of type
-    /// <typeparamref name="T"/>, by mapping each record in the enumerable to an object of the
-    /// same type as <paramref name="blueprint"/>. This object could be anonymously typed.
-    /// If no custom mapper is defined for type <typeparamref name="T"/>, the default mapper will be used.
+    /// Converts the <see cref="IAsyncEnumerable{IRecord}"/> to an <see cref="IAsyncEnumerable{T}"/> of objects of
+    /// type <typeparamref name="T"/>, by mapping each record in the enumerable to an object of the same type as
+    /// <paramref name="blueprint"/>. This object could be anonymously typed. If no custom mapper is defined for type
+    /// <typeparamref name="T"/>, the default mapper will be used.
     /// </summary>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
     /// <param name="blueprint">An object of type <typeparamref name="T"/> to use as a blueprint for mapping.</param>

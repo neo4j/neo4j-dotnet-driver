@@ -351,7 +351,7 @@ public class ValueExtensionsTests
             node.Properties["key1"].As<string>().Should().Be("value1");
             node.Properties["key2"].As<string>().Should().Be("2");
 
-            obj.As<string>().Should().Be($"Path with 0 segments");
+            obj.As<string>().Should().Be("Path with 0 segments");
         }
     }
 }

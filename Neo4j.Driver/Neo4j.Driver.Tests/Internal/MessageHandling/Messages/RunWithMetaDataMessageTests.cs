@@ -53,6 +53,7 @@ public class RunWithMetaDataMessageTests
             new BoltProtocolVersion(major, minor),
             null,
             sessionConfig: new SessionConfig("jeff"));
+
         rm.Query.Should().BeNull();
         rm.Metadata.Should().ContainKey("imp_user").WhichValue.Should().Be("jeff");
 
@@ -94,7 +95,6 @@ public class RunWithMetaDataMessageTests
             .Be(
                 "RUN `...`, [] [{bookmarks, [bm:a]}, {tx_timeout, 1000}, {tx_metadata, [{a, b}]}, {mode, r}, {db, neo4j}, {imp_user, jeff}]");
     }
-
 
     [Theory]
     [InlineData(5, 2)]

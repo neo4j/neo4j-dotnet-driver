@@ -15,33 +15,21 @@
 
 namespace Neo4j.Driver.Tests.BenchkitBackend.Types;
 
-/// <summary>
-/// Describes a driver workload.
-/// </summary>
+/// <summary>Describes a driver workload.</summary>
 public class Workload
 {
-    /// <summary>
-    /// The method to use for executing the workload.
-    /// </summary>
+    /// <summary>The method to use for executing the workload.</summary>
     public Method Method { get; set; }
 
-    /// <summary>
-    /// The database to use for the workload.
-    /// </summary>
+    /// <summary>The database to use for the workload.</summary>
     public string? Database { get; set; } = "";
 
-    /// <summary>
-    /// The routing method to use for the workload.
-    /// </summary>
+    /// <summary>The routing method to use for the workload.</summary>
     public Routing Routing { get; set; } = Routing.Write;
 
-    /// <summary>
-    /// The series/parallel mode to use for the workload.
-    /// </summary>
+    /// <summary>The series/parallel mode to use for the workload.</summary>
     public Mode Mode { get; set; } = Mode.SequentialSessions;
 
-    /// <summary>
-    /// A list of individual queries to execute as part of the workload.
-    /// </summary>
+    /// <summary>A list of individual queries to execute as part of the workload.</summary>
     public List<WorkloadQuery> Queries { get; set; } = new();
 }

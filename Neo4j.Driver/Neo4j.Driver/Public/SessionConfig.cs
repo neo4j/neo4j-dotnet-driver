@@ -16,7 +16,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver;
@@ -44,11 +46,6 @@ public sealed class SessionConfig
     internal SessionConfig(string impersonatedUser) : this()
     {
         _impersonatedUser = impersonatedUser;
-    }
-
-    internal SessionConfig(IAuthToken authToken) : this()
-    {
-        AuthToken = authToken;
     }
 
     internal static SessionConfigBuilder Builder => new(new SessionConfig());
@@ -84,9 +81,16 @@ public sealed class SessionConfig
     /// </list>
     /// </remarks>
     /// <seealso cref="SessionConfigBuilder.WithDatabase"/>
-    public string Database { get; internal set; }
+    public string Database
+    {
+        get => _database;
+        internal set => _database = string.IsNullOrWhiteSpace(value) ? null : value;
+    }
 
-    /// <summary>
+    private string _database;
+
+
+/// <summary>
     /// The type of access required by the constructed session. This is used to route the requests originating from this
     /// session instance to the correct server in a clustered environment.
     /// <remarks>
@@ -153,6 +157,14 @@ public sealed class SessionConfig
     /// <seealso cref="INotification"/>
     /// <seealso cref="IResultSummary.Notifications"/>
     public INotificationsConfig NotificationsConfig { get; internal set; }
+
+    internal DriverContext DriverContext { get; set; }
+
+    internal Action<string> OnPinDatabase { get; set; }
+    internal void PinDatabase(string database)
+    {
+        OnPinDatabase?.Invoke(database);
+    }
 }
 
 /// <summary>The builder to build a <see cref="SessionConfig"/>.</summary>

@@ -25,6 +25,18 @@ internal sealed class RecordMessageSerializer : ReadOnlySerializer, IPackStreamM
     private static readonly byte[] StructTags = { MessageFormat.MsgRecord };
     public override byte[] ReadableStructs => StructTags;
 
+    public IResponseMessage DeserializeMessage(BoltProtocolVersion formatVersion, SpanPackStreamReader packStreamReader)
+    {
+        var fieldCount = packStreamReader.ReadListHeader();
+        var fields = new object[fieldCount];
+        for (var i = 0; i < fieldCount; i++)
+        {
+            fields[i] = packStreamReader.Read();
+        }
+
+        return new RecordMessage(fields);
+    }
+
     public override object Deserialize(PackStreamReader reader)
     {
         var fieldCount = (int)reader.ReadListHeader();
@@ -34,17 +46,6 @@ internal sealed class RecordMessageSerializer : ReadOnlySerializer, IPackStreamM
             fields[i] = reader.Read();
         }
 
-        return new RecordMessage(fields);
-    }
-
-    public IResponseMessage DeserializeMessage(BoltProtocolVersion formatVersion, SpanPackStreamReader packStreamReader)
-    {
-        var fieldCount = packStreamReader.ReadListHeader();
-        var fields = new object[fieldCount];
-        for (var i = 0; i < fieldCount; i++)
-        {
-            fields[i] = packStreamReader.Read();
-        }
         return new RecordMessage(fields);
     }
 }

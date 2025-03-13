@@ -79,13 +79,13 @@ internal sealed class Relationship : IRelationship
     public IReadOnlyDictionary<string, object> Properties { get; }
     public object this[string key] => Properties[key];
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public T Get<T>(string key)
     {
         return Properties[key].As<T>();
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public bool TryGet<T>(string key, out T value)
     {
         if (Properties.TryGetValue(key, out var obj))

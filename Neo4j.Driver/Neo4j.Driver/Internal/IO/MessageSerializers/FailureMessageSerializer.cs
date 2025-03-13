@@ -27,20 +27,20 @@ internal sealed class FailureMessageSerializer : ReadOnlySerializer, IPackStream
     private static readonly byte[] StructTags = { MessageFormat.MsgFailure };
     public override byte[] ReadableStructs => StructTags;
 
-    public override object Deserialize(
+    public IResponseMessage DeserializeMessage(
         BoltProtocolVersion boltProtocolVersion,
-        PackStreamReader packStreamReader,
-        byte _,
-        long __)
+        SpanPackStreamReader packStreamReader)
     {
         var values = packStreamReader.ReadMap();
         var majorVersion = boltProtocolVersion.MajorVersion;
         return BuildFailureMessage(values, majorVersion);
     }
 
-    public IResponseMessage DeserializeMessage(
+    public override object Deserialize(
         BoltProtocolVersion boltProtocolVersion,
-        SpanPackStreamReader packStreamReader)
+        PackStreamReader packStreamReader,
+        byte _,
+        long __)
     {
         var values = packStreamReader.ReadMap();
         var majorVersion = boltProtocolVersion.MajorVersion;

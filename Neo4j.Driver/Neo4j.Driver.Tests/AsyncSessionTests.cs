@@ -23,6 +23,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
@@ -72,8 +73,7 @@ public class AsyncSessionTests
                     It.IsAny<IRequestMessage>(),
                     It.IsAny<IResponseHandler>()))
             .Returns(Task.CompletedTask)
-            .Callback(
-                (IRequestMessage _, IResponseHandler h1) => { h1.OnSuccess(new Dictionary<string, object>()); });
+            .Callback((IRequestMessage _, IResponseHandler h1) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
         if (protocol == null)
         {
@@ -100,7 +100,8 @@ public class AsyncSessionTests
             mockConn.Verify(
                 x => x.RunInAutoCommitTransactionAsync(
                     It.IsAny<AutoCommitParams>(),
-                    It.IsAny<INotificationsConfig>()),
+                    It.IsAny<INotificationsConfig>(),
+                    It.IsAny<IHomeDbCache>()),
                 Times.Once);
         }
     }
@@ -178,7 +179,10 @@ public class AsyncSessionTests
                 x =>
                     x.BeginTransactionAsync(
                         It.IsAny<IConnection>(),
-                        It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == true)),
+                        It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == true),
+                        It.IsAny<HomeDbCacheKey>(),
+                        It.IsAny<IHomeDbCache>(),
+                        It.IsAny<Driver.SessionConfig>()),
                 Times.Once);
         }
 
@@ -227,7 +231,10 @@ public class AsyncSessionTests
                     x =>
                         x.BeginTransactionAsync(
                             It.IsAny<IConnection>(),
-                            It.IsAny<BeginTransactionParams>()))
+                            It.IsAny<BeginTransactionParams>(),
+                            It.IsAny<HomeDbCacheKey>(),
+                            It.IsAny<IHomeDbCache>(),
+                            It.IsAny<Driver.SessionConfig>()))
                 .Throws(new IOException("Triggered an error when beginTx"));
 
             var session = NewSession(mockConn.Object);
@@ -252,7 +259,10 @@ public class AsyncSessionTests
                     x =>
                         x.BeginTransactionAsync(
                             It.IsAny<IConnection>(),
-                            It.IsAny<BeginTransactionParams>()))
+                            It.IsAny<BeginTransactionParams>(),
+                            It.IsAny<HomeDbCacheKey>(),
+                            It.IsAny<IHomeDbCache>(),
+                            It.IsAny<Driver.SessionConfig>()))
                 .Returns(Task.CompletedTask)
                 .Callback(
                     () =>
@@ -292,20 +302,25 @@ public class AsyncSessionTests
 
             var session = new AsyncSession(
                 new TestConnectionProvider(mockConn.Object),
-                null,
+                NullLogger.Instance,
                 new AsyncRetryLogic(TimeSpan.Zero, null),
                 0,
                 new Driver.SessionConfig(),
                 false,
                 false);
 
-            await session.PipelinedExecuteReadAsync(_ => Task.FromResult(null as EagerResult<IRecord[]>), new TransactionConfig());
+            await session.PipelinedExecuteReadAsync(
+                _ => Task.FromResult(null as EagerResult<IRecord[]>),
+                new TransactionConfig());
 
             mockProtocol.Verify(
                 x =>
                     x.BeginTransactionAsync(
                         It.IsAny<IConnection>(),
-                        It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == false)),
+                        It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == false),
+                        It.IsAny<HomeDbCacheKey>(),
+                        It.IsAny<IHomeDbCache>(),
+                        It.IsAny<Driver.SessionConfig>()),
                 Times.Once);
         }
     }
@@ -321,7 +336,10 @@ public class AsyncSessionTests
                     x =>
                         x.BeginTransactionAsync(
                             It.IsAny<IConnection>(),
-                            It.IsAny<BeginTransactionParams>()))
+                            It.IsAny<BeginTransactionParams>(),
+                            It.IsAny<HomeDbCacheKey>(),
+                            It.IsAny<IHomeDbCache>(),
+                            It.IsAny<Driver.SessionConfig>()))
                 .Throws(new IOException("Triggered an error when beginTx"));
 
             var session = NewSession(mockConn.Object);
@@ -428,6 +446,9 @@ public class AsyncSessionTests
             throw new NotSupportedException();
         }
 
+        /// <inheritdoc />
+        public bool IsDirectDriver => false;
+
         public DriverContext DriverContext => new(
             new Uri("neo4j://myTest.org"),
             AuthTokenManagers.Static(AuthTokens.None),
@@ -481,7 +502,14 @@ public class AsyncSessionTests
                 .WithBookmarkManager(bookmarkManager.Object)
                 .Build();
 
-            using (var session = new AsyncSession(null, null, null, 0, cfg, false, false))
+            using (var session = new AsyncSession(
+                       null,
+                       null,
+                       null,
+                       0,
+                       cfg,
+                       false,
+                       false))
             {
                 session.UpdateBookmarks(new InternalBookmarks("a"));
                 bookmarkManager.Verify(

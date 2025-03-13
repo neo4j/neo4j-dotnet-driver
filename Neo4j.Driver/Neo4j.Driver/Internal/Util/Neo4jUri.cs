@@ -21,7 +21,7 @@ namespace Neo4j.Driver.Internal.Util;
 internal static class Neo4jUri
 {
     public const int DefaultBoltPort = 7687;
-    
+
     public static bool IsSimpleUriScheme(Uri uri)
     {
         var scheme = uri.Scheme.ToLower();
@@ -154,6 +154,7 @@ internal static class Neo4jUri
         {
             builder.Port = DefaultBoltPort;
         }
+
         return builder.Uri;
     }
 }

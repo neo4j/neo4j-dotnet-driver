@@ -19,21 +19,31 @@ namespace Neo4j.Driver.Tests.TestBackend.Protocol.Driver;
 
 internal class SimpleLogger : ILogger
 {
-    private string Now => DateTime.UtcNow.ToString("O");
+    private string Now => DateTime.UtcNow.ToString("HH:mm:ss");
 
     public void Debug(string message, params object[] args)
     {
-        Console.WriteLine($"[DRIVER-DEBUG][{Now}]{message}", args);
+
+        Console.ForegroundColor = message[0] == '['
+            ? ConsoleColor.DarkMagenta
+            : ConsoleColor.DarkGreen;
+
+        Console.WriteLine($"{Now} DBG: {message}", args);
+        Console.ResetColor();
     }
 
     public void Error(Exception error, string message, params object[] args)
     {
-        Console.WriteLine($"[DRIVER-ERROR][{Now}]{message}", args);
+        Console.ForegroundColor = ConsoleColor.DarkRed;
+        Console.WriteLine($"{Now} ERR: {message}", args);
+        Console.ResetColor();
     }
 
     public void Info(string message, params object[] args)
     {
-        Console.WriteLine($"[DRIVER-INFO] [{Now}]{message}", args);
+        Console.ForegroundColor = ConsoleColor.Gray;
+        Console.WriteLine($"{Now} INF: {message}", args);
+        Console.ResetColor();
     }
 
     public bool IsDebugEnabled()
@@ -48,11 +58,15 @@ internal class SimpleLogger : ILogger
 
     public void Trace(string message, params object[] args)
     {
-        Console.WriteLine($"[DRIVER-TRACE][{Now}]{message}", args);
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.WriteLine($"{Now} TRC: {message}", args);
+        Console.ResetColor();
     }
 
     public void Warn(Exception error, string message, params object[] args)
     {
-        Console.WriteLine($"[DRIVER-WARN] [{Now}]{message}", args);
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine($"{Now} WRN: {message}", args);
+        Console.ResetColor();
     }
 }

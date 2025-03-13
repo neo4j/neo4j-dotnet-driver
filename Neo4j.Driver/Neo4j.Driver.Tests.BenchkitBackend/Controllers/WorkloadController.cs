@@ -21,16 +21,14 @@ namespace Neo4j.Driver.Tests.BenchkitBackend.Controllers;
 
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
-/// <summary>
-/// Define and run workloads in the Neo4j driver.
-/// </summary>
+/// <summary>Define and run workloads in the Neo4j driver.</summary>
 [ApiController]
 [Route("[controller]")]
 public class WorkloadController(
-        IWorkloadStore workloadStore,
-        IWorkloadExecutorSelector workloadExecutorSelector,
-        ILogger logger,
-        LinkGenerator linkGenerator)
+    IWorkloadStore workloadStore,
+    IWorkloadExecutorSelector workloadExecutorSelector,
+    ILogger logger,
+    LinkGenerator linkGenerator)
     : ControllerBase
 {
     // GET
@@ -95,8 +93,7 @@ public class WorkloadController(
 
     // DELETE
     /// <summary>Deletes a driver workload.</summary>
-    /// <remarks>This endpoint deletes the workload from memory. Ongoing executions will not be
-    /// canceled or stopped.</remarks>
+    /// <remarks>This endpoint deletes the workload from memory. Ongoing executions will not be canceled or stopped.</remarks>
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

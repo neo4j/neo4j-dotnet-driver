@@ -30,7 +30,6 @@ namespace Neo4j.Driver.Internal.Connector;
 
 internal sealed class TcpSocketClient : ITcpSocketClient
 {
-    private DriverContext DriverContext { get; }
     private readonly ILogger _logger;
     public Uri ConnectionUri { get; private set; }
 
@@ -41,6 +40,8 @@ internal sealed class TcpSocketClient : ITcpSocketClient
         DriverContext = driverContext;
         _logger = logger;
     }
+
+    private DriverContext DriverContext { get; }
 
     public Stream ReaderStream { get; private set; }
     public Stream WriterStream => ReaderStream;
@@ -67,7 +68,9 @@ internal sealed class TcpSocketClient : ITcpSocketClient
             }
             catch (Exception e)
             {
-                throw new ServiceUnavailableException($"Failed to establish encrypted connection with server {uri}.", e);
+                throw new ServiceUnavailableException(
+                    $"Failed to establish encrypted connection with server {uri}.",
+                    e);
             }
         }
     }

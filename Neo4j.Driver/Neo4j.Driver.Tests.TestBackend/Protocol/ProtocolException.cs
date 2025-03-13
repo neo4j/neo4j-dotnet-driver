@@ -23,7 +23,8 @@ internal class ProtocolException : ProtocolObject
 {
     public ProtocolExceptionType data { get; set; } = new();
 
-    [JsonIgnore] public Exception ExceptionObj { get; set; }
+    [JsonIgnore]
+    public Exception ExceptionObj { get; set; }
 
     public override async Task Process()
     {

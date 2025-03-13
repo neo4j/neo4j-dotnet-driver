@@ -54,6 +54,7 @@ public sealed class CausalClusterIntegrationTestFixture : IDisposable
         switch (_disposed)
         {
             case true: return;
+
             case false:
                 Cluster?.Dispose();
                 break;

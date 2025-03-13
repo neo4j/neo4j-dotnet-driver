@@ -40,12 +40,12 @@ public sealed class RoutingDriverTests
         var uri = new Uri("neo4j://127.0.0.1:9001/?policy=my_policy&region=china");
         await using var driver = GraphDatabase.Driver(uri, SetupConfig);
         await using var session = driver.AsyncSession();
-            var cursor = await session.RunAsync("MATCH (n) RETURN n.name AS name");
-            var records = await cursor.ToListAsync();
+        var cursor = await session.RunAsync("MATCH (n) RETURN n.name AS name");
+        var records = await cursor.ToListAsync();
 
-            records.Count.Should().Be(2);
-            records[0]["name"].As<string>().Should().Be("Alice");
-            records[1]["name"].As<string>().Should().Be("Bob");
+        records.Count.Should().Be(2);
+        records[0]["name"].As<string>().Should().Be("Alice");
+        records[1]["name"].As<string>().Should().Be("Bob");
     }
 
     [RequireBoltStubServerTheory]
@@ -57,13 +57,13 @@ public sealed class RoutingDriverTests
         var uri = new Uri("neo4j://127.0.0.1:9001");
         await using var driver = GraphDatabase.Driver(uri, SetupConfig);
         await using var session = driver.AsyncSession();
-            var cursor = await session.RunAsync("MATCH (n) RETURN n.name AS name");
-            var records = await cursor.ToListAsync();
+        var cursor = await session.RunAsync("MATCH (n) RETURN n.name AS name");
+        var records = await cursor.ToListAsync();
 
-            records.Count.Should().Be(3);
-            records[0]["name"].As<string>().Should().Be("Alice");
-            records[1]["name"].As<string>().Should().Be("Bob");
-            records[2]["name"].As<string>().Should().Be("Eve");
+        records.Count.Should().Be(3);
+        records[0]["name"].As<string>().Should().Be("Alice");
+        records[1]["name"].As<string>().Should().Be("Bob");
+        records[2]["name"].As<string>().Should().Be("Eve");
     }
 
     [RequireBoltStubServerTheory]

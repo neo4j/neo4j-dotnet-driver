@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
@@ -213,6 +214,12 @@ internal abstract class DelegatedConnection : IConnection
         set => Delegate.TelemetryEnabled = value;
     }
 
+    public bool SsrEnabled
+    {
+        get => Delegate.SsrEnabled;
+        set => Delegate.SsrEnabled = value;
+    }
+
     public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
     {
         return BoltProtocol.AuthenticateAsync(this, userAgent, authToken, notificationsConfig);
@@ -231,30 +238,46 @@ internal abstract class DelegatedConnection : IConnection
     public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         string database,
         SessionConfig sessionConfig,
-        Bookmarks bookmarks)
+        Bookmarks bookmarks,
+        IHomeDbCache homeDbCache)
     {
-        return BoltProtocol.GetRoutingTableAsync(this, database, sessionConfig, bookmarks);
+        return BoltProtocol.GetRoutingTableAsync(this, database, sessionConfig, bookmarks, homeDbCache);
     }
 
     public Task<IResultCursor> RunInAutoCommitTransactionAsync(
         AutoCommitParams autoCommitParams,
-        INotificationsConfig notificationsConfig)
+        INotificationsConfig notificationsConfig,
+        IHomeDbCache homeDbCache)
     {
-        return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams, notificationsConfig);
+        return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams, notificationsConfig, homeDbCache);
     }
 
-    public Task BeginTransactionAsync(BeginTransactionParams beginTransactionParams)
+    public Task BeginTransactionAsync(
+        BeginTransactionParams beginTransactionParams,
+        IHomeDbCache homeDbCache)
     {
-        return BoltProtocol.BeginTransactionAsync(this, beginTransactionParams);
+        var cacheKey = HomeDbCacheKeyProvider.GetCacheKey(AuthToken, beginTransactionParams.SessionConfig);
+        return BoltProtocol.BeginTransactionAsync(this, beginTransactionParams, cacheKey, homeDbCache, SessionConfig);
     }
 
     public Task<IResultCursor> RunInExplicitTransactionAsync(
         Query query,
         bool reactive,
         long fetchSize,
-        IInternalAsyncTransaction transaction)
+        IInternalAsyncTransaction transaction,
+        IHomeDbCache homeDbCache)
     {
-        return BoltProtocol.RunInExplicitTransactionAsync(this, query, reactive, fetchSize, transaction);
+        var cacheKey = HomeDbCacheKeyProvider.GetCacheKey(AuthToken, null);
+
+        return BoltProtocol.RunInExplicitTransactionAsync(
+            this,
+            query,
+            reactive,
+            fetchSize,
+            transaction,
+            cacheKey,
+            homeDbCache,
+            SessionConfig);
     }
 
     public Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker)

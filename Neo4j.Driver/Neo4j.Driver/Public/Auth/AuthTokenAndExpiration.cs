@@ -18,14 +18,10 @@ using Neo4j.Driver.Internal.Services;
 
 namespace Neo4j.Driver;
 
-/// <summary>
-/// Represents an auth token and its expiration.
-/// </summary>
+/// <summary>Represents an auth token and its expiration.</summary>
 public record AuthTokenAndExpiration
 {
-    /// <summary>
-    /// Initializes a new instance of <see cref="AuthTokenAndExpiration"/>.
-    /// </summary>
+    /// <summary>Initializes a new instance of <see cref="AuthTokenAndExpiration"/>.</summary>
     /// <param name="token">The auth token.</param>
     /// <param name="expiry">The date and time when the token expires.</param>
     public AuthTokenAndExpiration(IAuthToken token, DateTime? expiry = default)
@@ -34,15 +30,13 @@ public record AuthTokenAndExpiration
         Expiry = expiry ?? DateTime.MaxValue;
     }
 
-    /// <summary>
-    /// Initializes a new instance of <see cref="AuthTokenAndExpiration"/>.
-    /// </summary>
+    /// <summary>Initializes a new instance of <see cref="AuthTokenAndExpiration"/>.</summary>
     /// <param name="token">The auth token.</param>
     /// <param name="expiresInMs">The number of milliseconds after which the token expires.</param>
     public AuthTokenAndExpiration(IAuthToken token, int expiresInMs)
     {
-        this.Token = token;
-        this.Expiry = DateTimeProvider.StaticInstance.Now().AddMilliseconds(expiresInMs);
+        Token = token;
+        Expiry = DateTimeProvider.StaticInstance.Now().AddMilliseconds(expiresInMs);
     }
 
     /// <summary>The auth token.</summary>
@@ -51,14 +45,12 @@ public record AuthTokenAndExpiration
     /// <summary>The date and time when the token expires.</summary>
     public DateTime Expiry { get; init; }
 
-    /// <summary>
-    /// Deconstructs the <see cref="AuthTokenAndExpiration"/> into its components.
-    /// </summary>
+    /// <summary>Deconstructs the <see cref="AuthTokenAndExpiration"/> into its components.</summary>
     /// <param name="token">The auth token.</param>
     /// <param name="expiry">The date and time when the token expires.</param>
     public void Deconstruct(out IAuthToken token, out DateTime? expiry)
     {
-        token = this.Token;
-        expiry = this.Expiry;
+        token = Token;
+        expiry = Expiry;
     }
 }

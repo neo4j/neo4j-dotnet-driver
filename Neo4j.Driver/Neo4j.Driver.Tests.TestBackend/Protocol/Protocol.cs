@@ -77,7 +77,8 @@ internal abstract class ProtocolObject
         internal set;
     } //Only exposes the get option so that the serializer will output it.  Don't want to read in on deserialization.
 
-    [JsonIgnore] protected ProtocolObjectManager ObjManager { get; set; }
+    [JsonIgnore]
+    protected ProtocolObjectManager ObjManager { get; set; }
 
     public event EventHandler ProtocolEvent;
 

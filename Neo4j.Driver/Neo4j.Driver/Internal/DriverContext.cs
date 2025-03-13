@@ -16,9 +16,10 @@
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Connector.Resolvers;
 using Neo4j.Driver.Internal.Helpers;
+using Neo4j.Driver.Internal.HomeDbCaching;
+using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal;
@@ -40,8 +41,9 @@ internal sealed class DriverContext
             config.NullableEncryptionLevel,
             config.TrustManager,
             config.Logger);
+
         DriverBookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
-        
+
         HostResolver = customHostResolver ??
             (RuntimeHelper.IsDotNetCore
                 ? new SystemNetCoreHostResolver(new SystemHostResolver())
@@ -54,19 +56,18 @@ internal sealed class DriverContext
 
     public DefaultBookmarkManager DriverBookmarkManager { get; }
 
-    /// <summary>
-    /// The root uri configured on the driver.
-    /// This is not a uri for a connection.
-    /// </summary>
+    /// <summary>The root uri configured on the driver. This is not a uri for a connection.</summary>
     public Uri InitialUri { get; }
+
     public Config Config { get; }
-    /// <summary>
-    /// Shortcut to Config.Logger.
-    /// </summary>
+
+    /// <summary>Shortcut to Config.Logger.</summary>
     public ILogger Logger => Config.Logger;
+
     public IAuthTokenManager AuthTokenManager { get; }
     public EncryptionManager EncryptionManager { get; }
     public IHostResolver HostResolver { get; }
     public IInternalMetrics Metrics { get; }
     public IDictionary<string, string> RoutingContext { get; }
+    public IHomeDbCache HomeDbCache { get; } = new HomeDbCache();
 }

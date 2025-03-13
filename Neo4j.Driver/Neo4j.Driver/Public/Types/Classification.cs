@@ -13,8 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-
 namespace Neo4j.Driver;
 
 /// <summary>
@@ -83,7 +81,8 @@ public enum Classification
     Topology,
 
     /// <summary>Receive notifications related to managing indexes and constraints.</summary>
-    /// <remarks> Returned as <see cref="NotificationClassification.Schema"/> in <see cref="IGqlStatusObject.Classification"/>
+    /// <remarks>
+    /// Returned as <see cref="NotificationClassification.Schema"/> in <see cref="IGqlStatusObject.Classification"/>
     /// and as <see cref="NotificationCategory.Schema"/> in <see cref="INotification.Category"/>.
     /// </remarks>
     Schema,

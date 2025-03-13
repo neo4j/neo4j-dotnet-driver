@@ -21,7 +21,8 @@ namespace Neo4j.Driver.Tests.TestBackend.Protocol.Result;
 
 internal class Result : ProtocolObject
 {
-    [JsonIgnore] public IResultCursor ResultCursor { get; set; }
+    [JsonIgnore]
+    public IResultCursor ResultCursor { get; set; }
 
     public ResultType data { get; set; } = new();
 

@@ -20,8 +20,8 @@ using Neo4j.Driver.Internal;
 namespace Neo4j.Driver;
 
 /// <summary>
-/// Configuration object containing settings for explicit and auto-commit transactions. Leave the fields unmodified to use
-/// server side transaction configurations.
+/// Configuration object containing settings for explicit and auto-commit transactions. Leave the fields
+/// unmodified to use server side transaction configurations.
 /// </summary>
 public sealed class TransactionConfig
 {
@@ -54,7 +54,7 @@ public sealed class TransactionConfig
                 _timeout = value;
                 return;
             }
-            
+
             if (value.Value < TimeSpan.Zero)
             {
                 throw new ArgumentOutOfRangeException(
@@ -137,11 +137,11 @@ public sealed class TransactionConfigBuilder
 
         if (timeout.Value < TimeSpan.Zero)
         {
-            throw new ArgumentOutOfRangeException(  
+            throw new ArgumentOutOfRangeException(
                 nameof(timeout),
                 "Transaction timeout should not be negative.");
         }
-        
+
         if (timeout.Value.Ticks % TimeSpan.TicksPerMillisecond == 0)
         {
             _config.Timeout = timeout;
@@ -153,7 +153,7 @@ public sealed class TransactionConfigBuilder
             _logger.Info(
                 $"Transaction timeout {timeout} contains sub-millisecond precision and will be rounded up to {timeSpan}.");
         }
-        
+
         return this;
     }
 

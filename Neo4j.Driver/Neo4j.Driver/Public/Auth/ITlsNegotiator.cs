@@ -19,21 +19,15 @@ using System.Net.Security;
 
 namespace Neo4j.Driver;
 
-/// <summary>
-/// Defines a method that negotiates a TLS connection.
-/// </summary>
+/// <summary>Defines a method that negotiates a TLS connection.</summary>
 public interface ITlsNegotiator
 {
-    /// <summary>
-    /// Return a secured stream for the given URI and stream.
-    /// </summary>
+    /// <summary>Return a secured stream for the given URI and stream.</summary>
     /// <param name="uri">The URI being connected to.</param>
     /// <param name="stream">The stream to negotiate the TLS connection on.</param>
     /// <returns></returns>
     SslStream NegotiateTls(Uri uri, Stream stream);
 }
 
-/// <summary>
-/// A delegate that negotiates a TLS connection.
-/// </summary>
+/// <summary>A delegate that negotiates a TLS connection.</summary>
 public delegate SslStream NegotiateTlsDelegate(Uri uri, Stream stream);

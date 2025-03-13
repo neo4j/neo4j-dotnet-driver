@@ -20,8 +20,8 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver.Internal.Protocol.Utility;
 
 /// <summary>
-/// Supports cursors on auto commit functions so we don't need to null check and check error.
-/// this will always return false for the transaction has errored because the transaction doen't exist.
+/// Supports cursors on auto commit functions so we don't need to null check and check error. this will always
+/// return false for the transaction has errored because the transaction doen't exist.
 /// </summary>
 internal sealed class NullTransaction : IInternalAsyncTransaction
 {
@@ -30,7 +30,7 @@ internal sealed class NullTransaction : IInternalAsyncTransaction
     private NullTransaction()
     {
     }
-    
+
     public void Dispose()
     {
     }
@@ -42,7 +42,8 @@ internal sealed class NullTransaction : IInternalAsyncTransaction
 
     public Task<IResultCursor> RunAsync(string query)
     {
-        throw new InvalidOperationException("Something very wrong has happened and an illegal function has been called.");
+        throw new InvalidOperationException(
+            "Something very wrong has happened and an illegal function has been called.");
     }
 
     public Task<IResultCursor> RunAsync(string query, object parameters)
@@ -65,6 +66,7 @@ internal sealed class NullTransaction : IInternalAsyncTransaction
 
     public TransactionConfig TransactionConfig => throw new InvalidOperationException(
         "Something very wrong has happened and an illegal function has been called.");
+
     public Task CommitAsync()
     {
         throw new InvalidOperationException(

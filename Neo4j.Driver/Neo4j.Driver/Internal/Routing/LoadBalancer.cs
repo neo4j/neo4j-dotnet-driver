@@ -20,6 +20,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.Logging;
 using static Neo4j.Driver.Internal.Util.ConnectionContext;
 
@@ -49,21 +50,21 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
 
         _logger = driverContext.Logger;
         _initialServerAddressProvider = new InitialServerAddressProvider(parsedUri, driverContext.Config.Resolver);
-        _routingTableManager = new RoutingTableManager(_initialServerAddressProvider, this, _logger);
+        _routingTableManager = new RoutingTableManager(_initialServerAddressProvider, this, DriverContext, _logger);
         _loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy(
             _clusterConnectionPool,
             _logger);
     }
-    
-    /// <summary>
-    /// TEST ONLY.
-    /// </summary>
+
+    /// <summary>TEST ONLY.</summary>
     /// <param name="clusterConnPool"></param>
     /// <param name="routingTableManager"></param>
     internal LoadBalancer(
         IClusterConnectionPool clusterConnPool,
-        IRoutingTableManager routingTableManager)
+        IRoutingTableManager routingTableManager,
+        DriverContext driverContext = null)
     {
+        DriverContext = driverContext;
         _logger = NullLogger.Instance;
         _clusterConnectionPool = clusterConnPool;
         _routingTableManager = routingTableManager;
@@ -94,7 +95,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         string database,
         SessionConfig sessionConfig,
         Bookmarks bookmarks,
-        bool forceAuth = false)
+        bool forceAuth)
     {
         if (IsClosed)
         {
@@ -103,8 +104,20 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
                 "Failed to acquire a new connection as the driver has already been disposed.");
         }
 
+        _logger.Debug($"LoadBalancer - Acquiring connection for '{database}'");
         var conn = await AcquireConnectionAsync(mode, database, sessionConfig, bookmarks, forceAuth)
             .ConfigureAwait(false);
+
+        //If a non ssr connection is detected then the connection is not used and returned to the pool. Connection
+        //acquisition is then repeated with the cache not being used.
+        if (_clusterConnectionPool.ConnectionCausesCacheDisable(conn))
+        {
+            _logger.Debug($"LoadBalancer - Mixed cluster detected, some connections have no SSR. Re-acquiring " +
+                $"connection without homeDB cache");
+            await conn.CloseAsync().ConfigureAwait(false);
+            conn = await AcquireConnectionAsync(mode, database, sessionConfig, bookmarks, forceAuth)
+                .ConfigureAwait(false);
+        }
 
         if (IsClosed)
         {
@@ -139,6 +152,9 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             "Unable to connect to database, " +
             "ensure the database is running and that there is a working network connection to it.");
     }
+
+    /// <inheritdoc />
+    public bool IsDirectDriver => false;
 
     public DriverContext DriverContext { get; }
 
@@ -223,8 +239,32 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         Bookmarks bookmarks,
         bool forceAuth)
     {
+        var cachedDatabaseUsed = false;
+        var databaseForRouting = sessionConfig?.Database ?? database;
+        var cacheKey = HomeDbCacheKeyProvider.GetCacheKey(null, sessionConfig);
+
+        if (string.IsNullOrWhiteSpace(databaseForRouting) && _clusterConnectionPool.CanUseHomeDbCache())
+        {
+            _logger.Debug($"Checking cached home database for {cacheKey}");
+            cachedDatabaseUsed = DriverContext.HomeDbCache.TryGetCached(cacheKey, out databaseForRouting);
+
+            if (cachedDatabaseUsed)
+            {
+                _logger.Debug($"Using cached home database {databaseForRouting} for {cacheKey}");
+            }
+            else
+            {
+                _logger.Debug($"No cached home database found for {cacheKey}");
+            }
+        }
+
         var routingTable = await _routingTableManager
-            .EnsureRoutingTableForModeAsync(mode, database, sessionConfig, bookmarks)
+            .EnsureRoutingTableForModeAsync(
+                mode,
+                databaseForRouting,
+                cachedDatabaseUsed,
+                sessionConfig,
+                bookmarks)
             .ConfigureAwait(false);
 
         while (true)
@@ -234,11 +274,11 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             switch (mode)
             {
                 case AccessMode.Read:
-                    uri = _loadBalancingStrategy.SelectReader(routingTable.Readers, database);
+                    uri = _loadBalancingStrategy.SelectReader(routingTable.Readers, database, databaseForRouting);
                     break;
 
                 case AccessMode.Write:
-                    uri = _loadBalancingStrategy.SelectWriter(routingTable.Writers, database);
+                    uri = _loadBalancingStrategy.SelectWriter(routingTable.Writers, database, databaseForRouting);
                     break;
 
                 default:
@@ -259,7 +299,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
                     bookmarks,
                     forceAuth)
                 .ConfigureAwait(false);
-
+           
             if (conn != null)
             {
                 return conn;

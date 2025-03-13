@@ -17,9 +17,7 @@ using System;
 
 namespace Neo4j.Driver.Mapping;
 
-/// <summary>
-/// The exception that is thrown when the mapping of a record to a target type failed.
-/// </summary>
+/// <summary>The exception that is thrown when the mapping of a record to a target type failed.</summary>
 public class MappingFailedException : Neo4jException
 {
     /// <summary>

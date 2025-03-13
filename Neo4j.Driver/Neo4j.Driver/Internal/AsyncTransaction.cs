@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Protocol;
 
@@ -31,6 +32,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     private static readonly IState Failed = new FailedState();
 
     private readonly IConnection _connection;
+    private readonly DriverContext _driverContext;
     private readonly long _fetchSize;
     private readonly ILogger _logger;
     private readonly INotificationsConfig _notificationsConfig;
@@ -54,7 +56,8 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         bool reactive = false,
         long fetchSize = Config.Infinite,
         SessionConfig sessionConfig = null,
-        INotificationsConfig notificationsConfig = null)
+        INotificationsConfig notificationsConfig = null,
+        DriverContext driverContext = null)
     {
         _connection = new TransactionConnection(this, connection);
         _resourceHandler = resourceHandler ?? throw new ArgumentNullException(nameof(resourceHandler));
@@ -65,6 +68,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         _fetchSize = fetchSize;
         _sessionConfig = sessionConfig;
         _notificationsConfig = notificationsConfig;
+        _driverContext = driverContext;
     }
 
     private string Database { get; set; }
@@ -78,16 +82,6 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         }
 
         _bookmarks = bookmarks;
-    }
-
-    /// <summary>
-    /// Sets the error for the transaction if it is not already set.
-    /// This avoids the exception changing if multiple errors occur.
-    /// </summary>
-    /// <param name="ex">The first exception to occur in the transaction.</param>
-    internal void SetErrorIfNull(Exception ex)
-    {
-        TransactionError ??= ex;
     }
 
     public bool IsErrored(out Exception ex)
@@ -110,7 +104,17 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         {
             throw new TransactionTerminatedException(TransactionError);
         }
-        var result = _state.RunAsync(query, _connection, _logger, _reactive, _fetchSize, this,  out var nextState);
+
+        var result = _state.RunAsync(
+            query,
+            _connection,
+            _logger,
+            _reactive,
+            _fetchSize,
+            this,
+            _driverContext.HomeDbCache,
+            out var nextState);
+
         _state = nextState;
         _results.Add(result);
         return result;
@@ -122,6 +126,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         {
             throw new TransactionTerminatedException(TransactionError);
         }
+
         try
         {
             await DiscardUnconsumed().ConfigureAwait(false);
@@ -150,10 +155,20 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
     public TransactionConfig TransactionConfig { get; private set; }
 
+    /// <summary>
+    /// Sets the error for the transaction if it is not already set. This avoids the exception changing if multiple
+    /// errors occur.
+    /// </summary>
+    /// <param name="ex">The first exception to occur in the transaction.</param>
+    internal void SetErrorIfNull(Exception ex)
+    {
+        TransactionError ??= ex;
+    }
+
     public Task BeginTransactionAsync(TransactionConfig config, TransactionInfo transactionInfo)
     {
         TransactionConfig = config;
-        
+
         return _connection.BeginTransactionAsync(
             new BeginTransactionParams(
                 Database,
@@ -161,7 +176,8 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
                 TransactionConfig,
                 _sessionConfig,
                 _notificationsConfig,
-                transactionInfo));
+                transactionInfo),
+            _driverContext?.HomeDbCache);
     }
 
     public async Task MarkToCloseAsync()
@@ -245,6 +261,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
+            IHomeDbCache homeDbCache,
             out IState nextState);
 
         Task CommitAsync(
@@ -267,10 +284,11 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
+            IHomeDbCache homeDbCache,
             out IState nextState)
         {
             nextState = Active;
-            return connection.RunInExplicitTransactionAsync(query, reactive, fetchSize, transaction);
+            return connection.RunInExplicitTransactionAsync(query, reactive, fetchSize, transaction, homeDbCache);
         }
 
         public Task CommitAsync(
@@ -301,6 +319,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
+            IHomeDbCache homeDbCache,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -335,6 +354,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
+            IHomeDbCache homeDbCache,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -369,6 +389,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
+            IHomeDbCache homeDbCache,
             out IState nextState)
         {
             throw new TransactionTerminatedException(transaction.TransactionError);

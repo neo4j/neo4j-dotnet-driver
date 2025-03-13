@@ -1,10 +1,8 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
+// Neo4j Sweden AB [https://neo4j.com]
 // 
-// This file is part of Neo4j.
-// 
-// Licensed under the Apache License, Version 2.0 (the "License"):
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -22,18 +20,15 @@ using Neo4j.Driver.Internal.Messaging;
 namespace Neo4j.Driver;
 
 /// <summary>
-/// An attempt to BeginTransaction has been made before the sessions existing transaction
-/// has been consumed or rolled back. e.g. An attempt to nest transactions has occurred.
-/// A session can only have a single transaction at a time.
+/// An attempt to BeginTransaction has been made before the sessions existing transaction has been consumed or
+/// rolled back. e.g. An attempt to nest transactions has occurred. A session can only have a single transaction at a time.
 /// </summary>
 [DataContract]
 public class TransactionNestingException : ClientException
-{ 
-    /// <summary>
-    /// Create a new <see cref="TransactionNestingException"/> with an error message
-    /// </summary>
+{
+    /// <summary>Create a new <see cref="TransactionNestingException"/> with an error message</summary>
     /// <param name="message">The error message</param>
-    public TransactionNestingException(string message) : base(message)		
+    public TransactionNestingException(string message) : base(message)
     {
     }
 

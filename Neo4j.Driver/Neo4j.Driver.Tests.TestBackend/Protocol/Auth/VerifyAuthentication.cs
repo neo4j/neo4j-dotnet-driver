@@ -22,6 +22,7 @@ namespace Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
 internal class VerifyAuthentication : ProtocolObject
 {
     public VerifyAuthenticationDTO data { get; set; } = null!;
+
     [JsonIgnore]
     public bool Authenticated { get; set; }
 

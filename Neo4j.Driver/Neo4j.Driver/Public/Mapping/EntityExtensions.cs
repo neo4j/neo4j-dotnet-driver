@@ -15,14 +15,10 @@
 
 namespace Neo4j.Driver.Mapping;
 
-/// <summary>
-/// Contains extensions for entities such as nodes and relationships.
-/// </summary>
+/// <summary>Contains extensions for entities such as nodes and relationships.</summary>
 public static class EntityExtensions
 {
-    /// <summary>
-    /// Converts the entity to a record.
-    /// </summary>
+    /// <summary>Converts the entity to a record.</summary>
     /// <param name="entity">The entity to convert.</param>
     /// <returns>The record.</returns>
     public static IRecord AsRecord(this IEntity entity)

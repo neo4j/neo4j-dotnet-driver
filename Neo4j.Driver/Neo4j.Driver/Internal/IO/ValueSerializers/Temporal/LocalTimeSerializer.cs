@@ -43,7 +43,6 @@ internal sealed class LocalTimeSerializer : IPackStreamSerializer
         return TemporalHelpers.NanoOfDayToTime(nanosOfDay);
     }
 
-
     public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
     {
 #if NET6_0_OR_GREATER
@@ -56,7 +55,11 @@ internal sealed class LocalTimeSerializer : IPackStreamSerializer
         WriteLocalTime(writer, value);
     }
 
-    public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    public (object, int) DeserializeSpan(
+        BoltProtocolVersion version,
+        SpanPackStreamReader reader,
+        byte signature,
+        int size)
     {
         PackStream.EnsureStructSize("LocalTime", StructSize, size);
         var nanosOfDay = reader.ReadLong();

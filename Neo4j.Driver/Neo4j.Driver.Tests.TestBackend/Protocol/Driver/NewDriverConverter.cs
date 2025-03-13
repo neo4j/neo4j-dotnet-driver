@@ -65,7 +65,9 @@ internal class NewDriverConverter : JsonConverter<NewDriver.NewDriverType>
         }
 
         if (jsonObj.TryGetValue("notificationsDisabledCategories", out token))
+        {
             newDriverRequest.notificationsDisabledCategories = token.ToObject<string[]>();
+        }
 
         return newDriverRequest;
     }

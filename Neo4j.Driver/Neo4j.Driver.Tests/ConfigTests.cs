@@ -265,7 +265,7 @@ public class ConfigTests
             config
                 .Which
                 .DisabledCategories.Should()
-                .BeEquivalentTo([category]);
+                .BeEquivalentTo(category);
 
             config
                 .Which
@@ -320,7 +320,7 @@ public class ConfigTests
             config
                 .Which
                 .DisabledCategories.Should()
-                .BeEquivalentTo([Category.Deprecation, Category.Hint]);
+                .BeEquivalentTo(Category.Deprecation, Category.Hint);
 
             config
                 .Which
@@ -344,7 +344,7 @@ public class ConfigTests
             config
                 .Which
                 .DisabledCategories.Should()
-                .BeEquivalentTo([Category.Deprecation, Category.Hint]);
+                .BeEquivalentTo(Category.Deprecation, Category.Hint);
 
             config
                 .Which

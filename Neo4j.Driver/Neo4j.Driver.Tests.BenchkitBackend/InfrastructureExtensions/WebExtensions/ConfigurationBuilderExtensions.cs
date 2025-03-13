@@ -17,9 +17,7 @@ namespace Neo4j.Driver.Tests.BenchkitBackend.InfrastructureExtensions;
 
 internal static class ConfigurationBuilderExtensions
 {
-    /// <summary>
-    /// Override the configuration with values from environment variables.
-    /// </summary>
+    /// <summary>Override the configuration with values from environment variables.</summary>
     /// <param name="builder">The configuration builder.</param>
     /// <returns>The configuration builder for method chaining.</returns>
     public static IConfigurationBuilder OverrideFromBenchkitEnvironmentVars(this IConfigurationBuilder builder)

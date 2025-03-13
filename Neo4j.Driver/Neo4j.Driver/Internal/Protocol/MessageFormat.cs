@@ -55,6 +55,7 @@ internal sealed class MessageFormat
 
     // v5.4+
     public const byte MsgTelemetry = 0x54;
+    private readonly Dictionary<byte, IPackStreamMessageDeserializer> _messageReaders = new();
 
     private readonly Dictionary<byte, IPackStreamSerializer> _readerStructHandlers = new();
     private readonly Dictionary<Type, IPackStreamSerializer> _writerStructHandlers = new();
@@ -143,14 +144,13 @@ internal sealed class MessageFormat
     public IReadOnlyDictionary<Type, IPackStreamSerializer> WriteStructHandlers => _writerStructHandlers;
 
     public BoltProtocolVersion Version { get; }
-    private readonly Dictionary<byte, IPackStreamMessageDeserializer> _messageReaders = new();
     public IReadOnlyDictionary<byte, IPackStreamMessageDeserializer> MessageReaders => _messageReaders;
 
     private void AddMessageHandler<T>(T instance) where T : class, IPackStreamMessageDeserializer, IPackStreamSerializer
     {
         _messageReaders.Add(instance.ReadableStructs[0], instance);
     }
-    
+
     private void AddHandler<T>(T instance) where T : class, IPackStreamSerializer
     {
         foreach (var readableStruct in instance.ReadableStructs)

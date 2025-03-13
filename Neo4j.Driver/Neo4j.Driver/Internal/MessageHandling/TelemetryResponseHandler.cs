@@ -27,25 +27,25 @@ internal sealed class TelemetryResponseHandler : IResponseHandler
         _info = info;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void OnSuccess(IDictionary<string, object> metadata)
     {
         _info.SetAcked();
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void OnRecord(object[] fieldValues)
     {
         // will not be called
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void OnFailure(IResponsePipelineError error)
     {
         // do nothing
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void OnIgnored()
     {
         // do nothing

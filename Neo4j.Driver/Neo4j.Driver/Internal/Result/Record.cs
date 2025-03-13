@@ -22,8 +22,8 @@ namespace Neo4j.Driver.Internal.Result;
 internal sealed class Record : IRecord
 {
     private readonly IReadOnlyDictionary<string, int> _fieldLookup;
-    private readonly IReadOnlyDictionary<string, int> _invariantFieldLookup;
     private readonly object[] _fieldValues;
+    private readonly IReadOnlyDictionary<string, int> _invariantFieldLookup;
     private IReadOnlyList<string> _keys;
 
     public Record(
@@ -36,19 +36,19 @@ internal sealed class Record : IRecord
         _fieldValues = values;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public object this[int index] => _fieldValues[index];
 
     /// <inheritdoc cref="IRecord"/>
     public object this[string key] => _fieldValues[_fieldLookup[key]];
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public T Get<T>(string key)
     {
         return _fieldValues[_fieldLookup[key]].As<T>();
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public bool TryGet<T>(string key, out T value)
     {
         if (_fieldLookup.TryGetValue(key, out var index))
@@ -61,13 +61,13 @@ internal sealed class Record : IRecord
         return false;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public T GetCaseInsensitive<T>(string key)
     {
         return _fieldValues[_invariantFieldLookup[key]].As<T>();
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public bool TryGetCaseInsensitive<T>(string key, out T value)
     {
         if (_invariantFieldLookup.TryGetValue(key, out var index))
@@ -80,33 +80,42 @@ internal sealed class Record : IRecord
         return false;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IReadOnlyList<string> Keys => _keys ??= _fieldLookup.Keys.ToList();
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IReadOnlyDictionary<string, object> Values => this;
 
-    /// <inheritdoc />
-    bool IReadOnlyDictionary<string, object>.ContainsKey(string key) => _fieldLookup.ContainsKey(key);
+    /// <inheritdoc/>
+    bool IReadOnlyDictionary<string, object>.ContainsKey(string key)
+    {
+        return _fieldLookup.ContainsKey(key);
+    }
 
-    /// <inheritdoc />
-    bool IReadOnlyDictionary<string, object>.TryGetValue(string key, out object value) => TryGet(key, out value);
+    /// <inheritdoc/>
+    bool IReadOnlyDictionary<string, object>.TryGetValue(string key, out object value)
+    {
+        return TryGet(key, out value);
+    }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     IEnumerable<string> IReadOnlyDictionary<string, object>.Keys => Keys;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     IEnumerable<object> IReadOnlyDictionary<string, object>.Values => _fieldValues;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator()
     {
         return Keys.Select((key, i) => new KeyValuePair<string, object>(key, _fieldValues[i])).GetEnumerator();
     }
 
-    /// <inheritdoc />
-    IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<KeyValuePair<string, object>>)this).GetEnumerator();
+    /// <inheritdoc/>
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return ((IEnumerable<KeyValuePair<string, object>>)this).GetEnumerator();
+    }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     int IReadOnlyCollection<KeyValuePair<string, object>>.Count => _fieldLookup.Count;
 }

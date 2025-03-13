@@ -1,7 +1,5 @@
 // Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -77,7 +75,6 @@ internal ref struct SpanPackStreamReader
             case PackStream.TinyList: return PackStreamType.List;
             case PackStream.TinyMap: return PackStreamType.Map;
             case PackStream.TinyStruct: return PackStreamType.Struct;
-            default: break; // otherwise continue processing
         }
 
         if ((sbyte)markerByte >= PackStream.Minus2ToThe4)
@@ -203,7 +200,7 @@ internal ref struct SpanPackStreamReader
             PackStream.Int8 => NextSByte(),
             PackStream.Int16 => NextShort(),
             PackStream.Int32 => NextInt(),
-            PackStream.Int64 => throw new OverflowException($"Unexpectedly large Integer value unpacked."),
+            PackStream.Int64 => throw new OverflowException("Unexpectedly large Integer value unpacked."),
             _ => throw new ProtocolException($"Expected an integer, but got: 0x{marker:X2}")
         };
     }

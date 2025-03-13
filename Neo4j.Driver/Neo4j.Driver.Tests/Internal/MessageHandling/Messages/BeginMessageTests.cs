@@ -136,7 +136,11 @@ public class BeginMessageTests
         message.Metadata.Should().ContainKey("tx_metadata").WhichValue.Should().BeEquivalentTo(txMeta);
         message.Metadata.Should().ContainKey("mode").WhichValue.Should().BeEquivalentTo("r");
         message.Metadata.Should().ContainKey("db").WhichValue.Should().BeEquivalentTo("neo4j");
-        message.Metadata.Should().ContainKey("notifications_minimum_severity").WhichValue.Should().BeEquivalentTo("WARNING");
+        message.Metadata.Should()
+            .ContainKey("notifications_minimum_severity")
+            .WhichValue.Should()
+            .BeEquivalentTo("WARNING");
+
         message.Metadata.Should()
             .ContainKey("notifications_disabled_categories")
             .WhichValue.Should()
@@ -189,7 +193,7 @@ public class BeginMessageTests
             .Be(
                 "BEGIN [{bookmarks, [bm:a]}, {tx_timeout, 1000}, {tx_metadata, [{a, b}]}, {mode, r}, {db, neo4j}, {imp_user, Douglas Fir}, {notifications_minimum_severity, WARNING}, {notifications_disabled_classifications, [GENERIC]}]");
     }
-    
+
     [Fact]
     public void ShouldThrowIfBoltVersionLessThan44()
     {
@@ -212,7 +216,6 @@ public class BeginMessageTests
             .Should()
             .BeOfType<ArgumentOutOfRangeException>();
     }
-
 
     [Theory]
     [InlineData(5, 2)]

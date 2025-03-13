@@ -132,6 +132,34 @@ internal class ClusterConnectionPool : IClusterConnectionPool
         return 0;
     }
 
+    public int TotalNumberOfConnections()
+    {
+        return _pools.Values.Sum(pool => pool.TotalNumberOfConnections);
+    }
+
+    /// <inheritdoc />
+    public bool ConnectionCausesCacheDisable(IConnection connection)
+    {
+        var totalSsrEnabled = _pools.Values.Sum(pool => pool.NumberOfConnectionsWithSsrEnabled);
+        var totalSsrDisabled = _pools.Values.Sum(pool => pool.NumberOfConnectionsWithSsrDisabled);
+        return !connection.SsrEnabled && totalSsrEnabled > 0 && totalSsrDisabled == 1;
+    }
+
+    /// <inheritdoc/>
+    public bool CanUseHomeDbCache()
+    {
+        // sum the number of connections in all the pools with ssr enabled/disabled
+        var ssrEnabledCount = 0;
+        var ssrDisabledCount = 0;
+        foreach (var pool in _pools.Values)
+        {
+            ssrEnabledCount += pool.NumberOfConnectionsWithSsrEnabled;
+            ssrDisabledCount += pool.NumberOfConnectionsWithSsrDisabled;
+        }
+
+        return ssrEnabledCount >= 1 && ssrDisabledCount == 0;
+    }
+
     public ValueTask DisposeAsync()
     {
         return new ValueTask(CloseAsync());

@@ -26,7 +26,9 @@ internal sealed class RunResponseHandlerV3 : MetadataCollectingResponseHandler
     private readonly IResultStreamBuilder _streamBuilder;
     private readonly SummaryBuilder _summaryBuilder;
 
-    public RunResponseHandlerV3(IResultStreamBuilder streamBuilder, SummaryBuilder summaryBuilder)
+    public RunResponseHandlerV3(
+        IResultStreamBuilder streamBuilder,
+        SummaryBuilder summaryBuilder)
     {
         _streamBuilder = streamBuilder ?? throw new ArgumentNullException(nameof(streamBuilder));
         _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
@@ -40,7 +42,6 @@ internal sealed class RunResponseHandlerV3 : MetadataCollectingResponseHandler
         base.OnSuccess(metadata);
 
         _summaryBuilder.ResultAvailableAfter = GetMetadata<TimeToFirstCollector, long>();
-
         _streamBuilder.RunCompleted(NoQueryId, GetMetadata<FieldsCollector, string[]>(), null);
     }
 

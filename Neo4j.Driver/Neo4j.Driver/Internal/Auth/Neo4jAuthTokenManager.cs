@@ -26,8 +26,8 @@ internal class Neo4jAuthTokenManager : IAuthTokenManager
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly Func<ValueTask<AuthTokenAndExpiration>> _getAuthTokenAndExpirationAsync;
     private readonly Type[] _handledExceptionTypes;
-    private AuthTokenAndExpiration _currentAuthTokenAndExpiration;
     private readonly SemaphoreSlim _sync;
+    private AuthTokenAndExpiration _currentAuthTokenAndExpiration;
 
     public Neo4jAuthTokenManager(
         Func<ValueTask<AuthTokenAndExpiration>> getAuthTokenAndExpirationAsync,

@@ -13,9 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.MessageHandling;
 
 namespace Neo4j.Driver.Internal.Protocol;
@@ -36,21 +38,31 @@ internal interface IBoltProtocol
         IConnection connection,
         string database,
         SessionConfig sessionConfig,
-        Bookmarks bookmarks);
+        Bookmarks bookmarks,
+        IHomeDbCache homeDbCache);
 
     Task<IResultCursor> RunInAutoCommitTransactionAsync(
         IConnection connection,
         AutoCommitParams autoCommitParams,
-        INotificationsConfig notificationsConfig);
+        INotificationsConfig notificationsConfig,
+        IHomeDbCache homeDbCache);
 
-    Task BeginTransactionAsync(IConnection connection, BeginTransactionParams beginParams);
+    Task BeginTransactionAsync(
+        IConnection connection,
+        BeginTransactionParams beginParams,
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig);
 
     Task<IResultCursor> RunInExplicitTransactionAsync(
         IConnection connection,
         Query query,
         bool reactive,
         long fetchSize,
-        IInternalAsyncTransaction transaction);
+        IInternalAsyncTransaction transaction,
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig);
 
     Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker);
     Task RollbackTransactionAsync(IConnection connection);

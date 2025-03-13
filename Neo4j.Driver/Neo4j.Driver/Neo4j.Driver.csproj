@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-    <Import Project="..\common.props" />
+    <Import Project="..\common.props"/>
     <PropertyGroup>
         <AssemblyName>Neo4j.Driver</AssemblyName>
         <PackageId>Neo4j.Driver$(PackageIdSuffix)</PackageId>
@@ -39,11 +39,11 @@
         <WarningLevel>2</WarningLevel>
     </PropertyGroup>
     <ItemGroup>
-        <None Remove="Internal\Temporal\windowsZones.xml" />
-        <None Remove="Neo4j.Driver.csproj.DotSettings" />
+        <None Remove="Internal\Temporal\windowsZones.xml"/>
+        <None Remove="Neo4j.Driver.csproj.DotSettings"/>
     </ItemGroup>
     <ItemGroup>
-        <EmbeddedResource Include="Internal\Temporal\windowsZones.xml" />
+        <EmbeddedResource Include="Internal\Temporal\windowsZones.xml"/>
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="System.IO.Pipelines" Version="8.0.0" />

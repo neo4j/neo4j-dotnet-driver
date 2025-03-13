@@ -67,6 +67,7 @@ internal static class SupportedFeatures
             "Feature:Bolt:5.5",
             "Feature:Bolt:5.6",
             "Feature:Bolt:5.7",
+            "Feature:Bolt:5.8",
             "Feature:Bolt:Patch:UTC",
             "Feature:Bolt:HandshakeManifestV1",
             "Feature:Impersonation",
@@ -80,6 +81,8 @@ internal static class SupportedFeatures
             //"Optimization:MinimalResets",
             "Optimization:AuthPipelining",
             "Optimization:PullPipelining",
+            //"Optimization:HomeDbCacheBasicPrincipalIsImpersonatedUser",
+            "Optimization:HomeDatabaseCache"
             //"Optimization:ResultListFetchAll",
         };
     }

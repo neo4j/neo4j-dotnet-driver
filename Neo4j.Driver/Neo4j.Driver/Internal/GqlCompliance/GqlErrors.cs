@@ -35,8 +35,8 @@ internal static class GqlErrors
         message.Code ??= UnknownNeo4JCode;
         message.Message ??= UnknownMessage;
         message.GqlStatus ??= UnknownGqlStatus;
-        
-        if(string.IsNullOrEmpty(message.GqlStatusDescription))
+
+        if (string.IsNullOrEmpty(message.GqlStatusDescription))
         {
             message.GqlStatusDescription = UnknownGqlStatusDescription + " " + message.Message;
         }
@@ -44,13 +44,13 @@ internal static class GqlErrors
         message.GqlDiagnosticRecord ??= new Dictionary<string, object>();
         message.GqlDiagnosticRecord.FillMissingFrom(NewDefaultDiagnosticRecord());
 
-        if(message.GqlDiagnosticRecord.TryGetValue("_classification", out var classification))
+        if (message.GqlDiagnosticRecord.TryGetValue("_classification", out var classification))
         {
             message.GqlRawClassification = classification.ToString();
             message.GqlClassification = UnknownError;
-            foreach(var c in new[] { ClientError, DatabaseError, TransientError })
+            foreach (var c in new[] { ClientError, DatabaseError, TransientError })
             {
-                if(classification is string cl && cl == c)
+                if (classification is string cl && cl == c)
                 {
                     message.GqlClassification = c;
                     break;
@@ -66,7 +66,7 @@ internal static class GqlErrors
 
     private static Dictionary<string, object> NewDefaultDiagnosticRecord()
     {
-        return new()
+        return new Dictionary<string, object>
         {
             ["OPERATION"] = "",
             ["OPERATION_CODE"] = "0",

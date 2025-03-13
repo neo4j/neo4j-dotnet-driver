@@ -21,11 +21,6 @@ namespace Neo4j.Driver.Tests.TestUtil;
 
 public class MockExtensionsTests
 {
-    public interface IntGetter
-    {
-        int Value { get; }
-    }
-
     [Fact]
     public void ShouldSetupSequentialReturns()
     {
@@ -35,5 +30,10 @@ public class MockExtensionsTests
         mock.Object.Value.Should().Be(1);
         mock.Object.Value.Should().Be(2);
         mock.Object.Value.Should().Be(3);
+    }
+
+    public interface IntGetter
+    {
+        int Value { get; }
     }
 }

@@ -24,7 +24,8 @@ internal class SessionBeginTransaction : ProtocolObject
 {
     public SessionBeginTransactionType data { get; set; } = new();
 
-    [JsonIgnore] public string TransactionId { get; set; }
+    [JsonIgnore]
+    public string TransactionId { get; set; }
 
     public override async Task Process(Controller controller)
     {

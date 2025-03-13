@@ -21,14 +21,14 @@ using Neo4j.Driver.Internal;
 namespace Neo4j.Driver.Mapping;
 
 /// <summary>
-/// Contains extensions for using the global mapping system with the driver's <see cref="ExecutableQuery{TIn,TOut}"/>
-/// methods.
+/// Contains extensions for using the global mapping system with the driver's
+/// <see cref="ExecutableQuery{TIn,TOut}"/> methods.
 /// </summary>
 public static class ExecutableQueryMappingExtensions
 {
     /// <summary>
-    /// Add this method to an <see cref="ExecutableQuery{TIn,TOut}"/> method chain to map the results to objects
-    /// as part of the query execution.
+    /// Add this method to an <see cref="ExecutableQuery{TIn,TOut}"/> method chain to map the results to objects as
+    /// part of the query execution.
     /// </summary>
     /// <seealso cref="RecordObjectMapping.Map{T}"/>
     /// <param name="recordsTask">The task that will return the records.</param>
@@ -42,8 +42,8 @@ public static class ExecutableQueryMappingExtensions
     }
 
     /// <summary>
-    /// Add this method to an <see cref="ExecutableQuery{TIn,TOut}"/> method chain to map the results to objects
-    /// as part of the query execution.
+    /// Add this method to an <see cref="ExecutableQuery{TIn,TOut}"/> method chain to map the results to objects as
+    /// part of the query execution.
     /// </summary>
     /// <seealso cref="RecordObjectMapping.Map{T}"/>
     /// <param name="recordsTask">The task that will return the records.</param>

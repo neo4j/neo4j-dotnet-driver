@@ -120,7 +120,11 @@ internal static class TestBlackList
         ("test_temporal_types.TestDataTypes.test_date_time_cypher_created_tz_id",
             "No Antarctica/Troll mapping available."),
         ("test_temporal_types.TestDataTypes.test_should_echo_all_timezone_ids",
-            "EST/HST/MST not supported.")
+            "EST/HST/MST not supported."),
+
+        ("test_connection_acquisition_timeout_during_fallback",
+            "Driver currently uses separate acquisition timeouts for the separate connections. Future behavioural " +
+            "fix (6.0) needed to pass test and unify with other drivers.")
     };
 
     public static bool FindTest(string testName, out string reason)

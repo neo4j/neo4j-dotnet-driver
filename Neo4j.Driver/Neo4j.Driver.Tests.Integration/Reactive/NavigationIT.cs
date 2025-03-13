@@ -431,6 +431,7 @@ public static class NavigationIT
                 _rxTransaction.Commit<int>().WaitForCompletion();
                 _rxSession.Close<int>().WaitForCompletion();
             }
+
             base.Dispose();
         }
     }

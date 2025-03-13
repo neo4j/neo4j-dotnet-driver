@@ -13,14 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-
 namespace Neo4j.Driver;
 
 /// <summary>
-/// This is a preview API, This API may change between minor revisions.<br/>
-/// Represents the classification of server notifications surfaced by <see cref="IGqlStatusObject"/>.<br/> Used in
-/// conjunction with <see cref="NotificationSeverity"/>.
+/// This is a preview API, This API may change between minor revisions.<br/> Represents the classification of
+/// server notifications surfaced by <see cref="IGqlStatusObject"/>.<br/> Used in conjunction with
+/// <see cref="NotificationSeverity"/>.
 /// </summary>
 /// <since>5.23.0</since>
 public enum NotificationClassification
@@ -49,14 +47,10 @@ public enum NotificationClassification
     /// <summary>The result of the query or command indicates a potential security issue.</summary>
     Security,
 
-    /// <summary>
-    /// Topology notifications provide additional information related to managing databases and servers.
-    /// </summary>
+    /// <summary>Topology notifications provide additional information related to managing databases and servers.</summary>
     Topology,
 
-    /// <summary>
-    /// Schema notifications provide additional information related to managing indexes and constraints.
-    /// </summary>
+    /// <summary>Schema notifications provide additional information related to managing indexes and constraints.</summary>
     Schema,
 
     /// <summary>Notification not covered by other categories.</summary>

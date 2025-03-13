@@ -23,7 +23,8 @@ internal class CheckDriverIsEncrypted : ProtocolObject
 {
     public DriverIsEncryptedType data { get; set; } = new();
 
-    [JsonIgnore] private bool Encrypted { get; set; }
+    [JsonIgnore]
+    private bool Encrypted { get; set; }
 
     public override Task Process()
     {

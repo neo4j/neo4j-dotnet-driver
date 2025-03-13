@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol.Utility;
@@ -73,7 +74,8 @@ internal sealed class BoltProtocol : IBoltProtocol
         IConnection connection,
         string database,
         SessionConfig sessionConfig,
-        Bookmarks bookmarks)
+        Bookmarks bookmarks,
+        IHomeDbCache homeDbCache)
     {
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
@@ -82,14 +84,20 @@ internal sealed class BoltProtocol : IBoltProtocol
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection);
 
         return connection.Version >= BoltProtocolVersion.V4_3
-            ? GetRoutingTableWithRouteMessageAsync(connection, database, sessionConfig?.ImpersonatedUser, bookmarks)
-            : GetRoutingTableWithQueryAsync(connection, database, bookmarks);
+            ? GetRoutingTableWithRouteMessageAsync(
+                connection,
+                database,
+                sessionConfig,
+                bookmarks,
+                homeDbCache)
+            : GetRoutingTableWithQueryAsync(connection, database, bookmarks, homeDbCache);
     }
 
     public async Task<IResultCursor> RunInAutoCommitTransactionAsync(
         IConnection connection,
         AutoCommitParams autoCommitParams,
-        INotificationsConfig notificationsConfig)
+        INotificationsConfig notificationsConfig,
+        IHomeDbCache homeDbCache)
     {
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection);
         BoltProtocolV3.ValidateNotificationsForVersion(connection, notificationsConfig);
@@ -112,7 +120,15 @@ internal sealed class BoltProtocol : IBoltProtocol
             autoCommitParams,
             notificationsConfig);
 
-        var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
+        var cacheKey = HomeDbCacheKeyProvider.GetCacheKey(connection.AuthToken, autoCommitParams.SessionConfig);
+
+        var runHandler = _protocolHandlerFactory.NewRunResponseHandler(
+            streamBuilder,
+            summaryBuilder,
+            cacheKey,
+            homeDbCache,
+            autoCommitParams.SessionConfig,
+            autoCommitParams.Database == null);
 
         await AddTelemetryAsync(connection, autoCommitParams.TransactionInfo).ConfigureAwait(false);
 
@@ -136,13 +152,19 @@ internal sealed class BoltProtocol : IBoltProtocol
         return streamBuilder.CreateCursor();
     }
 
-    public async Task BeginTransactionAsync(IConnection connection, BeginTransactionParams beginParams)
+    public async Task BeginTransactionAsync(
+        IConnection connection,
+        BeginTransactionParams beginParams,
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig)
     {
         connection.SessionConfig = beginParams.SessionConfig;
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection);
         BoltProtocolV3.ValidateNotificationsForVersion(connection, beginParams.NotificationsConfig);
         await AddTelemetryAsync(connection, beginParams.TransactionInfo).ConfigureAwait(false);
-        await _boltProtocolV3.BeginTransactionAsync(connection, beginParams).ConfigureAwait(false);
+        await _boltProtocolV3.BeginTransactionAsync(connection, beginParams, cacheKey, homeDbCache, sessionConfig)
+            .ConfigureAwait(false);
     }
 
     public async Task<IResultCursor> RunInExplicitTransactionAsync(
@@ -150,7 +172,10 @@ internal sealed class BoltProtocol : IBoltProtocol
         Query query,
         bool reactive,
         long fetchSize,
-        IInternalAsyncTransaction transaction)
+        IInternalAsyncTransaction transaction,
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig)
     {
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
 
@@ -166,7 +191,13 @@ internal sealed class BoltProtocol : IBoltProtocol
             transaction);
 
         var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query, null);
-        var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
+        var runHandler = _protocolHandlerFactory.NewRunResponseHandler(
+            streamBuilder,
+            summaryBuilder,
+            cacheKey,
+            homeDbCache,
+            sessionConfig,
+            false);
 
         if (!reactive)
         {
@@ -228,7 +259,8 @@ internal sealed class BoltProtocol : IBoltProtocol
     private async Task<IReadOnlyDictionary<string, object>> GetRoutingTableWithQueryAsync(
         IConnection connection,
         string database,
-        Bookmarks bookmarks)
+        Bookmarks bookmarks,
+        IHomeDbCache homeDbCache)
     {
         connection.ConfigureMode(AccessMode.Read);
 
@@ -250,7 +282,9 @@ internal sealed class BoltProtocol : IBoltProtocol
             Bookmarks = bookmarks
         };
 
-        var result = await RunInAutoCommitTransactionAsync(connection, autoCommitParams, null).ConfigureAwait(false);
+        var result = await RunInAutoCommitTransactionAsync(connection, autoCommitParams, null, homeDbCache)
+            .ConfigureAwait(false);
+
         var record = await result.SingleAsync().ConfigureAwait(false);
 
         //Since 4.4 the Routing information will contain a db.
@@ -264,8 +298,9 @@ internal sealed class BoltProtocol : IBoltProtocol
     private async Task<IReadOnlyDictionary<string, object>> GetRoutingTableWithRouteMessageAsync(
         IConnection connection,
         string database,
-        string impersonatedUser,
-        Bookmarks bookmarks)
+        SessionConfig sessionConfig,
+        Bookmarks bookmarks,
+        IHomeDbCache homeDbCache)
     {
         var dbParameter = string.IsNullOrWhiteSpace(database) ? null : database;
         //TODO: Consider refactoring logic of v43 into message factory.
@@ -278,9 +313,11 @@ internal sealed class BoltProtocol : IBoltProtocol
                 connection,
                 bookmarks,
                 dbParameter,
-                impersonatedUser);
+                sessionConfig?.ImpersonatedUser);
 
-        var responseHandler = _protocolHandlerFactory.NewRouteResponseHandler();
+        var cacheKey = HomeDbCacheKeyProvider.GetCacheKey(connection.AuthToken, sessionConfig);
+        var responseHandler =
+            _protocolHandlerFactory.NewRouteResponseHandler(cacheKey, homeDbCache, sessionConfig, dbParameter == null);
 
         await connection.EnqueueAsync(message, responseHandler).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);

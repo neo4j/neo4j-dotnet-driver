@@ -24,7 +24,8 @@ internal class NewBookmarkManager : ProtocolObject
 {
     public NewBookmarkManagerDto data { get; set; } = new();
 
-    [JsonIgnore] public IBookmarkManager BookmarkManager { get; set; }
+    [JsonIgnore]
+    public IBookmarkManager BookmarkManager { get; set; }
 
     public override Task Process(Controller controller)
     {

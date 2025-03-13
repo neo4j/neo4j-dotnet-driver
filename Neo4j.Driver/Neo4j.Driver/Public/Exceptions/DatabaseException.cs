@@ -1,10 +1,8 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
+// Neo4j Sweden AB [https://neo4j.com]
 // 
-// This file is part of Neo4j.
-// 
-// Licensed under the Apache License, Version 2.0 (the "License"):
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -23,40 +21,32 @@ using Neo4j.Driver.Internal.Messaging;
 namespace Neo4j.Driver;
 
 /// <summary>
-/// A <see cref="DatabaseException"/> indicates that there is a problem within the underlying database.
-/// The error code provided can be used to determine further detail for the problem.
+/// A <see cref="DatabaseException"/> indicates that there is a problem within the underlying database. The error
+/// code provided can be used to determine further detail for the problem.
 /// </summary>
 [DataContract]
 [ErrorCode("*")] // mop up any errors that haven't already been handled
 public class DatabaseException : Neo4jException
 {
-    /// <summary>
-    /// Create a new <see cref="DatabaseException"/>.
-    /// </summary>
+    /// <summary>Create a new <see cref="DatabaseException"/>.</summary>
     public DatabaseException()
     {
     }
 
-    /// <summary>
-    /// Create a new <see cref="DatabaseException"/> with an error error message.
-    /// </summary>
+    /// <summary>Create a new <see cref="DatabaseException"/> with an error error message.</summary>
     /// <param name="message">The error message.</param>
     public DatabaseException(string message) : base(string.Empty, message)
     {
     }
 
-    /// <summary>
-    /// Create a new <see cref="DatabaseException"/> with an error code and an error message.
-    /// </summary>
+    /// <summary>Create a new <see cref="DatabaseException"/> with an error code and an error message.</summary>
     /// <param name="code">The error code.</param>
     /// <param name="message">The error message.</param>
     public DatabaseException(string code, string message) : base(code, message)
     {
     }
 
-    /// <summary>
-    /// Create a new <see cref="DatabaseException"/> with an error code, an error message and an exception.
-    /// </summary>
+    /// <summary>Create a new <see cref="DatabaseException"/> with an error code, an error message and an exception.</summary>
     /// <param name="code">The error code.</param>
     /// <param name="message">The error message.</param>
     /// <param name="innerException">The inner exception which caused this error.</param>

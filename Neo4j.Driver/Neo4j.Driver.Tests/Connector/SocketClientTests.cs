@@ -75,7 +75,7 @@ public class SocketClientTests
         mockIoFactory
             .Setup(x => x.TcpSocketClient(It.IsAny<DriverContext>(), It.IsAny<ILogger>()))
             .Returns(connMock.Object);
-            
+
         configureFactory?.Invoke(mockIoFactory);
 
         return (connMock, mockIoFactory);
@@ -127,8 +127,7 @@ public class SocketClientTests
 
             var client = NewClient(io, null, mockHandshaker);
 
-            var ex = await Record.ExceptionAsync(
-                () => client.ConnectAsync(CancellationToken.None));
+            var ex = await Record.ExceptionAsync(() => client.ConnectAsync(CancellationToken.None));
 
             mockHandshaker.Verify(
                 x => x.DoHandshakeAsync(

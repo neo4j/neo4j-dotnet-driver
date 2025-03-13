@@ -38,7 +38,7 @@ public class PipeReaderMemoryPoolTests
         using var memoryOwner = pool.Rent(size);
         memoryOwner.Memory.Length.Should().Be(expectedSize);
     }
-    
+
     [Fact]
     public void ShouldRentMemoryInPowerWithDefaultSize()
     {
@@ -46,7 +46,7 @@ public class PipeReaderMemoryPoolTests
         using var memoryOwner = pool.Rent();
         memoryOwner.Memory.Length.Should().Be(1024);
     }
-    
+
     [Fact]
     public void ShouldReusePooledObjects()
     {
@@ -58,17 +58,17 @@ public class PipeReaderMemoryPoolTests
             length = memoryOwner.Memory.Length;
             memoryOwner.Memory.Span[0] = 1;
         }
-        
+
         using (var memoryOwner = pool.Rent(4321))
         {
             memoryOwner.Memory.Length.Should().Be(length);
             memoryOwner.Memory.Span[0].Should().Be(1);
         }
     }
-    
+
     /// <summary>
-    /// This test is to verify the behaviour of the shared pool.
-    /// It is an unnecessary test but it proves the behaviour to validate <see cref="ShouldNotReturnSharedPoolObjects"/>
+    /// This test is to verify the behaviour of the shared pool. It is an unnecessary test but it proves the behaviour
+    /// to validate <see cref="ShouldNotReturnSharedPoolObjects"/>
     /// </summary>
     [Fact]
     public void SharedPoolShouldReturnSameValue()
@@ -97,7 +97,7 @@ public class PipeReaderMemoryPoolTests
             memoryOwner.Memory.Length.Should().Be(1024);
             memoryOwner.Memory.Span[0] = 1;
         }
-        
+
         pool = new PipeReaderMemoryPool(1024, 2048);
         using (var memoryOwner = pool.Rent(1024))
         {
@@ -110,7 +110,7 @@ public class PipeReaderMemoryPoolTests
     public void CanBorrowMaxLengthArray()
     {
         var pool = new PipeReaderMemoryPool(1024, Constants.MaxReadBufferSize);
-        
+
         // 2146435071 is the max length of an array in .NET
         using (var memoryOwner = pool.Rent(2146435071))
         {

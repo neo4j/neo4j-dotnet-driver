@@ -30,7 +30,7 @@ public sealed class ProcessBasedCommandRunner : ShellCommandRunner, IDisposable
     private List<string> _stdOut;
 
     public void Dispose()
-    { 
+    {
         _process?.Dispose();
     }
 

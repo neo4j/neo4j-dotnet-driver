@@ -27,9 +27,7 @@ public enum Category
     /// <remarks>Returned as <see cref="NotificationCategory.Hint"/></remarks>
     Hint,
 
-    /// <summary>
-    /// Receive notifications when a query or command mentions entities that are unknown to the system.
-    /// </summary>
+    /// <summary>Receive notifications when a query or command mentions entities that are unknown to the system.</summary>
     /// <remarks>Returned as <see cref="NotificationCategory.Unrecognized"/></remarks>
     Unrecognized,
 
@@ -48,10 +46,7 @@ public enum Category
     /// <remarks>Returned as <see cref="NotificationCategory.Deprecation"/></remarks>
     Deprecation,
 
-    /// <summary>
-    /// Receive notifications when the result of the query or command indicates a
-    /// potential security issue.
-    /// </summary>
+    /// <summary>Receive notifications when the result of the query or command indicates a potential security issue.</summary>
     /// <remarks>Returned as <see cref="NotificationCategory.Security"/></remarks>
     Security,
 

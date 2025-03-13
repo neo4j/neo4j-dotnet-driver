@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Routing;
 using Xunit;
@@ -39,7 +40,7 @@ public class LoadBalancerTests
                 var uri = new Uri("https://neo4j.com");
                 var routingTableManagerMock = new Mock<IRoutingTableManager>();
                 routingTableManagerMock
-                    .Setup(x => x.EnsureRoutingTableForModeAsync(AccessMode.Read, null, null, Bookmarks.Empty))
+                    .Setup(x => x.EnsureRoutingTableForModeAsync(AccessMode.Read, null, false, null, Bookmarks.Empty))
                     .ReturnsAsync(routingTableMock.Object);
 
                 var loadBalancer = new LoadBalancer(clusterPoolMock.Object, routingTableManagerMock.Object);
@@ -62,7 +63,7 @@ public class LoadBalancerTests
                 var uri = new Uri("https://neo4j.com");
                 var routingTableManagerMock = new Mock<IRoutingTableManager>();
                 routingTableManagerMock
-                    .Setup(x => x.EnsureRoutingTableForModeAsync(AccessMode.Write, null, null, Bookmarks.Empty))
+                    .Setup(x => x.EnsureRoutingTableForModeAsync(AccessMode.Write, null, false, null, Bookmarks.Empty))
                     .ReturnsAsync(routingTableMock.Object);
 
                 var loadBalancer = new LoadBalancer(clusterPoolMock.Object, routingTableManagerMock.Object);
@@ -83,14 +84,17 @@ public class LoadBalancerTests
         public async Task ShouldThrowSessionExpiredExceptionIfNoServerAvailable(AccessMode mode)
         {
             // Given
-            var mock = new Mock<IRoutingTableManager>();
-            mock.Setup(x => x.EnsureRoutingTableForModeAsync(mode, null, null, Bookmarks.Empty))
+            var mockRoutingTableManager = new Mock<IRoutingTableManager>();
+            mockRoutingTableManager.Setup(x => x.EnsureRoutingTableForModeAsync(mode, null, false, null, Bookmarks.Empty))
                 .ReturnsAsync(NewMockedRoutingTable(mode, null, string.Empty).Object);
 
-            var balancer = new LoadBalancer(null, mock.Object);
+            var mockClusterConnectionPool = new Mock<IClusterConnectionPool>();
+            mockClusterConnectionPool.Setup(x => x.CanUseHomeDbCache()).Returns(false);
+
+            var balancer = new LoadBalancer(mockClusterConnectionPool.Object, mockRoutingTableManager.Object);
 
             // When
-            var error = await Record.ExceptionAsync(() => balancer.AcquireAsync(mode, null, null, Bookmarks.Empty));
+            var error = await Record.ExceptionAsync(() => balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false));
 
             // Then
             error.Should().BeOfType<SessionExpiredException>();
@@ -110,6 +114,7 @@ public class LoadBalancerTests
                     x => x.EnsureRoutingTableForModeAsync(
                         mode,
                         It.IsAny<string>(),
+                        It.IsAny<bool>(),
                         It.IsAny<SessionConfig>(),
                         Bookmarks.Empty))
                 .ReturnsAsync(routingTableMock.Object);
@@ -120,13 +125,20 @@ public class LoadBalancerTests
             mockedConn.Setup(x => x.Mode).Returns(mode);
             var conn = mockedConn.Object;
             clusterPoolMock
-                .Setup(x => x.AcquireAsync(uri, mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), Bookmarks.Empty, false))
+                .Setup(
+                    x => x.AcquireAsync(
+                        uri,
+                        mode,
+                        It.IsAny<string>(),
+                        It.IsAny<SessionConfig>(),
+                        Bookmarks.Empty,
+                        false))
                 .ReturnsAsync(conn);
 
             var balancer = new LoadBalancer(clusterPoolMock.Object, mock.Object);
 
             // When
-            var acquiredConn = await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty);
+            var acquiredConn = await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false);
 
             // Then
             acquiredConn.Server.Address.Should().Be(uri.ToString());
@@ -147,7 +159,7 @@ public class LoadBalancerTests
             var uri = new Uri("neo4j://123:456");
             var mockManager = new Mock<IRoutingTableManager>();
             var routingTableMock = NewMockedRoutingTable(mode, uri, aliasDbName);
-            mockManager.Setup(x => x.EnsureRoutingTableForModeAsync(mode, dbName, null, Bookmarks.Empty))
+            mockManager.Setup(x => x.EnsureRoutingTableForModeAsync(mode, dbName, false, null, Bookmarks.Empty))
                 .ReturnsAsync(routingTableMock.Object);
 
             var clusterPoolMock = new Mock<IClusterConnectionPool>();
@@ -161,7 +173,7 @@ public class LoadBalancerTests
             var balancer = new LoadBalancer(clusterPoolMock.Object, mockManager.Object);
 
             // When
-            var acquiredConn = await balancer.AcquireAsync(mode, dbName, null, Bookmarks.Empty);
+            var acquiredConn = await balancer.AcquireAsync(mode, dbName, null, Bookmarks.Empty, false);
 
             // Then
             acquiredConn.Database.Should().Be(desiredResult);
@@ -180,8 +192,9 @@ public class LoadBalancerTests
                     x => x.EnsureRoutingTableForModeAsync(
                         mode,
                         It.IsAny<string>(),
+                        It.IsAny<bool>(),
                         It.IsAny<SessionConfig>(),
-                        Bookmarks.Empty))
+                        It.IsAny<Bookmarks>()))
                 .ReturnsAsync(routingTableMock.Object);
 
             mock.Setup(x => x.ForgetServer(It.IsAny<Uri>(), It.IsAny<string>()))
@@ -192,14 +205,19 @@ public class LoadBalancerTests
 
             var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
             clusterConnPoolMock.Setup(
-                    x => x.AcquireAsync(uri, mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), Bookmarks.Empty,
+                    x => x.AcquireAsync(
+                        uri,
+                        mode,
+                        It.IsAny<string>(),
+                        It.IsAny<SessionConfig>(),
+                        Bookmarks.Empty,
                         false))
                 .Returns(Task.FromException<IConnection>(new ServiceUnavailableException("failed init")));
 
             var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
 
             // When & Then
-            balancer.Awaiting(b => b.AcquireAsync(mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), Bookmarks.Empty))
+            balancer.Awaiting(b => b.AcquireAsync(mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), It.IsAny<Bookmarks>(), It.IsAny<bool>()))
                 .Should()
                 .Throw<SessionExpiredException>()
                 .WithMessage("Failed to connect to any*");
@@ -218,12 +236,17 @@ public class LoadBalancerTests
             var uri = new Uri("neo4j://123:456");
             var routingTableMock = NewMockedRoutingTable(mode, uri, string.Empty);
             var mock = new Mock<IRoutingTableManager>();
-            mock.Setup(x => x.EnsureRoutingTableForModeAsync(mode, null, null, Bookmarks.Empty))
+            mock.Setup(x => x.EnsureRoutingTableForModeAsync(mode, null, false, null, Bookmarks.Empty))
                 .ReturnsAsync(routingTableMock.Object);
 
             var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
             clusterConnPoolMock.Setup(
-                    x => x.AcquireAsync(uri, mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), Bookmarks.Empty,
+                    x => x.AcquireAsync(
+                        uri,
+                        mode,
+                        It.IsAny<string>(),
+                        It.IsAny<SessionConfig>(),
+                        Bookmarks.Empty,
                         false))
                 .Returns(
                     Task.FromException<IConnection>(
@@ -232,7 +255,7 @@ public class LoadBalancerTests
             var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
 
             // When
-            var error = await Record.ExceptionAsync(() => balancer.AcquireAsync(mode, null, null, Bookmarks.Empty));
+            var error = await Record.ExceptionAsync(() => balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false));
 
             // Then
             error.Should().BeOfType<SecurityException>();
@@ -256,20 +279,27 @@ public class LoadBalancerTests
                     x => x.EnsureRoutingTableForModeAsync(
                         mode,
                         It.IsAny<string>(),
+                        It.IsAny<bool>(),
                         It.IsAny<SessionConfig>(),
                         Bookmarks.Empty))
                 .ReturnsAsync(routingTableMock.Object);
 
             var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
             clusterConnPoolMock
-                .Setup(x => x.AcquireAsync(uri, mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), Bookmarks.Empty,
-                    false))
+                .Setup(
+                    x => x.AcquireAsync(
+                        uri,
+                        mode,
+                        It.IsAny<string>(),
+                        It.IsAny<SessionConfig>(),
+                        Bookmarks.Empty,
+                        false))
                 .Returns(Task.FromException<IConnection>(new ProtocolException("do not understand struct 0x01")));
 
             var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
 
             // When
-            balancer.Awaiting(b => b.AcquireAsync(mode, null, null, Bookmarks.Empty))
+            balancer.Awaiting(b => b.AcquireAsync(mode, null, null, Bookmarks.Empty, false))
                 .Should()
                 .Throw<ProtocolException>()
                 .WithMessage("*do not understand struct 0x01*");
@@ -290,7 +320,7 @@ public class LoadBalancerTests
                 new List<Uri> { new("writer:1"), new("writer:2") });
 
             var routingTableManager = new Mock<IRoutingTableManager>();
-            routingTableManager.Setup(x => x.EnsureRoutingTableForModeAsync(mode, null, null, Bookmarks.Empty))
+            routingTableManager.Setup(x => x.EnsureRoutingTableForModeAsync(mode, null, false, null, Bookmarks.Empty))
                 .ReturnsAsync(routingTable);
 
             var clusterPoolMock = new Mock<IClusterConnectionPool>();
@@ -305,40 +335,47 @@ public class LoadBalancerTests
                 .ReturnsAsync(
                     (Uri uri, AccessMode m, string _, string _, Bookmarks _, bool _) => NewConnectionMock(uri, m));
 
-            var balancer = new LoadBalancer(clusterPoolMock.Object, routingTableManager.Object);
+            clusterPoolMock.Setup(x => x.CanUseHomeDbCache()).Returns(true);
+
+            var uri = new Uri("bolt://123:456");
+            var driverContext = new DriverContext(
+                uri,
+                AuthTokenManagers.None,
+                new Config());
+            var balancer = new LoadBalancer(clusterPoolMock.Object, routingTableManager.Object, driverContext);
 
             if (mode == AccessMode.Read)
             {
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("reader:1");
 
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("reader:2");
 
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("reader:3");
 
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("reader:1");
 
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("reader:2");
 
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("reader:3");
             }
             else if (mode == AccessMode.Write)
             {
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("writer:1");
 
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("writer:2");
 
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("writer:1");
 
-                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty)).Server.Address.Should()
+                (await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false)).Server.Address.Should()
                     .Be("writer:2");
             }
             else

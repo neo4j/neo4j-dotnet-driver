@@ -45,10 +45,8 @@ public class AsyncEnumerableExtensionsTests
         var result = await GetRecordsAsync().ToListAsync((string name) => new { name });
         result.Should()
             .BeEquivalentTo(
-            [
                 new { name = "Alice" },
-                new { name = "Eve" }
-            ]);
+                new { name = "Eve" });
     }
 
     [Fact]
@@ -472,10 +470,8 @@ public class AsyncEnumerableExtensionsTests
 
         result.Should()
             .BeEquivalentTo(
-            [
                 new { name = "Alice", age = 25, city = "New York" },
-                new { name = "Bob", age = 30, city = "Los Angeles" }
-            ]);
+                new { name = "Bob", age = 30, city = "Los Angeles" });
     }
 
     [Fact]

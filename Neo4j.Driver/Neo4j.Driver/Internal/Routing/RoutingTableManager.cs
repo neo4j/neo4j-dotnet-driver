@@ -25,29 +25,32 @@ namespace Neo4j.Driver.Internal.Routing;
 internal class RoutingTableManager : IRoutingTableManager
 {
     private readonly IDiscovery _discovery;
+    private readonly DriverContext _driverContext;
     private readonly IInitialServerAddressProvider _initialServerAddressProvider;
     private readonly ILogger _logger;
 
     private readonly IClusterConnectionPoolManager _poolManager;
 
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _routingTableLocks = new();
-    
+
     private readonly TimeSpan _routingTablePurgeDelay;
     private readonly ConcurrentDictionary<string, IRoutingTable> _routingTables = new();
 
     public RoutingTableManager(
         IInitialServerAddressProvider initialServerAddressProvider,
         IClusterConnectionPoolManager poolManager,
+        DriverContext driverContext,
         ILogger logger)
     {
         _initialServerAddressProvider = initialServerAddressProvider;
         _discovery = new ClusterDiscovery();
         _poolManager = poolManager;
+        _driverContext = driverContext;
         _logger = logger;
         // Default value.
         _routingTablePurgeDelay = TimeSpan.FromSeconds(30);
     }
-    
+
     //Test Method
     public RoutingTableManager(
         IInitialServerAddressProvider initialServerAddressProvider,
@@ -72,10 +75,11 @@ internal class RoutingTableManager : IRoutingTableManager
     public async Task<IRoutingTable> EnsureRoutingTableForModeAsync(
         AccessMode mode,
         string database,
+        bool isCachedHomeDb,
         SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
-        database = database ?? string.Empty;
+        database ??= string.Empty;
 
         var semaphore = GetLock(database);
 
@@ -89,7 +93,11 @@ internal class RoutingTableManager : IRoutingTableManager
                 return existingTable;
             }
 
-            var refreshedTable = await UpdateRoutingTableAsync(mode, database, sessionConfig, bookmarks)
+            var refreshedTable = await UpdateRoutingTableAsync(
+                    mode,
+                    isCachedHomeDb ? "" : database,
+                    sessionConfig,
+                    bookmarks)
                 .ConfigureAwait(false);
 
             await UpdateAsync(refreshedTable).ConfigureAwait(false);
@@ -111,7 +119,7 @@ internal class RoutingTableManager : IRoutingTableManager
             throw new ServiceUnavailableException("Could not create connection");
         }
 
-        var rt = await _discovery.DiscoverAsync(conn, null, null, null)
+        var rt = await _discovery.DiscoverAsync(conn, null, null, null, _driverContext.HomeDbCache)
             .ConfigureAwait(false);
 
         await conn.CloseAsync().ConfigureAwait(false);
@@ -314,7 +322,12 @@ internal class RoutingTableManager : IRoutingTableManager
                     try
                     {
                         var newRoutingTable =
-                            await _discovery.DiscoverAsync(conn, database, sessionConfig, bookmarks)
+                            await _discovery.DiscoverAsync(
+                                    conn,
+                                    database,
+                                    sessionConfig,
+                                    bookmarks,
+                                    _driverContext?.HomeDbCache)
                                 .ConfigureAwait(false);
 
                         if (!newRoutingTable.IsStale(mode))

@@ -42,4 +42,10 @@ internal interface IClusterConnectionPool : IAsyncDisposable
 
     // Get number of in-use connections for the uri
     int NumberOfInUseConnections(Uri uri);
+
+    bool CanUseHomeDbCache();
+    int TotalNumberOfConnections();
+
+    // Check if the connection causes the cache to be disabled
+    bool ConnectionCausesCacheDisable(IConnection connection);
 }

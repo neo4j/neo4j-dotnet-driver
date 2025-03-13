@@ -68,6 +68,7 @@ internal sealed class Driver : IInternalDriver
         }
 
         var sessionConfig = ConfigBuilders.BuildSessionConfig(action);
+        sessionConfig.DriverContext = Context;
 
         var session = new AsyncSession(
             _connectionProvider,
@@ -232,12 +233,14 @@ internal sealed class Driver : IInternalDriver
         {
             if (config.Routing == RoutingControl.Readers)
             {
-                return await session.PipelinedExecuteReadAsync(x => Work(query, x, cursorProcessor, cancellationToken),
+                return await session.PipelinedExecuteReadAsync(
+                        x => Work(query, x, cursorProcessor, cancellationToken),
                         config.TransactionConfig)
                     .ConfigureAwait(false);
             }
 
-            return await session.PipelinedExecuteWriteAsync(x => Work(query, x, cursorProcessor, cancellationToken),
+            return await session.PipelinedExecuteWriteAsync(
+                    x => Work(query, x, cursorProcessor, cancellationToken),
                     config.TransactionConfig)
                 .ConfigureAwait(false);
         }
@@ -276,7 +279,7 @@ internal sealed class Driver : IInternalDriver
             sessionConfigBuilder.WithBookmarkManager(config.BookmarkManager ?? _bookmarkManager);
         }
 
-        if(config.AuthToken != null)
+        if (config.AuthToken != null)
         {
             sessionConfigBuilder.WithAuthToken(config.AuthToken);
         }

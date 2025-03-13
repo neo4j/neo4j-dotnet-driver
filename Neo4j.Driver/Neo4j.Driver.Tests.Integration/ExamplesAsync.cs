@@ -538,6 +538,7 @@ public class ExamplesAsync
             }
         }
     }
+
     public class HelloWorldExampleTest : BaseAsyncExample
     {
         public HelloWorldExampleTest(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
@@ -553,7 +554,7 @@ public class ExamplesAsync
             // When & Then
             await example.PrintGreetingAsync("Hello, world");
         }
-        
+
         // tag::async-hello-world[]
         public class HelloWorldExample : IDisposable
         {
@@ -562,6 +563,11 @@ public class ExamplesAsync
             public HelloWorldExample(string uri, string user, string password)
             {
                 _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
+            }
+
+            public void Dispose()
+            {
+                _driver?.Dispose();
             }
 
             public async Task PrintGreetingAsync(string message)
@@ -581,11 +587,6 @@ public class ExamplesAsync
                     });
 
                 Console.WriteLine(greeting);
-            }
-
-            public void Dispose()
-            {
-                _driver?.Dispose();
             }
         }
         // end::async-hello-world[]

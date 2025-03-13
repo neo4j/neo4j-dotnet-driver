@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Neo4j.Driver.Internal.Result;
 using static Neo4j.Driver.Internal.Messaging.ResultHandleMessage;
@@ -23,17 +24,32 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4;
 
 internal sealed class RunResponseHandler : MetadataCollectingResponseHandler
 {
+    private readonly HomeDbCacheKey _cacheKey;
+    private readonly IHomeDbCache _homeDbCache;
+    private readonly SessionConfig _sessionConfig;
     private readonly IResultStreamBuilder _streamBuilder;
     private readonly SummaryBuilder _summaryBuilder;
+    private readonly bool _isDefaultDatabase;
 
-    public RunResponseHandler(IResultStreamBuilder streamBuilder, SummaryBuilder summaryBuilder)
+    public RunResponseHandler(
+        IResultStreamBuilder streamBuilder,
+        SummaryBuilder summaryBuilder,
+        HomeDbCacheKey cacheKey,
+        IHomeDbCache homeDbCache,
+        SessionConfig sessionConfig,
+        bool isDefaultDatabase)
     {
         _streamBuilder = streamBuilder ?? throw new ArgumentNullException(nameof(streamBuilder));
         _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
+        _cacheKey = cacheKey;
+        _homeDbCache = homeDbCache;
+        _sessionConfig = sessionConfig;
+        _isDefaultDatabase = isDefaultDatabase;
 
         AddMetadata<FieldsCollector, string[]>();
         AddMetadata<QueryIdCollector, long>();
         AddMetadata<TimeToFirstCollector, long>();
+        AddMetadata<DatabaseInfoCollector, IDatabaseInfo>();
     }
 
     public override void OnSuccess(IDictionary<string, object> metadata)
@@ -46,6 +62,14 @@ internal sealed class RunResponseHandler : MetadataCollectingResponseHandler
             GetMetadata<QueryIdCollector, long>(),
             GetMetadata<FieldsCollector, string[]>(),
             null);
+
+        var dbInfo = GetMetadata<DatabaseInfoCollector, IDatabaseInfo>();
+        if (_isDefaultDatabase && _homeDbCache != null && dbInfo?.Name != null)
+        {
+            _sessionConfig.DriverContext.Logger?.Debug($"Caching database name '{dbInfo.Name}' for key '{_cacheKey}'");
+            _homeDbCache.AddOrUpdate(_cacheKey, dbInfo.Name);
+            _sessionConfig?.PinDatabase(dbInfo.Name);
+        }
     }
 
     public override void OnFailure(IResponsePipelineError error)

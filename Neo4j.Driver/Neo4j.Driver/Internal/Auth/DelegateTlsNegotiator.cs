@@ -28,5 +28,8 @@ internal sealed class DelegateTlsNegotiator : ITlsNegotiator
         _negotiateTlsDelegate = negotiateTlsDelegate;
     }
 
-    public SslStream NegotiateTls(Uri uri, Stream stream) => _negotiateTlsDelegate(uri, stream);
+    public SslStream NegotiateTls(Uri uri, Stream stream)
+    {
+        return _negotiateTlsDelegate(uri, stream);
+    }
 }

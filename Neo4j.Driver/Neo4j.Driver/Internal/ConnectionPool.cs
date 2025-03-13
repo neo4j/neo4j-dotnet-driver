@@ -49,6 +49,9 @@ internal sealed class ConnectionPool : IConnectionPool
     private readonly object _poolSizeSync = new();
 
     private readonly Uri _uri;
+    private int _connectionsWithSsrDisabled;
+
+    private int _connectionsWithSsrEnabled;
 
     private int _poolSize;
 
@@ -103,6 +106,9 @@ internal sealed class ConnectionPool : IConnectionPool
     internal int PoolSize => Interlocked.CompareExchange(ref _poolSize, -1, -1);
     public int NumberOfInUseConnections => _inUseConnections.Count;
     public int NumberOfIdleConnections => _idleConnections.Count;
+    public int NumberOfConnectionsWithSsrEnabled => _connectionsWithSsrEnabled;
+    public int NumberOfConnectionsWithSsrDisabled => _connectionsWithSsrDisabled;
+    public int TotalNumberOfConnections => _connectionsWithSsrDisabled + _connectionsWithSsrEnabled;
 
     public ConnectionPoolStatus Status
     {
@@ -228,6 +234,9 @@ internal sealed class ConnectionPool : IConnectionPool
         return connection.Server;
     }
 
+    /// <inheritdoc />
+    public bool IsDirectDriver => true;
+
     public DriverContext DriverContext { get; }
 
     public Task<bool> SupportsMultiDbAsync()
@@ -259,6 +268,28 @@ internal sealed class ConnectionPool : IConnectionPool
     public void Activate()
     {
         Interlocked.CompareExchange(ref _poolStatus, Active, Inactive);
+    }
+
+    /// <inheritdoc />
+    public bool IsOnlyConnectionWithoutSsr(IConnection connection)
+    {
+        var allConnections = _inUseConnections.Concat(_idleConnections).ToArray();
+        if (allConnections.All(c => c != connection))
+        {
+            // the connection is not in the pool
+            return false;
+        }
+
+        // go through all connections in the pool and check if there is any connection that has SSR enabled
+        var ssrDisabledCount = 0;
+        var connectionFound = false;
+        foreach (var conn in allConnections)
+        {
+            ssrDisabledCount += conn.SsrEnabled ? 0 : 1;
+            connectionFound |= conn == connection;
+        }
+
+        return connectionFound && ssrDisabledCount == 1;
     }
 
     public ValueTask DisposeAsync()
@@ -356,6 +387,15 @@ internal sealed class ConnectionPool : IConnectionPool
         if (conn == null)
         {
             return;
+        }
+
+        if (conn.SsrEnabled)
+        {
+            Interlocked.Decrement(ref _connectionsWithSsrEnabled);
+        }
+        else
+        {
+            Interlocked.Decrement(ref _connectionsWithSsrDisabled);
         }
 
         _poolMetricsListener?.ConnectionClosing();
@@ -487,6 +527,14 @@ internal sealed class ConnectionPool : IConnectionPool
     private async ValueTask AddConnectionAsync(IPooledConnection connection)
     {
         _inUseConnections.TryAdd(connection);
+        if (connection.SsrEnabled)
+        {
+            Interlocked.Increment(ref _connectionsWithSsrEnabled);
+        }
+        else
+        {
+            Interlocked.Increment(ref _connectionsWithSsrDisabled);
+        }
 
         if (!IsClosed)
         {

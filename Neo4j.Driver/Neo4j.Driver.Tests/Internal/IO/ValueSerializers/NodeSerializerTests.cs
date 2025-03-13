@@ -116,7 +116,7 @@ public class NodeSerializerTests : PackStreamSerializerTests
                     new KeyValuePair<string, object>("prop3", true)
                 });
     }
-        
+
     [Fact]
     public void ShouldDeserializeSpan()
     {

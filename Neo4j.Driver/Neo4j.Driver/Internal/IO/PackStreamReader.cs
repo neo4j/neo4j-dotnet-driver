@@ -25,12 +25,8 @@ namespace Neo4j.Driver.Internal.IO;
 
 // we don't use the return value of Read() in most cases, so suppress the warning
 [SuppressMessage("ReSharper", "MustUseReturnValue")]
-
 internal sealed class PackStreamReader
 {
-    public ByteBuffers Buffers { get; }
-    public MessageFormat Format { get; }
-
     public MemoryStream Stream;
 
     internal PackStreamReader(MessageFormat format, MemoryStream stream, ByteBuffers buffers)
@@ -39,6 +35,9 @@ internal sealed class PackStreamReader
         Stream = stream;
         Buffers = buffers;
     }
+
+    public ByteBuffers Buffers { get; }
+    public MessageFormat Format { get; }
 
     public object Read()
     {
@@ -65,7 +64,6 @@ internal sealed class PackStreamReader
         var size = (int)ReadMapHeader();
         if (size == 0)
         {
-           
             return new Dictionary<string, object>(0);
         }
 

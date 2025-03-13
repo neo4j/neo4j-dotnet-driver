@@ -114,10 +114,6 @@ public class BlueprintMappingTests
         act.Should().Throw<MappingFailedException>();
     }
 
-    private record Point(
-        [MappingSource("x")] int X,
-        [MappingSource("y")] int Y);
-
     [Fact]
     public void ShouldMapPropertiesOfMappableTypes()
     {
@@ -154,4 +150,8 @@ public class BlueprintMappingTests
         result.point.y.Should().Be(2);
         result.color.Should().Be("red");
     }
+
+    private record Point(
+        [MappingSource("x")] int X,
+        [MappingSource("y")] int Y);
 }

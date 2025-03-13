@@ -40,6 +40,14 @@ internal static class CollectionExtensions
         return (T)dictionary[key];
     }
 
+    public static TValue GetValueOrDefault<TKey, TValue>(
+        this IDictionary<TKey, TValue> dict,
+        TKey key,
+        TValue defaultValue = default)
+    {
+        return dict.TryGetValue(key, out var value) ? value : defaultValue;
+    }
+
     public static T GetValue<T>(this IDictionary<string, object> dict, string key, T defaultValue)
     {
         return dict.TryGetValue(key, out var value) ? (T)value : defaultValue;

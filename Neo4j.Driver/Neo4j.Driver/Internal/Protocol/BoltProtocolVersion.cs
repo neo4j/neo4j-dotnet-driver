@@ -45,8 +45,9 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>, ICo
     public static readonly BoltProtocolVersion V5_5 = new(5, 5);
     public static readonly BoltProtocolVersion V5_6 = new(5, 6);
     public static readonly BoltProtocolVersion V5_7 = new(5, 7);
+    public static readonly BoltProtocolVersion V5_8 = new(5, 8);
 
-    public static readonly BoltProtocolVersion LatestVersion = V5_7;
+    public static readonly BoltProtocolVersion LatestVersion = V5_8;
     public static readonly BoltProtocolVersion HandshakeManifestV1 = new(ManifestSchema, ManifestVersion);
     // ReSharper restore InconsistentNaming
 

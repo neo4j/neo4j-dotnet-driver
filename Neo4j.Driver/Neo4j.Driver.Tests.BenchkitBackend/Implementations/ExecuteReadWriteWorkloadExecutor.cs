@@ -21,10 +21,10 @@ namespace Neo4j.Driver.Tests.BenchkitBackend.Implementations;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 internal class ExecuteReadWriteWorkloadExecutor(
-        IDriver driver,
-        IRecordConsumer recordConsumer,
-        IWorkloadSessionBuilder sessionBuilder,
-        ILogger logger)
+    IDriver driver,
+    IRecordConsumer recordConsumer,
+    IWorkloadSessionBuilder sessionBuilder,
+    ILogger logger)
     : IWorkloadExecutor
 {
     public async Task ExecuteWorkloadAsync(Workload workload)
@@ -145,7 +145,7 @@ internal class ExecuteReadWriteWorkloadExecutor(
 
                 return 0;
             },
-            _ => { });
+            _ => {});
 
         logger.LogDebug("Workload completed");
     }

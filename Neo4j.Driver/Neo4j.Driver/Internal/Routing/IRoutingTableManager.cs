@@ -23,6 +23,7 @@ internal interface IRoutingTableManager
     Task<IRoutingTable> EnsureRoutingTableForModeAsync(
         AccessMode mode,
         string database,
+        bool isCachedHomeDb,
         SessionConfig sessionConfig,
         Bookmarks bookmark);
 

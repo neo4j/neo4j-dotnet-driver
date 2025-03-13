@@ -21,8 +21,10 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.HomeDbCaching;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.V3;
+using Neo4j.Driver.Internal.MessageHandling.V4;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
@@ -118,7 +120,12 @@ public class BoltProtocolV3Tests
         public async Task ShouldThrowProtocolExceptionIfNullConnection()
         {
             var ex = await Record.ExceptionAsync(
-                () => BoltProtocolV3.Instance.GetRoutingTableAsync(null, "db", null, null));
+                () => BoltProtocolV3.Instance.GetRoutingTableAsync(
+                    null,
+                    "db",
+                    null,
+                    null,
+                    It.IsAny<IHomeDbCache>()));
 
             ex.Should().BeOfType<ProtocolException>();
         }
@@ -135,7 +142,8 @@ public class BoltProtocolV3Tests
                     mockConn.Object,
                     "db",
                     new SessionConfig("Douglas Fir"),
-                    null));
+                    null,
+                    It.IsAny<IHomeDbCache>()));
 
             ex.Should().BeOfType<ArgumentException>();
         }
@@ -203,11 +211,18 @@ public class BoltProtocolV3Tests
                 mockConn.Object,
                 "test",
                 null,
-                bm);
+                bm,
+                It.IsAny<IHomeDbCache>());
 
             routingTable.Should().Contain(new KeyValuePair<string, object>("db", "test"));
 
-            handlerFactory.Verify(x => x.NewRouteResponseHandler(), Times.Never);
+            handlerFactory.Verify(
+                x => x.NewRouteResponseHandler(
+                    It.IsAny<HomeDbCacheKey>(),
+                    It.IsAny<IHomeDbCache>(),
+                    It.IsAny<SessionConfig>(),
+                    false),
+                Times.Never);
 
             msgFactory.Verify(
                 x =>
@@ -255,7 +270,11 @@ public class BoltProtocolV3Tests
             };
 
             var exception = await Record.ExceptionAsync(
-                () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp, null));
+                () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(
+                    mockConn.Object,
+                    acp,
+                    null,
+                    It.IsAny<IHomeDbCache>()));
 
             exception.Should().BeOfType<ArgumentException>();
         }
@@ -279,7 +298,8 @@ public class BoltProtocolV3Tests
                 () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(
                     mockConn.Object,
                     acp,
-                    new NotificationsDisabledConfig()));
+                    new NotificationsDisabledConfig(),
+                    It.IsAny<IHomeDbCache>()));
 
             exception.Should().BeOfType<ArgumentOutOfRangeException>();
         }
@@ -302,7 +322,8 @@ public class BoltProtocolV3Tests
                 () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(
                     mockConn.Object,
                     acp,
-                    new NotificationsDisabledConfig()));
+                    new NotificationsDisabledConfig(),
+                    It.IsAny<IHomeDbCache>()));
 
             exception.Should().BeNull();
         }
@@ -319,7 +340,11 @@ public class BoltProtocolV3Tests
             };
 
             var exception = await Record.ExceptionAsync(
-                () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp, null));
+                () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(
+                    mockConn.Object,
+                    acp,
+                    null,
+                    It.IsAny<IHomeDbCache>()));
 
             exception.Should().BeOfType<ClientException>();
         }
@@ -379,7 +404,11 @@ public class BoltProtocolV3Tests
                 .Returns(resultCursorBuilderMock.Object);
 
             var protocol = new BoltProtocolV3(msgFactory.Object, handlerFactory.Object);
-            await protocol.RunInAutoCommitTransactionAsync(mockConn.Object, acp, null);
+            await protocol.RunInAutoCommitTransactionAsync(
+                mockConn.Object,
+                acp,
+                null,
+                It.IsAny<IHomeDbCache>());
 
             handlerFactory.Verify(
                 x => x.NewResultCursorBuilder(
@@ -425,7 +454,10 @@ public class BoltProtocolV3Tests
                         TransactionConfig.Default,
                         null,
                         null,
-                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
+                    HomeDbCacheKey.Default,
+                    It.IsAny<IHomeDbCache>(),
+                    SessionConfig.Default));
 
             exception.Should().BeOfType<ArgumentException>();
         }
@@ -449,7 +481,10 @@ public class BoltProtocolV3Tests
                         TransactionConfig.Default,
                         null,
                         new NotificationsDisabledConfig(),
-                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
+                    HomeDbCacheKey.Default,
+                    It.IsAny<IHomeDbCache>(),
+                    SessionConfig.Default));
 
             exception.Should().BeOfType<ArgumentOutOfRangeException>();
         }
@@ -472,7 +507,10 @@ public class BoltProtocolV3Tests
                         TransactionConfig.Default,
                         null,
                         new NotificationsDisabledConfig(),
-                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
+                    HomeDbCacheKey.Default,
+                    It.IsAny<IHomeDbCache>(),
+                    SessionConfig.Default));
 
             exception.Should().BeNull();
         }
@@ -492,7 +530,10 @@ public class BoltProtocolV3Tests
                         TransactionConfig.Default,
                         null,
                         null,
-                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
+                    HomeDbCacheKey.Default,
+                    It.IsAny<IHomeDbCache>(),
+                    SessionConfig.Default));
 
             exception.Should().BeOfType<ClientException>();
         }
@@ -513,7 +554,10 @@ public class BoltProtocolV3Tests
                         TransactionConfig.Default,
                         null,
                         null,
-                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
+                    HomeDbCacheKey.Default,
+                    It.IsAny<IHomeDbCache>(),
+                    SessionConfig.Default));
 
             exception.Should().BeOfType<InvalidOperationException>();
         }
@@ -549,14 +593,17 @@ public class BoltProtocolV3Tests
                     tc,
                     null,
                     null,
-                    new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)));
+                    new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
+                HomeDbCacheKey.Default,
+                It.IsAny<IHomeDbCache>(),
+                SessionConfig.Default);
 
             msgFactory.Verify(
                 x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
                 Times.Once);
 
             mockConn.Verify(
-                x => x.EnqueueAsync(fakeMessage, NoOpResponseHandler.Instance),
+                x => x.EnqueueAsync(fakeMessage, It.IsAny<BeginResponseHandler>()),
                 Times.Once);
 
             mockConn.Verify(x => x.SyncAsync(), Times.Once);
@@ -594,14 +641,17 @@ public class BoltProtocolV3Tests
                     tc,
                     null,
                     null,
-                    new TransactionInfo(QueryApiType.UnmanagedTransaction, false, false)));
+                    new TransactionInfo(QueryApiType.UnmanagedTransaction, false, false)),
+                HomeDbCacheKey.Default,
+                It.IsAny<IHomeDbCache>(),
+                SessionConfig.Default);
 
             msgFactory.Verify(
                 x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
                 Times.Once);
 
             mockConn.Verify(
-                x => x.EnqueueAsync(fakeMessage, NoOpResponseHandler.Instance),
+                x => x.EnqueueAsync(fakeMessage, It.IsAny<BeginResponseHandler>()),
                 Times.Once);
 
             mockConn.Verify(x => x.SyncAsync(), Times.Never);
@@ -656,7 +706,15 @@ public class BoltProtocolV3Tests
 
             var protocol = new BoltProtocolV3(msgFactory.Object, handlerFactory.Object);
             var mockTransaction = new Mock<IInternalAsyncTransaction>();
-            await protocol.RunInExplicitTransactionAsync(mockConn.Object, query, false, 0L, mockTransaction.Object);
+            await protocol.RunInExplicitTransactionAsync(
+                mockConn.Object,
+                query,
+                false,
+                0L,
+                mockTransaction.Object,
+                HomeDbCacheKey.Default,
+                It.IsAny<IHomeDbCache>(),
+                SessionConfig.Default);
 
             handlerFactory.Verify(
                 x => x.NewResultCursorBuilder(

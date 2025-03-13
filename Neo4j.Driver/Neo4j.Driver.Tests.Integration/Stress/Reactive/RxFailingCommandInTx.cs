@@ -22,7 +22,7 @@ using static Neo4j.Driver.Tests.Reactive.Utils.Utils;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public sealed class RxFailingCommandInTx: RxCommand
+public sealed class RxFailingCommandInTx : RxCommand
 {
     public RxFailingCommandInTx(IDriver driver)
         : base(driver, false)

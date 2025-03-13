@@ -57,7 +57,7 @@ public class GqlStatusObjectsAndNotificationsTests
                     {
                         ["CURRENT_SCHEMA"] = "/",
                         ["OPERATION"] = "",
-                        ["OPERATION_CODE"] = "0",
+                        ["OPERATION_CODE"] = "0"
                     };
 
                     first.GqlStatus.Should().Be(exp.GqlStatus);
@@ -87,16 +87,16 @@ public class GqlStatusObjectsAndNotificationsTests
         {
             ["CURRENT_SCHEMA"] = "/",
             ["OPERATION"] = "",
-            ["OPERATION_CODE"] = "0",
+            ["OPERATION_CODE"] = "0"
         };
 
-        var statuses = new List<IGqlStatusObject>()
+        var statuses = new List<IGqlStatusObject>
         {
             new GqlStatusObject("04-", "", null, null, null, dict, null, false),
             new GqlStatusObject("01-", "", null, null, null, dict, null, false),
             new GqlStatusObject("03-", "", null, null, null, dict, null, false),
             new GqlStatusObject("02-", "", null, null, null, dict, null, false),
-            new GqlStatusObject("1", "", null, null, null, dict, null, false),
+            new GqlStatusObject("1", "", null, null, null, dict, null, false)
         };
 
         var objs = new GqlStatusObjectsAndNotifications(null, statuses, false);

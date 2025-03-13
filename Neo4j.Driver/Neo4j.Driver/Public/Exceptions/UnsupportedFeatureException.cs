@@ -26,12 +26,7 @@ namespace Neo4j.Driver;
 [DataContract]
 public class UnsupportedFeatureException : ClientException
 {
-    /// <inheritdoc />
-    public override bool IsRetriable => false;
-    
-    /// <summary>
-    /// Creates a new <see cref="UnsupportedFeatureException"/> with an error message.
-    /// </summary>
+    /// <summary>Creates a new <see cref="UnsupportedFeatureException"/> with an error message.</summary>
     /// <param name="message">The error message</param>
     internal UnsupportedFeatureException(string message) : base(message)
     {
@@ -41,4 +36,7 @@ public class UnsupportedFeatureException : ClientException
         : base(failureMessage, innerException)
     {
     }
+
+    /// <inheritdoc/>
+    public override bool IsRetriable => false;
 }

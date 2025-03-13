@@ -1,12 +1,12 @@
 ﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
-//
+// 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,10 +21,10 @@ namespace Neo4j.Driver.Tests.BenchkitBackend.Implementations;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 internal class SessionRunWorkloadExecutor(
-        IDriver driver,
-        IRecordConsumer recordConsumer,
-        IWorkloadSessionBuilder sessionBuilder,
-        ILogger logger)
+    IDriver driver,
+    IRecordConsumer recordConsumer,
+    IWorkloadSessionBuilder sessionBuilder,
+    ILogger logger)
     : IWorkloadExecutor
 {
     public async Task ExecuteWorkloadAsync(Workload workload)
@@ -47,17 +47,18 @@ internal class SessionRunWorkloadExecutor(
         {
             var queryToRun = new Query(query.Text, query.Parameters);
             logger.LogDebug("Starting query {Query} in parallel session", queryToRun.Text);
-            tasks.Add(Task.Run(
-                async () =>
-                {
-                    // create a new session in parallel for each query
-                    await using var session = sessionBuilder.BuildSession(driver, workload);
+            tasks.Add(
+                Task.Run(
+                    async () =>
+                    {
+                        // create a new session in parallel for each query
+                        await using var session = sessionBuilder.BuildSession(driver, workload);
 
-                    var resultCursor = await session.RunAsync(queryToRun);
-                    var records = await resultCursor.ToListAsync();
-                    logger.LogDebug("Received {RecordCount} records", records.Count);
-                    recordConsumer.ConsumeRecords(records);
-                }));
+                        var resultCursor = await session.RunAsync(queryToRun);
+                        var records = await resultCursor.ToListAsync();
+                        logger.LogDebug("Received {RecordCount} records", records.Count);
+                        recordConsumer.ConsumeRecords(records);
+                    }));
         }
 
         logger.LogDebug("Waiting for {TaskCount} parallel tasks to complete", tasks.Count);

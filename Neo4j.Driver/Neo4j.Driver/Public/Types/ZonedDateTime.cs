@@ -157,20 +157,23 @@ public sealed class ZonedDateTime : TemporalValue,
     }
 
     /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTime"/> value.</summary>
-    /// <param name="dateTime">Date time instance, If <see cref="DateTime.Kind"/> is <see cref="DateTimeKind.Unspecified"/>the instance will set <see cref="Ambiguous"/> as <code>true</code>.</param>
+    /// <param name="dateTime">
+    /// Date time instance, If <see cref="DateTime.Kind"/> is <see cref="DateTimeKind.Unspecified"/>the
+    /// instance will set <see cref="Ambiguous"/> as <code>true</code>.
+    /// </param>
     /// <param name="offset">TimeSpan to offset datetime by, will be converted into <see cref="ZoneOffset"/>.</param>
     /// <remarks>
-    /// When <paramref name="dateTime"/> is Utc, this instance's date time components (<see cref="Year"/>...)
-    /// will be offset by <paramref name="offset"/>.
+    /// When <paramref name="dateTime"/> is Utc, this instance's date time components (<see cref="Year"/>...) will be
+    /// offset by <paramref name="offset"/>.
     /// </remarks>
     /// <remarks>
-    /// When <paramref name="dateTime"/> is Local, this instance's date time components (<see cref="Year"/>...)
-    /// will be the same as <paramref name="dateTime"/>.
+    /// When <paramref name="dateTime"/> is Local, this instance's date time components (<see cref="Year"/>...) will
+    /// be the same as <paramref name="dateTime"/>.
     /// </remarks>
     /// <remarks>
-    /// When <paramref name="dateTime"/> is <see cref="DateTimeKind.Unspecified"/>, this instance's date time components
-    /// (<see cref="Year"/>...) will be the same as <paramref name="dateTime"/>
-    /// but <see cref="Ambiguous"/> will be <code>true</code>.
+    /// When <paramref name="dateTime"/> is <see cref="DateTimeKind.Unspecified"/>, this instance's date time
+    /// components (<see cref="Year"/>...) will be the same as <paramref name="dateTime"/> but <see cref="Ambiguous"/> will be
+    /// <code>true</code>.
     /// </remarks>
     public ZonedDateTime(DateTime dateTime, TimeSpan offset)
     {
@@ -213,20 +216,23 @@ public sealed class ZonedDateTime : TemporalValue,
     }
 
     /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTime"/> value.</summary>
-    /// <param name="dateTime">Date time instance, If <see cref="DateTime.Kind"/> is <see cref="DateTimeKind.Unspecified"/>the instance will set <see cref="Ambiguous"/> as <code>true</code>.</param>
+    /// <param name="dateTime">
+    /// Date time instance, If <see cref="DateTime.Kind"/> is <see cref="DateTimeKind.Unspecified"/>the
+    /// instance will set <see cref="Ambiguous"/> as <code>true</code>.
+    /// </param>
     /// <param name="offsetSeconds"> Seconds to offset datetime by, will be converted into <see cref="ZoneOffset"/>.</param>
     /// <remarks>
-    /// When <paramref name="dateTime"/> is Utc, this instance's date time components (<see cref="Year"/>...)
-    /// will be offset by <paramref name="offsetSeconds"/>.
+    /// When <paramref name="dateTime"/> is Utc, this instance's date time components (<see cref="Year"/>...) will be
+    /// offset by <paramref name="offsetSeconds"/>.
     /// </remarks>
     /// <remarks>
-    /// When <paramref name="dateTime"/> is Local, this instance's date time components (<see cref="Year"/>...)
-    /// will be the same as <paramref name="dateTime"/>.
+    /// When <paramref name="dateTime"/> is Local, this instance's date time components (<see cref="Year"/>...) will
+    /// be the same as <paramref name="dateTime"/>.
     /// </remarks>
     /// <remarks>
-    /// When <paramref name="dateTime"/> is <see cref="DateTimeKind.Unspecified"/>, this instance's date time components
-    /// (<see cref="Year"/>...) will be the same as <paramref name="dateTime"/>
-    /// but <see cref="Ambiguous"/> will be <code>true</code>.
+    /// When <paramref name="dateTime"/> is <see cref="DateTimeKind.Unspecified"/>, this instance's date time
+    /// components (<see cref="Year"/>...) will be the same as <paramref name="dateTime"/> but <see cref="Ambiguous"/> will be
+    /// <code>true</code>.
     /// </remarks>
     public ZonedDateTime(DateTime dateTime, int offsetSeconds)
     {
@@ -277,13 +283,16 @@ public sealed class ZonedDateTime : TemporalValue,
     /// <param name="zoneId">
     /// Zone name, if zone name is not known by the operating system and <paramref name="dateTime"/>'s
     /// <see cref="DateTime.Kind"/> is not <see cref="DateTimeKind.Utc"/>, the driver can not correctly set
-    /// <see cref="UtcSeconds"/> which is required for server versions 5+, 4.4.12+, 4.3.19+.<br/>
-    /// if <paramref name="dateTime"/>'s<see cref="DateTime.Kind"/> is <see cref="DateTimeKind.Utc"/>,
-    /// the <see cref="TimeZoneNotFoundException"/> will be caught, unless one of the local values (<see cref="Year"/>..) is accessed and can be sent to the server.
+    /// <see cref="UtcSeconds"/> which is required for server versions 5+, 4.4.12+, 4.3.19+.<br/> if
+    /// <paramref name="dateTime"/>'s<see cref="DateTime.Kind"/> is <see cref="DateTimeKind.Utc"/>, the
+    /// <see cref="TimeZoneNotFoundException"/> will be caught, unless one of the local values (<see cref="Year"/>..) is
+    /// accessed and can be sent to the server.
     /// </param>
-    /// <exception cref="TimeZoneNotFoundException">if zone name is not known by the operating system and <paramref name="dateTime"/>'s
-    /// <see cref="DateTime.Kind"/> is not <see cref="DateTimeKind.Utc"/>, the driver can not correctly set
-    /// <see cref="UtcSeconds"/> which is required for server versions 5+, 4.4.12+, 4.3.19+.</exception>
+    /// <exception cref="TimeZoneNotFoundException">
+    /// if zone name is not known by the operating system and
+    /// <paramref name="dateTime"/>'s <see cref="DateTime.Kind"/> is not <see cref="DateTimeKind.Utc"/>, the driver can not
+    /// correctly set <see cref="UtcSeconds"/> which is required for server versions 5+, 4.4.12+, 4.3.19+.
+    /// </exception>
     public ZonedDateTime(DateTime dateTime, string zoneId)
     {
         Zone = zoneId != null ? Zone.Of(zoneId) : throw new ArgumentNullException(nameof(zoneId));
@@ -408,9 +417,7 @@ public sealed class ZonedDateTime : TemporalValue,
         }
     }
 
-    /// <summary>
-    /// Deprecated Constructor for internal use only.
-    /// </summary>
+    /// <summary>Deprecated Constructor for internal use only.</summary>
     internal ZonedDateTime(IHasDateTimeComponents dateTime, Zone zone)
     {
         zone = zone ?? throw new ArgumentNullException(nameof(zone));
@@ -461,22 +468,21 @@ public sealed class ZonedDateTime : TemporalValue,
             }
         }
     }
+
     /// <summary>
-    /// The <see cref="Zone"/> is not recognized by the driver, or operating system.<br/>
-    /// Attempting to call <see cref="ToString"/> or <see cref="LocalDateTime"/> will raise an <see cref="TimeZoneNotFoundException"/>.
+    /// The <see cref="Zone"/> is not recognized by the driver, or operating system.<br/> Attempting to call
+    /// <see cref="ToString"/> or <see cref="LocalDateTime"/> will raise an <see cref="TimeZoneNotFoundException"/>.
     /// </summary>
     public bool UnknownZoneInfo { get; set; }
 
-    /// <summary>
-    /// Gets why this instance is has set <see cref="Ambiguous"/> as true.
-    /// </summary>
+    /// <summary>Gets why this instance is has set <see cref="Ambiguous"/> as true.</summary>
     public AmbiguityReason Reason { get; private set; } = AmbiguityReason.None;
 
     /// <summary>
-    /// Gets if this instance is has a possible ambiguity.<br/>
-    /// If the date specified is near a daylight saving it could have been misinterpreted. <br/>
-    /// The most common cause for this will be because the <see cref="DateTime"/> used to construct this instance did not have a <see cref="DateTime.Kind"/> specified as <see cref="DateTimeKind.Utc"/>.
-    /// In order to reliably look up the offsets at a given time in a timezone we require a monotonic datetime. <br/>
+    /// Gets if this instance is has a possible ambiguity.<br/> If the date specified is near a daylight saving it
+    /// could have been misinterpreted. <br/> The most common cause for this will be because the <see cref="DateTime"/> used to
+    /// construct this instance did not have a <see cref="DateTime.Kind"/> specified as <see cref="DateTimeKind.Utc"/>. In
+    /// order to reliably look up the offsets at a given time in a timezone we require a monotonic datetime. <br/>
     /// </summary>
     public bool Ambiguous { get; private set; }
 
@@ -544,9 +550,9 @@ public sealed class ZonedDateTime : TemporalValue,
     }
 
     /// <summary>
-    /// Gets the offset from UTC in seconds.<br/>
-    /// if <see cref="Zone"/> is of type <see cref="ZoneOffset"/> this will return <see cref="ZoneOffset.OffsetSeconds"/>.<br/>
-    /// otherwise <see cref="Zone"/> is of type <see cref="ZoneId"/> and this will return the UTC offset at the exact point of time of <see cref="UtcDateTime"/>.
+    /// Gets the offset from UTC in seconds.<br/> if <see cref="Zone"/> is of type <see cref="ZoneOffset"/> this will
+    /// return <see cref="ZoneOffset.OffsetSeconds"/>.<br/> otherwise <see cref="Zone"/> is of type <see cref="ZoneId"/> and
+    /// this will return the UTC offset at the exact point of time of <see cref="UtcDateTime"/>.
     /// </summary>
     /// <exception cref="TimeZoneNotFoundException">If <see cref="Zone"/> is not known locally.</exception>
     public int OffsetSeconds => _offsetSeconds ?? LookupOffsetFromZone();

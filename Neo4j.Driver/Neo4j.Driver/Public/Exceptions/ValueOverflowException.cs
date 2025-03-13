@@ -1,10 +1,8 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
+// Neo4j Sweden AB [https://neo4j.com]
 // 
-// This file is part of Neo4j.
-// 
-// Licensed under the Apache License, Version 2.0 (the "License"):
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -22,15 +20,13 @@ using Neo4j.Driver.Internal.Messaging;
 namespace Neo4j.Driver;
 
 /// <summary>
-/// A value retrieved from the database cannot be represented with the type to be converted, and will
-/// cause working with a modified data.
+/// A value retrieved from the database cannot be represented with the type to be converted, and will cause
+/// working with a modified data.
 /// </summary>
 [DataContract]
 public class ValueOverflowException : ClientException
 {
-    /// <summary>
-    /// Create a new <see cref="ValueTruncationException"/> with an error message.
-    /// </summary>
+    /// <summary>Create a new <see cref="ValueTruncationException"/> with an error message.</summary>
     /// <param name="message">The error message.</param>
     public ValueOverflowException(string message) : base(message)
     {
