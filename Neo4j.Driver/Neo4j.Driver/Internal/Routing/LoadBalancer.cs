@@ -110,7 +110,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
 
         //If a non ssr connection is detected then the connection is not used and returned to the pool. Connection
         //acquisition is then repeated with the cache not being used.
-        if (!conn.SsrEnabled && !_clusterConnectionPool.CanUseHomeDbCache())
+        if (_clusterConnectionPool.ConnectionCausesCacheDisable(conn))
         {
             _logger.Debug($"LoadBalancer - Mixed cluster detected, some connections have no SSR. Re-acquiring " +
                 $"connection without homeDB cache");
