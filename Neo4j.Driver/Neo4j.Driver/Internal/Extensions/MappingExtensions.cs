@@ -17,7 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace Neo4j.Driver.Mapping;
+namespace Neo4j.Driver.Internal;
 
 internal static class MappingExtensions
 {

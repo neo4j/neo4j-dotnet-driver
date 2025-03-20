@@ -15,6 +15,7 @@
 
 using System;
 using FluentAssertions;
+using Neo4j.Driver.Internal.Mapping;
 using Neo4j.Driver.Mapping;
 using Xunit;
 

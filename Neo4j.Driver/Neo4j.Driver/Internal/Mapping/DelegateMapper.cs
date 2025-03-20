@@ -16,8 +16,9 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Neo4j.Driver.Mapping;
 
-namespace Neo4j.Driver.Mapping;
+namespace Neo4j.Driver.Internal.Mapping;
 
 internal class DelegateMapper
 {

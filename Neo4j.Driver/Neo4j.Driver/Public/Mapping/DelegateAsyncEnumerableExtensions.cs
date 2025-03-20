@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Mapping;
 
 namespace Neo4j.Driver.Mapping;
 

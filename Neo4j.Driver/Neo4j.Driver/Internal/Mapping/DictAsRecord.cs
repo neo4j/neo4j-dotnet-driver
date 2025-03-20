@@ -18,7 +18,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Neo4j.Driver.Mapping;
+namespace Neo4j.Driver.Internal.Mapping;
 
 internal sealed class DictAsRecord : IRecord
 {

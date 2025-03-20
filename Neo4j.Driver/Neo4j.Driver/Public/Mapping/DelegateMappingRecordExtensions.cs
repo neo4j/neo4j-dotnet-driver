@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System;
+using Neo4j.Driver.Internal.Mapping;
 
 namespace Neo4j.Driver.Mapping;
 
