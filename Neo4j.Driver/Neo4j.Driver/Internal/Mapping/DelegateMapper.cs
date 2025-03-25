@@ -13,57 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
 using System.Reflection;
-using Neo4j.Driver.Mapping;
 
 namespace Neo4j.Driver.Internal.Mapping;
 
 internal class DelegateMapper
 {
+    private static readonly IParameterMapper ParameterMapper = new ParameterMapper();
+
     internal static T MapWithMethodInfo<T>(IRecord record, MethodInfo mapFunction, object target)
     {
-        var paramValues = new List<object>();
-        foreach (var param in mapFunction.GetParameters())
-        {
-            if (record.TryGet(param.Name, out object value))
-            {
-                object valueToUse;
-                try
-                {
-                    valueToUse = value.AsType(param.ParameterType);
-                }
-                catch (InvalidCastException) when (value is IEntity or IReadOnlyDictionary<string, object>)
-                {
-                    var objToMap = new DictAsRecord(value, null);
-                    valueToUse = RecordObjectMapping.Map(objToMap, param.ParameterType);
-                }
-                catch (Exception ex)
-                {
-                    throw new MappingFailedException(
-                        $"Failed to map parameter {param.Name}: " +
-                        $"Could not convert value of field {param.Name} to required type.",
-                        ex);
-                }
-
-                paramValues.Add(valueToUse);
-            }
-            else
-            {
-                throw new MappingFailedException($"Failed to map parameter {param.Name}: No such key in record.");
-            }
-        }
-
-        try
-        {
-            return (T)
-                mapFunction.Invoke(target, paramValues.ToArray());
-        }
-        catch (Exception ex)
-        {
-            var inner = ex is TargetInvocationException tie ? tie.InnerException : ex;
-            throw new MappingFailedException("Failed to map record.", inner);
-        }
+        var mapMethod = ParameterMapper.GetParameterMappedCall<T>(mapFunction, target);
+        return mapMethod(record);
     }
 }

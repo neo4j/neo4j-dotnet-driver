@@ -16,6 +16,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.Mapping.TypeConversion;
 using Neo4j.Driver.Mapping;
 
 namespace Neo4j.Driver.Internal.Mapping;
@@ -28,10 +29,14 @@ internal interface IMappedListCreator
 internal class MappedListCreator : IMappedListCreator
 {
     private readonly IRecordObjectMapping _recordObjectMapping;
+    private readonly IMappingTypeConversionManager _typeConversionManager;
 
-    internal MappedListCreator(IRecordObjectMapping recordObjectMapping = null)
+    internal MappedListCreator(
+        IRecordObjectMapping recordObjectMapping = null,
+        IMappingTypeConversionManager typeConversionManager = null)
     {
         _recordObjectMapping = recordObjectMapping ?? RecordObjectMapping.Instance;
+        _typeConversionManager = typeConversionManager ?? _recordObjectMapping.TypeConversionManager;
     }
 
     public IList CreateMappedList(IEnumerable list, Type desiredListType, IRecord record)
@@ -51,7 +56,14 @@ internal class MappedListCreator : IMappedListCreator
             else
             {
                 // otherwise, just convert the item to the type of the list
-                newList!.Add(item.AsType(desiredItemType));
+                if (_typeConversionManager.TryConvert(item.GetType(), desiredItemType, item, out var convertedValue))
+                {
+                    newList!.Add(convertedValue);
+                }
+                else
+                {
+                    newList!.Add(item.AsType(desiredItemType));
+                }
             }
         }
 

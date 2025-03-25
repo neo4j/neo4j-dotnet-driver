@@ -13,11 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.Internal.Mapping;
+using Neo4j.Driver.Internal.Mapping.TypeConversion;
 using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.Mapping;
 using Xunit;
@@ -128,6 +130,32 @@ public class MappableValueProviderTests
 
         result.Should().BeNull();
     }
+
+    [Fact]
+    public void GetConvertedValueShouldUseTypeConversion()
+    {
+        var expected = new Guid("b19f766c-4f74-41a9-a73d-6298697d81a7");
+        var entityMappingInfo = new EntityMappingInfo("field-name", EntityMappingSource.Property);
+        _mocker.GetMock<IMappingSourceDelegateBuilder>()
+            .Setup(x => x.GetMappingDelegate(entityMappingInfo))
+            .Returns(GetMockMappingDelegate(expected.ToString(), true));
+
+        object expectedObj = expected;
+        _mocker.GetMock<IMappingTypeConversionManager>()
+            .Setup(x => x.TryConvert(typeof(string), typeof(Guid), expected.ToString(), out expectedObj))
+            .Returns(true);
+
+        var subject = _mocker.CreateInstance<MappableValueProvider>(true);
+
+        var result = subject.GetConvertedValue(
+            Mock.Of<IRecord>(),
+            entityMappingInfo,
+            typeof(Guid));
+
+        result.Should().Be(expected);
+    }
+
+
 
     [Fact]
     public void ShouldReturnNullWhenValueIsNull()

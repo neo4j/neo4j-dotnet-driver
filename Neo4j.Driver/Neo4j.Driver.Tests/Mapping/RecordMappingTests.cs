@@ -676,7 +676,5 @@ public class RecordMappingTests
         public int Age => age;
     }
 
-    private record TestXY(int X, string Y)
-    {
-    }
+    private record TestXY(int X, string Y);
 }
