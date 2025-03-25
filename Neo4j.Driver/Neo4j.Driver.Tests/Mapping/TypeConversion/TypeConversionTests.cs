@@ -38,6 +38,12 @@ public class TypeConversionTests : MappingTestWithGlobalState
         public Guid Id { get; set; }
     }
 
+    private class UserWithConstructor(string name, Guid id)
+    {
+        public string Name => name;
+        public Guid Id => id;
+    }
+
     private class UserAndWebSite
     {
         public User User { get; set; }
@@ -129,5 +135,18 @@ public class TypeConversionTests : MappingTestWithGlobalState
         var mapped = record.AsObjectFromBlueprint(new { UriList = default(List<Uri>) });
 
         mapped.UriList.Should().BeEquivalentTo(expected);
+    }
+
+    [Fact]
+    public void ShouldUseConverterWhenUsingConstructorMapping()
+    {
+        var guid = Guid.NewGuid();
+        var record = TestRecord.Create(("name", "John"), ("id", guid.ToString()));
+        RecordObjectMapping.RegisterTypeConverter((string s) => Guid.Parse(s));
+
+        var user = record.AsObject<UserWithConstructor>();
+
+        user.Name.Should().Be("John");
+        user.Id.Should().Be(guid);
     }
 }
