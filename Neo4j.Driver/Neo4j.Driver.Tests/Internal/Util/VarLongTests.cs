@@ -15,7 +15,6 @@
 
 using System;
 using FluentAssertions;
-using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Util;
 using Xunit;
 

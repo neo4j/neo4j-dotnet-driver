@@ -13,18 +13,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.Mapping;
+using Neo4j.Driver.Mapping;
+using Xunit;
 
-namespace Neo4j.Driver.Mapping;
+namespace Neo4j.Driver.Tests.Mapping;
 
-/// <summary>Contains extensions for entities such as nodes and relationships.</summary>
-public static class EntityExtensions
+[CollectionDefinition("UsesMappingGlobalState", DisableParallelization = true)]
+public class UsesMappingGlobalState
 {
-    /// <summary>Converts the entity to a record.</summary>
-    /// <param name="entity">The entity to convert.</param>
-    /// <returns>The record.</returns>
-    public static IRecord AsRecord(this IEntity entity)
+}
+
+[Collection("UsesMappingGlobalState")]
+public class MappingTestWithGlobalState
+{
+    public MappingTestWithGlobalState()
     {
-        return new DictAsRecord(entity, null);
+        RecordObjectMapping.Reset();
     }
 }

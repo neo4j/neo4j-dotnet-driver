@@ -15,14 +15,15 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
+using Neo4j.Driver.Mapping;
 
-namespace Neo4j.Driver.Mapping;
+namespace Neo4j.Driver.Internal.Mapping;
 
 internal class BuiltMapper<T> : IRecordMapper<T>
 {
     private readonly IMappableValueProvider _mappableValueProvider = new MappableValueProvider();
+    private readonly IParameterMapper _parameterMapper = new ParameterMapper();
     private readonly List<Action<T, IRecord>> _propertyMappings = new();
 
     private Func<IRecord, T> _wholeObjectMapping;
@@ -42,14 +43,24 @@ internal class BuiltMapper<T> : IRecordMapper<T>
         {
             throw new MappingFailedException(
                 $"Cannot map record to type {typeof(T).Name} " +
-                $"because the mapping function threw an exception.",
+                $"because the mapping function threw an exception ({ex.Message}).",
                 ex);
         }
 
         // if there are individual mappings for the properties, apply them
         foreach (var mapping in _propertyMappings)
         {
-            mapping(result, record);
+            try
+            {
+                mapping(result, record);
+            }
+            catch (Exception ex)
+            {
+                throw new MappingFailedException(
+                    $"Cannot map record to type {typeof(T).Name} " +
+                    $"because the mapping function threw an exception ({ex.Message}).",
+                    ex.InnerException);
+            }
         }
 
         return result;
@@ -76,42 +87,7 @@ internal class BuiltMapper<T> : IRecordMapper<T>
 
     public void AddConstructorMapping(ConstructorInfo constructorInfo)
     {
-        // this part only happens once, at the time of building the mapper
-        var parameters = constructorInfo.GetParameters();
-        var paramMappings = parameters.Select(
-            parameter => new
-            {
-                parameter,
-                mapping = parameter.GetEntityMappingInfo()
-            });
-
-        _wholeObjectMapping = MapFromRecord;
-        return;
-
-        // this part happens every time a record is mapped
-        T MapFromRecord(IRecord record)
-        {
-            var args = new List<object>();
-            foreach (var p in paramMappings)
-            {
-                var success = _mappableValueProvider.TryGetMappableValue(
-                    record,
-                    r => _mappableValueProvider.GetConvertedValue(r, p.mapping, p.parameter.ParameterType, null),
-                    p.parameter.ParameterType,
-                    out var mappable);
-
-                if (!success)
-                {
-                    throw new MappingFailedException(
-                        $"Cannot map record to type {typeof(T).Name} because the record does not " +
-                        $"contain a value for the constructor parameter '{p.parameter.Name}'.");
-                }
-
-                args.Add(mappable);
-            }
-
-            return (T)constructorInfo.Invoke(args.ToArray());
-        }
+        _wholeObjectMapping = _parameterMapper.GetParameterMappedCall<T>(constructorInfo);
     }
 
     public void AddMappingBySetter(
@@ -152,7 +128,17 @@ internal class BuiltMapper<T> : IRecordMapper<T>
 
             if (mappableValueFound)
             {
-                propertySetter.Invoke(obj, [mappableValue]);
+                try
+                {
+                    propertySetter.Invoke(obj, [mappableValue]);
+                }
+                catch (Exception ex)
+                {
+                    throw new MappingFailedException(
+                        $"Cannot map record to type {typeof(T).Name} " +
+                        $"because the property setter '{propertySetter.Name}' threw an exception.",
+                        ex);
+                }
             }
             else if (!optional)
             {

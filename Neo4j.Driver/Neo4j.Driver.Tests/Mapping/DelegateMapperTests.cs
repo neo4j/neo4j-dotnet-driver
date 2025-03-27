@@ -355,7 +355,7 @@ public class DelegateMapperTests
     {
         var record = TestRecord.Create(("x", 69));
 
-        Action act = () => record.AsObject(
+        var act = () => record.AsObject(
             (int x) =>
             {
                 if (x == 69)

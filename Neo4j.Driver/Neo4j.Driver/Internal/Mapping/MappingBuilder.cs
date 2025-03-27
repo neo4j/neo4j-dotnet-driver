@@ -16,8 +16,9 @@
 using System;
 using System.Linq.Expressions;
 using System.Reflection;
+using Neo4j.Driver.Mapping;
 
-namespace Neo4j.Driver.Mapping;
+namespace Neo4j.Driver.Internal.Mapping;
 
 /// <summary>This class wraps the <see cref="BuiltMapper{T}"/> and exposes a fluent API for building the mapper.</summary>
 internal class MappingBuilder<T> : IMappingBuilder<T>

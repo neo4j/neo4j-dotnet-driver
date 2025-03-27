@@ -15,8 +15,9 @@
 
 using System.Linq;
 using System.Reflection;
+using Neo4j.Driver.Mapping;
 
-namespace Neo4j.Driver.Mapping;
+namespace Neo4j.Driver.Internal.Mapping;
 
 internal record EntityMappingInfo(
     string Path,

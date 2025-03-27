@@ -13,18 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.Mapping;
+using System.Reflection;
 
-namespace Neo4j.Driver.Mapping;
+namespace Neo4j.Driver.Internal.Mapping;
 
-/// <summary>Contains extensions for entities such as nodes and relationships.</summary>
-public static class EntityExtensions
+internal class DelegateMapper
 {
-    /// <summary>Converts the entity to a record.</summary>
-    /// <param name="entity">The entity to convert.</param>
-    /// <returns>The record.</returns>
-    public static IRecord AsRecord(this IEntity entity)
+    private static readonly IParameterMapper ParameterMapper = new ParameterMapper();
+
+    internal static T MapWithMethodInfo<T>(IRecord record, MethodInfo mapFunction, object target)
     {
-        return new DictAsRecord(entity, null);
+        var mapMethod = ParameterMapper.GetParameterMappedCall<T>(mapFunction, target);
+        return mapMethod(record);
     }
 }

@@ -21,13 +21,8 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Mapping;
 
-public class MappingProviderTests
+public class MappingProviderTests : MappingTestWithGlobalState
 {
-    public MappingProviderTests()
-    {
-        RecordObjectMapping.Reset();
-    }
-
     [Fact]
     public void ShouldOverrideDefaultMapping()
     {

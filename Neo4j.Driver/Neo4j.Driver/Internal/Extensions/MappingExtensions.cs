@@ -16,8 +16,9 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Neo4j.Driver.Mapping;
 
-namespace Neo4j.Driver.Mapping;
+namespace Neo4j.Driver.Internal;
 
 internal static class MappingExtensions
 {
@@ -38,9 +39,16 @@ internal static class MappingExtensions
         {
             return asMethod.Invoke(null, [obj]);
         }
-        catch (TargetInvocationException tie)
+        catch (Exception ex)
         {
-            throw tie.InnerException!;
+            var inner = ex switch
+            {
+                TargetInvocationException tie => tie.InnerException,
+                _ => ex
+            };
+
+            throw new MappingFailedException(
+                $"Failed to map value to type {type.Name}.", inner);
         }
     }
 }

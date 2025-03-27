@@ -16,9 +16,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using Neo4j.Driver.Internal.Mapping.TypeConversion;
+using Neo4j.Driver.Mapping;
 
-namespace Neo4j.Driver.Mapping;
+namespace Neo4j.Driver.Internal.Mapping;
 
 internal interface IMappableValueProvider
 {
@@ -40,15 +43,18 @@ internal class MappableValueProvider : IMappableValueProvider
     private readonly IMappedListCreator _mappedListCreator;
     private readonly IMappingSourceDelegateBuilder _mappingSourceDelegateBuilder;
     private readonly IRecordObjectMapping _recordObjectMapping;
+    private readonly IMappingTypeConversionManager _typeConversionManager;
 
     internal MappableValueProvider(
         IMappedListCreator mappedListCreator = null,
         IMappingSourceDelegateBuilder mappingSourceDelegateBuilder = null,
-        IRecordObjectMapping recordObjectMapping = null)
+        IRecordObjectMapping recordObjectMapping = null,
+        IMappingTypeConversionManager typeConversionManager = null)
     {
         _mappedListCreator = mappedListCreator ?? new MappedListCreator();
         _mappingSourceDelegateBuilder = mappingSourceDelegateBuilder ?? new MappingSourceDelegateBuilder();
-        _recordObjectMapping = recordObjectMapping ?? RecordObjectMapping.Instance;
+        _recordObjectMapping = recordObjectMapping;
+        _typeConversionManager = typeConversionManager;
     }
 
     public bool TryGetMappableValue(
@@ -74,7 +80,8 @@ internal class MappableValueProvider : IMappableValueProvider
             // if the value is an entity or dictionary, make it into a fake record and map that (indirectly recursive)
             case IEntity or IDictionary<string, object>:
                 var dictAsRecord = new DictAsRecord(value, record);
-                result = _recordObjectMapping.Map(dictAsRecord, desiredType);
+                var mapper = _recordObjectMapping ?? RecordObjectMapping.Instance;
+                result = mapper.Map(dictAsRecord, desiredType);
                 return true;
 
             // otherwise, just return the value
@@ -110,7 +117,29 @@ internal class MappableValueProvider : IMappableValueProvider
             ICollection list => _mappedListCreator.CreateMappedList(list, propertyType, record),
 
             // otherwise, convert the value to the type of the property
-            _ => value.AsType(propertyType)
+            _ => ConvertToType(value, propertyType)
         };
+    }
+
+    private object ConvertToType(object value, Type propertyType)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        if (propertyType.IsInstanceOfType(value))
+        {
+            return value;
+        }
+
+        var mapper = _recordObjectMapping ?? RecordObjectMapping.Instance;
+        var converter = _typeConversionManager ?? mapper.TypeConversionManager;
+        if (converter.TryConvert(value.GetType(), propertyType, value, out var convertedValue))
+        {
+            return convertedValue;
+        }
+
+        return value.AsType(propertyType);
     }
 }

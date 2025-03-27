@@ -16,9 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver;

@@ -23,13 +23,8 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Mapping;
 
-public class LabelCaptureTests
+public class LabelCaptureTests : MappingTestWithGlobalState
 {
-    public LabelCaptureTests()
-    {
-        RecordObjectMapping.Reset();
-    }
-
     [Fact]
     public void ShouldCaptureSingleNodeLabel()
     {

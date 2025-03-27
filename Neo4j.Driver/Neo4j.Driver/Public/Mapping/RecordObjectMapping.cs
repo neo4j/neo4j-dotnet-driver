@@ -16,6 +16,8 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Neo4j.Driver.Internal.Mapping;
+using Neo4j.Driver.Internal.Mapping.TypeConversion;
 
 namespace Neo4j.Driver.Mapping;
 
@@ -32,24 +34,29 @@ public interface IMappingRegistry
     IMappingRegistry RegisterMapping<T>(Action<IMappingBuilder<T>> mappingBuilder);
 }
 
-internal interface IRecordObjectMapping
+internal interface IRecordObjectMapping : IMappingRegistry
 {
     object Map(IRecord record, Type type);
     TResult MapFromBlueprint<TResult>(IRecord record, TResult blueprint);
+    IMappingTypeConversionManager TypeConversionManager { get; }
+    void RegisterTypeConverter<TFrom, TTo>(Func<TFrom, TTo> converter);
+    MethodInfo GetMapMethodForType(Type type);
 }
 
+internal delegate object MapDelegate(IRecord record);
+
 /// <summary>Controls global record mapping configuration.</summary>
-public class RecordObjectMapping : IMappingRegistry, IRecordObjectMapping
+public class RecordObjectMapping : IRecordObjectMapping
 {
     private readonly Dictionary<Type, MethodInfo> _mapMethods = new();
-
     private readonly Dictionary<Type, object> _mappers = new();
+    private readonly IMappingTypeConversionManager _typeConversionManager = new MappingTypeConversionManager();
 
     private RecordObjectMapping()
     {
     }
 
-    internal static RecordObjectMapping Instance { get; private set; } = new();
+    internal static readonly RecordObjectMapping Instance = new();
 
     IMappingRegistry IMappingRegistry.RegisterMapping<T>(Action<IMappingBuilder<T>> mappingBuilder)
     {
@@ -64,10 +71,11 @@ public class RecordObjectMapping : IMappingRegistry, IRecordObjectMapping
     {
         var mapMethod = Instance.GetMapMethodForType(type);
         var mapperForType = GetMapperForType(type);
+        var mapDelegate = (MapDelegate)mapMethod.CreateDelegate(typeof(MapDelegate), mapperForType);
 
         try
         {
-            return mapMethod.Invoke(mapperForType, [record]);
+            return mapDelegate(record);
         }
         catch (Exception ex)
         {
@@ -81,10 +89,24 @@ public class RecordObjectMapping : IMappingRegistry, IRecordObjectMapping
         return (T)Map(record, typeof(T));
     }
 
+    IMappingTypeConversionManager IRecordObjectMapping.TypeConversionManager => _typeConversionManager;
+
+    void IRecordObjectMapping.RegisterTypeConverter<TFrom, TTo>(Func<TFrom, TTo> converter)
+    {
+        _typeConversionManager.RegisterConverter(converter);
+    }
+
+    public static void RegisterTypeConverter<TFrom, TTo>(Func<TFrom, TTo> converter)
+    {
+        ((IRecordObjectMapping)Instance).RegisterTypeConverter(converter);
+    }
+
     internal static void Reset()
     {
-        // discard the current instance and create a new one, which will have no mappers registered
-        Instance = new RecordObjectMapping();
+        // clear all registered mappers and type converters
+        Instance._mappers.Clear();
+        Instance._mapMethods.Clear();
+        Instance._typeConversionManager.Clear();
         DefaultMapper.Reset();
     }
 
@@ -139,7 +161,7 @@ public class RecordObjectMapping : IMappingRegistry, IRecordObjectMapping
         provider.CreateMappers(Instance);
     }
 
-    private MethodInfo GetMapMethodForType(Type type)
+    public MethodInfo GetMapMethodForType(Type type)
     {
         if (_mapMethods.TryGetValue(type, out var method))
         {
