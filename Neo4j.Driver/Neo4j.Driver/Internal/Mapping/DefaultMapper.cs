@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using Neo4j.Driver.Mapping;
@@ -22,7 +23,7 @@ namespace Neo4j.Driver.Internal.Mapping;
 
 internal static class DefaultMapper
 {
-    private static readonly Dictionary<Type, object> Mappers = new();
+    private static readonly ConcurrentDictionary<Type, object> Mappers = new();
 
     public static void Reset()
     {
@@ -75,7 +76,7 @@ internal static class DefaultMapper
         mapper = mappingBuilder.Build();
 
         // cache the mapper for future use
-        Mappers[type] = mapper;
+        Mappers.TryAdd(type, mapper);
         return (IRecordMapper<T>)mapper;
     }
 
