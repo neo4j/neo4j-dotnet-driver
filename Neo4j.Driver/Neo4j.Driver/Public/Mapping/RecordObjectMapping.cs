@@ -17,7 +17,9 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Neo4j.Driver.Internal.Mapping;
+using Neo4j.Driver.Internal.Mapping.ConventionTranslation;
 using Neo4j.Driver.Internal.Mapping.TypeConversion;
+using Neo4j.Driver.Mapping.ConventionTranslation;
 
 namespace Neo4j.Driver.Mapping;
 
@@ -51,6 +53,7 @@ public class RecordObjectMapping : IRecordObjectMapping
     private readonly Dictionary<Type, MethodInfo> _mapMethods = new();
     private readonly Dictionary<Type, object> _mappers = new();
     private readonly IMappingTypeConversionManager _typeConversionManager = new MappingTypeConversionManager();
+    private IConventionTranslator _conventionTranslator = new NoOpConventionTranslator();
 
     private RecordObjectMapping()
     {
@@ -101,12 +104,36 @@ public class RecordObjectMapping : IRecordObjectMapping
         ((IRecordObjectMapping)Instance).RegisterTypeConverter(converter);
     }
 
+    public static void SetConventionTranslation(IConventionTranslator translator)
+    {
+        Instance._conventionTranslator = translator;
+    }
+
+    public static void SetConventionTranslation<TObjectConvention, TRecordConvention>()
+        where TObjectConvention : ITokenExtractor, new()
+        where TRecordConvention : ITokenCombiner, new()
+    {
+        SetConventionTranslation(new ConventionTranslator<TObjectConvention, TRecordConvention>());
+    }
+
+    public static void SetRecordConventionCombiner<TRecordConvention>()
+        where TRecordConvention : ITokenCombiner, new()
+    {
+        SetConventionTranslation(new ConventionTranslator<CSharpIdentifierExtractor, TRecordConvention>());
+    }
+
+    internal string GetTranslatedRecordIdentifier(string objectIdentifier)
+    {
+        return _conventionTranslator.Translate(objectIdentifier);
+    }
+
     internal static void Reset()
     {
-        // clear all registered mappers and type converters
+        // clear all registered mappers, type converters and convention translator
         Instance._mappers.Clear();
         Instance._mapMethods.Clear();
         Instance._typeConversionManager.Clear();
+        Instance._conventionTranslator = new NoOpConventionTranslator();
         DefaultMapper.Reset();
     }
 

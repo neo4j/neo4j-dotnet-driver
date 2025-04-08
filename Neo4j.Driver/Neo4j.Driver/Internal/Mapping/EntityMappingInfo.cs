@@ -23,7 +23,8 @@ internal record EntityMappingInfo(
     string Path,
     EntityMappingSource EntityMappingSource,
     bool Optional = false,
-    object DefaultValue = null);
+    object DefaultValue = null,
+    bool Explicit = false);
 
 internal static class ExtensionsForEntityMappingInfo
 {
@@ -48,16 +49,14 @@ internal static class ExtensionsForEntityMappingInfo
         ICustomAttributeProvider provider)
     {
         // check for MappingSourceAttribute
-        var sourceAttribute =
-            provider.GetCustomAttributes(typeof(MappingSourceAttribute), false).FirstOrDefault() as
-                MappingSourceAttribute;
-
-        if (sourceAttribute is not null)
+        if (provider.GetCustomAttributes(typeof(MappingSourceAttribute), false).FirstOrDefault() is
+            MappingSourceAttribute sourceAttribute)
         {
             info = info with
             {
                 Path = sourceAttribute.EntityMappingInfo.Path,
-                EntityMappingSource = sourceAttribute.EntityMappingInfo.EntityMappingSource
+                EntityMappingSource = sourceAttribute.EntityMappingInfo.EntityMappingSource,
+                Explicit = true
             };
         }
 
