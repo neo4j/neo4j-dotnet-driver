@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using Neo4j.Driver.Mapping;
 using Xunit;
 
@@ -24,9 +25,15 @@ public class UsesMappingGlobalState
 }
 
 [Collection("UsesMappingGlobalState")]
-public class MappingTestWithGlobalState
+public class MappingTestWithGlobalState : IDisposable
 {
     public MappingTestWithGlobalState()
+    {
+        RecordObjectMapping.Reset();
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
     {
         RecordObjectMapping.Reset();
     }
