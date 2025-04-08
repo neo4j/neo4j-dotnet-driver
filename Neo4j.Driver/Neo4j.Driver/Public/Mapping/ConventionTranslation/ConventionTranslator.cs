@@ -30,7 +30,4 @@ public class ConventionTranslator(ITokenExtractor objectTokenExtractor, ITokenCo
 public class ConventionTranslator<TObjectExtractor, TRecordCombiner>()
     : ConventionTranslator(new TObjectExtractor(), new TRecordCombiner())
     where TObjectExtractor : ITokenExtractor, new()
-    where TRecordCombiner : ITokenCombiner, new()
-
-{
-}
+    where TRecordCombiner : ITokenCombiner, new();

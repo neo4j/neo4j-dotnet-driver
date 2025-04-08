@@ -119,7 +119,7 @@ public class RecordObjectMapping : IRecordObjectMapping
     public static void SetRecordConventionCombiner<TRecordConvention>()
         where TRecordConvention : ITokenCombiner, new()
     {
-        SetConventionTranslation(new ConventionTranslator<CSharpIdentifierExtractor, TRecordConvention>());
+        SetConventionTranslation<CSharpIdentifierExtractor, TRecordConvention>();
     }
 
     internal string GetTranslatedRecordIdentifier(string objectIdentifier)
