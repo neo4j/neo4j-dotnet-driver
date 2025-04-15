@@ -124,7 +124,13 @@ internal static class TestBlackList
 
         ("test_connection_acquisition_timeout_during_fallback",
             "Driver currently uses separate acquisition timeouts for the separate connections. Future behavioural " +
-            "fix (6.0) needed to pass test and unify with other drivers.")
+            "fix (6.0) needed to pass test and unify with other drivers."),
+
+        ("test_homedb.TestHomeDbMixedCluster.test_re_enabling_cache",
+            "Re-enabling cache delayed until 6.0 release."),
+
+        ("test_homedb.TestHomeDbMixedCluster.test_re_enabling_cache_after_disabling",
+            "Re-enabling cache delayed until 6.0 release."),
     };
 
     public static bool FindTest(string testName, out string reason)
