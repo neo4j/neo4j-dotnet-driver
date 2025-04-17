@@ -29,17 +29,17 @@ public class TranslatorTests
     [Fact]
     public void ShouldTranslate()
     {
-        var fruits = new List<string> {"Apple", "Banana", "Cherry"};
+        var fruits = new List<string> { "Apple", "Banana", "Cherry" };
 
-        _mocker.GetMock<ITokenExtractor>()
-            .Setup(x => x.ExtractTokens("AppleBananaCherry"))
-            .Returns(fruits);
+        _mocker.GetMock<IIdentifierParser<IReadOnlyList<string>>>()
+                .Setup(x => x.ParseIdentifier("AppleBananaCherry"))
+                .Returns(fruits);
 
-        _mocker.GetMock<ITokenCombiner>()
-            .Setup(x => x.CombineTokens(fruits))
+        _mocker.GetMock<IFieldFormatter<IReadOnlyList<string>>>()
+            .Setup(x => x.Format(fruits))
             .Returns("apple_banana_cherry");
 
-        var translator = _mocker.CreateInstance<ConventionTranslator>();
+        var translator = _mocker.CreateInstance<ConventionTranslator<IReadOnlyList<string>>>();
         var result = translator.Translate("AppleBananaCherry");
         result.Should().Be("apple_banana_cherry");
     }
@@ -47,7 +47,9 @@ public class TranslatorTests
     [Fact]
     public void ShouldTranslateFromCamelCaseToSnakeCase()
     {
-        var translator = new ConventionTranslator<CamelCaseExtractor, SnakeCaseCombiner>();
+        var parser = new StandardCaseParser(IdentifierCaseConvention.CamelCase);
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.SnakeCase);
+        var translator = new ConventionTranslator<IReadOnlyList<string>>(parser, formatter);
         var result = translator.Translate("appleBananaCherry");
         result.Should().Be("apple_banana_cherry");
     }
@@ -55,7 +57,9 @@ public class TranslatorTests
     [Fact]
     public void ShouldTranslateFromPascalCaseToKebabCase()
     {
-        var translator = new ConventionTranslator<PascalCaseExtractor, KebabCaseCombiner>();
+        var parser = new StandardCaseParser(IdentifierCaseConvention.PascalCase);
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.KebabCase);
+        var translator = new ConventionTranslator<IReadOnlyList<string>>(parser, formatter);
         var result = translator.Translate("AppleBananaCherry");
         result.Should().Be("apple-banana-cherry");
     }
@@ -63,7 +67,9 @@ public class TranslatorTests
     [Fact]
     public void ShouldTranslateFromSnakeCaseToCamelCase()
     {
-        var translator = new ConventionTranslator<SnakeCaseExtractor, CamelCaseCombiner>();
+        var parser = new StandardCaseParser(IdentifierCaseConvention.SnakeCase);
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.CamelCase);
+        var translator = new ConventionTranslator<IReadOnlyList<string>>(parser, formatter);
         var result = translator.Translate("apple_banana_cherry");
         result.Should().Be("appleBananaCherry");
     }
@@ -71,7 +77,9 @@ public class TranslatorTests
     [Fact]
     public void ShouldTranslateFromKebabCaseToPascalCase()
     {
-        var translator = new ConventionTranslator<KebabCaseExtractor, PascalCaseCombiner>();
+        var parser = new StandardCaseParser(IdentifierCaseConvention.KebabCase);
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.PascalCase);
+        var translator = new ConventionTranslator<IReadOnlyList<string>>(parser, formatter);
         var result = translator.Translate("apple-banana-cherry");
         result.Should().Be("AppleBananaCherry");
     }
@@ -79,7 +87,9 @@ public class TranslatorTests
     [Fact]
     public void ShouldTranslateFromScreamingSnakeCaseToCamelCase()
     {
-        var translator = new ConventionTranslator<ScreamingSnakeCaseExtractor, CamelCaseCombiner>();
+        var parser = new StandardCaseParser(IdentifierCaseConvention.ScreamingSnakeCase);
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.CamelCase);
+        var translator = new ConventionTranslator<IReadOnlyList<string>>(parser, formatter);
         var result = translator.Translate("APPLE_BANANA_CHERRY");
         result.Should().Be("appleBananaCherry");
     }
@@ -87,7 +97,9 @@ public class TranslatorTests
     [Fact]
     public void ShouldTranslateCSharpIdentifierFromCamelCaseToCamelCase()
     {
-        var translator = new ConventionTranslator<CamelCaseExtractor, CamelCaseCombiner>();
+        var parser = new StandardCaseParser(IdentifierCaseConvention.CamelCase);
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.CamelCase);
+        var translator = new ConventionTranslator<IReadOnlyList<string>>(parser, formatter);
         var result = translator.Translate("appleBananaCherry");
         result.Should().Be("appleBananaCherry");
     }
@@ -95,7 +107,9 @@ public class TranslatorTests
     [Fact]
     public void ShouldTranslateCSharpIdentifierFromPascalCaseToPascalCase()
     {
-        var translator = new ConventionTranslator<PascalCaseExtractor, PascalCaseCombiner>();
+        var parser = new StandardCaseParser(IdentifierCaseConvention.PascalCase);
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.PascalCase);
+        var translator = new ConventionTranslator<IReadOnlyList<string>>(parser, formatter);
         var result = translator.Translate("AppleBananaCherry");
         result.Should().Be("AppleBananaCherry");
     }
@@ -103,7 +117,9 @@ public class TranslatorTests
     [Fact]
     public void ShouldTranslateCSharpIdentifierFromCamelCaseToPascalCase()
     {
-        var translator = new ConventionTranslator<CamelCaseExtractor, PascalCaseCombiner>();
+        var parser = new StandardCaseParser(IdentifierCaseConvention.CamelCase);
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.PascalCase);
+        var translator = new ConventionTranslator<IReadOnlyList<string>>(parser, formatter);
         var result = translator.Translate("appleBananaCherry");
         result.Should().Be("AppleBananaCherry");
     }
@@ -111,7 +127,9 @@ public class TranslatorTests
     [Fact]
     public void ShouldTranslateCSharpIdentifierFromPascalCaseToCamelCase()
     {
-        var translator = new ConventionTranslator<PascalCaseExtractor, CamelCaseCombiner>();
+        var parser = new StandardCaseParser(IdentifierCaseConvention.PascalCase);
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.CamelCase);
+        var translator = new ConventionTranslator<IReadOnlyList<string>>(parser, formatter);
         var result = translator.Translate("AppleBananaCherry");
         result.Should().Be("appleBananaCherry");
     }

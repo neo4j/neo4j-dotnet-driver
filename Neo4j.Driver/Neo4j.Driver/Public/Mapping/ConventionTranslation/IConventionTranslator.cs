@@ -18,17 +18,12 @@ namespace Neo4j.Driver.Mapping.ConventionTranslation;
 /// <summary>
 /// Translates a string from one naming convention to another.
 /// </summary>
-/// <param name="objectIdentifierParser">The object identifier parser.</param>
-/// <param name="recordFieldFormatter">The record field formatter.</param>
-/// <typeparam name="T">The type of data that is parsed and formatted.</typeparam>
-public class ConventionTranslator<T>(IIdentifierParser<T> objectIdentifierParser, IFieldFormatter<T> recordFieldFormatter)
-    : IConventionTranslator
+public interface IConventionTranslator
 {
-    /// <inheritdoc />
-    public string Translate(string input)
-    {
-        var extractedTokens = objectIdentifierParser.ParseIdentifier(input);
-        var recombinedText = recordFieldFormatter.Format(extractedTokens);
-        return recombinedText;
-    }
+    /// <summary>
+    /// Translate the input string from one naming convention to another.
+    /// </summary>
+    /// <param name="input">The string to translate.</param>
+    /// <returns>The translated string.</returns>
+    public string Translate(string input);
 }

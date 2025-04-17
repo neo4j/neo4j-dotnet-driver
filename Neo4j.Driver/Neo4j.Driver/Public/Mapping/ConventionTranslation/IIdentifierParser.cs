@@ -13,22 +13,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
+
 namespace Neo4j.Driver.Mapping.ConventionTranslation;
 
 /// <summary>
-/// Translates a string from one naming convention to another.
+/// Extracts tokens from a string. A token is a part of a string that is separated by either a
+/// delimiter or a change in case.
 /// </summary>
-/// <param name="objectIdentifierParser">The object identifier parser.</param>
-/// <param name="recordFieldFormatter">The record field formatter.</param>
-/// <typeparam name="T">The type of data that is parsed and formatted.</typeparam>
-public class ConventionTranslator<T>(IIdentifierParser<T> objectIdentifierParser, IFieldFormatter<T> recordFieldFormatter)
-    : IConventionTranslator
+public interface IIdentifierParser<out T>
 {
-    /// <inheritdoc />
-    public string Translate(string input)
-    {
-        var extractedTokens = objectIdentifierParser.ParseIdentifier(input);
-        var recombinedText = recordFieldFormatter.Format(extractedTokens);
-        return recombinedText;
-    }
+    /// <summary>
+    /// Parse the input string into data that can then be used to create a string in the
+    /// desired format.
+    /// </summary>
+    /// <param name="input">The string to parse.</param>
+    /// <returns>The parsed data.</returns>
+    public T ParseIdentifier(string input);
 }

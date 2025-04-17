@@ -29,7 +29,7 @@ public class TranslationEndToEndTests : MappingTestWithGlobalState
     public void ShouldDoSimpleTranslation()
     {
         var record = TestRecord.Create(["personName", "yearBorn"], ["Bob", 1977]);
-        RecordObjectMapping.SetRecordConventionCombiner<CamelCaseCombiner>();
+        RecordObjectMapping.TranslateIdentifiers();
         var person = record.AsObjectFromBlueprint(new { PersonName = "", YearBorn = 0 });
         person.PersonName.Should().Be("Bob");
         person.YearBorn.Should().Be(1977);
@@ -39,7 +39,7 @@ public class TranslationEndToEndTests : MappingTestWithGlobalState
     public void ShouldMapKebabCaseFieldsToSnakeCaseProperties()
     {
         var record = TestRecord.Create(["person-name", "year-born"], ["Bob", 1977]);
-        RecordObjectMapping.SetConventionTranslation<SnakeCaseExtractor, KebabCaseCombiner>();
+        RecordObjectMapping.TranslateIdentifiers(IdentifierCaseConvention.SnakeCase, FieldCaseConvention.KebabCase);
         var person = record.AsObjectFromBlueprint(new { person_name = "", year_born = 0 });
         person.person_name.Should().Be("Bob");
         person.year_born.Should().Be(1977);
@@ -57,7 +57,7 @@ public class TranslationEndToEndTests : MappingTestWithGlobalState
     public void ShouldNotTranslateWhenPropertyIsMarkedWithMappingSourceAttribute()
     {
         var record = TestRecord.Create(["name-of-person", "year_born"], ["Bob", 1977]);
-        RecordObjectMapping.SetRecordConventionCombiner<SnakeCaseCombiner>();
+        RecordObjectMapping.TranslateIdentifiers(FieldCaseConvention.SnakeCase);
         var person = record.AsObject<ExplicitNamePerson>();
         person.Name.Should().Be("Bob");
         person.YearBorn.Should().Be(1977);
@@ -85,7 +85,7 @@ public class TranslationEndToEndTests : MappingTestWithGlobalState
             new Dictionary<string, object> { ["number_of_middle_names"] = 2, ["favourite_color"] = "blue" });
 
         var record = TestRecord.Create(("pilot", pilotNode), ("co_pilot", coPilotNode));
-        RecordObjectMapping.SetRecordConventionCombiner<SnakeCaseCombiner>();
+        RecordObjectMapping.TranslateIdentifiers(FieldCaseConvention.SnakeCase);
 
         var flightCrew = record.AsObject<FlightCrew>();
 
