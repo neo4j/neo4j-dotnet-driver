@@ -29,7 +29,7 @@ public class RecordPathFinderTests
         var recordPathFinder = new RecordPathFinder();
         var record = TestRecord.Create(new[] { "testField" }, new object[] { "testValue" });
 
-        var result = recordPathFinder.TryGetValueByPath(record, "testField", out var value);
+        var result = recordPathFinder.TryGetValueByPath(record, "testField", false, out var value);
 
         result.Should().BeTrue();
         value.Should().Be("testValue");
@@ -41,7 +41,7 @@ public class RecordPathFinderTests
         var recordPathFinder = new RecordPathFinder();
         var record = TestRecord.Create(new[] { "testField" }, new object[] { "testValue" });
 
-        var result = recordPathFinder.TryGetValueByPath(record, "nonExistentField", out var value);
+        var result = recordPathFinder.TryGetValueByPath(record, "nonExistentField", false, out var value);
 
         result.Should().BeFalse();
         value.Should().BeNull();
@@ -55,7 +55,7 @@ public class RecordPathFinderTests
             new[] { "testField" },
             new object[] { new Dictionary<string, object> { { "testProperty", "testValue" } } });
 
-        var result = recordPathFinder.TryGetValueByPath(record, "TESTfield.testProperty", out var value);
+        var result = recordPathFinder.TryGetValueByPath(record, "TESTfield.testProperty", false, out var value);
 
         result.Should().BeTrue();
         value.Should().Be("testValue");
@@ -69,7 +69,7 @@ public class RecordPathFinderTests
             new[] { "testField" },
             new object[] { new Dictionary<string, object> { { "testProperty", "testValue" } } });
 
-        var result = recordPathFinder.TryGetValueByPath(record, "nonExistentField.testProperty", out var value);
+        var result = recordPathFinder.TryGetValueByPath(record, "nonExistentField.testProperty", false, out var value);
 
         result.Should().BeFalse();
         value.Should().BeNull();
@@ -83,7 +83,7 @@ public class RecordPathFinderTests
             new[] { "testField" },
             new object[] { new Dictionary<string, object> { { "testProperty", "testValue" } } });
 
-        var result = recordPathFinder.TryGetValueByPath(record, "testField.nonExistentProperty", out var value);
+        var result = recordPathFinder.TryGetValueByPath(record, "testField.nonExistentProperty", false, out var value);
 
         result.Should().BeFalse();
         value.Should().BeNull();
@@ -97,7 +97,7 @@ public class RecordPathFinderTests
             new[] { "testField" },
             new object[] { new Dictionary<string, object> { { "testProperty", "testValue" } } });
 
-        var result = recordPathFinder.TryGetValueByPath(record, "testField.TESTproperty", out var value);
+        var result = recordPathFinder.TryGetValueByPath(record, "testField.TESTproperty", false, out var value);
 
         result.Should().BeTrue();
         value.Should().Be("testValue");
@@ -111,7 +111,7 @@ public class RecordPathFinderTests
             new[] { "testField" },
             new object[] { new Dictionary<string, object> { { "testProperty", "testValue" } } });
 
-        var result = recordPathFinder.TryGetValueByPath(record, "nonExistentField.testProperty", out var value);
+        var result = recordPathFinder.TryGetValueByPath(record, "nonExistentField.testProperty", false, out var value);
 
         result.Should().BeFalse();
         value.Should().BeNull();
@@ -125,7 +125,7 @@ public class RecordPathFinderTests
             new[] { "testField" },
             new object[] { new Dictionary<string, object> { { "testProperty", "testValue" } } });
 
-        var result = recordPathFinder.TryGetValueByPath(record, "testField.nonExistentProperty", out var value);
+        var result = recordPathFinder.TryGetValueByPath(record, "testField.nonExistentProperty", false, out var value);
 
         result.Should().BeFalse();
         value.Should().BeNull();
@@ -139,7 +139,7 @@ public class RecordPathFinderTests
             new[] { "testField" },
             new[] { "testValue" });
 
-        var result = recordPathFinder.TryGetValueByPath(record, "testField.nonExistentProperty", out var value);
+        var result = recordPathFinder.TryGetValueByPath(record, "testField.nonExistentProperty", false, out var value);
 
         result.Should().BeFalse();
         value.Should().BeNull();

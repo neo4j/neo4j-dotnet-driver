@@ -17,7 +17,9 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Neo4j.Driver.Internal.Mapping;
+using Neo4j.Driver.Internal.Mapping.ConventionTranslation;
 using Neo4j.Driver.Internal.Mapping.TypeConversion;
+using Neo4j.Driver.Mapping.ConventionTranslation;
 
 namespace Neo4j.Driver.Mapping;
 
@@ -41,6 +43,7 @@ internal interface IRecordObjectMapping : IMappingRegistry
     IMappingTypeConversionManager TypeConversionManager { get; }
     void RegisterTypeConverter<TFrom, TTo>(Func<TFrom, TTo> converter);
     MethodInfo GetMapMethodForType(Type type);
+    void TranslateIdentifiers(IConventionTranslator conventionTranslator);
 }
 
 internal delegate object MapDelegate(IRecord record);
@@ -51,6 +54,7 @@ public class RecordObjectMapping : IRecordObjectMapping
     private readonly Dictionary<Type, MethodInfo> _mapMethods = new();
     private readonly Dictionary<Type, object> _mappers = new();
     private readonly IMappingTypeConversionManager _typeConversionManager = new MappingTypeConversionManager();
+    private IConventionTranslator _conventionTranslator = new NoOpConventionTranslator();
 
     private RecordObjectMapping()
     {
@@ -96,17 +100,113 @@ public class RecordObjectMapping : IRecordObjectMapping
         _typeConversionManager.RegisterConverter(converter);
     }
 
+    /// <summary>
+    /// Registers a type converter. This will replace any existing converter for the same type.
+    /// </summary>
+    /// <param name="converter">The function that will convert from <typeparamref name="TFrom"/> to
+    /// <typeparamref name="TTo"/>.</param>
+    /// <typeparam name="TFrom">The type to convert from.</typeparam>
+    /// <typeparam name="TTo">The type to convert to.</typeparam>
     public static void RegisterTypeConverter<TFrom, TTo>(Func<TFrom, TTo> converter)
     {
         ((IRecordObjectMapping)Instance).RegisterTypeConverter(converter);
     }
 
+    internal string GetTranslatedRecordIdentifier(string objectIdentifier)
+    {
+        return _conventionTranslator.Translate(objectIdentifier);
+    }
+
+    /// <summary>
+    /// Uses the supplied <see cref="IConventionTranslator"/> to translate identifiers from the  naming
+    /// convention used in the code to the naming convention used in the database.
+    /// </summary>
+    /// <param name="conventionTranslator"></param>
+    void IRecordObjectMapping.TranslateIdentifiers(IConventionTranslator conventionTranslator)
+    {
+        _conventionTranslator = conventionTranslator;
+    }
+
+    public static void TranslateIdentifiers(IConventionTranslator conventionTranslator)
+    {
+        ((IRecordObjectMapping)Instance).TranslateIdentifiers(conventionTranslator);
+    }
+
+    /// <summary>
+    /// Uses the supplied <see cref="IdentifierCaseConvention"/> to translate identifiers from the
+    /// specified convention to camelCase database identifiers.
+    /// </summary>
+    /// <param name="identifierConvention">The convention to use for parsing the identifiers.</param>
+    public static void TranslateIdentifiers(IdentifierCaseConvention identifierConvention)
+    {
+        var translator = new ConventionTranslator<IEnumerable<string>>(
+            new StandardCaseParser(identifierConvention),
+            new StandardCaseFormatter(FieldCaseConvention.CamelCase));
+        TranslateIdentifiers(translator);
+    }
+
+    /// <summary>
+    /// Uses the supplied <see cref="FieldCaseConvention"/> to translate identifiers from standard
+    /// C# identifiers to the specified database field naming convention.
+    /// </summary>
+    public static void TranslateIdentifiers(FieldCaseConvention fieldConvention)
+    {
+        var translator = new ConventionTranslator<IEnumerable<string>>(
+            new StandardCaseParser(IdentifierCaseConvention.CSharpIdentifier),
+            new StandardCaseFormatter(fieldConvention));
+        TranslateIdentifiers(translator);
+    }
+
+    /// <summary>
+    /// Translates identifiers using the specified <see cref="IdentifierCaseConvention"/> and <see cref="FieldCaseConvention"/>.
+    /// </summary>
+    /// <param name="identifierConvention">The convention to use for parsing the identifiers.</param>
+    /// <param name="fieldConvention">The convention to use for formatting the record fields.</param>
+    public static void TranslateIdentifiers(
+        IdentifierCaseConvention identifierConvention,
+        FieldCaseConvention fieldConvention)
+    {
+        var translator = new ConventionTranslator<IEnumerable<string>>(
+            new StandardCaseParser(identifierConvention),
+            new StandardCaseFormatter(fieldConvention));
+
+        TranslateIdentifiers(translator);
+    }
+
+    /// <summary>
+    /// Translates identifiers using the default configuration.
+    /// By default, it uses the <see cref="IdentifierCaseConvention.CSharpIdentifier"/> for parsing object identifiers
+    /// and the <see cref="FieldCaseConvention.CamelCase"/> for formatting record fields.
+    /// </summary>
+    public static void TranslateIdentifiers()
+    {
+        var translator = new ConventionTranslator<IEnumerable<string>>(
+            new StandardCaseParser(IdentifierCaseConvention.CSharpIdentifier),
+            new StandardCaseFormatter(FieldCaseConvention.CamelCase));
+        TranslateIdentifiers(translator);
+    }
+
+    /// <summary>
+    /// Translates identifiers using a custom object identifier parser and record field formatter.
+    /// </summary>
+    /// <typeparam name="TParseResult">The type of data returned by the parse.</typeparam>
+    /// <param name="objectIdentifierParser">The parser used to parse object identifiers.</param>
+    /// <param name="recordFieldFormatter">The formatter used to format record fields.</param>
+    public static void TranslateIdentifiers<TParseResult>(
+        IIdentifierParser<TParseResult> objectIdentifierParser,
+        IFieldFormatter<TParseResult> recordFieldFormatter)
+    {
+        var translator = new ConventionTranslator<TParseResult>(objectIdentifierParser, recordFieldFormatter);
+        TranslateIdentifiers(translator);
+    }
+
     internal static void Reset()
     {
-        // clear all registered mappers and type converters
+        // clear all registered mappers, type converters and convention translator
         Instance._mappers.Clear();
         Instance._mapMethods.Clear();
         Instance._typeConversionManager.Clear();
+        Instance._conventionTranslator = new NoOpConventionTranslator();
         DefaultMapper.Reset();
     }
 

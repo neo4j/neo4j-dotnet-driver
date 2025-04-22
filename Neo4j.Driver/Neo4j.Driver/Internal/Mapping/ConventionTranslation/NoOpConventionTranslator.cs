@@ -13,28 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using Neo4j.Driver.Mapping;
-using Xunit;
+using Neo4j.Driver.Mapping.ConventionTranslation;
 
-namespace Neo4j.Driver.Tests.Mapping;
+namespace Neo4j.Driver.Internal.Mapping.ConventionTranslation;
 
-[CollectionDefinition("UsesMappingGlobalState", DisableParallelization = true)]
-public class UsesMappingGlobalState
+public class NoOpConventionTranslator : IConventionTranslator
 {
-}
-
-[Collection("UsesMappingGlobalState")]
-public class MappingTestWithGlobalState : IDisposable
-{
-    public MappingTestWithGlobalState()
-    {
-        RecordObjectMapping.Reset();
-    }
-
     /// <inheritdoc />
-    public void Dispose()
+    public string Translate(string input)
     {
-        RecordObjectMapping.Reset();
+        return input;
     }
 }

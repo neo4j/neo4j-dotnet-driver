@@ -14,18 +14,19 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using Neo4j.Driver.Mapping;
 
 namespace Neo4j.Driver.Internal.Mapping;
 
 internal interface IRecordPathFinder
 {
-    bool TryGetValueByPath(IRecord record, string path, out object value);
+    bool TryGetValueByPath(IRecord record, string path, bool translate, out object value);
 }
 
 internal class RecordPathFinder : IRecordPathFinder
 {
     /// <inheritdoc/>
-    public bool TryGetValueByPath(IRecord record, string path, out object value)
+    public bool TryGetValueByPath(IRecord record, string path, bool translate, out object value)
     {
         value = null;
 
@@ -34,19 +35,25 @@ internal class RecordPathFinder : IRecordPathFinder
             return false;
         }
 
-        // if the path matches a field name, we can return the value directly
-        if (record.TryGet(path, out value))
-        {
-            return true;
-        }
-
-        // if there's a dot in the path, we can try to split it and check if the first part
-        // matches a field name and the second part matches a property name
         var dotIndex = path.IndexOf('.');
-        if (dotIndex > 0)
+        if (dotIndex == -1)
         {
+            // if the path matches a field name, we can return the value directly
+            path = translate ? RecordObjectMapping.Instance.GetTranslatedRecordIdentifier(path) : path;
+            if (record.TryGet(path, out value))
+            {
+                return true;
+            }
+        }
+        else
+        {
+            // if there's a dot in the path, we can try to split it and check if the first part
+            // matches a field name and the second part matches a property name
             var field = path.Substring(0, dotIndex);
+            field = translate ? RecordObjectMapping.Instance.GetTranslatedRecordIdentifier(field) : field;
+            
             var property = path.Substring(dotIndex + 1);
+            property = translate ? RecordObjectMapping.Instance.GetTranslatedRecordIdentifier(property) : property;
 
             if (!record.TryGetCaseInsensitive(field, out object fieldValue))
             {

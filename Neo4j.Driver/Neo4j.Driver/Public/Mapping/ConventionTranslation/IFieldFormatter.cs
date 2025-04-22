@@ -13,28 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using Neo4j.Driver.Mapping;
-using Xunit;
+namespace Neo4j.Driver.Mapping.ConventionTranslation;
 
-namespace Neo4j.Driver.Tests.Mapping;
-
-[CollectionDefinition("UsesMappingGlobalState", DisableParallelization = true)]
-public class UsesMappingGlobalState
+/// <summary>
+/// Formats data into a string that can be used to identify a field.
+/// </summary>
+public interface IFieldFormatter<in T>
 {
-}
-
-[Collection("UsesMappingGlobalState")]
-public class MappingTestWithGlobalState : IDisposable
-{
-    public MappingTestWithGlobalState()
-    {
-        RecordObjectMapping.Reset();
-    }
-
-    /// <inheritdoc />
-    public void Dispose()
-    {
-        RecordObjectMapping.Reset();
-    }
+    /// <summary>
+    /// Format the data into a string that can be used to identify a field.
+    /// </summary>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public string Format(T data);
 }
