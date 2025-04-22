@@ -21,82 +21,82 @@ namespace Neo4j.Driver.Tests.Mapping.ConventionTranslation;
 public class FormatterTests
 {
     [Fact]
-    public void SnakeCaseCombiner_ShouldFormat()
+    public void SnakeCaseFormatter_ShouldFormat()
     {
-        var combiner = new StandardCaseFormatter(FieldCaseConvention.SnakeCase);
-        var result = combiner.Format(new[] { "aPple", "BANANA", "Cherry" });
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.SnakeCase);
+        var result = formatter.Format(new[] { "aPple", "BANANA", "Cherry" });
         result.Should().Be("apple_banana_cherry");
     }
 
     [Fact]
-    public void SnakeCaseCombiner_ShouldCombineSingleToken()
+    public void SnakeCaseFormatter_ShouldCombineSingleToken()
     {
-        var combiner = new StandardCaseFormatter(FieldCaseConvention.SnakeCase);
-        var result = combiner.Format(new[] { "aPple" });
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.SnakeCase);
+        var result = formatter.Format(new[] { "aPple" });
         result.Should().Be("apple");
     }
 
     [Fact]
-    public void CamelCaseCombiner_ShouldFormat()
+    public void CamelCaseFormatter_ShouldFormat()
     {
-        var combiner = new StandardCaseFormatter(FieldCaseConvention.CamelCase);
-        var result = combiner.Format(new[] { "aPple", "BANANA", "Cherry" });
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.CamelCase);
+        var result = formatter.Format(new[] { "aPple", "BANANA", "Cherry" });
         result.Should().Be("appleBananaCherry");
     }
 
     [Fact]
-    public void CamelCaseCombiner_ShouldCombineSingleToken()
+    public void CamelCaseFormatter_ShouldCombineSingleToken()
     {
-        var combiner = new StandardCaseFormatter(FieldCaseConvention.CamelCase);
-        var result = combiner.Format(new[] { "aPple" });
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.CamelCase);
+        var result = formatter.Format(new[] { "aPple" });
         result.Should().Be("apple");
     }
 
     [Fact]
-    public void PascalCaseCombiner_ShouldFormat()
+    public void PascalCaseFormatter_ShouldFormat()
     {
-        var combiner = new StandardCaseFormatter(FieldCaseConvention.PascalCase);
-        var result = combiner.Format(new[] { "aPple", "BANANA", "Cherry" });
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.PascalCase);
+        var result = formatter.Format(new[] { "aPple", "BANANA", "Cherry" });
         result.Should().Be("AppleBananaCherry");
     }
 
     [Fact]
-    public void PascalCaseCombiner_ShouldCombineSingleToken()
+    public void PascalCaseFormatter_ShouldCombineSingleToken()
     {
-        var combiner = new StandardCaseFormatter(FieldCaseConvention.PascalCase);
-        var result = combiner.Format(new[] { "aPple" });
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.PascalCase);
+        var result = formatter.Format(new[] { "aPple" });
         result.Should().Be("Apple");
     }
 
     [Fact]
-    public void ScreamingSnakeCaseCombiner_ShouldFormat()
+    public void ScreamingSnakeCaseFormatter_ShouldFormat()
     {
-        var combiner = new StandardCaseFormatter(FieldCaseConvention.ScreamingSnakeCase);
-        var result = combiner.Format(new[] { "aPple", "BANANA", "Cherry" });
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.ScreamingSnakeCase);
+        var result = formatter.Format(new[] { "aPple", "BANANA", "Cherry" });
         result.Should().Be("APPLE_BANANA_CHERRY");
     }
 
     [Fact]
-    public void ScreamingSnakeCaseCombiner_ShouldCombineSingleToken()
+    public void ScreamingSnakeCaseFormatter_ShouldCombineSingleToken()
     {
-        var combiner = new StandardCaseFormatter(FieldCaseConvention.ScreamingSnakeCase);
-        var result = combiner.Format(new[] { "aPple" });
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.ScreamingSnakeCase);
+        var result = formatter.Format(new[] { "aPple" });
         result.Should().Be("APPLE");
     }
 
     [Fact]
-    public void KebabCaseCombiner_ShouldFormat()
+    public void KebabCaseFormatter_ShouldFormat()
     {
-        var combiner = new StandardCaseFormatter(FieldCaseConvention.KebabCase);
-        var result = combiner.Format(new[] { "aPple", "BANANA", "Cherry" });
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.KebabCase);
+        var result = formatter.Format(new[] { "aPple", "BANANA", "Cherry" });
         result.Should().Be("apple-banana-cherry");
     }
 
     [Fact]
-    public void KebabCaseCombiner_ShouldCombineSingleToken()
+    public void KebabCaseFormatter_ShouldCombineSingleToken()
     {
-        var combiner = new StandardCaseFormatter(FieldCaseConvention.KebabCase);
-        var result = combiner.Format(new[] { "aPple" });
+        var formatter = new StandardCaseFormatter(FieldCaseConvention.KebabCase);
+        var result = formatter.Format(new[] { "aPple" });
         result.Should().Be("apple");
     }
 }

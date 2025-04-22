@@ -23,7 +23,7 @@ namespace Neo4j.Driver.Tests.Mapping.ConventionTranslation;
 public class ParserTests
 {
     [Fact]
-    public void ShouldExtractSnakeCaseTokens()
+    public void ShouldParseSnakeCaseTokens()
     {
         var parser = new StandardCaseParser(IdentifierCaseConvention.SnakeCase);
         var tokens = parser.ParseIdentifier("apple_banana_cherry");
@@ -31,7 +31,7 @@ public class ParserTests
     }
 
     [Fact]
-    public void ShouldExtractCamelCaseTokens()
+    public void ShouldParseCamelCaseTokens()
     {
         var parser = new StandardCaseParser(IdentifierCaseConvention.CamelCase);
         var tokens = parser.ParseIdentifier("appleBananaCherry");
@@ -39,7 +39,7 @@ public class ParserTests
     }
 
     [Fact]
-    public void ShouldExtractPascalCaseTokens()
+    public void ShouldParsePascalCaseTokens()
     {
         var parser = new StandardCaseParser(IdentifierCaseConvention.PascalCase);
         var tokens = parser.ParseIdentifier("AppleBananaCherry");
@@ -47,7 +47,7 @@ public class ParserTests
     }
 
     [Fact]
-    public void ShouldExtractScreamingSnakeCaseTokens()
+    public void ShouldParseScreamingSnakeCaseTokens()
     {
         var parser = new StandardCaseParser(IdentifierCaseConvention.ScreamingSnakeCase);
         var tokens = parser.ParseIdentifier("APPLE_BANANA_CHERRY");
@@ -55,7 +55,7 @@ public class ParserTests
     }
 
     [Fact]
-    public void ShouldExtractKebabCaseTokens()
+    public void ShouldParseKebabCaseTokens()
     {
         var parser = new StandardCaseParser(IdentifierCaseConvention.KebabCase);
         var tokens = parser.ParseIdentifier("apple-banana-cherry");
@@ -63,7 +63,7 @@ public class ParserTests
     }
 
     [Fact]
-    public void ShouldExtractCSharpIdentifierTokens_LowerCaseStart()
+    public void ShouldParseCSharpIdentifierTokens_LowerCaseStart()
     {
         var parser = new StandardCaseParser(IdentifierCaseConvention.CSharpIdentifier);
         var tokens = parser.ParseIdentifier("appleBananaCherry");
@@ -71,7 +71,7 @@ public class ParserTests
     }
 
     [Fact]
-    public void ShouldExtractCSharpIdentifierTokens_UpperCaseStart()
+    public void ShouldParseCSharpIdentifierTokens_UpperCaseStart()
     {
         var parser = new StandardCaseParser(IdentifierCaseConvention.CSharpIdentifier);
         var tokens = parser.ParseIdentifier("AppleBananaCherry");
