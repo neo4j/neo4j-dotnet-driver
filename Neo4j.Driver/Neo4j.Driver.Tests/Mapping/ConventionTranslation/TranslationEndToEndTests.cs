@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Tests.Mapping.ConventionTranslation;
 public class TranslationEndToEndTests : MappingTestWithGlobalState
 {
     [Fact]
-    public void ShouldDoSimpleTranslation()
+    public void ShouldDoDefaultTranslation()
     {
         var record = TestRecord.Create(["personName", "yearBorn"], ["Bob", 1977]);
         RecordObjectMapping.TranslateIdentifiers();
@@ -43,6 +43,19 @@ public class TranslationEndToEndTests : MappingTestWithGlobalState
         var person = record.AsObjectFromBlueprint(new { person_name = "", year_born = 0 });
         person.person_name.Should().Be("Bob");
         person.year_born.Should().Be(1977);
+    }
+
+    [Fact]
+    public void ShouldMapSnakeCaseFieldsToKebabCaseProperties()
+    {
+        var record = TestRecord.Create(["person_name", "year_born"], ["Bob", 1977]);
+        RecordObjectMapping.TranslateIdentifiers(
+            IdentifierCaseConvention.ScreamingSnakeCase,
+            FieldCaseConvention.SnakeCase);
+
+        var person = record.AsObjectFromBlueprint(new { PERSON_NAME = "", YEAR_BORN = 0 });
+        person.PERSON_NAME.Should().Be("Bob");
+        person.YEAR_BORN.Should().Be(1977);
     }
 
     private class ExplicitNamePerson
