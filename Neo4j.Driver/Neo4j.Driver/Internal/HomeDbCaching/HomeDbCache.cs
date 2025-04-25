@@ -19,54 +19,62 @@ internal class HomeDbCache : IHomeDbCache
         }
     }
 
+    private readonly object _lock = new();
     private readonly LinkedList<CacheItem> _cachedItems = new();
     private readonly Dictionary<HomeDbCacheKey, LinkedListNode<CacheItem>> _cacheLookup = new();
 
     public bool TryGetCached(HomeDbCacheKey key, out string value)
     {
-        value = null;
-        var found = _cacheLookup.TryGetValue(key, out var node);
-        if (!found)
+        lock (_lock)
         {
-            return false;
+            value = null;
+            var found = _cacheLookup.TryGetValue(key, out var node);
+            if (!found)
+            {
+                return false;
+            }
+
+            _cachedItems.Remove(node);
+            _cachedItems.AddFirst(node);
+            value = node.Value.DatabaseName;
+            return true;
         }
-
-        _cachedItems.Remove(node);
-        _cachedItems.AddFirst(node);
-        value = node.Value.DatabaseName;
-        return true;
-
     }
 
     public void AddOrUpdate(HomeDbCacheKey key, string value)
     {
-        LinkedListNode<CacheItem> node;
-        // if we already have an entry
-        if (_cacheLookup.TryGetValue(key, out node))
+        lock (_lock)
         {
-            _cachedItems.Remove(node);
-        }
-        else
-        {
-            node = new LinkedListNode<CacheItem>(new CacheItem(key, value));
-            _cacheLookup[key] = node;
-        }
+            // if we already have an entry
+            if (_cacheLookup.TryGetValue(key, out var node))
+            {
+                _cachedItems.Remove(node);
+            }
+            else
+            {
+                node = new LinkedListNode<CacheItem>(new CacheItem(key, value));
+                _cacheLookup[key] = node;
+            }
 
-        node.Value.DatabaseName = value;
-        _cachedItems.AddFirst(node);
-        PurgeOldItems();
+            node.Value.DatabaseName = value;
+            _cachedItems.AddFirst(node);
+            PurgeOldItems();
+        }
     }
 
     private void PurgeOldItems()
     {
-        if (_cachedItems.Count < PurgeThreshold)
+        lock (_lock)
         {
-            return;
-        }
+            if (_cachedItems.Count < PurgeThreshold)
+            {
+                return;
+            }
 
-        for (var i = 0; i < PurgeAmount; i++)
-        {
-            RemoveLastItem();
+            for (var i = 0; i < PurgeAmount; i++)
+            {
+                RemoveLastItem();
+            }
         }
     }
 
