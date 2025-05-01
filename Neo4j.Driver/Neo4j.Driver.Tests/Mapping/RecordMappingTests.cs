@@ -13,7 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
@@ -512,6 +515,75 @@ public class RecordMappingTests
         result.Should().BeEquivalentTo(expectedPerson);
     }
 
+    [Fact]
+    public async Task MapMethods_ShouldBeThreadSafe()
+    {
+        var typesToTest = new[]
+        {
+            typeof(TestPerson),
+            typeof(SimpleTestPerson),
+            typeof(PersonInDict),
+            typeof(Movie),
+            typeof(Person),
+            typeof(ProducingCareer),
+            typeof(CarAndPainting),
+            typeof(Painting),
+            typeof(Car),
+            typeof(PersonWithoutBornSetter),
+            typeof(TestPersonWithoutBornMapped),
+            typeof(Book),
+            typeof(Author),
+            typeof(Song),
+            typeof(ClassWithInitProperties),
+            typeof(ClassWithDefaultConstructor),
+            typeof(ClassWithDefaultConstructorWithAttributes),
+            typeof(TestXY)
+        };
+
+        const int numberOfThreads = 4;
+        var tasks = new List<Task>(numberOfThreads);
+        var resetEvent = new ManualResetEventSlim(false);
+        var exceptions = new ConcurrentBag<Exception>();
+
+        for (var i = 0; i < numberOfThreads; i++)
+        {
+            tasks.Add(
+                Task.Run(
+                    () =>
+                    {
+                        try
+                        {
+                            resetEvent.Wait(); // Wait for the signal to start
+                            for (var j = 0; j < 100; j++)
+                            {
+                                foreach (var type in typesToTest)
+                                {
+                                    RecordObjectMapping.Instance.GetMapMethodForType(type);
+                                }
+
+                                RecordObjectMapping.Reset();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            lock (exceptions)
+                            {
+                                exceptions.Add(ex);
+                            }
+                        }
+                    }));
+        }
+
+        resetEvent.Set(); // Signal all tasks to start
+        await Task.WhenAll(tasks);
+
+        // Fail the test if any exceptions were caught
+        if (exceptions.Count > 0)
+        {
+            throw new AggregateException("Thread safety issues detected.", exceptions);
+        }
+    }
+
     private class TestPerson
     {
         [MappingDefaultValue("A. Test Name")]
@@ -629,7 +701,7 @@ public class RecordMappingTests
     private class TestPersonWithoutBornMapped
     {
         [MappingSource("name")]
-        public string Name { get; set;  } = "A. Test Name";
+        public string Name { get; set; } = "A. Test Name";
 
         [MappingIgnored]
         public int? Born { get; set; } = 9999;

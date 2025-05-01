@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using Neo4j.Driver.Internal.Mapping;
@@ -51,8 +52,8 @@ internal delegate object MapDelegate(IRecord record);
 /// <summary>Controls global record mapping configuration.</summary>
 public class RecordObjectMapping : IRecordObjectMapping
 {
-    private readonly Dictionary<Type, MethodInfo> _mapMethods = new();
-    private readonly Dictionary<Type, object> _mappers = new();
+    private readonly ConcurrentDictionary<Type, MethodInfo> _mapMethods = new();
+    private readonly ConcurrentDictionary<Type, object> _mappers = new();
     private readonly IMappingTypeConversionManager _typeConversionManager = new MappingTypeConversionManager();
     private IConventionTranslator _conventionTranslator = new NoOpConventionTranslator();
 
@@ -263,15 +264,14 @@ public class RecordObjectMapping : IRecordObjectMapping
 
     public MethodInfo GetMapMethodForType(Type type)
     {
-        if (_mapMethods.TryGetValue(type, out var method))
-        {
-            return method;
-        }
+        return _mapMethods.AddOrUpdate(type, GetMapMethod, (_, m) => m);
 
-        var typedInterface = typeof(IRecordMapper<>).MakeGenericType(type);
-        var mapMethod = typedInterface.GetMethod(nameof(IRecordMapper<object>.Map));
-        _mapMethods[type] = mapMethod;
-        return mapMethod;
+        MethodInfo GetMapMethod(Type t)
+        {
+            var typedInterface = typeof(IRecordMapper<>).MakeGenericType(t);
+            var methodInfo = typedInterface.GetMethod(nameof(IRecordMapper<object>.Map));
+            return methodInfo;
+        }
     }
 
     /// <summary>Maps a record to an object of the given type according to the global mapping configuration.</summary>
