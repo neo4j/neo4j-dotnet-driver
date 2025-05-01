@@ -566,10 +566,7 @@ public class RecordMappingTests
                         }
                         catch (Exception ex)
                         {
-                            lock (exceptions)
-                            {
-                                exceptions.Add(ex);
-                            }
+                            exceptions.Add(ex);
                         }
                     }));
         }
