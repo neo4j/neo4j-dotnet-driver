@@ -144,7 +144,7 @@ public class HomeDbCacheTests
                                 cache.TryGetCached(key, out _);
                                 break;
 
-                            case 2: // Remove and re-add
+                            case 2: // both
                                 cache.AddOrUpdate(key, value);
                                 cache.TryGetCached(key, out _);
                                 break;
