@@ -575,7 +575,7 @@ public class RecordMappingTests
         await Task.WhenAll(tasks);
 
         // Fail the test if any exceptions were caught
-        if (exceptions.Count > 0)
+        if (!exceptions.IsEmpty)
         {
             throw new AggregateException("Thread safety issues detected.", exceptions);
         }

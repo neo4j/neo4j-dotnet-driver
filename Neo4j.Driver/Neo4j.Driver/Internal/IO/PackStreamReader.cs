@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Reflection;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
@@ -77,13 +78,49 @@ internal sealed class PackStreamReader
         return map;
     }
 
-    public IList<object> ReadList()
+    public object ReadListOrVector()
     {
         var size = (int)ReadListHeader();
         var vals = new object[size];
         for (var j = 0; j < size; j++)
         {
             vals[j] = Read();
+        }
+
+        var allSameType = true;
+        Type firstType = null;
+        foreach (var val in vals)
+        {
+            if (val is null)
+            {
+                continue;
+            }
+
+            Type thisType = null;
+            firstType ??= thisType = val.GetType();
+            if (thisType != firstType)
+            {
+                allSameType = false;
+                break;
+            }
+        }
+
+        if (allSameType && firstType != null && Vector.IsSupported(firstType))
+        {
+            // If all values are of the same type and that type is supported by Vector, return a Vector.
+            try
+            {
+                var genericMethod = typeof(Vector).GetMethod(
+                    nameof(Vector.Create),
+                    BindingFlags.Public | BindingFlags.Static);
+
+                var typedMethod = genericMethod?.MakeGenericMethod(firstType);
+                return typedMethod!.Invoke(null, [vals]);
+            }
+            catch (TargetInvocationException ex)
+            {
+                throw ex.InnerException!;
+            }
         }
 
         return new List<object>(vals);
@@ -115,7 +152,7 @@ internal sealed class PackStreamReader
                 return ReadMap();
 
             case PackStreamType.List:
-                return ReadList();
+                return ReadListOrVector();
 
             case PackStreamType.Struct:
                 return ReadStruct();

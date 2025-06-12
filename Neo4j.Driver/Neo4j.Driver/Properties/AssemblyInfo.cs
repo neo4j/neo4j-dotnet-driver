@@ -44,6 +44,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Neo4j.Driver.Reactive")]
 [assembly: InternalsVisibleTo("Neo4j.Driver.Simple")]
 [assembly: InternalsVisibleTo("Neo4j.Driver.Tests")]
+[assembly: InternalsVisibleTo("Neo4j.Vector.Examples")]
 [assembly: InternalsVisibleTo("Neo4j.Driver.Tests.Integration")]
 [assembly: InternalsVisibleTo("Neo4j.Driver.Tests.TestBackend")]
 // Required for Moq to function in Unit Tests
