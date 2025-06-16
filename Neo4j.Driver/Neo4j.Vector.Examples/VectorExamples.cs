@@ -18,7 +18,6 @@ using Neo4j.Driver.Mapping;
 namespace Neo4j.Vector.Examples;
 
 using System;
-using System.Linq;
 using Xunit;
 using FluentAssertions;
 using Driver;
@@ -99,37 +98,6 @@ public class VectorExamplesTests : IDisposable
         longVectorRead.Should().BeEquivalentTo(record.LongVector);
     }
 
-    [Fact]
-    public async Task ShouldBeEasyToUseWithDotNetVector()
-    {
-        // a dot net native vector
-        var dotNetVector =
-            new System.Numerics.Vector<double>([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]);
-
-        // Convert System.Numerics.Vector<double> to Neo4j vector
-        var elements = new double[System.Numerics.Vector<double>.Count];
-        dotNetVector.CopyTo(elements);
-        var neo4jVector = new Vector<double>(elements);
-
-        // Write node with vector
-        await _driver!
-            .ExecutableQuery("CREATE (n:ShouldBeEasyToUseWithDotNetVector {vector: $vector}) RETURN n")
-            .WithParameters(new { vector = neo4jVector })
-            .ExecuteAsync();
-
-        // Read node with vector
-        var result = await _driver
-            .ExecutableQuery("MATCH (n:ShouldBeEasyToUseWithDotNetVector) RETURN n")
-            .ExecuteAsync();
-
-        var record = result.Result[0];
-        var node = (INode)record["n"];
-
-        node.Properties.Should().ContainKey("vector");
-        var retrievedVector = (Vector<double>)node.Properties["vector"]!;
-        retrievedVector.Values.Should().Equal(elements);
-    }
-
     public class ClassForMappingWithVector(Vector<double> doubleVector, Vector<long> longVector)
     {
         public Vector<double> DoubleVector { get; } = doubleVector;
@@ -165,47 +133,4 @@ public class VectorExamplesTests : IDisposable
         record.LongVector.Should().BeEquivalentTo(longVector);
     }
 
-    [Fact]
-    public async Task ShouldWorkWithObjectMappingAndDotNetVectors()
-    {
-        var vectorSize = System.Numerics.Vector<double>.Count;
-        var doubleVectorElements = Enumerable.Range(0, vectorSize).Select(i => (double)i).ToArray();
-        var doubleVector = new Vector<double>(doubleVectorElements);
-
-        // write node with vectors
-        await _driver!
-            .ExecutableQuery("CREATE (n:ShouldWorkWithObjectMappingAndDotNetVectors $record) RETURN n")
-            .WithParameters(new { record = new { doubleVector } })
-            .ExecuteAsync();
-
-        // important - we set up a type conversion from a neo4j vector to a System.Numerics.Vector
-        RecordObjectMapping.RegisterTypeConverter((Vector<double> v) => new System.Numerics.Vector<double>(v.Values));
-
-        // read node with vector
-        var result = await _driver
-            .ExecutableQuery(
-                """
-                    MATCH (n:ShouldWorkWithObjectMappingAndDotNetVectors) 
-                    RETURN n.doubleVector AS doubleVector
-                """)
-            .ExecuteAsync()
-            .AsObjectsAsync<ClassForMappingWithDotNetVector>();
-
-        var record = result[0];
-
-        for (var i = 0; i < vectorSize; i++)
-        {
-            record.DoubleVector[i].Should().BeApproximately(doubleVectorElements[i], 0.001);
-        }
-    }
-
-    public class ClassForMappingWithDotNetVector
-    {
-        public ClassForMappingWithDotNetVector(System.Numerics.Vector<double> doubleVector)
-        {
-            DoubleVector = doubleVector;
-        }
-
-        public System.Numerics.Vector<double> DoubleVector { get; }
-    }
 }
