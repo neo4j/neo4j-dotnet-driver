@@ -397,6 +397,69 @@ public class CollectionExtensionsTests
             innerList[2].As<int>().Should().Be(3);
         }
 
+            // Simple two-property class
+            public class Person
+            {
+                public string Name { get; set; }
+                public int Age { get; set; }
+            }
+
+            [Fact]
+            public void ToDictionary_ShouldHandleEmptyDictionary()
+            {
+                var emptyDictionary = new Dictionary<string, Person>();
+                var result = emptyDictionary.ToDictionary();
+                result.Should().BeEmpty();
+            }
+
+            [Fact]
+            public void ToDictionary_ShouldConvertDictionaryWithSimpleObjectsCorrectly()
+            {
+                var sourceDictionary = new Dictionary<string, Person>
+                {
+                    { "Key1", new Person { Name = "John", Age = 30 } },
+                    { "Key2", new Person { Name = "Jane", Age = 25 } }
+                };
+
+                var result = sourceDictionary.ToDictionary();
+
+                result.Should().HaveCount(2);
+                result["Key1"].Should().BeEquivalentTo(sourceDictionary["Key1"]);
+                result["Key2"].Should().BeEquivalentTo(sourceDictionary["Key2"]);
+            }
+
+            [Fact]
+            public void ToDictionary_ShouldReturnNullForNullDictionary()
+            {
+                Dictionary<string, Person> nullDictionary = null;
+                // ReSharper disable once ExpressionIsAlwaysNull
+                var actual = nullDictionary.ToDictionary();
+                actual.Should().BeNull();
+            }
+
+            [Fact]
+            public void ToDictionary_ShouldHandleNestedDictionaryCorrectly()
+            {
+                var nestedDictionary = new Dictionary<string, Dictionary<string, Person>>
+                {
+                    {
+                        "Nested", new Dictionary<string, Person>
+                        {
+                            { "InnerKey", new Person { Name = "Doe", Age = 40 } }
+                        }
+                    }
+                };
+
+                var result = nestedDictionary.ToDictionary();
+
+                result.Should().ContainKey("Nested");
+
+                // Validate nested dictionary
+                var innerDict = result["Nested"].As<Dictionary<string, Person>>();
+                innerDict.Should().ContainKey("InnerKey");
+                innerDict["InnerKey"].Should().BeEquivalentTo(new Person { Name = "Doe", Age = 40 });
+            }
+
         [Fact]
         public void ShouldHandleEnumerable()
         {

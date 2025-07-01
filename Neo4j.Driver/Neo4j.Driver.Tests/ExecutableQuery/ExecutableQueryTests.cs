@@ -391,4 +391,72 @@ public class ExecutableQueryTests
 
         queryExecution.Result.Should().Be(45 + rnd);
     }
+
+    [Fact]
+    public async Task ShouldSetParametersWithObjectContainingPerson()
+    {
+        var person = new Person { Name = "Test Person No Work", Age = 22 };
+        var anonParams = new { Shaken = true, Stirred = false, Agent = person };
+
+        var autoMock = new AutoMocker(MockBehavior.Loose);
+        var driverMock = autoMock.GetMock<IDriverRowSource<int>>();
+
+        object capturedParams = null;
+
+        driverMock
+            .Setup(x => x.SetParameters(It.IsAny<object>()))
+            .Callback<object>(p => capturedParams = p);
+
+        driverMock
+            .Setup(x => x.GetRowsAsync(It.IsAny<Action<int>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ExecutionSummary(null, null));
+
+        var subject = new ExecutableQuery<int, int>(driverMock.Object, i => i);
+
+        await subject
+            .WithParameters(anonParams)
+            .ExecuteAsync();
+
+        capturedParams.Should().BeEquivalentTo(anonParams);
+    }
+
+    [Fact]
+    public async Task ShouldSetParametersWithDictionaryContainingPerson()
+    {
+        var person = new Person { Name = "Test Person No Work", Age = 22 };
+        var parameters = new Dictionary<string, object> { ["agent"] = person };
+
+        var autoMock = new AutoMocker(MockBehavior.Loose);
+        var driverMock = autoMock.GetMock<IDriverRowSource<int>>();
+
+        Dictionary<string, object> capturedParams = null;
+
+        driverMock
+            .Setup(x => x.SetParameters(It.IsAny<Dictionary<string, object>>()))
+            .Callback<Dictionary<string, object>>(p => capturedParams = p);
+
+        driverMock
+            .Setup(x => x.GetRowsAsync(It.IsAny<Action<int>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ExecutionSummary(null, null));
+
+        var subject = new ExecutableQuery<int, int>(driverMock.Object, i => i);
+
+        await subject
+            .WithParameters(parameters)
+            .ExecuteAsync();
+
+        capturedParams.Should().ContainKey("agent");
+        capturedParams["agent"]
+            .Should()
+            .BeOfType<Person>()
+            .Which.Should()
+            .BeEquivalentTo(person);
+    }
+
+
+    public class Person
+    {
+        public string Name { get; set; }
+        public int Age { get; set; }
+    }
 }
