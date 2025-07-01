@@ -392,13 +392,16 @@ internal static class CollectionExtensions
         /// <inheritdoc />
         IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator()
         {
-            yield break;
+            foreach (DictionaryEntry entry in dictionary)
+            {
+                yield return new KeyValuePair<string, object>((string)entry.Key, entry.Value);
+            }
         }
 
         /// <inheritdoc />
         IEnumerator IEnumerable.GetEnumerator()
         {
-            yield break;
+            return ((IEnumerable<KeyValuePair<string, object>>)this).GetEnumerator();
         }
     }
 }
