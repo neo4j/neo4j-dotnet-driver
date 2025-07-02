@@ -533,7 +533,9 @@ public sealed class ConfigBuilder
     }
 #endif
 
-    /// <summary>Sets a custom <see cref="ITlsNegotiator"/> to use when establishing a TLS connection.</summary>
+    /// <summary>Sets a custom <see cref="ITlsNegotiator"/> to use when establishing a TLS connection. Note
+    /// that this overrides the default TLS negotiator, which handles certificate-based trust, so if you
+    /// use this method you should implement certificate validation yourself.</summary>
     /// <param name="tlsNegotiator">The <see cref="ITlsNegotiator"/> to use.</param>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     /// <warning>
@@ -559,7 +561,9 @@ public sealed class ConfigBuilder
         return this;
     }
 
-    /// <summary>Sets the type of custom <see cref="ITlsNegotiator"/> to use when establishing a TLS connection.</summary>
+    /// <summary>Sets the type of custom <see cref="ITlsNegotiator"/> to use when establishing a TLS connection. Note
+    /// that this overrides the default TLS negotiator, which handles certificate-based trust, so if you
+    /// use this method you should implement certificate validation yourself.</summary>
     /// <typeparam name="T">The <see cref="ITlsNegotiator"/> to use.</typeparam>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     /// <warning>

@@ -126,12 +126,39 @@ internal static class CollectionExtensions
             return dictIntRo.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         }
 
+        if (TryGetDictionaryOfStringKeys(o, out var dictStr))
+        {
+            return dictStr;
+        }
+
         if (o is IEnumerable<KeyValuePair<string, object>> kvpSeq)
         {
             return kvpSeq.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         }
 
         return FillDictionary(o, new Dictionary<string, object>());
+    }
+
+    private static bool TryGetDictionaryOfStringKeys(object o, out IDictionary<string, object> dictionary)
+    {
+        dictionary = null;
+
+        var typeInfo = o.GetType().GetTypeInfo();
+
+        // get all the interfaces implemented by the type and make sure that one of them is
+        // IDictionary<string,?>
+        var interfaces = typeInfo.ImplementedInterfaces;
+        var canUse = interfaces.Any(
+            i => i.IsGenericType &&
+                i.GetGenericTypeDefinition() == typeof(IDictionary<,>) &&
+                i.GenericTypeArguments[0] == typeof(string));
+
+        if (canUse)
+        {
+            dictionary = new DictionaryAccessWrapper((IDictionary)o);
+        }
+
+        return canUse;
     }
 
     private static IDictionary<string, object> FillDictionary(object o, IDictionary<string, object> dict)
@@ -307,6 +334,74 @@ internal static class CollectionExtensions
             {
                 dict[key] = value;
             }
+        }
+    }
+
+    private struct DictionaryAccessWrapper(IDictionary dictionary) : IDictionary<string, object>
+    {
+        public object this[string key]
+        {
+            get => dictionary[key];
+            set => throw new NotSupportedException("This dictionary is read-only.");
+        }
+
+        public ICollection<string> Keys => dictionary.Keys.Cast<string>().ToList();
+        public ICollection<object> Values => dictionary.Values.Cast<object>().ToList();
+
+        /// <inheritdoc />
+        bool ICollection<KeyValuePair<string, object>>.Remove(KeyValuePair<string, object> item)
+        {
+            throw new NotSupportedException("This dictionary is read-only.");
+        }
+
+        public int Count => dictionary.Count;
+        public bool IsReadOnly => true;
+
+        public void Add(string key, object value) => throw new NotSupportedException("This dictionary is read-only.");
+
+        public bool ContainsKey(string key)
+        {
+            return dictionary.Contains(key);
+        }
+
+        public bool Remove(string key) => throw new NotSupportedException("This dictionary is read-only.");
+
+        public bool TryGetValue(string key, out object value)
+        {
+            if (dictionary.Contains(key))
+            {
+                value = dictionary[key];
+                return true;
+            }
+
+            value = null;
+            return false;
+        }
+
+        public void Add(KeyValuePair<string, object> item) => throw new NotSupportedException("This dictionary is read-only.");
+
+        public void Clear() => throw new NotSupportedException("This dictionary is read-only.");
+
+        public bool Contains(KeyValuePair<string, object> item)
+        {
+            return TryGetValue(item.Key, out var value) && Equals(value, item.Value);
+        }
+
+        public void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex) => throw new NotSupportedException();
+
+        /// <inheritdoc />
+        IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator()
+        {
+            foreach (DictionaryEntry entry in dictionary)
+            {
+                yield return new KeyValuePair<string, object>((string)entry.Key, entry.Value);
+            }
+        }
+
+        /// <inheritdoc />
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable<KeyValuePair<string, object>>)this).GetEnumerator();
         }
     }
 }
