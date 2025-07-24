@@ -29,6 +29,13 @@ public sealed class TransactionConfig
     private IDictionary<string, object> _metadata = new Dictionary<string, object>();
     private TimeSpan? _timeout;
 
+    // constructor with two optional parameters
+    public TransactionConfig(IDictionary<string, object> metadata = null, TimeSpan? timeout = null)
+    {
+        Metadata = metadata ?? new Dictionary<string, object>();
+        Timeout = timeout;
+    }
+
     /// <summary>
     /// Transaction timeout. Transactions that execute longer than the configured timeout will be terminated by the
     /// database. This functionality allows user code to limit query/transaction execution time. The specified timeout
@@ -47,7 +54,7 @@ public sealed class TransactionConfig
     public TimeSpan? Timeout
     {
         get => _timeout;
-        internal set
+        set
         {
             if (!value.HasValue || value.Value == TimeSpan.MaxValue)
             {
@@ -84,7 +91,7 @@ public sealed class TransactionConfig
     public IDictionary<string, object> Metadata
     {
         get => _metadata;
-        internal set => _metadata =
+        set => _metadata =
             value ?? throw new ArgumentNullException(nameof(value), "Transaction metadata should not be null");
     }
 

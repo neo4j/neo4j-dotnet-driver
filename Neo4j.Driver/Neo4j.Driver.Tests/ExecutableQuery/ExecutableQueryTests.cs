@@ -453,10 +453,33 @@ public class ExecutableQueryTests
             .BeEquivalentTo(person);
     }
 
-
     public class Person
     {
         public string Name { get; set; }
         public int Age { get; set; }
+    }
+
+    [Fact]
+    public async Task ShouldGetCorrectTransactionConfig()
+    {
+        var tc = new TransactionConfig(timeout: TimeSpan.FromSeconds(10));
+
+        var qc = new QueryConfig(transactionConfig: tc);
+        var autoMock = new AutoMocker(MockBehavior.Loose);
+        var driverMock = autoMock.GetMock<IDriverRowSource<int>>();
+
+        driverMock
+            .Setup(x => x.GetRowsAsync(It.IsAny<Action<int>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ExecutionSummary(null, null));
+
+        TransactionConfig configPassed = null;
+        driverMock
+            .Setup(x => x.SetConfig(It.IsAny<QueryConfig>()))
+            .Callback<QueryConfig>(qc => configPassed = qc.TransactionConfig);
+
+        var subject = new ExecutableQuery<int, int>(driverMock.Object, i => i);
+        await subject.WithConfig(qc).ExecuteAsync();
+
+        configPassed.Should().Be(tc);
     }
 }
