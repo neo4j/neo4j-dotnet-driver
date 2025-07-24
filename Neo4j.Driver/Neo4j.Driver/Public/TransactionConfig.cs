@@ -91,7 +91,7 @@ public sealed class TransactionConfig
     public IDictionary<string, object> Metadata
     {
         get => _metadata;
-        internal set => _metadata =
+        set => _metadata =
             value ?? throw new ArgumentNullException(nameof(value), "Transaction metadata should not be null");
     }
 
