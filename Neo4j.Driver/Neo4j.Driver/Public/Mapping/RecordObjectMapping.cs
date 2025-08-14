@@ -128,7 +128,7 @@ public class RecordObjectMapping : IRecordObjectMapping
         _conventionTranslator = conventionTranslator;
     }
 
-    public static void TranslateIdentifiers(IConventionTranslator conventionTranslator)
+    private static void TranslateIdentifiers(IConventionTranslator conventionTranslator)
     {
         ((IRecordObjectMapping)Instance).TranslateIdentifiers(conventionTranslator);
     }

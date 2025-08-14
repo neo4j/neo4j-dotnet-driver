@@ -29,7 +29,11 @@ public sealed class TransactionConfig
     private IDictionary<string, object> _metadata = new Dictionary<string, object>();
     private TimeSpan? _timeout;
 
-    // constructor with two optional parameters
+    /// <summary>
+    /// Constructor with two optional parameters
+    /// </summary>
+    /// <param name="metadata"></param>
+    /// <param name="timeout"></param>
     public TransactionConfig(IDictionary<string, object> metadata = null, TimeSpan? timeout = null)
     {
         Metadata = metadata ?? new Dictionary<string, object>();
