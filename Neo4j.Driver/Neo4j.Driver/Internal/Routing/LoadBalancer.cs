@@ -59,6 +59,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
     /// <summary>TEST ONLY.</summary>
     /// <param name="clusterConnPool"></param>
     /// <param name="routingTableManager"></param>
+    /// <param name="driverContext"></param>
     internal LoadBalancer(
         IClusterConnectionPool clusterConnPool,
         IRoutingTableManager routingTableManager,

@@ -31,7 +31,7 @@ public class StandardCaseParser : IIdentifierParser<IReadOnlyList<string>>
     /// Initializes a new instance of the <see cref="StandardCaseParser"/> class.
     /// </summary>
     /// <param name="convention">The naming convention to use.</param>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when an unsupported convention is provided.</exception>
+    /// <exception cref="System.ArgumentOutOfRangeException">Thrown when an unsupported convention is provided.</exception>
     public StandardCaseParser(IdentifierCaseConvention convention)
     {
         (_validationRegex, _splitRegex) = convention switch
