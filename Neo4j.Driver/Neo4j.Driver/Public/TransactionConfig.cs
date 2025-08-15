@@ -32,7 +32,7 @@ public sealed class TransactionConfig
     /// <summary>
     /// Constructor with two optional parameters
     /// </summary>
-    /// <param name="metadata"></param>
+    /// <param name="metadata">A dictionary of key-value pairs to attach as metadata to the transaction.</param>
     /// <param name="timeout"></param>
     public TransactionConfig(IDictionary<string, object> metadata = null, TimeSpan? timeout = null)
     {
