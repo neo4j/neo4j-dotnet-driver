@@ -29,7 +29,13 @@ public sealed class TransactionConfig
     private IDictionary<string, object> _metadata = new Dictionary<string, object>();
     private TimeSpan? _timeout;
 
-    // constructor with two optional parameters
+    /// <summary>
+    /// Constructor with two optional parameters
+    /// </summary>
+    /// <param name="metadata">A dictionary of key-value pairs to attach as metadata to the transaction.</param>
+    /// <param name="timeout">The transaction timeout. Transactions running longer than this duration will be terminated
+    /// by the database. If null, the server's default timeout is used. A value of zero means the transaction will
+    /// execute indefinitely.</param>
     public TransactionConfig(IDictionary<string, object> metadata = null, TimeSpan? timeout = null)
     {
         Metadata = metadata ?? new Dictionary<string, object>();

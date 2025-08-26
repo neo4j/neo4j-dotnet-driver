@@ -17,7 +17,7 @@ using System;
 
 namespace Neo4j.Driver.Internal.Util;
 
-public class VarLong
+internal class VarLong
 {
     public long Value { get; private set; }
     private byte _position = 0;

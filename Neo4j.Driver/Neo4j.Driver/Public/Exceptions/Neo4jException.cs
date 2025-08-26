@@ -86,7 +86,15 @@ public class Neo4jException : Exception, IGqlErrorPreview
         Code = code;
     }
 
-    /// <summary>Gets whether the exception retriable or not.</summary>
+    /// <summary>
+    /// Gets whether the exception is retryable or not.  
+    /// Important Note: Methods that use Autocommit transactions  
+    /// <see cref="Neo4j.Driver.IAsyncSession.RunAsync(string, System.Action{Neo4j.Driver.TransactionConfigBuilder})"/>,  
+    /// <see cref="Neo4j.Driver.IAsyncSession.RunAsync(string, System.Collections.Generic.IDictionary{string, object}, System.Action{Neo4j.Driver.TransactionConfigBuilder})"/>,  
+    /// and  
+    /// <see cref="Neo4j.Driver.IAsyncSession.RunAsync(Neo4j.Driver.Query, System.Action{Neo4j.Driver.TransactionConfigBuilder})"/>  
+    /// are not retryable regardless of this value.
+    /// </summary>
     public virtual bool IsRetriable => false;
 
     /// <summary>Gets or sets the code of a Neo4j exception.</summary>
