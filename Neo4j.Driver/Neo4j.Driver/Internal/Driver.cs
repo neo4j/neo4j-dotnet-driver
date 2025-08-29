@@ -50,6 +50,11 @@ internal sealed class Driver : IInternalDriver
     public bool Encrypted => Context.EncryptionManager.UseTls;
     public Config Config => Context.Config;
 
+    public IBookmarkManager GetExecutableQueryBookmarkManager()
+    {
+        return _bookmarkManager;
+    }
+
     public IAsyncSession AsyncSession()
     {
         return AsyncSession(null);

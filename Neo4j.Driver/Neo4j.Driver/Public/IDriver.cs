@@ -123,4 +123,13 @@ public interface IDriver : IDisposable, IAsyncDisposable
     /// <param name="authToken">Auth token to verify.</param>
     /// <returns> A task that represents the asynchronous operation. </returns>
     Task<bool> VerifyAuthenticationAsync(IAuthToken authToken);
+
+    /// <summary>
+    /// Returns an IBookmarkManager interface to the bookmark manager that the driver is using to ensure causal consistency
+    /// between calls to the ExecutableQuery interface. This can be used to have causal consistency
+    /// when using the API interfaces supplied by Session objects alongside calls to ExecutableQuery.
+    /// </summary>
+    /// <returns> An <see cref='Neo4j.Driver.IBookmarkManager'/> that can be used for causal consistency</returns>
+    IBookmarkManager GetExecutableQueryBookmarkManager();
 }
+

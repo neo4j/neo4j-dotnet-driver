@@ -160,6 +160,16 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         return BeginTransactionAsync(_defaultMode, action, disposeUnconsumedSessionResult);
     }
 
+    public Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode)
+    {
+        return BeginTransactionAsync(mode, null);
+    }
+
+    public Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode, Action<TransactionConfigBuilder> action)
+    {
+        return BeginTransactionAsync(mode, action, true);
+    }
+
     public async Task<IAsyncTransaction> BeginTransactionAsync(
         AccessMode mode,
         Action<TransactionConfigBuilder> action,
