@@ -416,4 +416,5 @@ internal static class CollectionExtensions
         {
             return ((IEnumerable<KeyValuePair<string, object>>)this).GetEnumerator();
         }
+    }
 }
