@@ -155,8 +155,19 @@ internal sealed class BoltHandshaker : IBoltHandshaker
 
     private static BoltProtocolVersion SelectProtocolVersion(List<BoltProtocolVersion> protocolVersions)
     {
-        //We iterate through the versions supplied by the server in the manifest and select the newest one (highest version number)
-        return protocolVersions.Max();    
+        //We iterate through the versions supplied by the server in the manifest and select the highest that is not
+        //greater than the current version this driver supports.
+
+        var currentlySelectedProtocol = new BoltProtocolVersion(0, 0);
+        foreach(var protocol in protocolVersions)
+        {
+            if (protocol > currentlySelectedProtocol && protocol <= BoltProtocolVersion.LatestVersion)
+            {
+                currentlySelectedProtocol = protocol;
+            }
+        }
+
+        return currentlySelectedProtocol;
     }
 
     private static async Task EncodeAndSendHandshakeResponseAsync(

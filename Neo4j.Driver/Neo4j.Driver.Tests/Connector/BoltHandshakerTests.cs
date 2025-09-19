@@ -81,16 +81,15 @@ public class BoltHandshakerTests
     
    [Fact]
     private async Task DoHandshakeAsyncShouldSelectBoltVersionInRange()
-    {
+    {   
         var minorVersionPlus = (byte)(BoltProtocolVersion.LatestVersion.MinorVersion + 3);
         var majorVersion = (byte)BoltProtocolVersion.LatestVersion.MajorVersion;
         var inputData = new byte[]
         {
             0x00, 0x00, 0x01, 0xFF, //Identifies this as a modern negotiation with manifest v1
             0x02, //2 versions to follow
-            0x00, 0x04, 0x04, 0x04,
-            0x00, majorVersion, 
-            minorVersionPlus, majorVersion, //set to higher than actually supported 
+            0x00, 0x04, 0x04, 0x04,     //4.4 -> 4.0 (range 4)   
+            0x00, minorVersionPlus, minorVersionPlus, majorVersion, //set to higher than actually supported. latest version + 3 minors -> latest version first major release (e.g. 6.3 -> 6.0 where 6.0 is the current highest supported version). 
             0x00, //no capability flags set
         };
 
