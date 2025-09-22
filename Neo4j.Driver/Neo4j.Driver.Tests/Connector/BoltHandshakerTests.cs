@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -108,6 +109,40 @@ public class BoltHandshakerTests
         boltProtocolVersion.Should().Be(new BoltProtocolVersion(BoltProtocolVersion.LatestVersion.MajorVersion, 
                                                                 BoltProtocolVersion.LatestVersion.MinorVersion));
     }
+
+    [Fact]
+    public async Task DoHandShakeAsyncShouldThrowIfRangeIsTooLarge()
+    {
+        //Range should not be more than the supplied minor version. This would mean that the driver will try
+        //to select a -ve minor versioned protocol version.
+        var majorVersion = (byte)BoltProtocolVersion.LatestVersion.MajorVersion;
+        var minorVersion = (byte)BoltProtocolVersion.LatestVersion.MinorVersion;
+        var range = (byte)(BoltProtocolVersion.LatestVersion.MinorVersion + 3); //Set the range to be too large
+
+        var inputData = new byte[]
+        {
+            0x00, 0x00, 0x01, 0xFF, //Identifies this as a modern negotiation with manifest v1
+            0x01, //1 versions to follow               
+            0x00, range, minorVersion, majorVersion,  
+            0x00, //no capability flags set
+        };
+
+        var readerStream = new MemoryStream(inputData);
+        var socket = new Mock<ITcpSocketClient>();
+        var writerStream = new MemoryStream();
+
+        socket.SetupGet(x => x.WriterStream).Returns(writerStream);
+        socket.SetupGet(x => x.ReaderStream).Returns(readerStream);
+        
+        var exception = await Record.ExceptionAsync(
+                () => BoltHandshaker.Default.DoHandshakeAsync(
+                    socket.Object,
+                    new Mock<ILogger>().Object,
+                    CancellationToken.None))
+            .ConfigureAwait(false);
+
+        exception.Should().BeOfType<NotSupportedException>();
+    }
      
     [Fact]
     public async Task DoHandshakeAsyncShouldThrowIfNotCorrectLengthResult()
@@ -141,7 +176,7 @@ public class BoltHandshakerTests
     [InlineData(
         new byte[]
         {
-            0x00, 0x00, 0x02, 0xFF, //Identifies this as a modern negotiation with manifest v2
+            0x00, 0x00, 0x01, 0xFF, //Identifies this as a modern negotiation with manifest v1
             0x00 //0 versions to follow  - ERROR   
         })]
     private async Task DoHandshakeAsyncShouldThrowProtocolException(
