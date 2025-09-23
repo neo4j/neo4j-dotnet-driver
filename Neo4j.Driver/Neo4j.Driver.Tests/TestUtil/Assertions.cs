@@ -14,7 +14,9 @@
 // limitations under the License.
 
 using System;
+using System.Linq;
 using FluentAssertions;
+using FluentAssertions.Collections;
 using FluentAssertions.Execution;
 using FluentAssertions.Numeric;
 
@@ -60,5 +62,29 @@ public static class Assertions
 
             return true;
         };
+    }
+
+    public static AndConstraint<GenericCollectionAssertions<double>> BeApproximately(
+        this GenericCollectionAssertions<double> assertions,
+        double[] expected,
+        double precision = 0.0001)
+    {
+        return assertions.HaveCount(expected.Length)
+            .And.SatisfyRespectively(
+                expected.Select(e => new Action<double>(actual =>
+                        Convert.ToDouble(actual).Should().BeApproximately(Convert.ToDouble(e), precision)))
+                    .ToArray());
+    }
+
+    public static AndConstraint<GenericCollectionAssertions<float>> BeApproximately(
+        this GenericCollectionAssertions<float> assertions,
+        float[] expected,
+        float precision = 0.0001F)
+    {
+        return assertions.HaveCount(expected.Length)
+            .And.SatisfyRespectively(
+                expected.Select(e => new Action<float>(actual =>
+                        Convert.ToSingle(actual).Should().BeApproximately(Convert.ToSingle(e), precision)))
+                    .ToArray());
     }
 }

@@ -31,6 +31,7 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>, ICo
     public static readonly BoltProtocolVersion Unknown = new(1, 0);
 
     // ReSharper disable InconsistentNaming
+    //NOTE: CHANGE WHEN ADDING A BOLT PROTOCOL VERSION
     public static readonly BoltProtocolVersion V3_0 = new(3, 0);
     public static readonly BoltProtocolVersion V4_0 = new(4, 0);
     public static readonly BoltProtocolVersion V4_1 = new(4, 1);
@@ -48,6 +49,7 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>, ICo
     public static readonly BoltProtocolVersion V5_8 = new(5, 8);
     public static readonly BoltProtocolVersion V6_0 = new(6, 0);
 
+    //NOTE: CHANGE WHEN ADDING A BOLT PROTOCOL VERSION
     public static readonly BoltProtocolVersion LatestVersion = V6_0;
     public static readonly BoltProtocolVersion HandshakeManifestV1 = new(ManifestSchema, ManifestVersion);
     // ReSharper restore InconsistentNaming
@@ -73,7 +75,7 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>, ICo
 
     public BoltProtocolVersion(int largeVersion)
     {
-        //This version of the constructor is only to be used to handle error codes that come in that are not strictly containing packed values. 
+        //This version of the constructor is only to be used to handle error codes that come in that are not strictly containing packed values.
         MajorVersion = UnpackMajor(largeVersion);
         MinorVersion = UnpackMinor(largeVersion);
         _compValue = MajorVersion * 1000000 + MinorVersion;

@@ -29,9 +29,9 @@ namespace Neo4j.Driver;
 /// Supported element types include: <see cref="float"/>, <see cref="double"/>, <see cref="sbyte"/>, <see cref="short"/>, 
 /// <see cref="int"/>, and <see cref="long"/>.
 /// </remarks>
-public abstract class Vector : IValue, IEquatable<Vector>
+public abstract class Vector : IValue, IVector, IEquatable<IVector>
 {
-    private static readonly HashSet<Type> SupportedTypes =
+    public static readonly HashSet<Type> SupportedTypes =
     [
         typeof(float), // f32
         typeof(double), // f64
@@ -58,6 +58,9 @@ public abstract class Vector : IValue, IEquatable<Vector>
     /// </summary>
     public abstract IEnumerable<object> UntypedValues { get; }
 
+    /// <summary>
+    /// Gets the original byte stream from which the vector was deserialized, if applicable.
+    /// </summary>
     public abstract byte[] OriginalByteStream { get; }
 
     /// <summary>
@@ -80,8 +83,14 @@ public abstract class Vector : IValue, IEquatable<Vector>
 
     private static readonly MethodInfo CreateMethodInfo = typeof(Vector).GetMethod(nameof(Create));
 
-    internal static Vector CreateDynamic(Array values, Type elementType, byte[] originalByteStream = null)
+    internal static Vector CreateDynamic(Array values, byte[] originalByteStream = null)
     {
+        var elementType = values.GetType().GetElementType()!;
+        if (!IsSupported(elementType))
+        {
+            throw new NotSupportedException($"Type {elementType.Name} is not supported for Vector.");
+        }
+
         // Use reflection to call the generic Create<T> method
         var genericMethod = CreateMethodInfo.MakeGenericMethod(elementType);
         return (Vector)genericMethod.Invoke(null, [values, originalByteStream]);
@@ -98,10 +107,33 @@ public abstract class Vector : IValue, IEquatable<Vector>
     public abstract Type ElementType { get; }
 
     /// <inheritdoc />
-    public bool Equals(Vector other)
+    public bool Equals(IVector other)
     {
         return other != null && UntypedValues.SequenceEqual(other.UntypedValues);
     }
+}
+
+public interface IVector
+{
+    /// Returns the elements of the vector as an array of objects, regardless of their underlying type.
+    IEnumerable<object> UntypedValues { get; }
+
+    /// Gets the original byte stream from which the vector was deserialized, if applicable.
+    byte[] OriginalByteStream { get; }
+
+    /// Gets the number of elements in the vector.
+    int Length { get; }
+
+    /// Gets the type of the elements contained in the vector.
+    Type ElementType { get; }
+}
+
+public interface IVector<out T> : IEquatable<IVector>, IVector where T : struct
+{
+    /// <summary>
+    /// Gets the array of values contained in the vector.
+    /// </summary>
+    IReadOnlyList<T> Values { get; }
 }
 
 /// <summary>
@@ -111,7 +143,7 @@ public abstract class Vector : IValue, IEquatable<Vector>
 /// The type of the vector elements. Must be one of the supported numeric types: <see cref="float"/>,
 /// <see cref="double"/>, <see cref="sbyte"/>, <see cref="short"/>, <see cref="int"/>, or <see cref="long"/>.
 /// </typeparam>
-public class Vector<T> : Vector, IEquatable<Vector<T>> where T : struct
+public class Vector<T> : Vector, IVector<T> where T : struct
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="Vector{T}"/> class.
@@ -151,7 +183,7 @@ public class Vector<T> : Vector, IEquatable<Vector<T>> where T : struct
     /// </summary>
     public IReadOnlyList<T> Values { get; }
 
-    /// <inheritdoc />
+    /// <inheritdoc cref="Values"/>
     public override IEnumerable<object> UntypedValues { get; }
 
     /// <inheritdoc />
@@ -164,8 +196,8 @@ public class Vector<T> : Vector, IEquatable<Vector<T>> where T : struct
     public override Type ElementType => typeof(T);
 
     /// <inheritdoc />
-    public bool Equals(Vector<T> other)
+    public bool Equals(IVector other)
     {
-        return other != null && Values.SequenceEqual(other.Values);
+        return other != null && other is IVector<T> typedOther &&  Values.SequenceEqual(typedOther.Values);
     }
 }

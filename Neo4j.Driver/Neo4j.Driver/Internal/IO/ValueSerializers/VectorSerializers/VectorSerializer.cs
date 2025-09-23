@@ -53,7 +53,7 @@ internal class VectorSerializer : IPackStreamSerializer
         var byteArray = reader.ReadBytes();
         var originalByteStream = byteArray.ToArray();
         var typedArray = BytesToTypedArrayHelper.ConvertBytesToTypedArray(byteArray, elementType);
-        return Vector.CreateDynamic(typedArray, elementType, originalByteStream);
+        return Vector.CreateDynamic(typedArray, originalByteStream);
     }
 
     /// <inheritdoc />
@@ -76,7 +76,23 @@ internal class VectorSerializer : IPackStreamSerializer
     /// <inheritdoc />
     public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
     {
-        return (null, 0);
+        if (signature != VectorStructType)
+        {
+            throw new ProtocolException(
+                $"Unsupported struct signature {signature} passed to {nameof(VectorSerializer)}!");
+        }
+
+        PackStream.EnsureStructSize("Vector", VectorStructSize, size);
+        var typeMarker = reader.ReadBytes()[0];
+        if (!MarkerToType.TryGetValue(typeMarker, out var elementType))
+        {
+            throw new ProtocolException($"Unsupported vector element type marker 0x{typeMarker:X2}.");
+        }
+
+        var byteArray = reader.ReadBytes();
+        var originalByteStream = byteArray.ToArray();
+        var typedArray = BytesToTypedArrayHelper.ConvertBytesToTypedArray(byteArray, elementType);
+        return (Vector.CreateDynamic(typedArray, originalByteStream), reader.Index);
     }
 
     private static readonly Dictionary<Type, byte> TypeToMarker = new()

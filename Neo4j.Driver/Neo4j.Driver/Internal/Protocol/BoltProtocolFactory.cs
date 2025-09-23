@@ -43,22 +43,23 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
 
     public static readonly BoltProtocolVersion[] SupportedVersions = new BoltProtocolVersion[]
     {
-        BoltProtocolVersion.V3_0,
-        BoltProtocolVersion.V4_0,
-        BoltProtocolVersion.V4_1,
-        BoltProtocolVersion.V4_2,
-        BoltProtocolVersion.V4_3,
-        BoltProtocolVersion.V4_4,
-        BoltProtocolVersion.V5_0,
-        BoltProtocolVersion.V5_1,
-        BoltProtocolVersion.V5_2,
-        BoltProtocolVersion.V5_3,
-        BoltProtocolVersion.V5_4,
-        BoltProtocolVersion.V5_5,
-        BoltProtocolVersion.V5_6,
-        BoltProtocolVersion.V5_7,
-        BoltProtocolVersion.V5_8,
-        BoltProtocolVersion.V6_0
+        //NOTE: CHANGE WHEN ADDING A BOLT PROTOCOL VERSION
+        BoltProtocolVersion.V3_0
+        ,BoltProtocolVersion.V4_0
+        ,BoltProtocolVersion.V4_1
+        ,BoltProtocolVersion.V4_2
+        ,BoltProtocolVersion.V4_3
+        ,BoltProtocolVersion.V4_4
+        ,BoltProtocolVersion.V5_0
+        ,BoltProtocolVersion.V5_1
+        ,BoltProtocolVersion.V5_2
+        ,BoltProtocolVersion.V5_3
+        ,BoltProtocolVersion.V5_4
+        ,BoltProtocolVersion.V5_5
+        ,BoltProtocolVersion.V5_6
+        ,BoltProtocolVersion.V5_7
+        ,BoltProtocolVersion.V5_8
+        ,BoltProtocolVersion.V6_0
     };
 
     private static readonly Lazy<byte[]> HandshakeBytesLazy =
@@ -72,12 +73,14 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
                 var versions = new[]
                 {
                     goGoBolt,
-                    
+
+                    // List of protocol versions to offer in the legacy handshake (must be exactly 4 entries: manifest marker + 3 offers)
+                    // Update these when dropping/adding legacy support. Do NOT add new major versions here (e.g. 6.0, 7.0, etc).
+
                     //Announce support for the new handshake format with no manifest range supplied.
-                    BoltProtocolVersion.HandshakeManifestV1.PackToInt(), 
-                    
-                    // 3 more versions max.
-                    BoltProtocolVersion.V6_0.PackToInt(),
+                    BoltProtocolVersion.HandshakeManifestV1.PackToInt(),
+
+                    //Legacy Handshake version 3 more versions max. Do not add newer versions in.
                     BoltProtocolVersion.V5_8.PackToIntRange(BoltProtocolVersion.V5_0),
                     BoltProtocolVersion.V4_4.PackToIntRange(BoltProtocolVersion.V4_2),
                     BoltProtocolVersion.V3_0.PackToInt()
@@ -101,15 +104,17 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
         return version switch
         {
             // no matching versions
+            //NOTE: CHANGE WHEN ADDING A BOLT PROTOCOL VERSION
             { MajorVersion: 0, MinorVersion: 0 } => throw new NotSupportedException(NoAgreedVersion),
             { MajorVersion: 3, MinorVersion: 0 } => BoltProtocolV3.Instance,
             { MajorVersion: 4, MinorVersion: <= 4, MinorVersion: >= 1 } => BoltProtocol.Instance,
             { MajorVersion: 5, MinorVersion: <= 8, MinorVersion: >= 0 } => BoltProtocol.Instance,
+            { MajorVersion: 6, MinorVersion: >= 0, MinorVersion: <= 0 } => BoltProtocol.Instance,
             _ => throw new NotSupportedException(
                 $"Protocol error, server suggested unexpected protocol version: {version}")
         };
     }
-    
+
     public static (BoltProtocolVersion version, int range) UnpackAgreedVersion(byte[] data)
     {
         var packedInt = PackStreamBitConverter.ToInt32(data);

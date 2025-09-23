@@ -23,4 +23,5 @@ internal interface IMappingTypeConversionManager
     void RegisterConverter<TFrom, TTo>(Func<TFrom, TTo> converter);
     bool TryConvert(Type fromType, Type toType, object from, out object to);
     void Clear();
+    void RegisterDefaultConverters();
 }
