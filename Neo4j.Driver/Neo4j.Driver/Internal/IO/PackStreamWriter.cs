@@ -51,7 +51,7 @@ internal sealed class PackStreamWriter
                 break;
 
             case byte byteValue:
-                WriteLong(Convert.ToInt64(byteValue));
+                WriteByte(byteValue);
                 break;
 
             case short shortValue:
@@ -90,11 +90,6 @@ internal sealed class PackStreamWriter
                 WriteString(stringValue);
                 break;
 
-            // for this spike, vectors are treated as lists
-            case Vector vector:
-                WriteList(vector.UntypedValues);
-                break;
-
             case IList list:
                 WriteList(list);
                 break;
@@ -112,7 +107,7 @@ internal sealed class PackStreamWriter
                 break;
 
             default:
-                if (_format.WriteStructHandlers.TryGetValue(value.GetType(), out var structHandler))
+                if (_format.TryGetWriteStructHandler(value.GetType(), out var structHandler))
                 {
                     structHandler.Serialize(_format.Version, this, value);
                 }
@@ -129,6 +124,11 @@ internal sealed class PackStreamWriter
     private void WriteMessage(IMessage message)
     {
         message.Serializer.Serialize(_format.Version, this, message);
+    }
+
+    public void WriteByte(byte byteValue)
+    {
+        WriteLong(Convert.ToInt64(byteValue));
     }
 
     public void WriteInt(int value)
@@ -233,7 +233,7 @@ internal sealed class PackStreamWriter
             WriteListHeader(value.Count);
             foreach (var item in value)
             {
-                Write(item);
+                    Write(item);
             }
         }
     }
@@ -294,7 +294,7 @@ internal sealed class PackStreamWriter
         _stream.WriteByte(Null);
     }
 
-    private void WriteRaw(byte[] data)
+    public void WriteRaw(byte[] data)
     {
         _stream.Write(data);
     }

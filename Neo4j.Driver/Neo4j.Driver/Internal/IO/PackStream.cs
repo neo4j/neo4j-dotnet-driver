@@ -27,6 +27,7 @@ internal static class PackStream
     public const byte TinyStruct = 0xB0;
     public const byte Null = 0xC0;
     public const byte Float64 = 0xC1;
+    public const byte Float32 = 0xC6;
     public const byte False = 0xC2;
     public const byte True = 0xC3;
     public const byte ReservedC4 = 0xC4;

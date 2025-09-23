@@ -133,7 +133,7 @@ internal ref struct SpanPackStreamReader
             try
             {
                 var genericMethod = typeof(Vector).GetMethod(
-                    nameof(Vector.Create),
+                    nameof(Vector.CreateDynamic),
                     BindingFlags.Public | BindingFlags.Static);
 
                 var typedMethod = genericMethod?.MakeGenericMethod(firstType);

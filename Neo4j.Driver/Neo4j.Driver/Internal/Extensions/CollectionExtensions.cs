@@ -138,6 +138,7 @@ internal static class CollectionExtensions
 
         return FillDictionary(o, new Dictionary<string, object>());
     }
+
     public static Type GetItemType(this IList list)
     {
         // Check if the list is a generic type
@@ -161,10 +162,9 @@ internal static class CollectionExtensions
         // get all the interfaces implemented by the type and make sure that one of them is
         // IDictionary<string,?>
         var interfaces = typeInfo.ImplementedInterfaces;
-        var canUse = interfaces.Any(
-            i => i.IsGenericType &&
-                i.GetGenericTypeDefinition() == typeof(IDictionary<,>) &&
-                i.GenericTypeArguments[0] == typeof(string));
+        var canUse = interfaces.Any(i => i.IsGenericType &&
+            i.GetGenericTypeDefinition() == typeof(IDictionary<,>) &&
+            i.GenericTypeArguments[0] == typeof(string));
 
         if (canUse)
         {
@@ -391,7 +391,8 @@ internal static class CollectionExtensions
             return false;
         }
 
-        public void Add(KeyValuePair<string, object> item) => throw new NotSupportedException("This dictionary is read-only.");
+        public void Add(KeyValuePair<string, object> item) =>
+            throw new NotSupportedException("This dictionary is read-only.");
 
         public void Clear() => throw new NotSupportedException("This dictionary is read-only.");
 

@@ -20,6 +20,7 @@ using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.IO.ValueSerializers;
 using Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+using Neo4j.Driver.Internal.IO.ValueSerializers.VectorSerializers;
 using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.Protocol;
@@ -113,6 +114,12 @@ internal sealed class MessageFormat
             AddHandler(ElementRelationshipSerializer.Instance);
             AddHandler(ElementUnboundRelationshipSerializer.Instance);
         }
+
+        if(Version >= BoltProtocolVersion.V6_0)
+        {
+            // vectors in 6.0 +
+            AddHandler(VectorSerializer.Instance);
+        }
     }
 
     // Test code.
@@ -145,6 +152,21 @@ internal sealed class MessageFormat
 
     public BoltProtocolVersion Version { get; }
     public IReadOnlyDictionary<byte, IPackStreamMessageDeserializer> MessageReaders => _messageReaders;
+
+    public bool TryGetWriteStructHandler(Type type, out IPackStreamSerializer handler)
+    {
+        foreach (var kvp in _writerStructHandlers)
+        {
+            if (kvp.Key.IsAssignableFrom(type))
+            {
+                handler = kvp.Value;
+                return true;
+            }
+        }
+
+        handler = null;
+        return false;
+    }
 
     private void AddMessageHandler<T>(T instance) where T : class, IPackStreamMessageDeserializer, IPackStreamSerializer
     {

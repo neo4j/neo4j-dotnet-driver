@@ -57,7 +57,8 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
         BoltProtocolVersion.V5_5,
         BoltProtocolVersion.V5_6,
         BoltProtocolVersion.V5_7,
-        BoltProtocolVersion.V5_8
+        BoltProtocolVersion.V5_8,
+        BoltProtocolVersion.V6_0
     };
 
     private static readonly Lazy<byte[]> HandshakeBytesLazy =
@@ -76,6 +77,7 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
                     BoltProtocolVersion.HandshakeManifestV1.PackToInt(), 
                     
                     // 3 more versions max.
+                    BoltProtocolVersion.V6_0.PackToInt(),
                     BoltProtocolVersion.V5_8.PackToIntRange(BoltProtocolVersion.V5_0),
                     BoltProtocolVersion.V4_4.PackToIntRange(BoltProtocolVersion.V4_2),
                     BoltProtocolVersion.V3_0.PackToInt()

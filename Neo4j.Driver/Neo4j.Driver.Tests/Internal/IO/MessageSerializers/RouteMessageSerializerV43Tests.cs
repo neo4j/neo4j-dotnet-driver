@@ -79,7 +79,7 @@ public class RouteMessageSerializerV43Tests
         var meta = reader.ReadMap();
         meta.Should().ContainKey("a").WhichValue.Should().Be("b");
 
-        var bookmarks = reader.ReadListOrVector();
+        var bookmarks = reader.ReadList();
         bookmarks.Should().BeEquivalentTo(new[] { "bm:a" });
         var db = reader.ReadString();
         db.Should().Be("neo4j");
