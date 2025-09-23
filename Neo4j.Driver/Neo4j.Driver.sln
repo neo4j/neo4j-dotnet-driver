@@ -27,8 +27,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Tests.TestBack
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Neo4j.Driver.Tests.BenchkitBackend", "Neo4j.Driver.Tests.BenchkitBackend\Neo4j.Driver.Tests.BenchkitBackend.csproj", "{EFFB6047-6BD4-4CEE-9D5B-09DFE8B8340E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Neo4j.Vector.Examples", "Neo4j.Vector.Examples\Neo4j.Vector.Examples.csproj", "{2ACFD238-3125-4161-A31C-72BE42CA4E76}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
