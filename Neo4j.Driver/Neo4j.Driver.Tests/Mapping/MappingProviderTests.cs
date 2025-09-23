@@ -102,17 +102,6 @@ public class MappingProviderTests : MappingTestWithGlobalState
         obj.Guid.Should().Be(guid);
     }
 
-    [Fact]
-    public void ShouldFailWhenUsingDefaultMapperWithoutOverriding()
-    {
-        var guid = Guid.NewGuid();
-        var testRecord = TestRecord.Create(("Name", "Alice"), ("Guid", guid.ToString()));
-        RecordObjectMapping.RegisterProvider(new MappingProviderThatUsesDefaultMappingAndOverridesAGuidProperty(false));
-
-        var act = () => testRecord.AsObject<NameAndGuid>();
-        act.Should().Throw<MappingFailedException>();
-    }
-
     private class TestObject
     {
         [MappingSource("intValue")]

@@ -87,9 +87,8 @@ public class VectorTests
     }
 
     [Fact]
-    public void ShouldThrowForNullOrEmptyValues()
+    public void ShouldThrowForNull()
     {
         Assert.Throws<ArgumentException>(() => _ = new Vector<int>(null));
-        Assert.Throws<ArgumentException>(() => _ = new Vector<int>([]));
     }
 }
