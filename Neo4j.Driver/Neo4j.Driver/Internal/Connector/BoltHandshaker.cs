@@ -132,6 +132,7 @@ internal sealed class BoltHandshaker : IBoltHandshaker
             var lowestVersion = new BoltProtocolVersion(protocolVersionAndRange.version.MajorVersion,
                                                          protocolVersionAndRange.version.MinorVersion - protocolVersionAndRange.range);
             
+            //If the protocol version from the server is one that this driver knows about add it to the list.
             foreach (var protocol in BoltProtocolFactory.SupportedVersions)
             {
                 if (protocol >= lowestVersion && protocol <= protocolVersionAndRange.version)
@@ -155,11 +156,9 @@ internal sealed class BoltHandshaker : IBoltHandshaker
 
     private static BoltProtocolVersion SelectProtocolVersion(List<BoltProtocolVersion> protocolVersions)
     {
-        //We now select either the latest version sent by the server or the latest version the driver supports, 
-        //whichever is the lowest.
-
-        var serverLatest = protocolVersions.Max();
-        return serverLatest < BoltProtocolVersion.LatestVersion ? serverLatest : BoltProtocolVersion.LatestVersion;
+        //We now select the highest version that is in the list. This list contains the set of versions that both
+        //the server and the driver know about. 
+        return protocolVersions.Max();
     }
 
     private static async Task EncodeAndSendHandshakeResponseAsync(
