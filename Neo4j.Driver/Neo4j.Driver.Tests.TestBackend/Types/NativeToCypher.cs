@@ -17,6 +17,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Neo4j.Driver.Internal.IO.ValueSerializers.VectorSerializers;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Result;
 
 #pragma warning disable CS0618 // Type or member is obsolete - but still needs to be handled
 
@@ -40,6 +42,7 @@ internal static class NativeToCypher
     {
         { typeof(List<object>), CypherList },
         { typeof(Dictionary<string, object>), CypherMap },
+        { typeof(IVector), CypherVector },
 
         { typeof(bool), CypherSimple },
         { typeof(long), CypherSimple },
@@ -67,12 +70,17 @@ internal static class NativeToCypher
             return new NativeToCypherObject { name = "CypherNull" };
         }
 
-        if (sourceObject as List<object> != null)
+        if(sourceObject is IVector)
+        {
+            return FunctionMap[typeof(IVector)]("CypherVector", sourceObject);
+        }
+
+        if (sourceObject is List<object>)
         {
             return FunctionMap[typeof(List<object>)]("CypherList", sourceObject);
         }
 
-        if (sourceObject as Dictionary<string, object> != null)
+        if (sourceObject is Dictionary<string, object>)
         {
             return FunctionMap[typeof(Dictionary<string, object>)]("CypherMap", sourceObject);
         }
@@ -185,6 +193,37 @@ internal static class NativeToCypher
 
         return new NativeToCypherObject
             { name = cypherType, data = new NativeToCypherObject.DataType { value = result } };
+    }
+
+    internal static readonly Dictionary<Type, string> VectorTypeMap = new()
+    {
+        [typeof(sbyte)] = "i8",
+        [typeof(short)] = "i16",
+        [typeof(int)] = "i32",
+        [typeof(long)] = "i64",
+        [typeof(float)] = "f32",
+        [typeof(double)] = "f64"
+    };
+
+    public static NativeToCypherObject CypherVector(string cypherType, object obj)
+    {
+        var vector = (IVector)obj;
+        Dictionary<string, object> result = new()
+        {
+            ["dtype"] = VectorTypeMap[vector.ElementType],
+            ["data"] = ByteStreamToHexString(VectorSerializer.GetByteStream(vector))
+        };
+
+        return new NativeToCypherObject()
+        {
+            data = result,
+            name = cypherType
+        };
+    }
+
+    private static string ByteStreamToHexString(byte[] byteStream)
+    {
+        return string.Join(" ", byteStream.Select(b => b.ToString("x2")));
     }
 
     public static NativeToCypherObject CypherTODO(string name, object obj)

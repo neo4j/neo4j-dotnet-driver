@@ -56,7 +56,14 @@ internal class VectorSerializer : IPackStreamSerializer
         return Vector.CreateDynamic(typedArray, originalByteStream);
     }
 
-    /// <inheritdoc />
+    public static byte[] GetByteStream(IVector vector)
+    {
+        var byteConverter = GetByteConverter(vector.ElementType);
+        var byteArray = vector.UntypedValues.Select(byteConverter).ToArray();
+        var flattened = byteArray.SelectMany(b => b).ToArray();
+        return flattened;
+    }
+
     public void Serialize(BoltProtocolVersion version, PackStreamWriter writer, object value)
     {
         var vector = value.CastOrThrow<Vector>();
@@ -66,11 +73,8 @@ internal class VectorSerializer : IPackStreamSerializer
         writer.WriteByteArray([TypeToMarker[vector.ElementType]]);
 
         // then all the values
-        var byteConverter = GetByteConverter(vector.ElementType);
-        var byteArray = vector.UntypedValues.Select(byteConverter).ToArray();
-
-        // flatten the array of byte arrays and write it
-        writer.WriteByteArray(byteArray.SelectMany(b => b).ToArray());
+        var byteStream = GetByteStream(vector);
+        writer.WriteByteArray(byteStream);
     }
 
     /// <inheritdoc />
@@ -108,7 +112,7 @@ internal class VectorSerializer : IPackStreamSerializer
     private static readonly Dictionary<byte, Type> MarkerToType =
         TypeToMarker.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
 
-    private Func<object, byte[]> GetByteConverter(Type type)
+    private static Func<object, byte[]> GetByteConverter(Type type)
     {
         return type switch
         {

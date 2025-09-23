@@ -18,15 +18,16 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver;
 
 /// <summary>
-/// Represents an abstract base class for a mathematical vector with elements of supported numeric types.
+/// An abstract base class for a mathematical vector with elements of supported numeric types.
 /// </summary>
 /// <remarks>
-/// Supported element types include: <see cref="float"/>, <see cref="double"/>, <see cref="sbyte"/>, <see cref="short"/>, 
+/// Supported element types are: <see cref="float"/>, <see cref="double"/>, <see cref="sbyte"/>, <see cref="short"/>,
 /// <see cref="int"/>, and <see cref="long"/>.
 /// </remarks>
 public abstract class Vector : IValue, IVector, IEquatable<IVector>
@@ -96,10 +97,10 @@ public abstract class Vector : IValue, IVector, IEquatable<IVector>
         return (Vector)genericMethod.Invoke(null, [values, originalByteStream]);
     }
 
-    /// <summary>
-    /// Gets the number of elements in the vector.
-    /// </summary>
-    public abstract int Length { get; }
+    internal static Vector CreateDynamic(IEnumerable<object> values, Type elementType, byte[] originalByteStream = null)
+    {
+        return CreateDynamic(values.Select(v => v.AsType(elementType)).ToArray(), originalByteStream);
+    }
 
     /// <summary>
     /// Gets the type of the elements contained in the vector.
@@ -111,29 +112,6 @@ public abstract class Vector : IValue, IVector, IEquatable<IVector>
     {
         return other != null && UntypedValues.SequenceEqual(other.UntypedValues);
     }
-}
-
-public interface IVector
-{
-    /// Returns the elements of the vector as an array of objects, regardless of their underlying type.
-    IEnumerable<object> UntypedValues { get; }
-
-    /// Gets the original byte stream from which the vector was deserialized, if applicable.
-    byte[] OriginalByteStream { get; }
-
-    /// Gets the number of elements in the vector.
-    int Length { get; }
-
-    /// Gets the type of the elements contained in the vector.
-    Type ElementType { get; }
-}
-
-public interface IVector<out T> : IEquatable<IVector>, IVector where T : struct
-{
-    /// <summary>
-    /// Gets the array of values contained in the vector.
-    /// </summary>
-    IReadOnlyList<T> Values { get; }
 }
 
 /// <summary>
@@ -168,12 +146,7 @@ public class Vector<T> : Vector, IVector<T> where T : struct
     /// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> is not a supported numeric type.</exception>
     public Vector(T[] values, byte[] originalByteStream = null) : this()
     {
-        if (values == null || values.Length == 0)
-        {
-            throw new ArgumentException("Values cannot be null or empty.", nameof(values));
-        }
-
-        Values = values;
+        Values = values ?? throw new ArgumentException("Values cannot be null.", nameof(values));
         OriginalByteStream = originalByteStream;
         UntypedValues = Values.Select(x => (object)x);
     }
@@ -190,14 +163,17 @@ public class Vector<T> : Vector, IVector<T> where T : struct
     public override byte[] OriginalByteStream { get; }
 
     /// <inheritdoc />
-    public override int Length => Values.Count;
-
-    /// <inheritdoc />
     public override Type ElementType => typeof(T);
 
     /// <inheritdoc />
-    public bool Equals(IVector other)
-    {
-        return other != null && other is IVector<T> typedOther &&  Values.SequenceEqual(typedOther.Values);
-    }
+    public IEnumerator<T> GetEnumerator() => Values.GetEnumerator();
+
+    /// <inheritdoc />
+    public int Count => Values.Count;
+
+    /// <inheritdoc />
+    public T this[int index] => Values[index];
+
+    /// <inheritdoc />
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

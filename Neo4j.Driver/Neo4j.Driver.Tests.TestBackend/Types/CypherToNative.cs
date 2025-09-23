@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Neo4j.Driver.Internal.Util;
 using Neo4j.Driver.Tests.TestBackend.Protocol.Session;
 using Newtonsoft.Json.Linq;
 
@@ -66,6 +67,12 @@ public class DateTimeParameterValue
     public string timezone_id { get; set; }
 }
 
+public class VectorParameterValue
+{
+    public string? dtype { get; set; }
+    public string? data { get; set; }
+}
+
 public class DurationParameterValue
 {
     public long? months { get; set; }
@@ -95,6 +102,7 @@ internal class CypherToNative
         { "CypherLocalDateTime", typeof(LocalDateTime) },
         { "CypherDuration", typeof(Duration) },
         { "CypherPoint", typeof(Point) },
+        { "CypherVector", typeof(Vector) },
 
         { "CypherNode", typeof(INode) },
         { "CypherRelationship", typeof(IRelationship) },
@@ -120,6 +128,7 @@ internal class CypherToNative
         { typeof(LocalDateTime), CypherDateTime },
         { typeof(Duration), CypherDuration },
         { typeof(Point), CypherTODO },
+        { typeof(Vector), CypherVector },
 
         { typeof(INode), CypherTODO },
         { typeof(IRelationship), CypherTODO },
@@ -143,7 +152,7 @@ internal class CypherToNative
         catch
         {
             throw new IOException(
-                $"Attempting to convert an unsuported object type to a CypherType: {sourceObject.GetType()}");
+                $"Attempting to convert an unsupported object type to a CypherType: {sourceObject.GetType()}");
         }
     }
 
@@ -240,6 +249,43 @@ internal class CypherToNative
             dataTimeParam.second.Value,
             dataTimeParam.nanosecond.Value);
     }
+
+    private static object CypherVector(Type objectType, CypherToNativeObject obj)
+    {
+        var data = (VectorParameterValue)obj.data;
+        var byteArray = ConvertStringToBytes(data.data);
+        var vectorType = SupportedTypeNames[data.dtype!];
+        var typedArray = BytesToTypedArrayHelper.ConvertBytesToTypedArray(byteArray, vectorType);
+        return Vector.CreateDynamic(typedArray, byteArray);
+    }
+
+    private static byte[] ConvertStringToBytes(string hexString)
+    {
+        if (string.IsNullOrEmpty(hexString))
+        {
+            return Array.Empty<byte>();
+        }
+
+        // string looks like "7f c0 23 3a" etc.
+        var hexValues = hexString.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var byteArray = new byte[hexValues.Length];
+        for (var i = 0; i < hexValues.Length; i++)
+        {
+            byteArray[i] = System.Convert.ToByte(hexValues[i], 16);
+        }
+
+        return byteArray;
+    }
+
+    internal static readonly Dictionary<string, Type> SupportedTypeNames = new()
+    {
+        ["i8"] = typeof(sbyte),
+        ["i16"] = typeof(short),
+        ["i32"] = typeof(int),
+        ["i64"] = typeof(long),
+        ["f32"] = typeof(float),
+        ["f64"] = typeof(double)
+    };
 
     private static object CypherDuration(Type objectType, CypherToNativeObject obj)
     {

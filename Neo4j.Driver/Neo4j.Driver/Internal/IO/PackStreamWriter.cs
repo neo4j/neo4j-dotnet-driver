@@ -90,6 +90,10 @@ internal sealed class PackStreamWriter
                 WriteString(stringValue);
                 break;
 
+            case var _ when _format.TryGetWriteStructHandler(value.GetType(), out var structHandler):
+                structHandler.Serialize(_format.Version, this, value);
+                break;
+
             case IList list:
                 WriteList(list);
                 break;
@@ -107,17 +111,8 @@ internal sealed class PackStreamWriter
                 break;
 
             default:
-                if (_format.TryGetWriteStructHandler(value.GetType(), out var structHandler))
-                {
-                    structHandler.Serialize(_format.Version, this, value);
-                }
-                else
-                {
                     throw new ProtocolException(
                         $"Cannot understand {nameof(value)} with type {value.GetType().FullName}");
-                }
-
-                break;
         }
     }
 

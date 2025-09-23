@@ -15,24 +15,14 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Neo4j.Driver.Internal.Util;
 
-public class BytesToTypedArrayHelper
+internal class BytesToTypedArrayHelper
 {
     private static readonly ConcurrentDictionary<Type, Func<byte[], Array>> Converters = new();
-
-    private static Array CreateTypedArrayFromBytes<T>(byte[] bytes) where T : unmanaged
-    {
-        var span = bytes.AsSpan();
-        var typedSpan = MemoryMarshal.Cast<byte, T>(span);
-        return typedSpan.ToArray();
-    }
 
     public static Array ConvertBytesToTypedArray(byte[] bytes, Type elementType)
     {
@@ -48,6 +38,13 @@ public class BytesToTypedArrayHelper
 
         var converter = Converters.GetOrAdd(elementType, CreateConverter);
         return converter(bytes);
+    }
+
+    private static Array CreateTypedArrayFromBytes<T>(byte[] bytes) where T : unmanaged
+    {
+        var span = bytes.AsSpan();
+        var typedSpan = MemoryMarshal.Cast<byte, T>(span);
+        return typedSpan.ToArray();
     }
 
     private static Func<byte[], Array> CreateConverter(Type elementType)
