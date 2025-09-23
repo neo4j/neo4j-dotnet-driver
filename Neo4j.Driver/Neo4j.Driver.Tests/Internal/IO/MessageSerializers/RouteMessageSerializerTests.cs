@@ -80,7 +80,7 @@ public class RouteMessageSerializerTests
         var meta = reader.ReadMap();
         meta.Should().ContainKey("a").WhichValue.Should().Be("b");
 
-        var bookmarks = reader.ReadList();
+        var bookmarks = reader.ReadListOrVector();
         bookmarks.Should().BeEquivalentTo(new[] { "bm:a" });
         var ctx = reader.ReadMap();
         ctx.Should().BeEquivalentTo(new Dictionary<string, string> { ["db"] = "neo4j", ["imp_user"] = "user" });

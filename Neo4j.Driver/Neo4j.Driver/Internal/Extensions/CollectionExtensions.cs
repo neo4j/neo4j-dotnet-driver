@@ -138,6 +138,19 @@ internal static class CollectionExtensions
 
         return FillDictionary(o, new Dictionary<string, object>());
     }
+    public static Type GetItemType(this IList list)
+    {
+        // Check if the list is a generic type
+        var type = list.GetType();
+        if (type.IsGenericType)
+        {
+            // Get the generic type argument (e.g., T in List<T>)
+            return type.GetGenericArguments()[0];
+        }
+
+        // If not generic, then object will do
+        return typeof(object);
+    }
 
     private static bool TryGetDictionaryOfStringKeys(object o, out IDictionary<string, object> dictionary)
     {

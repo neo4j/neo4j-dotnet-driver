@@ -16,6 +16,7 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Neo4j.Driver.Internal.Messaging;
@@ -97,12 +98,51 @@ internal ref struct SpanPackStreamReader
         };
     }
 
-    private IList<object> ReadList(int length)
+    // we return object here because for this spike, the result might be a Vector
+    private object ReadList(int length)
     {
         var list = new List<object>(length);
         for (var i = 0; i < length; i++)
         {
             list.Add(Read());
+        }
+
+        var vals = list.ToArray();
+        var allSameType = true;
+        Type firstType = null;
+        foreach (var val in vals)
+        {
+            if (val is null)
+            {
+                continue;
+            }
+
+            Type thisType = null;
+            thisType = val.GetType();
+            firstType ??= thisType;
+            if (thisType != firstType)
+            {
+                allSameType = false;
+                break;
+            }
+        }
+
+        if (allSameType && firstType != null && Vector.IsSupported(firstType))
+        {
+            // If all values are of the same type and that type is supported by Vector, return a Vector.
+            try
+            {
+                var genericMethod = typeof(Vector).GetMethod(
+                    nameof(Vector.Create),
+                    BindingFlags.Public | BindingFlags.Static);
+
+                var typedMethod = genericMethod?.MakeGenericMethod(firstType);
+                return typedMethod!.Invoke(null, [vals]);
+            }
+            catch (TargetInvocationException ex)
+            {
+                throw ex.InnerException!;
+            }
         }
 
         return list;
@@ -144,7 +184,7 @@ internal ref struct SpanPackStreamReader
         return map;
     }
 
-    public IList<object> ReadList()
+    public object ReadList()
     {
         var length = ReadListHeader();
         return ReadList(length);

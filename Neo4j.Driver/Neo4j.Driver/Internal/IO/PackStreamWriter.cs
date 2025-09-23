@@ -90,6 +90,11 @@ internal sealed class PackStreamWriter
                 WriteString(stringValue);
                 break;
 
+            // for this spike, vectors are treated as lists
+            case Vector vector:
+                WriteList(vector.UntypedValues);
+                break;
+
             case IList list:
                 WriteList(list);
                 break;
