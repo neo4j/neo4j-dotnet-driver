@@ -195,7 +195,7 @@ public class BytesToTypedArrayHelperTests
     }
 
     [Fact]
-    public void ConvertBytesToTypedArray_ModifiesOriginalByteArray()
+    public void ConvertBytesToTypedArray_DoesNotModifyOriginalByteArray()
     {
         // Arrange
         var originalBytes = new byte[] { 0x00, 0x00, 0x00, 0x01 }; // 1 in big-endian
@@ -207,8 +207,7 @@ public class BytesToTypedArrayHelperTests
         // Assert - on little-endian systems, bytes should be reversed
         if (BitConverter.IsLittleEndian)
         {
-            bytesCopy.Should().NotEqual(originalBytes);
-            bytesCopy.Should().Equal(new byte[] { 0x01, 0x00, 0x00, 0x00 });
+            bytesCopy.Should().Equal(originalBytes);
         }
     }
 }

@@ -56,7 +56,6 @@ internal class SessionRun : ProtocolObject
     public override string Respond()
     {
         var protocolObject = (Result.Result)ObjManager.GetObject(ResultId);
-        var type = protocolObject.GetType();
         var response = protocolObject.Respond();
         return response;
     }

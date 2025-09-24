@@ -22,38 +22,45 @@ namespace Neo4j.Driver.Internal.Util;
 
 internal class BytesToTypedArrayHelper
 {
-    private static readonly ConcurrentDictionary<Type, Func<byte[], Array>> Converters = new();
+    private delegate Array BytesConverter(Span<byte> bytes);
+    private static readonly ConcurrentDictionary<Type, BytesConverter> Converters = new();
 
     public static Array ConvertBytesToTypedArray(byte[] bytes, Type elementType)
     {
+        Span<byte> stackBytes = stackalloc byte[bytes.Length];
+        bytes.AsSpan().CopyTo(stackBytes);
+
         // Deal with endianness
         if (BitConverter.IsLittleEndian)
         {
             var elementSize = Marshal.SizeOf(elementType);
-            for (var i = 0; i < bytes.Length; i += elementSize)
+            for (var i = 0; i < stackBytes.Length; i += elementSize)
             {
-                Array.Reverse(bytes, i, elementSize);
+                // Reverse the bytes in place
+                for (int left = i, right = i + elementSize - 1; left < right; left++, right--)
+                {
+                    (stackBytes[left], stackBytes[right]) = (stackBytes[right], stackBytes[left]);
+                }
             }
         }
 
         var converter = Converters.GetOrAdd(elementType, CreateConverter);
-        return converter(bytes);
+        return converter(stackBytes);
     }
 
-    private static Array CreateTypedArrayFromBytes<T>(byte[] bytes) where T : unmanaged
+    private static Array CreateTypedArrayFromBytes<T>(Span<byte> bytes) where T : unmanaged
     {
-        var span = bytes.AsSpan();
-        var typedSpan = MemoryMarshal.Cast<byte, T>(span);
+        var typedSpan = MemoryMarshal.Cast<byte, T>(bytes);
         return typedSpan.ToArray();
     }
 
-    private static Func<byte[], Array> CreateConverter(Type elementType)
+    private static BytesConverter CreateConverter(Type elementType)
     {
         var method = typeof(BytesToTypedArrayHelper).GetMethod(
                 nameof(CreateTypedArrayFromBytes),
                 BindingFlags.NonPublic | BindingFlags.Static)!
             .MakeGenericMethod(elementType);
 
-        return bytes => (Array)method.Invoke(null, [bytes])!;
+        return (BytesConverter)Delegate.CreateDelegate(typeof(BytesConverter), method);
     }
 }

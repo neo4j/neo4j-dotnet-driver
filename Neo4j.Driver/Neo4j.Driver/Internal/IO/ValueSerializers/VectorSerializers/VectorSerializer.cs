@@ -51,9 +51,8 @@ internal class VectorSerializer : IPackStreamSerializer
         }
 
         var byteArray = reader.ReadBytes();
-        var originalByteStream = byteArray.ToArray();
         var typedArray = BytesToTypedArrayHelper.ConvertBytesToTypedArray(byteArray, elementType);
-        return Vector.CreateDynamic(typedArray, originalByteStream);
+        return Vector.CreateDynamic(typedArray, byteArray);
     }
 
     public static byte[] GetByteStream(IVector vector)
