@@ -25,6 +25,11 @@ internal class MappingTypeConversionManager : IMappingTypeConversionManager
 
     public void Clear() => _converters.Clear();
 
+    /// <inheritdoc />
+    public void RegisterDefaultConverters()
+    {
+    }
+
     public bool TryConvert(Type fromType, Type toType, object from, out object to)
     {
         if (_converters.TryGetValue((fromType, toType), out var converter))

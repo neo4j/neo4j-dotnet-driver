@@ -1,0 +1,179 @@
+﻿// Copyright (c) "Neo4j"
+// Neo4j Sweden AB [https://neo4j.com]
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Types;
+
+namespace Neo4j.Driver;
+
+/// <summary>
+/// An abstract base class for a mathematical vector with elements of supported numeric types.
+/// </summary>
+/// <remarks>
+/// Supported element types are: <see cref="float"/>, <see cref="double"/>, <see cref="sbyte"/>, <see cref="short"/>,
+/// <see cref="int"/>, and <see cref="long"/>.
+/// </remarks>
+public abstract class Vector : IValue, IVector, IEquatable<IVector>
+{
+    public static readonly HashSet<Type> SupportedTypes =
+    [
+        typeof(float), // f32
+        typeof(double), // f64
+        typeof(sbyte), // i8
+        typeof(short), // i16
+        typeof(int), // i32
+        typeof(long) // i64
+    ];
+
+    /// <summary>
+    /// Determines whether the specified type is supported for use as a vector element.
+    /// </summary>
+    /// <param name="type">The type to check for support.</param>
+    /// <returns>
+    /// <c>true</c> if the specified type is supported; otherwise, <c>false</c>.
+    /// </returns>
+    public static bool IsSupported(Type type)
+    {
+        return SupportedTypes.Contains(type);
+    }
+
+    /// <summary>
+    /// Gets the elements of the vector as an array of objects, regardless of their underlying type.
+    /// </summary>
+    public abstract IEnumerable<object> UntypedValues { get; }
+
+    /// <summary>
+    /// Gets the original byte stream from which the vector was deserialized, if applicable.
+    /// </summary>
+    public abstract byte[] OriginalByteStream { get; }
+
+    /// <summary>
+    /// Creates a new <see cref="Vector{T}"/> instance from the specified collection of values.
+    /// </summary>
+    /// <typeparam name="T">The type of the vector elements. Must be a supported numeric type.</typeparam>
+    /// <param name="values">The collection of values to initialize the vector with.</param>
+    /// <param name="originalByteStream">The original byte stream from which the vector was deserialized, if applicable.</param>
+    /// <returns>A new <see cref="Vector{T}"/> containing the specified values.</returns>
+    /// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> is not a supported type.</exception>
+    public static Vector<T> Create<T>(T[] values, byte[] originalByteStream = null) where T : struct
+    {
+        if (!IsSupported(typeof(T)))
+        {
+            throw new NotSupportedException($"Type {typeof(T).Name} is not supported for Vector.");
+        }
+
+        return new Vector<T>(values, originalByteStream);
+    }
+
+    private static readonly MethodInfo CreateMethodInfo = typeof(Vector).GetMethod(nameof(Create));
+
+    internal static Vector CreateDynamic(Array values, byte[] originalByteStream = null)
+    {
+        var elementType = values.GetType().GetElementType()!;
+        if (!IsSupported(elementType))
+        {
+            throw new NotSupportedException($"Type {elementType.Name} is not supported for Vector.");
+        }
+
+        // Use reflection to call the generic Create<T> method
+        var genericMethod = CreateMethodInfo.MakeGenericMethod(elementType);
+        return (Vector)genericMethod.Invoke(null, [values, originalByteStream]);
+    }
+
+    internal static Vector CreateDynamic(IEnumerable<object> values, Type elementType, byte[] originalByteStream = null)
+    {
+        return CreateDynamic(values.Select(v => v.AsType(elementType)).ToArray(), originalByteStream);
+    }
+
+    /// <summary>
+    /// Gets the type of the elements contained in the vector.
+    /// </summary>
+    public abstract Type ElementType { get; }
+
+    /// <inheritdoc />
+    public bool Equals(IVector other)
+    {
+        return other != null && UntypedValues.SequenceEqual(other.UntypedValues);
+    }
+}
+
+/// <summary>
+/// Represents a mathematical vector with elements of a specific supported numeric type.
+/// </summary>
+/// <typeparam name="T">
+/// The type of the vector elements. Must be one of the supported numeric types: <see cref="float"/>,
+/// <see cref="double"/>, <see cref="sbyte"/>, <see cref="short"/>, <see cref="int"/>, or <see cref="long"/>.
+/// </typeparam>
+public class Vector<T> : Vector, IVector<T> where T : struct
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Vector{T}"/> class.
+    /// </summary>
+    /// <exception cref="NotSupportedException">
+    /// Thrown if <typeparamref name="T"/> is not a supported numeric type.
+    /// </exception>
+    public Vector()
+    {
+        if (!IsSupported(typeof(T)))
+        {
+            throw new NotSupportedException($"Type {typeof(T).Name} is not supported for Vector.");
+        }
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Vector{T}"/> class with the specified values.
+    /// </summary>
+    /// <param name="values">The array of values to initialize the vector with. Must not be null or empty.</param>
+    /// <param name="originalByteStream">The original byte stream from which the vector was deserialized, if applicable.</param>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="values"/> is null or empty.</exception>
+    /// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> is not a supported numeric type.</exception>
+    public Vector(T[] values, byte[] originalByteStream = null) : this()
+    {
+        Values = values ?? throw new ArgumentException("Values cannot be null.", nameof(values));
+        OriginalByteStream = originalByteStream;
+        UntypedValues = Values.Select(x => (object)x);
+    }
+
+    /// <summary>
+    /// Gets the array of values contained in the vector.
+    /// </summary>
+    public IReadOnlyList<T> Values { get; }
+
+    /// <inheritdoc cref="Values"/>
+    public override IEnumerable<object> UntypedValues { get; }
+
+    /// <inheritdoc />
+    public override byte[] OriginalByteStream { get; }
+
+    /// <inheritdoc />
+    public override Type ElementType => typeof(T);
+
+    /// <inheritdoc />
+    public IEnumerator<T> GetEnumerator() => Values.GetEnumerator();
+
+    /// <inheritdoc />
+    public int Count => Values.Count;
+
+    /// <inheritdoc />
+    public T this[int index] => Values[index];
+
+    /// <inheritdoc />
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}

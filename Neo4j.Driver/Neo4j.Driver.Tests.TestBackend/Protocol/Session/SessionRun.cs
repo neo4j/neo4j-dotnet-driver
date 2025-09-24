@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Tests.TestBackend.Protocol.JsonConverters;
@@ -38,15 +39,25 @@ internal class SessionRun : ProtocolObject
                 data.TransactionConfig)
             .ConfigureAwait(false);
 
-        var result = ProtocolObjectFactory.CreateObject<Result.Result>();
-        result.ResultCursor = cursor;
+        Result.Result result = null;
+        try
+        {
+            result = ProtocolObjectFactory.CreateObject<Result.Result>();
+            result.ResultCursor = cursor;
+        }
+        catch(Exception ex)
+        {
+            throw;
+        }
 
         ResultId = result.uniqueId;
     }
 
     public override string Respond()
     {
-        return ((Result.Result)ObjManager.GetObject(ResultId)).Respond();
+        var protocolObject = (Result.Result)ObjManager.GetObject(ResultId);
+        var response = protocolObject.Respond();
+        return response;
     }
 
     [JsonConverter(typeof(SessionTypeJsonConverter))]

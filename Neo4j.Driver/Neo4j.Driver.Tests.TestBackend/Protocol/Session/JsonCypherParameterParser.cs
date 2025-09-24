@@ -68,6 +68,15 @@ internal class JsonCypherParameterParser
             };
         }
 
+        if (parameter["name"].Value<string>() == "CypherVector")
+        {
+            return new CypherToNativeObject()
+            {
+                name = parameter["name"].Value<string>(),
+                data = parameter["data"].ToObject<VectorParameterValue>()
+            };
+        }
+
         return new CypherToNativeObject
         {
             name = parameter["name"].Value<string>(),

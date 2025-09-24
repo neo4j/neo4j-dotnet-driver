@@ -51,7 +51,7 @@ internal sealed class PackStreamWriter
                 break;
 
             case byte byteValue:
-                WriteLong(Convert.ToInt64(byteValue));
+                WriteByte(byteValue);
                 break;
 
             case short shortValue:
@@ -90,6 +90,10 @@ internal sealed class PackStreamWriter
                 WriteString(stringValue);
                 break;
 
+            case var _ when _format.TryGetWriteStructHandler(value.GetType(), out var structHandler):
+                structHandler.Serialize(_format.Version, this, value);
+                break;
+
             case IList list:
                 WriteList(list);
                 break;
@@ -107,23 +111,19 @@ internal sealed class PackStreamWriter
                 break;
 
             default:
-                if (_format.WriteStructHandlers.TryGetValue(value.GetType(), out var structHandler))
-                {
-                    structHandler.Serialize(_format.Version, this, value);
-                }
-                else
-                {
                     throw new ProtocolException(
                         $"Cannot understand {nameof(value)} with type {value.GetType().FullName}");
-                }
-
-                break;
         }
     }
 
     private void WriteMessage(IMessage message)
     {
         message.Serializer.Serialize(_format.Version, this, message);
+    }
+
+    public void WriteByte(byte byteValue)
+    {
+        WriteLong(Convert.ToInt64(byteValue));
     }
 
     public void WriteInt(int value)
@@ -228,7 +228,7 @@ internal sealed class PackStreamWriter
             WriteListHeader(value.Count);
             foreach (var item in value)
             {
-                Write(item);
+                    Write(item);
             }
         }
     }
@@ -289,7 +289,7 @@ internal sealed class PackStreamWriter
         _stream.WriteByte(Null);
     }
 
-    private void WriteRaw(byte[] data)
+    public void WriteRaw(byte[] data)
     {
         _stream.Write(data);
     }

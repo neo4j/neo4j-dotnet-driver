@@ -15,7 +15,9 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Neo4j.Driver.Internal.Messaging;
@@ -97,7 +99,7 @@ internal ref struct SpanPackStreamReader
         };
     }
 
-    private IList<object> ReadList(int length)
+    private IList ReadList(int length)
     {
         var list = new List<object>(length);
         for (var i = 0; i < length; i++)
@@ -144,7 +146,7 @@ internal ref struct SpanPackStreamReader
         return map;
     }
 
-    public IList<object> ReadList()
+    public IList ReadList()
     {
         var length = ReadListHeader();
         return ReadList(length);

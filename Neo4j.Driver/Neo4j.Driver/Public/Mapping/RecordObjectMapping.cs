@@ -55,10 +55,13 @@ public class RecordObjectMapping : IRecordObjectMapping
     private readonly ConcurrentDictionary<Type, MethodInfo> _mapMethods = new();
     private readonly ConcurrentDictionary<Type, object> _mappers = new();
     private readonly IMappingTypeConversionManager _typeConversionManager = new MappingTypeConversionManager();
+    private IDefaultConverters _defaultConverters;
     private IConventionTranslator _conventionTranslator = new NoOpConventionTranslator();
 
     private RecordObjectMapping()
     {
+        _defaultConverters = new DefaultConverters(_typeConversionManager);
+        _defaultConverters.Register();
     }
 
     internal static readonly RecordObjectMapping Instance = new();
@@ -208,6 +211,8 @@ public class RecordObjectMapping : IRecordObjectMapping
         Instance._mapMethods.Clear();
         Instance._typeConversionManager.Clear();
         Instance._conventionTranslator = new NoOpConventionTranslator();
+        Instance._defaultConverters = new DefaultConverters(Instance._typeConversionManager);
+        Instance._defaultConverters.Register();
         DefaultMapper.Reset();
     }
 
@@ -294,5 +299,10 @@ public class RecordObjectMapping : IRecordObjectMapping
     public static T MapFromBlueprint<T>(IRecord record, T blueprint)
     {
         return ((IRecordObjectMapping)Instance).MapFromBlueprint(record, blueprint);
+    }
+
+    private static void RegisterDefaultTypeConverters()
+    {
+        Instance._typeConversionManager.RegisterDefaultConverters();
     }
 }

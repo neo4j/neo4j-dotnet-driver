@@ -38,6 +38,7 @@ internal class ResultNext : ProtocolObject
         }
         catch (TimeZoneNotFoundException tz)
         {
+            var message = tz.Message + " This can happen if the server is set to a timezone that is not recognized by .NET";
             throw new DriverExceptionWrapper(tz);
         }
     }
