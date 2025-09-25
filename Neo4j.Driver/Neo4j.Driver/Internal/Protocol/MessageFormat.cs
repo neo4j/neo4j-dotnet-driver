@@ -125,6 +125,11 @@ internal sealed class MessageFormat
     // Test code.
     internal MessageFormat(IEnumerable<IPackStreamSerializer> serializers = null)
     {
+        if(serializers == null)
+        {
+            return;
+        }
+        
         foreach (var packStreamSerializer in serializers)
         {
             AddHandler(packStreamSerializer);
