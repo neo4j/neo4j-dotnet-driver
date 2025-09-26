@@ -29,6 +29,8 @@ internal class UnsupportedTypeSerializer: IPackStreamSerializer
     
     // we don't write unknown data
     public IEnumerable<Type> WritableTypes { get; } = [];
+    
+    public static UnsupportedTypeSerializer Instance { get; } = new();
 
     /// <inheritdoc />
     public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
@@ -45,9 +47,11 @@ internal class UnsupportedTypeSerializer: IPackStreamSerializer
         var minProtocolMajor = reader.ReadInteger();
         var minProtocolMinor = reader.ReadInteger();
         var extra = reader.ReadMap();
-        if (!extra.TryGetValue("message", out var messageObj) || messageObj is not string message)
+        var message = "";
+        
+        if (extra.TryGetValue("message", out var messageObj) && messageObj is string foundMessage)
         {
-            throw new ProtocolException("UnsupportedType struct is missing the 'message' field.");
+            message = foundMessage;
         }
 
         var result = new UnsupportedType(name, minProtocolMajor, minProtocolMinor, message);
@@ -68,15 +72,16 @@ internal class UnsupportedTypeSerializer: IPackStreamSerializer
         var minProtocolMajor = reader.ReadInteger();
         var minProtocolMinor = reader.ReadInteger();
         var extra = reader.ReadMap();
-        if (!extra.TryGetValue("message", out var messageObj) || messageObj is not string message)
-        {
-            throw new ProtocolException("UnsupportedType struct is missing the 'message' field.");
-        }
+        var message = "";
 
+        if (extra.TryGetValue("message", out var messageObj) && messageObj is string foundMessage)
+        {
+            message = foundMessage;
+        }
         var result = new UnsupportedType(name, minProtocolMajor, minProtocolMinor, message);
         return result;
     }
-
+    
     /// <inheritdoc />
     public void Serialize(BoltProtocolVersion version, PackStreamWriter writer, object value)
     {

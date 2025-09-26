@@ -14,14 +14,13 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using FluentAssertions;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.ValueSerializers;
 using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.Tests.Internal.IO;
 using Xunit;
+
+namespace Neo4j.Driver.Tests.Internal.IO.ValueSerializers;
 
 public class UnsupportedTypeSerializerTests : PackStreamSerializerTests
 {
@@ -70,7 +69,7 @@ public class UnsupportedTypeSerializerTests : PackStreamSerializerTests
         var reader = readerMachine.Reader();
 
         FluentActions.Invoking(() =>
-            SerializerUnderTest.Deserialize(BoltProtocolVersion.V6_0, reader, 0x01, 4))
+                SerializerUnderTest.Deserialize(BoltProtocolVersion.V6_0, reader, 0x01, 4))
             .Should().Throw<ProtocolException>();
     }
 
@@ -89,7 +88,7 @@ public class UnsupportedTypeSerializerTests : PackStreamSerializerTests
         var reader = readerMachine.Reader();
 
         FluentActions.Invoking(() =>
-            SerializerUnderTest.Deserialize(BoltProtocolVersion.V6_0, reader, (byte)'?', 3))
+                SerializerUnderTest.Deserialize(BoltProtocolVersion.V6_0, reader, (byte)'?', 3))
             .Should().Throw<ClientException>();
     }
 
@@ -109,7 +108,7 @@ public class UnsupportedTypeSerializerTests : PackStreamSerializerTests
         var reader = readerMachine.Reader();
 
         FluentActions.Invoking(() =>
-            SerializerUnderTest.Deserialize(BoltProtocolVersion.V6_0, reader, (byte)'?', 4))
+                SerializerUnderTest.Deserialize(BoltProtocolVersion.V6_0, reader, (byte)'?', 4))
             .Should().Throw<ProtocolException>();
     }
 
@@ -131,7 +130,7 @@ public class UnsupportedTypeSerializerTests : PackStreamSerializerTests
         var reader = readerMachine.Reader();
 
         FluentActions.Invoking(() =>
-            SerializerUnderTest.Deserialize(BoltProtocolVersion.V6_0, reader, (byte)'?', 4))
+                SerializerUnderTest.Deserialize(BoltProtocolVersion.V6_0, reader, (byte)'?', 4))
             .Should().Throw<ProtocolException>();
     }
 
@@ -139,7 +138,7 @@ public class UnsupportedTypeSerializerTests : PackStreamSerializerTests
     public void ShouldThrowOnSerialize()
     {
         FluentActions.Invoking(() =>
-            SerializerUnderTest.Serialize(BoltProtocolVersion.V6_0, null, new object()))
+                SerializerUnderTest.Serialize(BoltProtocolVersion.V6_0, null, new object()))
             .Should().Throw<NotImplementedException>();
     }
 

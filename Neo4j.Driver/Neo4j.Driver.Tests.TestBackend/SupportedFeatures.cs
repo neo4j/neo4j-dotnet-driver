@@ -51,6 +51,7 @@ internal static class SupportedFeatures
             "Feature:API:Summary:GqlStatusObjects",
             "Feature:API:Type.Temporal",
             "Feature:API:Type.Vector",
+            "Feature:API:Type.UnsupportedType",
             "Feature:Auth:Bearer",
             "Feature:Auth:Custom",
             "Feature:Auth:Kerberos",
