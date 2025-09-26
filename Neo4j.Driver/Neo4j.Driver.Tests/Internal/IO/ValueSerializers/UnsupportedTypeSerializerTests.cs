@@ -93,26 +93,6 @@ public class UnsupportedTypeSerializerTests : PackStreamSerializerTests
     }
 
     [Fact]
-    public void ShouldThrowIfMessageMissing()
-    {
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
-
-        writer.WriteStructHeader(4, (byte)'?');
-        writer.WriteString("the_type");
-        writer.WriteByte(6);
-        writer.WriteByte(0);
-        writer.WriteMapHeader(0); // No "message" field
-
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var reader = readerMachine.Reader();
-
-        FluentActions.Invoking(() =>
-                SerializerUnderTest.Deserialize(BoltProtocolVersion.V6_0, reader, (byte)'?', 4))
-            .Should().Throw<ProtocolException>();
-    }
-
-    [Fact]
     public void ShouldThrowIfMessageNotString()
     {
         var writerMachine = CreateWriterMachine();

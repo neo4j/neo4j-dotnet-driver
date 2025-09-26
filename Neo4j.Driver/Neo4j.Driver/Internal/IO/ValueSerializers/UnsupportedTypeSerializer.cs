@@ -78,6 +78,7 @@ internal class UnsupportedTypeSerializer: IPackStreamSerializer
         {
             message = foundMessage;
         }
+        
         var result = new UnsupportedType(name, minProtocolMajor, minProtocolMinor, message);
         return result;
     }
