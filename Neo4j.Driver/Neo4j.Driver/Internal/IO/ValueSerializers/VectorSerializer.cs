@@ -19,13 +19,13 @@ using System.Linq;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Util;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.VectorSerializers;
+namespace Neo4j.Driver.Internal.IO.ValueSerializers;
 
 internal class VectorSerializer : IPackStreamSerializer
 {
     public static VectorSerializer Instance { get; } = new ();
 
-    public const byte VectorStructType = (byte)'V';
+    private const byte VectorStructType = (byte)'V';
     private const int VectorStructSize = 2;
 
     /// <inheritdoc />

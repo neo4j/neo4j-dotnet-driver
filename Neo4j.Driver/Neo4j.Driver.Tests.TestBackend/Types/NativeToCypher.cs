@@ -17,8 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Neo4j.Driver.Internal.IO.ValueSerializers.VectorSerializers;
-using Neo4j.Driver.Tests.TestBackend.Protocol.Result;
+using Neo4j.Driver.Internal.IO.ValueSerializers;
 
 #pragma warning disable CS0618 // Type or member is obsolete - but still needs to be handled
 
