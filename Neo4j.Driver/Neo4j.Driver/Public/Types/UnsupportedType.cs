@@ -54,4 +54,9 @@ public class UnsupportedType
         MinimumProtocolVersion = $"{minimumProtocolMajor}.{minimumProtocolMinor}";
         Message = message;
     }
+
+    public override string ToString()
+    {
+        return $"UnsupportedType({Name})";
+    }
 }
