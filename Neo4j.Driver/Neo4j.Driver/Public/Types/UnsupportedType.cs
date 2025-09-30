@@ -38,7 +38,13 @@ public class UnsupportedType
 
     /// <summary>
     /// Returns the minimum required Bolt protocol version that supports this type.
+    /// <remarks>
     /// To understand which driver version this corresponds to, refer to the driver's release notes or documentation.
+    /// <para/>
+    /// Note: Bolt version does not correlate directly with Driver version. See
+    /// <see href="https://neo4j.com/docs/dotnet-manual/current/data-types/"/> for which driver version is
+    /// required for new Types.
+    /// </remarks>
     /// </summary>
     public string MinimumProtocolVersion { get; }
 

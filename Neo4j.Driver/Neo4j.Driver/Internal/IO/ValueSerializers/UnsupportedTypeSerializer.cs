@@ -38,7 +38,7 @@ internal class UnsupportedTypeSerializer: IPackStreamSerializer
         if (signature != UnsupportedTypeStructType)
         {
             throw new ProtocolException(
-                $"Unsupported struct signature {signature} passed to {nameof(UnsupportedTypeSerializer)}!");
+                $"Unknown struct signature {signature} passed to {nameof(UnsupportedTypeSerializer)}!");
         }
 
         PackStream.EnsureStructSize("UnsupportedType", UnsupportedTypeStructSize, size);
@@ -63,7 +63,7 @@ internal class UnsupportedTypeSerializer: IPackStreamSerializer
         if (signature != UnsupportedTypeStructType)
         {
             throw new ProtocolException(
-                $"Unsupported struct signature {signature} passed to {nameof(UnsupportedTypeSerializer)}!");
+                $"Unknown struct signature {signature} passed to {nameof(UnsupportedTypeSerializer)}!");
         }
 
         PackStream.EnsureStructSize("UnsupportedType", UnsupportedTypeStructSize, size);

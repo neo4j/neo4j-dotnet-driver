@@ -32,13 +32,13 @@ public class UnsupportedTypeSerializerTests : PackStreamSerializerTests
         var writerMachine = CreateWriterMachine();
         var writer = writerMachine.Writer;
 
-        writer.WriteStructHeader(4, (byte)'?');
+        writer.WriteStructHeader(4, (byte)'?'); // '?' is the signature for UnsupportedType
         writer.WriteString("the_type");
-        writer.WriteByte(42);
-        writer.WriteByte(69);
-        writer.WriteMapHeader(1);
-        writer.WriteString("message");
-        writer.WriteString("This is the message");
+        writer.WriteByte(42); // Major version
+        writer.WriteByte(69); // Minor version
+        writer.WriteMapHeader(1); // One key-value pair in the map
+        writer.WriteString("message"); // Key
+        writer.WriteString("This is the message"); // Value
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
         var reader = readerMachine.Reader();
@@ -57,13 +57,13 @@ public class UnsupportedTypeSerializerTests : PackStreamSerializerTests
         var writerMachine = CreateWriterMachine();
         var writer = writerMachine.Writer;
 
-        writer.WriteStructHeader(4, 0x01); // Wrong signature
-        writer.WriteString("the_type");
-        writer.WriteByte(6);
-        writer.WriteByte(0);
-        writer.WriteMapHeader(1);
-        writer.WriteString("message");
-        writer.WriteString("msg");
+        writer.WriteStructHeader(4, 0x01); // Invalid signature
+        writer.WriteString("the_type"); // Name
+        writer.WriteByte(6); // Major version
+        writer.WriteByte(0); // Minor version
+        writer.WriteMapHeader(1); // One key-value pair in the map
+        writer.WriteString("message"); // Key
+        writer.WriteString("msg"); // Value
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
         var reader = readerMachine.Reader();
@@ -79,10 +79,10 @@ public class UnsupportedTypeSerializerTests : PackStreamSerializerTests
         var writerMachine = CreateWriterMachine();
         var writer = writerMachine.Writer;
 
-        writer.WriteStructHeader(3, (byte)'?'); // Wrong size
-        writer.WriteString("the_type");
-        writer.WriteByte(6);
-        writer.WriteByte(0);
+        writer.WriteStructHeader(3, (byte)'?'); // Wrong size, should be 4
+        writer.WriteString("the_type"); // Name
+        writer.WriteByte(6); // Major version
+        writer.WriteByte(0); // Minor version
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
         var reader = readerMachine.Reader();
@@ -98,12 +98,12 @@ public class UnsupportedTypeSerializerTests : PackStreamSerializerTests
         var writerMachine = CreateWriterMachine();
         var writer = writerMachine.Writer;
 
-        writer.WriteStructHeader(4, (byte)'?');
-        writer.WriteString("the_type");
-        writer.WriteByte(6);
-        writer.WriteByte(0);
-        writer.WriteMapHeader(1);
-        writer.WriteString("message");
+        writer.WriteStructHeader(4, (byte)'?'); // '?' is the signature for UnsupportedType
+        writer.WriteString("the_type"); // Name
+        writer.WriteByte(6);// Major version
+        writer.WriteByte(0); // Minor version
+        writer.WriteMapHeader(1); // One key-value pair in the map
+        writer.WriteString("message"); // Key
         writer.WriteByte(123); // Not a string
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -128,13 +128,13 @@ public class UnsupportedTypeSerializerTests : PackStreamSerializerTests
         var writerMachine = CreateWriterMachine();
         var writer = writerMachine.Writer;
 
-        writer.WriteStructHeader(4, (byte)'?');
-        writer.WriteString("Vector");
-        writer.WriteByte(6);
-        writer.WriteByte(0);
-        writer.WriteMapHeader(1);
-        writer.WriteString("message");
-        writer.WriteString("A");
+        writer.WriteStructHeader(4, (byte)'?'); // '?' is the signature for UnsupportedType
+        writer.WriteString("Vector"); // Name
+        writer.WriteByte(6); // Major version
+        writer.WriteByte(0); // Minor version
+        writer.WriteMapHeader(1); // One key-value pair in the map
+        writer.WriteString("message"); // Key
+        writer.WriteString("A"); // Value
 
         var reader = CreateSpanReader(writerMachine.GetOutput());
         var result = reader.Read();
