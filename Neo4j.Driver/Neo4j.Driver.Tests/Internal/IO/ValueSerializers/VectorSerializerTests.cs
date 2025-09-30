@@ -16,7 +16,7 @@
 using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.IO.ValueSerializers.VectorSerializers;
+using Neo4j.Driver.Internal.IO.ValueSerializers;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.IO.ValueSerializers;
