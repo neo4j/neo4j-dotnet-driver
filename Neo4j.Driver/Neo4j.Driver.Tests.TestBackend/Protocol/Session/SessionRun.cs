@@ -40,15 +40,8 @@ internal class SessionRun : ProtocolObject
             .ConfigureAwait(false);
 
         Result.Result result = null;
-        try
-        {
-            result = ProtocolObjectFactory.CreateObject<Result.Result>();
-            result.ResultCursor = cursor;
-        }
-        catch(Exception ex)
-        {
-            throw;
-        }
+        result = ProtocolObjectFactory.CreateObject<Result.Result>();
+        result.ResultCursor = cursor;
 
         ResultId = result.uniqueId;
     }
