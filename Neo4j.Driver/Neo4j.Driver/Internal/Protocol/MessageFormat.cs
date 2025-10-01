@@ -114,16 +114,23 @@ internal sealed class MessageFormat
             AddHandler(ElementUnboundRelationshipSerializer.Instance);
         }
 
-        if(Version >= BoltProtocolVersion.V6_0)
+        if (Version < BoltProtocolVersion.V6_0)
         {
-            // vectors in 6.0 +
-            AddHandler(VectorSerializer.Instance);
+            return;
         }
+
+        AddHandler(VectorSerializer.Instance);
+        AddHandler(UnsupportedTypeSerializer.Instance);
     }
 
     // Test code.
     internal MessageFormat(IEnumerable<IPackStreamSerializer> serializers = null)
     {
+        if(serializers == null)
+        {
+            return;
+        }
+        
         foreach (var packStreamSerializer in serializers)
         {
             AddHandler(packStreamSerializer);

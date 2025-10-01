@@ -16,6 +16,7 @@
 using System;
 using System.IO;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Tests.Internal.IO.Utils;
 
@@ -44,13 +45,12 @@ public class PackStreamWriterMachine
 
 public class PackStreamReaderMachine
 {
-    private readonly MemoryStream _input;
     private readonly PackStreamReader _reader;
 
     internal PackStreamReaderMachine(byte[] bytes, Func<MemoryStream, PackStreamReader> readerFactory)
     {
-        _input = new MemoryStream(bytes);
-        _reader = readerFactory(_input);
+        var input = new MemoryStream(bytes);
+        _reader = readerFactory(input);
     }
 
     internal PackStreamReader Reader()

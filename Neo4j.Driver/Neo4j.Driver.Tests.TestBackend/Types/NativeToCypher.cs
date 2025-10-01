@@ -42,6 +42,7 @@ internal static class NativeToCypher
         { typeof(List<object>), CypherList },
         { typeof(Dictionary<string, object>), CypherMap },
         { typeof(IVector), CypherVector },
+        { typeof(UnsupportedType), CypherUnsupportedType },
 
         { typeof(bool), CypherSimple },
         { typeof(long), CypherSimple },
@@ -72,6 +73,11 @@ internal static class NativeToCypher
         if(sourceObject is IVector)
         {
             return FunctionMap[typeof(IVector)]("CypherVector", sourceObject);
+        }
+        
+        if(sourceObject is UnsupportedType)
+        {
+            return FunctionMap[typeof(UnsupportedType)]("CypherUnsupportedType", sourceObject);
         }
 
         if (sourceObject is List<object>)
@@ -217,6 +223,27 @@ internal static class NativeToCypher
         {
             data = result,
             name = cypherType
+        };
+    }
+    
+    public static NativeToCypherObject CypherUnsupportedType(string cypherType, object obj)
+    {
+        var unsupported = (UnsupportedType)obj;
+        var data = new Dictionary<string, object>
+        {
+            ["name"] = unsupported.Name,
+            ["minimumProtocol"] = unsupported.MinimumProtocolVersion
+        };
+
+        if (!string.IsNullOrEmpty(unsupported.Message))
+        {
+            data["message"] = unsupported.Message;
+        }
+
+        return new NativeToCypherObject
+        {
+            name = cypherType, 
+            data = data
         };
     }
 
