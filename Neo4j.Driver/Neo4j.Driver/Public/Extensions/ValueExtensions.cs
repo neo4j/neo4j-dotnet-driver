@@ -149,6 +149,11 @@ public static class ValueExtensions
         {
             return Convert.ChangeType(value, targetType).AsItIs<T>();
         }
+        
+        if (value is IVector)
+        {
+            return value.AsItIs<T>();
+        }                 
 
         // force to cast to a dict or list
         var typeInfo = targetType.GetTypeInfo();
