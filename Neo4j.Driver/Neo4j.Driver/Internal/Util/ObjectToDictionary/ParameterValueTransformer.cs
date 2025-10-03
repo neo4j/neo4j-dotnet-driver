@@ -25,17 +25,11 @@ namespace Neo4j.Driver.Internal.Util;
 internal class ParameterValueTransformer : IParameterValueTransformer
 {
     private static readonly TypeInfo NeoValueTypeInfo = typeof(IValue).GetTypeInfo();
-    
+
     public object Transform(object value)
     {
-        if (value == null)
-        {
-            return null;
-        }
-
-        var valueType = value.GetType();
-        
-        if(!NeedsConversion(valueType))
+        var valueType = value?.GetType();
+        if (valueType == null || !NeedsConversion(valueType))
         {
             return value;
         }
