@@ -189,6 +189,23 @@ public class CollectionExtensionsTests
                     new KeyValuePair<string, object>("key1", "value1"),
                     new KeyValuePair<string, object>("key2", "value2"));
         }
+        
+        [Fact]
+        public void ShouldHandleVectors()
+        {
+            var vector = Vector.Create([1.0, 2.0, 3.0]);
+
+            var dict = new
+            {
+                vector
+            }.ToDictionary();
+
+            dict.Should().NotBeNull();
+            dict.Should().HaveCount(1);
+            dict.Should().ContainKey("vector");
+            dict["vector"].Should().BeOfType<Vector<double>>();
+            ((Vector<double>)dict["vector"]).Values.Should().BeEquivalentTo([1.0, 2.0, 3.0]);
+        }
 
         [Fact]
         public void ShouldHandlePoco()
