@@ -3,10 +3,11 @@
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
         <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
+        <LangVersion>default</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>

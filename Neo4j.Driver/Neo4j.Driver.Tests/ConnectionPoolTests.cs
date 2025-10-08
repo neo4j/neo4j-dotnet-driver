@@ -29,6 +29,7 @@ using Neo4j.Driver.Internal.Util;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 using Xunit.Abstractions;
+using ITimer = Neo4j.Driver.Internal.ITimer;
 
 namespace Neo4j.Driver.Tests;
 
