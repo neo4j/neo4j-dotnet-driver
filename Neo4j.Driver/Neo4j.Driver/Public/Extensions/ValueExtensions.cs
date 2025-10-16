@@ -149,6 +149,13 @@ public static class ValueExtensions
         {
             return Convert.ChangeType(value, targetType).AsItIs<T>();
         }
+        
+        //If the source type (value) is a vector then it can not be cast to anything else. We also want to 
+        //make sure that it is not attempting to cast into a vector of another type. 
+        if (value is IVector)
+        {
+            return AsVector<T>(value);
+        }                
 
         // force to cast to a dict or list
         var typeInfo = targetType.GetTypeInfo();
@@ -195,6 +202,17 @@ public static class ValueExtensions
         }
 
         return list.AsItIs<T>();
+    }
+
+    private static T AsVector<T>(this object value)
+    {   
+        if (value is T result)
+        {
+            return result;
+        }
+        
+        throw new InvalidCastException($"Cannot cast differing vector types. Attempting from `" +
+            $" { typeof(T) }` to `{value.GetType()}");
     }
 
 #region Helper Methods

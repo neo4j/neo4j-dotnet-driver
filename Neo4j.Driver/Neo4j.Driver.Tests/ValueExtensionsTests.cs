@@ -236,6 +236,30 @@ public class ValueExtensionsTests
             var ex = Record.Exception(() => value.As<int>());
             ex.Should().BeOfType<InvalidCastException>();
         }
+
+        [Fact]
+        public void ShouldThrowExceptionWhenCastFromVectorToNonVector()
+        {
+            object value = new Vector<float>(new[] { 1.0f, 2.0f, 3.0f, 4.0f });
+            var ex = Record.Exception(() => value.As<int>());
+            ex.Should().BeOfType<InvalidCastException>();
+        }
+
+        [Fact]
+        public void ShouldThrowExceptionWhenCastFromNonVectorToVector()
+        {
+            object value = (int)10;
+            var ex = Record.Exception(() => value.As<Vector<int>>());
+            ex.Should().BeOfType<InvalidCastException>();
+        }
+
+        [Fact]
+        public void ShouldThrowExceptionWhenCastingBetweenMismatchedVectors()
+        {
+            object value = new Vector<float>(new[] { 1.0f, 2.0f, 3.0f, 4.0f });
+            var ex = Record.Exception(() => value.As<Vector<double>>());
+            ex.Should().BeOfType<InvalidCastException>();
+        }
     }
 
     public class AsCollectionTypeMethod
