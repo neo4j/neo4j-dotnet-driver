@@ -19,13 +19,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Neo4j.Driver.Internal.Types;
+using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal;
 
-internal static class CollectionExtensions
+internal static partial class CollectionExtensions
 {
     private const string DefaultItemSeparator = ", ";
     private static readonly TypeInfo NeoValueTypeInfo = typeof(IValue).GetTypeInfo();
+    
+    private static readonly IParameterValueTransformer _parameterValueTransformer =
+        new ParameterValueTransformer();
+    
+    private static readonly IObjectToDictionaryConverter _objectToDictionaryConverter = 
+        new ObjectToDictionaryConverter();
 
     public static T GetMandatoryValue<T>(
         this IDictionary<string, object> dictionary,
@@ -106,72 +113,7 @@ internal static class CollectionExtensions
 
     public static IDictionary<string, object> ToDictionary(this object o)
     {
-        if (o == null)
-        {
-            return null;
-        }
-
-        if (o is Dictionary<string, object> dict)
-        {
-            return dict;
-        }
-
-        if (o is IDictionary<string, object> dictInt)
-        {
-            return new Dictionary<string, object>(dictInt);
-        }
-
-        if (o is IReadOnlyDictionary<string, object> dictIntRo)
-        {
-            return dictIntRo.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        }
-
-        if (TryGetDictionaryOfStringKeys(o, out var dictStr))
-        {
-            return dictStr;
-        }
-
-        if (o is IEnumerable<KeyValuePair<string, object>> kvpSeq)
-        {
-            return kvpSeq.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        }
-
-        return FillDictionary(o, new Dictionary<string, object>());
-    }
-
-    public static Type GetItemType(this IList list)
-    {
-        // Check if the list is a generic type
-        var type = list.GetType();
-        if (type.IsGenericType)
-        {
-            // Get the generic type argument (e.g., T in List<T>)
-            return type.GetGenericArguments()[0];
-        }
-
-        // If not generic, then object will do
-        return typeof(object);
-    }
-
-    private static bool TryGetDictionaryOfStringKeys(object o, out IDictionary<string, object> dictionary)
-    {
-        dictionary = null;
-
-        var typeInfo = o.GetType().GetTypeInfo();
-
-        // get all the interfaces implemented by the type and make sure that one of them is
-        // IDictionary<string,?>
-        var interfaces = typeInfo.ImplementedInterfaces;
-        var canUse = interfaces.Any(i => i.IsGenericType &&
-            i.GetGenericTypeDefinition() == typeof(IDictionary<,>) &&
-            i.GenericTypeArguments[0] == typeof(string));
-
-        if (canUse)
-        {
-            dictionary = new DictionaryAccessWrapper((IDictionary)o);
-        }
-
-        return canUse;
+        return _objectToDictionaryConverter.Convert(o);
     }
 
     private static IDictionary<string, object> FillDictionary(object o, IDictionary<string, object> dict)
@@ -180,118 +122,12 @@ internal static class CollectionExtensions
         {
             var name = propInfo.Name;
             var value = propInfo.GetValue(o);
-            var valueTransformed = Transform(value);
+            var valueTransformed = _parameterValueTransformer.Transform(value);
 
             dict.Add(name, valueTransformed);
         }
 
         return dict;
-    }
-
-    private static object Transform(object value)
-    {
-        if (value == null)
-        {
-            return null;
-        }
-
-        var valueType = value.GetType();
-
-        if (value is Array)
-        {
-            var elementType = valueType.GetElementType();
-
-            if (elementType.NeedsConversion())
-            {
-                var convertedList = new List<object>(((IList)value).Count);
-                foreach (var element in (IEnumerable)value)
-                {
-                    convertedList.Add(Transform(element));
-                }
-
-                value = convertedList;
-            }
-        }
-        else if (value is IList)
-        {
-            var valueTypeInfo = valueType.GetTypeInfo();
-            var elementType = (Type)null;
-
-            if (valueTypeInfo.IsGenericType && valueTypeInfo.GetGenericTypeDefinition() == typeof(List<>))
-            {
-                elementType = valueTypeInfo.GenericTypeArguments[0];
-            }
-
-            if (elementType == null || elementType.NeedsConversion())
-            {
-                var convertedList = new List<object>(((IList)value).Count);
-                foreach (var element in (IEnumerable)value)
-                {
-                    convertedList.Add(Transform(element));
-                }
-
-                value = convertedList;
-            }
-        }
-        else if (value is IDictionary)
-        {
-            var valueTypeInfo = valueType.GetTypeInfo();
-            var elementType = (Type)null;
-
-            if (valueTypeInfo.IsGenericType && valueTypeInfo.GetGenericTypeDefinition() == typeof(IDictionary<,>))
-            {
-                elementType = valueTypeInfo.GenericTypeArguments[1];
-            }
-
-            if (elementType == null || elementType.NeedsConversion())
-            {
-                var dict = (IDictionary)value;
-
-                var convertedDict = new Dictionary<string, object>(dict.Count);
-                foreach (var key in dict.Keys)
-                {
-                    if (!(key is string))
-                    {
-                        throw new InvalidOperationException(
-                            "dictionaries passed as part of a parameter to cypher queries should have string keys!");
-                    }
-
-                    convertedDict.Add((string)key, Transform(dict[key]));
-                }
-
-                value = convertedDict;
-            }
-        }
-        else if (value is IEnumerable && !(value is string))
-        {
-            var valueTypeInfo = valueType.GetTypeInfo();
-            var elementType = (Type)null;
-
-            if (valueTypeInfo.IsGenericType && valueTypeInfo.GetGenericTypeDefinition() == typeof(List<>))
-            {
-                elementType = valueTypeInfo.GenericTypeArguments[0];
-            }
-
-            if (elementType == null || elementType.NeedsConversion())
-            {
-                var convertedList = new List<object>();
-                foreach (var element in (IEnumerable)value)
-                {
-                    convertedList.Add(Transform(element));
-                }
-
-                value = convertedList;
-            }
-        }
-        else
-        {
-            if (valueType.NeedsConversion())
-            {
-                value = FillDictionary(value, new Dictionary<string, object>());
-            }
-        }
-
-        return value;
     }
 
     private static bool NeedsConversion(this Type type)
@@ -347,75 +183,6 @@ internal static class CollectionExtensions
             {
                 dict[key] = value;
             }
-        }
-    }
-
-    private struct DictionaryAccessWrapper(IDictionary dictionary) : IDictionary<string, object>
-    {
-        public object this[string key]
-        {
-            get => dictionary[key];
-            set => throw new NotSupportedException("This dictionary is read-only.");
-        }
-
-        public ICollection<string> Keys => dictionary.Keys.Cast<string>().ToList();
-        public ICollection<object> Values => dictionary.Values.Cast<object>().ToList();
-
-        /// <inheritdoc />
-        bool ICollection<KeyValuePair<string, object>>.Remove(KeyValuePair<string, object> item)
-        {
-            throw new NotSupportedException("This dictionary is read-only.");
-        }
-
-        public int Count => dictionary.Count;
-        public bool IsReadOnly => true;
-
-        public void Add(string key, object value) => throw new NotSupportedException("This dictionary is read-only.");
-
-        public bool ContainsKey(string key)
-        {
-            return dictionary.Contains(key);
-        }
-
-        public bool Remove(string key) => throw new NotSupportedException("This dictionary is read-only.");
-
-        public bool TryGetValue(string key, out object value)
-        {
-            if (dictionary.Contains(key))
-            {
-                value = dictionary[key];
-                return true;
-            }
-
-            value = null;
-            return false;
-        }
-
-        public void Add(KeyValuePair<string, object> item) =>
-            throw new NotSupportedException("This dictionary is read-only.");
-
-        public void Clear() => throw new NotSupportedException("This dictionary is read-only.");
-
-        public bool Contains(KeyValuePair<string, object> item)
-        {
-            return TryGetValue(item.Key, out var value) && Equals(value, item.Value);
-        }
-
-        public void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex) => throw new NotSupportedException();
-
-        /// <inheritdoc />
-        IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator()
-        {
-            foreach (DictionaryEntry entry in dictionary)
-            {
-                yield return new KeyValuePair<string, object>((string)entry.Key, entry.Value);
-            }
-        }
-
-        /// <inheritdoc />
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return ((IEnumerable<KeyValuePair<string, object>>)this).GetEnumerator();
         }
     }
 }
