@@ -28,6 +28,11 @@ namespace Neo4j.Driver.Tests.Routing;
 
 public class LoadBalancerTests
 {
+    private static DriverContext _driverContext = new DriverContext(
+        new Uri("bolt://localhost:7687"),
+        AuthTokenManagers.None,
+        new Config());
+    
     public class ClusterErrorHandlerTests
     {
         public class OnConnectionErrorMethod
@@ -91,7 +96,7 @@ public class LoadBalancerTests
             var mockClusterConnectionPool = new Mock<IClusterConnectionPool>();
             mockClusterConnectionPool.Setup(x => x.CanUseHomeDbCache()).Returns(false);
 
-            var balancer = new LoadBalancer(mockClusterConnectionPool.Object, mockRoutingTableManager.Object);
+            var balancer = new LoadBalancer(mockClusterConnectionPool.Object, mockRoutingTableManager.Object, _driverContext);
 
             // When
             var error = await Record.ExceptionAsync(() => balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false));
@@ -135,7 +140,7 @@ public class LoadBalancerTests
                         false))
                 .ReturnsAsync(conn);
 
-            var balancer = new LoadBalancer(clusterPoolMock.Object, mock.Object);
+            var balancer = new LoadBalancer(clusterPoolMock.Object, mock.Object, _driverContext);
 
             // When
             var acquiredConn = await balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false);
@@ -170,7 +175,7 @@ public class LoadBalancerTests
             clusterPoolMock.Setup(x => x.AcquireAsync(uri, mode, aliasDbName, null, Bookmarks.Empty, false))
                 .ReturnsAsync(mockedConn.Object);
 
-            var balancer = new LoadBalancer(clusterPoolMock.Object, mockManager.Object);
+            var balancer = new LoadBalancer(clusterPoolMock.Object, mockManager.Object, _driverContext);
 
             // When
             var acquiredConn = await balancer.AcquireAsync(mode, dbName, null, Bookmarks.Empty, false);
@@ -214,7 +219,7 @@ public class LoadBalancerTests
                         false))
                 .Returns(Task.FromException<IConnection>(new ServiceUnavailableException("failed init")));
 
-            var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
+            var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object, _driverContext);
 
             // When & Then
             balancer.Awaiting(b => b.AcquireAsync(mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), It.IsAny<Bookmarks>(), It.IsAny<bool>()))
@@ -252,7 +257,7 @@ public class LoadBalancerTests
                     Task.FromException<IConnection>(
                         new SecurityException("Failed to establish ssl connection with the server")));
 
-            var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
+            var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object, _driverContext);
 
             // When
             var error = await Record.ExceptionAsync(() => balancer.AcquireAsync(mode, null, null, Bookmarks.Empty, false));
@@ -296,7 +301,7 @@ public class LoadBalancerTests
                         false))
                 .Returns(Task.FromException<IConnection>(new ProtocolException("do not understand struct 0x01")));
 
-            var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
+            var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object, _driverContext);
 
             // When
             balancer.Awaiting(b => b.AcquireAsync(mode, null, null, Bookmarks.Empty, false))
@@ -342,7 +347,7 @@ public class LoadBalancerTests
                 uri,
                 AuthTokenManagers.None,
                 new Config());
-            var balancer = new LoadBalancer(clusterPoolMock.Object, routingTableManager.Object, driverContext);
+            var balancer = new LoadBalancer(clusterPoolMock.Object, routingTableManager.Object, _driverContext);
 
             if (mode == AccessMode.Read)
             {
