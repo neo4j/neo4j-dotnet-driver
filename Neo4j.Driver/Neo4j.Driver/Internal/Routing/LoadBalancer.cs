@@ -98,6 +98,18 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         Bookmarks bookmarks,
         bool forceAuth)
     {
+        return await AcquireConnectionInternalAsync(mode, database, sessionConfig, bookmarks, forceAuth)
+            .Timeout(DriverContext.Config.ConnectionAcquisitionTimeout, CancellationToken.None)
+            .ConfigureAwait(false);
+    }
+
+    private async Task<IConnection> AcquireConnectionInternalAsync(
+        AccessMode mode,
+        string database,
+        SessionConfig sessionConfig,
+        Bookmarks bookmarks,
+        bool forceAuth)
+    {
         if (IsClosed)
         {
             throw new ObjectDisposedException(

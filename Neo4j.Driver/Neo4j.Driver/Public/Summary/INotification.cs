@@ -38,10 +38,6 @@ public interface INotification
     /// </summary>
     IInputPosition Position { get; }
 
-    /// <summary>Gets the severity level of the <see cref="INotification"/> instance.</summary>
-    [Obsolete("Deprecated, Replaced by RawSeverityLevel. Will be removed in 6.0")]
-    string Severity { get; }
-
     /// <summary>Gets the unparsed string value for <see cref="SeverityLevel"/> of the <see cref="INotification"/> instance.</summary>
     public string RawSeverityLevel { get; }
 

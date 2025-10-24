@@ -51,6 +51,7 @@ internal static class ExceptionManager
         { typeof(Neo4jException), "Neo4jError" },
         { typeof(ClientException), "ClientError" },
         { typeof(TransientException), "DriverError" }, //Should maybe Transient error, talk to Peter or Martin
+        { typeof(TimeoutException), "DriverError" },
         { typeof(DatabaseException), "DatabaseError" },
         { typeof(ServiceUnavailableException), "ServiceUnavailableError" },
         { typeof(SessionExpiredException), "SessionExpiredError" },

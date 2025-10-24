@@ -115,7 +115,7 @@ internal class Controller
             {
                 await ProcessStreamObjects().ConfigureAwait(false);
             }
-            catch (Neo4jException ex) //TODO: sort this catch list out...reduce it down using where clauses?
+            catch (Exception ex) when (ex is Neo4jException or TimeoutException) //TODO: sort this catch list out...reduce it down using where clauses?
             {
                 // Generate "driver" exception something happened within the driver
                 await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));

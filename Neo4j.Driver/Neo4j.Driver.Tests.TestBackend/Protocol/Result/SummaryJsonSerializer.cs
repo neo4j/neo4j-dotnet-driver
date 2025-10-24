@@ -177,7 +177,6 @@ internal static class SummaryJsonSerializer
                     {
                         rawCategory = x.RawCategory ?? string.Empty,
                         category = x.Category.ToString().ToUpper(),
-                        severity = x.Severity,
                         rawSeverityLevel = x.RawSeverityLevel ?? string.Empty,
                         severityLevel = x.SeverityLevel.ToString().ToUpper(),
                         description = x.Description,
@@ -192,7 +191,6 @@ internal static class SummaryJsonSerializer
                 {
                     rawCategory = x.RawCategory ?? string.Empty,
                     category = x.Category.ToString().ToUpper(),
-                    severity = x.Severity,
                     rawSeverityLevel = x.RawSeverityLevel ?? string.Empty,
                     severityLevel = x.SeverityLevel.ToString().ToUpper(),
                     description = x.Description,
