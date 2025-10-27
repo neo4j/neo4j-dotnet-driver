@@ -33,7 +33,7 @@ public interface IEntity
     IReadOnlyDictionary<string, object> Properties { get; }
 
     /// <summary>Get the identity as a <see cref="long"/> number.</summary>
-    [Obsolete("Replaced with ElementId, will be removed in 6.0")]
+    [Obsolete("Replaced with ElementId")]
     long Id { get; }
 
     /// <summary>Get the identity as a <see cref="string"/>.</summary>

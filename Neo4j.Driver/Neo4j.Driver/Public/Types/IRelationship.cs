@@ -25,11 +25,11 @@ public interface IRelationship : IEntity, IEquatable<IRelationship>
 
     //bool HasType(string type);
     /// <summary>Gets the id of the start node of the relationship.</summary>
-    [Obsolete("Replaced with StartNodeElementId, will be removed in 6.0")]
+    [Obsolete("Replaced with StartNodeElementId")]
     long StartNodeId { get; }
 
     /// <summary>Gets the id of the end node of the relationship.</summary>
-    [Obsolete("Replaced with EndNodeElementId, will be removed in 6.0")]
+    [Obsolete("Replaced with EndNodeElementId")]
     long EndNodeId { get; }
 
     /// <summary>Gets the ElementId of the start node of the relationship.</summary>

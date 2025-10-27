@@ -38,7 +38,7 @@ internal sealed class Node : INode
         Properties = prop;
     }
 
-    [Obsolete("Replaced with ElementId, Will be removed in 6.0")]
+    [Obsolete("Replaced with ElementId")]
     public long Id { get; set; }
 
     public string ElementId { get; }

@@ -62,13 +62,13 @@ internal sealed class Relationship : IRelationship
         Properties = props;
     }
 
-    [Obsolete("Replaced by ElementId, Will be removed in 6.0")]
+    [Obsolete("Replaced by ElementId")]
     public long Id { get; set; }
 
-    [Obsolete("Replaced by StartNodeElementId, Will be removed in 6.0")]
+    [Obsolete("Replaced by StartNodeElementId")]
     public long StartNodeId { get; set; }
 
-    [Obsolete("Replaced by EndNodeElementId, Will be removed in 6.0")]
+    [Obsolete("Replaced by EndNodeElementId")]
     public long EndNodeId { get; set; }
 
     public string Type { get; }
