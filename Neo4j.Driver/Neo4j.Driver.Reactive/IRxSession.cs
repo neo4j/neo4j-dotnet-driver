@@ -30,15 +30,6 @@ public interface IRxSession : IRxRunnable
     /// overrides of this session instance. If no bookmark was received or if this transaction was rolled back, the bookmark
     /// value will not be changed.
     /// </summary>
-    [Obsolete("Replaced with LastBookmarks. Will be removed in 6.0.")]
-    Bookmark LastBookmark { get; }
-
-    /// <summary>
-    /// Returns the bookmark received following the last successfully completed query, which is executed either in an
-    /// <see cref="IRxTransaction"/> obtained from this session instance or directly through one of the <strong>Run</strong>
-    /// overrides of this session instance. If no bookmark was received or if this transaction was rolled back, the bookmark
-    /// value will not be changed.
-    /// </summary>
     Bookmarks LastBookmarks { get; }
 
     /// <summary>Gets the session configuration</summary>
@@ -109,60 +100,6 @@ public interface IRxSession : IRxRunnable
     /// </param>
     /// <returns>a reactive result</returns>
     IRxResult Run(Query query, Action<TransactionConfigBuilder> action);
-
-    /// <summary>
-    /// Execute the provided unit of work in a <see cref="AccessMode.Read">Read</see>
-    /// <see cref="IRxTransaction">reactive transaction</see>.
-    /// </summary>
-    /// <param name="work">a unit of work to be executed</param>
-    /// <typeparam name="T">the return type of the unit of work</typeparam>
-    /// <returns>the reactive stream returned by the unit of work</returns>
-    [Obsolete("Deprecated, Replaced by ExecuteRead, will be removed in 6.0")]
-    IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work);
-
-    /// <summary>
-    /// Execute the provided unit of work in a <see cref="AccessMode.Read">Read</see>
-    /// <see cref="IRxTransaction">reactive transaction</see> which is created with the provided
-    /// <see cref="TransactionConfig"/>.
-    /// </summary>
-    /// <param name="work">a unit of work to be executed</param>
-    /// <param name="action">
-    /// Given a <see cref="TransactionConfigBuilder"/>, defines how to create the configuration for the
-    /// created transaction
-    /// </param>
-    /// <typeparam name="T">the return type of the unit of work</typeparam>
-    /// <returns>the reactive stream returned by the unit of work</returns>
-    [Obsolete("Deprecated, Replaced by ExecuteRead, will be removed in 6.0")]
-    IObservable<T> ReadTransaction<T>(
-        Func<IRxTransaction, IObservable<T>> work,
-        Action<TransactionConfigBuilder> action);
-
-    /// <summary>
-    /// Execute the provided unit of work in a <see cref="AccessMode.Write">Read</see>
-    /// <see cref="IRxTransaction">reactive transaction</see>.
-    /// </summary>
-    /// <param name="work">a unit of work to be executed</param>
-    /// <typeparam name="T">the return type of the unit of work</typeparam>
-    /// <returns>the reactive stream returned by the unit of work</returns>
-    [Obsolete("Deprecated, Replaced by ExecuteWrite, will be removed in 6.0")]
-    IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work);
-
-    /// <summary>
-    /// Execute the provided unit of work in a <see cref="AccessMode.Write">Read</see>
-    /// <see cref="IRxTransaction">reactive transaction</see> which is created with the provided
-    /// <see cref="TransactionConfig"/>.
-    /// </summary>
-    /// <param name="work">a unit of work to be executed</param>
-    /// <param name="action">
-    /// Given a <see cref="TransactionConfigBuilder"/>, defines how to create the configuration for the
-    /// created transaction
-    /// </param>
-    /// <typeparam name="T">the return type of the unit of work</typeparam>
-    /// <returns>the reactive stream returned by the unit of work</returns>
-    [Obsolete("Deprecated, Replaced by ExecuteWrite, will be removed in 6.0")]
-    IObservable<T> WriteTransaction<T>(
-        Func<IRxTransaction, IObservable<T>> work,
-        Action<TransactionConfigBuilder> action);
 
     /// <summary>Execute the provided unit of work in a <see cref="AccessMode.Read"/> managed reactive transaction.</summary>
     /// <param name="work">a unit of work to be executed</param>
