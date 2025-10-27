@@ -30,19 +30,19 @@ public class ZonedDateTimeWithZoneIdTests
         () => new ZonedDateTime(0L, null),
         () => new ZonedDateTime(DateTime.Now, null),
         () => new ZonedDateTime(new LocalDateTime(DateTime.Now), null),
-        () => new ZonedDateTime(2020, 12, 31, 12, 0, 0, null)
+        () => new ZonedDateTime(2020, 12, 31, 12, 0, 0, 0, null)
     };
 
     public static TheoryData<Func<ZonedDateTime>> LocalConstructorsWithUnkownZoneIds = new()
     {
         () => new ZonedDateTime(DateTime.Now, "Europe/Neo4j"),
-        () => new ZonedDateTime(2020, 12, 31, 12, 0, 0, new ZoneId("Europe/Neo4j"))
+        () => new ZonedDateTime(2020, 12, 31, 12, 0, 0, 0, new ZoneId("Europe/Neo4j"))
     };
 
     [Fact]
     public void ShouldCreateDateTimeWithZoneIdWithDateTimeComponents()
     {
-        var cypherDateTime = new ZonedDateTime(1947, 12, 17, 23, 49, 54, Zone.Of("Europe/Rome"));
+        var cypherDateTime = new ZonedDateTime(1947, 12, 17, 23, 49, 54, 0, Zone.Of("Europe/Rome"));
 
         cypherDateTime.Year.Should().Be(1947);
         cypherDateTime.Month.Should().Be(12);
@@ -93,7 +93,7 @@ public class ZonedDateTimeWithZoneIdTests
     [InlineData(1000000000)]
     public void ShouldThrowOnInvalidYear(int year)
     {
-        var ex = Record.Exception(() => new ZonedDateTime(year, 1, 1, 0, 0, 0, Zone.Of("Europe/Amsterdam")));
+        var ex = Record.Exception(() => new ZonedDateTime(year, 1, 1, 0, 0, 0, 0, Zone.Of("Europe/Amsterdam")));
 
         ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
     }
@@ -103,7 +103,7 @@ public class ZonedDateTimeWithZoneIdTests
     [InlineData(13)]
     public void ShouldThrowOnInvalidMonth(int month)
     {
-        var ex = Record.Exception(() => new ZonedDateTime(1990, month, 1, 0, 0, 0, Zone.Of("Europe/Istanbul")));
+        var ex = Record.Exception(() => new ZonedDateTime(1990, month, 1, 0, 0, 0, 0, Zone.Of("Europe/Istanbul")));
 
         ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
     }
@@ -116,7 +116,7 @@ public class ZonedDateTimeWithZoneIdTests
     [InlineData(2018, 12, -1)]
     public void ShouldThrowOnInvalidDay(int year, int month, int day)
     {
-        var ex = Record.Exception(() => new ZonedDateTime(year, month, day, 0, 0, 0, Zone.Of("Europe/Istanbul")));
+        var ex = Record.Exception(() => new ZonedDateTime(year, month, day, 0, 0, 0, 0, Zone.Of("Europe/Istanbul")));
 
         ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
     }
@@ -126,7 +126,7 @@ public class ZonedDateTimeWithZoneIdTests
     [InlineData(24)]
     public void ShouldThrowOnInvalidHour(int hour)
     {
-        var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, hour, 0, 0, Zone.Of("Europe/Istanbul")));
+        var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, hour, 0, 0, 0, Zone.Of("Europe/Istanbul")));
 
         ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
     }
@@ -137,7 +137,7 @@ public class ZonedDateTimeWithZoneIdTests
     [InlineData(61)]
     public void ShouldThrowOnInvalidMinute(int minute)
     {
-        var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, 0, minute, 0, Zone.Of("Europe/Paris")));
+        var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, 0, minute, 0, 0, Zone.Of("Europe/Paris")));
 
         ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
     }
@@ -148,7 +148,7 @@ public class ZonedDateTimeWithZoneIdTests
     [InlineData(61)]
     public void ShouldThrowOnInvalidSecond(int second)
     {
-        var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, 0, 0, second, Zone.Of("Europe/Rome")));
+        var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, 0, 0, second, 0, Zone.Of("Europe/Rome")));
 
         ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
     }
