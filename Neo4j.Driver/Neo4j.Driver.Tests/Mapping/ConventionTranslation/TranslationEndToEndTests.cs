@@ -80,8 +80,8 @@ public class TranslationEndToEndTests : MappingTestWithGlobalState
 
     public class FlightCrew(Person pilot, Person coPilot)
     {
-        public Person Pilot { get; set; }
-        public Person CoPilot { get; set; }
+        public Person Pilot { get; set; } = pilot;
+        public Person CoPilot { get; set; } = coPilot;
     }
 
     [Fact]

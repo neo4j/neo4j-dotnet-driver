@@ -113,9 +113,6 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
 
     internal bool TelemetryEnabled { get; set; }
 
-    [Obsolete("Replaced by more sensibly named LastBookmarks. Will be removed in 6.0")]
-    public Bookmark LastBookmark => LastBookmarks;
-
     public Bookmarks LastBookmarks { get; private set; }
 
     public Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action)

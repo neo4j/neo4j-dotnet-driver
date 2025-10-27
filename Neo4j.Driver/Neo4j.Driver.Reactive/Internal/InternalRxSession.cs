@@ -29,9 +29,6 @@ internal class InternalRxSession : IRxSession
         _retryLogic = retryLogic;
     }
 
-#pragma warning disable CS0618
-    public Bookmark LastBookmark => _session.LastBookmark;
-#pragma warning restore CS0618
     public Bookmarks LastBookmarks => _session.LastBookmarks;
 
     public SessionConfig SessionConfig => _session.SessionConfig;
