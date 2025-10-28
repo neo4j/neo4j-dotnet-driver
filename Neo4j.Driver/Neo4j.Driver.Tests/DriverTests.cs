@@ -103,7 +103,7 @@ public class DriverTests
     public async Task CloseClosesDriver()
     {
         var driver = GraphDatabase.Driver("bolt://localhost");
-        await driver.CloseAsync();
+        await driver.DisposeAsync();
 
         var ex = Record.Exception(() => driver.AsyncSession());
         ex.Should().NotBeNull();
@@ -114,7 +114,7 @@ public class DriverTests
     public async void CloseAsyncClosesDriver()
     {
         var driver = GraphDatabase.Driver("bolt://localhost");
-        await driver.CloseAsync();
+        await driver.DisposeAsync();
 
         var ex = Record.Exception(() => driver.AsyncSession());
         ex.Should().NotBeNull();
@@ -125,9 +125,9 @@ public class DriverTests
     public async void MultipleCloseAndDisposeIsValidOnDriver()
     {
         var driver = GraphDatabase.Driver("bolt://localhost");
-        await driver.CloseAsync();
+        await driver.DisposeAsync();
         driver.Dispose();
-        await driver.CloseAsync();
+        await driver.DisposeAsync();
 
         var ex = Record.Exception(() => driver.AsyncSession());
         ex.Should().NotBeNull();

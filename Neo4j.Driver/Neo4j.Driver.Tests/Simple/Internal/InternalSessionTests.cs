@@ -49,10 +49,10 @@ public static class InternalSessionTests
                 Mock.Of<IRetryLogic>(),
                 Mock.Of<BlockingExecutor>());
 
-            var bookmark = session.LastBookmark;
+            var bookmark = session.LastBookmarks;
 
 #pragma warning disable CS0618
-            asyncSession.Verify(x => x.LastBookmark, Times.Once);
+            asyncSession.Verify(x => x.LastBookmarks, Times.Once);
 #pragma warning restore CS0618
         }
     }

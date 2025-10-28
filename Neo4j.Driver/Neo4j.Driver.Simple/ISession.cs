@@ -33,13 +33,6 @@ public interface ISession : IQueryRunner
     /// </summary>
     Bookmarks LastBookmarks { get; }
 
-    /// <summary>
-    /// Gets the bookmark received following the last successfully completed <see cref="ITransaction"/>. If no
-    /// bookmark was received or if this transaction was rolled back, the bookmark value will not be changed.
-    /// </summary>
-    [Obsolete("Deprecated, Replaced by LastBookmarks. LastBookmark will be removed in 6.0.")]
-    Bookmark LastBookmark { get; }
-
     /// <summary>Gets the session configuration back</summary>
     SessionConfig SessionConfig { get; }
 
@@ -69,49 +62,6 @@ public interface ISession : IQueryRunner
     /// </param>
     /// <returns>A new transaction.</returns>
     ITransaction BeginTransaction(Action<TransactionConfigBuilder> action);
-
-    /// <summary>Execute given unit of work in a  <see cref="AccessMode.Read"/> transaction.</summary>
-    /// <typeparam name="T">The return type of the given unit of work.</typeparam>
-    /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new read transaction.</param>
-    /// <returns>A result as returned by the given unit of work.</returns>
-    [Obsolete("Deprecated, Replaced by ExecuteRead, will be removed in 6.0")]
-    T ReadTransaction<T>(Func<ITransaction, T> work);
-
-    /// <summary>
-    /// Execute given unit of work in a  <see cref="AccessMode.Read"/> transaction with a specific
-    /// <see cref="TransactionConfig"/>.
-    /// </summary>
-    /// <typeparam name="T">The return type of the given unit of work.</typeparam>
-    /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new read transaction.</param>
-    /// <param name="action">
-    /// Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new
-    /// transaction. This configuration overrides server side default transaction configurations.
-    /// </param>
-    /// <returns>A result as returned by the given unit of work.</returns>
-    [Obsolete("Deprecated, Replaced by ExecuteRead, will be removed in 6.0")]
-    T ReadTransaction<T>(Func<ITransaction, T> work, Action<TransactionConfigBuilder> action);
-
-    /// <summary>Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction.</summary>
-    /// <typeparam name="T">The return type of the given unit of work.</typeparam>
-    /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new write transaction.</param>
-    /// <returns>A result as returned by the given unit of work.</returns>
-    [Obsolete("Deprecated, Replaced by ExecuteWrite, will be removed in 6.0")]
-    T WriteTransaction<T>(Func<ITransaction, T> work);
-
-    /// <summary>
-    /// Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction with a specific
-    /// <see cref="TransactionConfig"/>.
-    /// </summary>
-    /// <typeparam name="T">The return type of the given unit of work.</typeparam>
-    /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new write transaction.</param>
-    /// <param name="action">
-    /// Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new
-    /// transaction. This configuration overrides server side default transaction configurations. See
-    /// <see cref="TransactionConfig"/>
-    /// </param>
-    /// <returns>A result as returned by the given unit of work.</returns>
-    [Obsolete("Deprecated, Replaced by ExecuteWrite, will be removed in 6.0")]
-    T WriteTransaction<T>(Func<ITransaction, T> work, Action<TransactionConfigBuilder> action);
 
     /// <summary>Execute given unit of work in a  <see cref="AccessMode.Read"/> managed transaction.</summary>
     /// <typeparam name="T">The return type of the given unit of work.</typeparam>

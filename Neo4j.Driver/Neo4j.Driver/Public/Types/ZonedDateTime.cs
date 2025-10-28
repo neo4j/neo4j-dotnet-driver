@@ -338,33 +338,8 @@ public sealed class ZonedDateTime : TemporalValue,
         }
     }
 
-    /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from individual local date time component values.</summary>
-    /// <param name="year">Local year value.</param>
-    /// <param name="month">Local month value.</param>
-    /// <param name="day">Local day value.</param>
-    /// <param name="hour">Local hour value.</param>
-    /// <param name="minute">Local minute value.</param>
-    /// <param name="second">Local second value.</param>
-    /// <param name="zone">Zone of this date time, will be used to calculate <see cref="UtcSeconds"/> from local values.</param>
-    /// <exception cref="TimeZoneNotFoundException">if zone name is not known by the operating system.</exception>
-    [Obsolete("Deprecated, This constructor does not support a kind, so not known if utc or local.")]
-    public ZonedDateTime(int year, int month, int day, int hour, int minute, int second, Zone zone)
-        : this(year, month, day, hour, minute, second, 0, zone)
-    {
-    }
-
-    /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from individual local date time component values.</summary>
-    /// <param name="year">Local year value.</param>
-    /// <param name="month">Local month value.</param>
-    /// <param name="day">Local day value.</param>
-    /// <param name="hour">Local hour value.</param>
-    /// <param name="minute">Local minute value.</param>
-    /// <param name="second">Local second value.</param>
-    /// <param name="nanosecond">Nanoseconds of the second.</param>
-    /// <param name="zone">Zone of this date time, will be used to calculate <see cref="UtcSeconds"/> from local values.</param>
-    /// <exception cref="TimeZoneNotFoundException">if zone name is not known by the operating system.</exception>
-    [Obsolete("Deprecated, This constructor does not support a kind, so not known if utc or local.")]
-    public ZonedDateTime(
+    // test only
+    internal ZonedDateTime(
         int year,
         int month,
         int day,

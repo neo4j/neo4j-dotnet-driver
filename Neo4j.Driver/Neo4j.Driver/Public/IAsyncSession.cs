@@ -30,13 +30,6 @@ public interface IAsyncSession : IAsyncQueryRunner
     /// Gets the bookmark received following the last successfully completed <see cref="IAsyncTransaction"/>. If no
     /// bookmark was received or if this transaction was rolled back, the bookmark value will not be changed.
     /// </summary>
-    [Obsolete("Replaced by LastBookmarks. Will be removed in 6.0")]
-    Bookmark LastBookmark { get; }
-
-    /// <summary>
-    /// Gets the bookmark received following the last successfully completed <see cref="IAsyncTransaction"/>. If no
-    /// bookmark was received or if this transaction was rolled back, the bookmark value will not be changed.
-    /// </summary>
     Bookmarks LastBookmarks { get; }
 
     /// <summary>Gets the session configurations back</summary>
@@ -104,68 +97,6 @@ public interface IAsyncSession : IAsyncQueryRunner
     /// </param>
     /// <returns>A task of a new transaction.</returns>
     Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode, Action<TransactionConfigBuilder> action);
-
-    /// <summary>
-    /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction with a specific
-    /// <see cref="TransactionConfig"/>.
-    /// </summary>
-    /// <typeparam name="T">The return type of the given unit of work.</typeparam>
-    /// <param name="work">The <see cref="Func{ITransactionAsync, T}"/> to be applied to a new read transaction.</param>
-    /// <param name="action">
-    /// Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new
-    /// transaction. This configuration overrides server side default transaction configurations. See
-    /// <see cref="TransactionConfig"/>
-    /// </param>
-    /// <returns>A task of a result as returned by the given unit of work.</returns>
-    [Obsolete("Deprecated, Use ExecuteReadAsync. Will be removed in 6.0.")]
-    Task<T> ReadTransactionAsync<T>(
-        Func<IAsyncTransaction, Task<T>> work,
-        Action<TransactionConfigBuilder> action = null);
-
-    /// <summary>
-    /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction with a specific
-    /// <see cref="TransactionConfig"/>.
-    /// </summary>
-    /// <param name="work">The <see cref="Func{ITransactionAsync, Task}"/> to be applied to a new read transaction.</param>
-    /// <param name="action">
-    /// Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new
-    /// transaction. This configuration overrides server side default transaction configurations. See
-    /// <see cref="TransactionConfig"/>
-    /// </param>
-    /// <returns>A task representing the completion of the transactional read operation enclosing the given unit of work.</returns>
-    [Obsolete("Deprecated, Use ExecuteReadAsync. Will be removed in 6.0.")]
-    Task ReadTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionConfigBuilder> action = null);
-
-    /// <summary>
-    /// Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction with a specific
-    /// <see cref="TransactionConfig"/>.
-    /// </summary>
-    /// <typeparam name="T">The return type of the given unit of work.</typeparam>
-    /// <param name="work">The <see cref="Func{ITransactionAsync, T}"/> to be applied to a new write transaction.</param>
-    /// <param name="action">
-    /// Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new
-    /// transaction. This configuration overrides server side default transaction configurations. See
-    /// <see cref="TransactionConfig"/>
-    /// </param>
-    /// <returns>A task of a result as returned by the given unit of work.</returns>
-    [Obsolete("Deprecated, Use ExecuteWriteAsync. Will be removed in 6.0.")]
-    Task<T> WriteTransactionAsync<T>(
-        Func<IAsyncTransaction, Task<T>> work,
-        Action<TransactionConfigBuilder> action = null);
-
-    /// <summary>
-    /// Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction with a specific
-    /// <see cref="TransactionConfig"/>.
-    /// </summary>
-    /// <param name="work">The <see cref="Func{ITransactionAsync, Task}"/> to be applied to a new write transaction.</param>
-    /// <param name="action">
-    /// Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new
-    /// transaction. This configuration overrides server side default transaction configurations. See
-    /// <see cref="TransactionConfig"/>
-    /// </param>
-    /// <returns>A task representing the completion of the transactional write operation enclosing the given unit of work.</returns>
-    [Obsolete("Deprecated, Use ExecuteWriteAsync. Will be removed in 6.0.")]
-    Task WriteTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionConfigBuilder> action = null);
 
     /// <summary>Asynchronously execute given unit of work as a transaction with a specific <see cref="TransactionConfig"/>.</summary>
     /// <typeparam name="TResult"></typeparam>

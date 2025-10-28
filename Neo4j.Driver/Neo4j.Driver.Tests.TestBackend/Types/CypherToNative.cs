@@ -69,8 +69,8 @@ public class DateTimeParameterValue
 
 public class VectorParameterValue
 {
-    public string? dtype { get; set; }
-    public string? data { get; set; }
+    public string dtype { get; set; }
+    public string data { get; set; }
 }
 
 public class DurationParameterValue

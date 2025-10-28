@@ -262,17 +262,6 @@ public sealed class SessionConfigBuilder
     }
 
     /// <summary>Sets the initial bookmarks to be used by the constructed session.</summary>
-    /// <param name="bookmark">the initial bookmarks</param>
-    /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
-    /// <seealso cref="SessionConfig.Bookmarks"/>
-    [Obsolete("Replaced by WithBookmarks. Will be removed in 6.0.")]
-    public SessionConfigBuilder WithBookmarks(params Bookmark[] bookmark)
-    {
-        _config.Bookmarks = bookmark.Select(x => new InternalBookmarks(x.Values));
-        return this;
-    }
-
-    /// <summary>Sets the initial bookmarks to be used by the constructed session.</summary>
     /// <param name="bookmarks">the initial bookmarks</param>
     /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
     /// <seealso cref="SessionConfig.Bookmarks"/>
