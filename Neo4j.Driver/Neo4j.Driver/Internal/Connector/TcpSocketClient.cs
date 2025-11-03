@@ -202,20 +202,14 @@ internal sealed class TcpSocketClient : ITcpSocketClient
     }
 
     private void InitClient()
-    {
-        var ipv6 = DriverContext.Config.Ipv6Enabled;
-        var addressFamily = ipv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
-
-        _client = new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp)
+    {   
+        _client = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp)
         {
             NoDelay = true
         };
 
-        if (ipv6)
-        {
-            _client.DualMode = true;
-        }
-
+        _client.DualMode = true;
+        
         _client.SetSocketOption(
             SocketOptionLevel.Socket,
             SocketOptionName.KeepAlive,

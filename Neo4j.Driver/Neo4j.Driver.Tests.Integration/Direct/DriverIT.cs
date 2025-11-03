@@ -55,30 +55,13 @@ public sealed class DriverIT : DirectDriverTestBase
     {
         await using var driver = GraphDatabase.Driver(
             DefaultInstallation.BoltUri,
-            AuthToken,
-            o => o.WithIpv6Enabled(true));
+            AuthToken);
 
         await using var session = driver.AsyncSession();
         var cursor = await session.RunAsync("RETURN 1");
         var result = await cursor.SingleAsync(r => r[0].As<int>());
 
         result.Should().Be(1);
-    }
-
-    [RequireServerFact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
-    public async Task ShouldNotConnectIPv6AddressIfDisabled()
-    {
-        await using var driver = GraphDatabase.Driver(
-            "bolt://[::1]:7687",
-            AuthToken,
-            o => o.WithIpv6Enabled(false));
-
-        await using var session = driver.AsyncSession();
-        var exc = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
-
-        exc.Should().NotBeNull();
-        exc!.GetBaseException().Should().BeOfType<NotSupportedException>();
-        exc.GetBaseException().Message.Should().Contain("This protocol version is not supported");
     }
 
     [RequireServerFact]
@@ -96,8 +79,7 @@ public sealed class DriverIT : DirectDriverTestBase
     {
         await using var driver = GraphDatabase.Driver(
             DefaultInstallation.BoltUri,
-            AuthToken,
-            o => o.WithIpv6Enabled(true));
+            AuthToken);
 
         await using var session = driver.AsyncSession();
         var cursor = await session.RunAsync("RETURN 1");

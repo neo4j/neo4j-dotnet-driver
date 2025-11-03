@@ -26,20 +26,19 @@ internal class DefaultHostResolver : IHostResolver
 {
     private static readonly bool OnMono = Type.GetType("Mono.Runtime") != null;
     private readonly IComparer<IPAddress> _addressComparer;
-    private readonly bool _ipv6Preferred;
     private readonly IHostResolver _resolver;
 
-    public DefaultHostResolver(bool ipv6Preferred)
-        : this(new SystemHostResolver(), ipv6Preferred)
+    public DefaultHostResolver()
+        : this(new SystemHostResolver())
     {
     }
 
-    public DefaultHostResolver(IHostResolver resolver, bool ipv6Preferred)
+
+    public DefaultHostResolver(IHostResolver resolver)
     {
         _resolver = resolver;
-        _ipv6Preferred = ipv6Preferred;
         _addressComparer =
-            new AddressComparer(_ipv6Preferred ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork);
+            new AddressComparer(AddressFamily.InterNetworkV6 );
     }
 
     public IPAddress[] Resolve(string hostname)
@@ -47,7 +46,6 @@ internal class DefaultHostResolver : IHostResolver
         if (TryParseIpAddress(hostname, out var result) == false)
         {
             result = _resolver.Resolve(hostname);
-            result = result.OrderBy(x => x, _addressComparer).ToArray();
         }
 
         return result;
@@ -58,7 +56,6 @@ internal class DefaultHostResolver : IHostResolver
         if (TryParseIpAddress(hostname, out var result) == false)
         {
             result = await _resolver.ResolveAsync(hostname).ConfigureAwait(false);
-            result = result.OrderBy(x => x, _addressComparer).ToArray();
         }
 
         return result;
@@ -68,7 +65,7 @@ internal class DefaultHostResolver : IHostResolver
     {
         if (IPAddress.TryParse(TranslateToMonoSafeHost(hostname), out var address))
         {
-            if (_ipv6Preferred && address.AddressFamily == AddressFamily.InterNetwork)
+            if (address.AddressFamily == AddressFamily.InterNetwork)
             {
                 resolvedAddresses = new[]
                 {

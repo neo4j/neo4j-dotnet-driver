@@ -48,8 +48,7 @@ internal sealed class DriverContext
             (RuntimeHelper.IsDotNetCore
                 ? new SystemNetCoreHostResolver(new SystemHostResolver())
                 : new DefaultHostResolver(
-                    new SystemHostResolver(),
-                    config.Ipv6Enabled));
+                    new SystemHostResolver()));
 
         Metrics = config.MetricsEnabled ? new DefaultMetrics() : null;
     }
