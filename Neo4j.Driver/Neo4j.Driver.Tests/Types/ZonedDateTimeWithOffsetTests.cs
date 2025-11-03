@@ -28,7 +28,7 @@ public class ZonedDateTimeWithOffsetTests
     [Fact]
     public void ShouldCreateDateTimeWithOffsetWithDateTimeComponents()
     {
-        var cypherDateTime = new ZonedDateTime(1947, 12, 17, 23, 49, 54, Zone.Of(1500));
+        var cypherDateTime = new ZonedDateTime(1947, 12, 17, 23, 49, 54, 0, Zone.Of(1500));
 
         cypherDateTime.Year.Should().Be(1947);
         cypherDateTime.Month.Should().Be(12);
@@ -91,7 +91,7 @@ public class ZonedDateTimeWithOffsetTests
     [InlineData(1000000000)]
     public void ShouldThrowOnInvalidYear(int year)
     {
-        var ex = Record.Exception(() => new ZonedDateTime(year, 1, 1, 0, 0, 0, Zone.Of(0)));
+        var ex = Record.Exception(() => new ZonedDateTime(year, 1, 1, 0, 0, 0, 0, Zone.Of(0)));
 
         ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
     }
@@ -101,7 +101,7 @@ public class ZonedDateTimeWithOffsetTests
     [InlineData(13)]
     public void ShouldThrowOnInvalidMonth(int month)
     {
-        var ex = Record.Exception(() => new ZonedDateTime(1990, month, 1, 0, 0, 0, Zone.Of(0)));
+        var ex = Record.Exception(() => new ZonedDateTime(1990, month, 1, 0, 0, 0, 0, Zone.Of(0)));
 
         ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
     }
@@ -114,7 +114,7 @@ public class ZonedDateTimeWithOffsetTests
     [InlineData(2018, 12, -1)]
     public void ShouldThrowOnInvalidDay(int year, int month, int day)
     {
-        var ex = Record.Exception(() => new ZonedDateTime(year, month, day, 0, 0, 0, Zone.Of(0)));
+        var ex = Record.Exception(() => new ZonedDateTime(year, month, day, 0, 0, 0, 0, Zone.Of(0)));
 
         ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
     }
@@ -124,7 +124,7 @@ public class ZonedDateTimeWithOffsetTests
     [InlineData(24)]
     public void ShouldThrowOnInvalidHour(int hour)
     {
-        var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, hour, 0, 0, Zone.Of(0)));
+        var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, hour, 0, 0, 0, Zone.Of(0)));
 
         ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
     }
@@ -135,7 +135,7 @@ public class ZonedDateTimeWithOffsetTests
     [InlineData(61)]
     public void ShouldThrowOnInvalidMinute(int minute)
     {
-        var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, 0, minute, 0, Zone.Of(0)));
+        var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, 0, minute, 0, 0, Zone.Of(0)));
 
         ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
     }
@@ -146,7 +146,7 @@ public class ZonedDateTimeWithOffsetTests
     [InlineData(61)]
     public void ShouldThrowOnInvalidSecond(int second)
     {
-        var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, 0, 0, second, Zone.Of(0)));
+        var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, 0, 0, second, 0, Zone.Of(0)));
 
         ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
     }
@@ -444,7 +444,7 @@ public class ZonedDateTimeWithOffsetTests
     [Fact]
     public void ShouldCreateMinZonedDateTimeFromComponents()
     {
-        var zone = new ZonedDateTime(-999_999_999, 1, 1, 0, 0, 0, Zone.Of(0));
+        var zone = new ZonedDateTime(-999_999_999, 1, 1, 0, 0, 0, 0, Zone.Of(0));
         zone.UtcSeconds.Should().Be(TemporalHelpers.MinUtcForZonedDateTime);
     }
 
@@ -464,7 +464,7 @@ public class ZonedDateTimeWithOffsetTests
     [Fact]
     public void ShouldCreateMaxZonedDateTimeFromComponents()
     {
-        var zone = new ZonedDateTime(999_999_999, 12, 31, 23, 59, 59, Zone.Of(0));
+        var zone = new ZonedDateTime(999_999_999, 12, 31, 23, 59, 59, 999_999_999, Zone.Of(0));
         zone.UtcSeconds.Should().Be(TemporalHelpers.MaxUtcForZonedDateTime);
     }
 }

@@ -271,9 +271,9 @@ public static class InternalRxSessionTests
             var asyncSession = new Mock<IInternalAsyncSession>();
             var rxSession = new InternalRxSession(asyncSession.Object, Mock.Of<IRxRetryLogic>());
 
-            var bookmark = rxSession.LastBookmark;
+            var bookmarks = rxSession.LastBookmarks;
 
-            asyncSession.Verify(x => x.LastBookmark, Times.Once);
+            asyncSession.Verify(x => x.LastBookmarks, Times.Once);
         }
     }
 

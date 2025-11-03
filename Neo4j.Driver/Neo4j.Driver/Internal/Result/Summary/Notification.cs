@@ -44,9 +44,6 @@ internal sealed class Notification : INotification
     public string Description { get; }
     public IInputPosition Position { get; }
 
-    [Obsolete("Deprecated, Replaced by RawSeverityLevel. Will be removed in 6.0")]
-    public string Severity => RawSeverityLevel;
-
     private NotificationCategory ParseCategory(string category)
     {
         return category?.ToLowerInvariant() switch

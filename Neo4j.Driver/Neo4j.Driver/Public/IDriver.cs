@@ -47,27 +47,19 @@ public interface IDriver : IDisposable, IAsyncDisposable
     /// <returns>An <see cref="IAsyncSession"/> that could be used to execute queries.</returns>
     IAsyncSession AsyncSession(Action<SessionConfigBuilder> action);
 
-    /// <summary>
-    /// Asynchronously releases all resources (connection pools, connections, etc) associated with this IDriver
-    /// instance.
-    /// </summary>
-    /// <returns>A task that represents the asynchronous close operation.</returns>
-    [Obsolete("Replaced by DisposeAsync")]
-    Task CloseAsync();
 
     /// <summary>
     /// Asynchronously verify if the driver can connect to the remote server returning server info. If the driver
     /// fails to connect to the remote server, an error will be thrown, which can be used to further understand the cause of
-    /// the connectivity issue. Note: Even if this method failed with an error, the driver still need to be closed via
-    /// <see cref="CloseAsync"/> to free up all resources.
+    /// the connectivity issue. Note: Even if this method failed with an error, the driver still needs to be disposed to free
+    /// up all resources.
     /// </summary>
     /// <returns>A task that represents the asynchronous operation. The task result contains the connected server's info.</returns>
     Task<IServerInfo> GetServerInfoAsync();
 
     /// <summary>Asynchronously verify if the driver can connect to the remote server.</summary>
     /// <remarks>
-    /// Even if this method returns false, the driver still need to be closed via <see cref="CloseAsync"/> or disposed
-    /// to free up all resources.
+    /// Even if this method returns false, the driver still need to be disposed to free up all resources.
     /// </remarks>
     /// <returns>
     /// A task that represents the asynchronous operation.<br/> The task result contains if the driver successfully
@@ -79,7 +71,7 @@ public interface IDriver : IDisposable, IAsyncDisposable
     /// Asynchronously verify if the driver can connect to the remote server by establishing a network connection with
     /// the remote. If the driver fails to connect to the remote server, an error will be thrown, which can be used to further
     /// understand the cause of the connectivity issue. Note: Even if this method failed with an error, the driver still need
-    /// to be closed via <see cref="CloseAsync"/> to free up all resources.
+    /// to be disposed to free up all resources.
     /// </summary>
     /// <returns>A task that represents the asynchronous verification operation.</returns>
     Task VerifyConnectivityAsync();

@@ -50,8 +50,7 @@ public class NotificationTests
                         "Offset": 0,
                         "Line": 1,
                         "Column": 2
-                      },
-                      "Severity": "WARNING"
+                      }
                     }
                     """.ReplaceLineEndings());
     }
