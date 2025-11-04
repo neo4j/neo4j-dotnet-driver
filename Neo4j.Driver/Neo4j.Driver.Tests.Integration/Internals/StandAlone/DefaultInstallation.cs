@@ -36,6 +36,11 @@ public static class DefaultInstallation
             User = Environment.GetEnvironmentVariable("TEST_NEO4J_USER");
         }
 
+        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_NEO4J_PASS")))
+        {
+            Password = Environment.GetEnvironmentVariable("TEST_NEO4J_PASS");
+        }
+
         if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_NEO4J_HOST")))
         {
             BoltHost = Environment.GetEnvironmentVariable("TEST_NEO4J_HOST");
