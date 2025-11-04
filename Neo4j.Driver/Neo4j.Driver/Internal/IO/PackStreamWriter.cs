@@ -276,10 +276,10 @@ internal sealed class PackStreamWriter
         else
         {
             WriteMapHeader(values.Count);
-            foreach (var key in values.Keys)
+            foreach (var (key, value) in values)
             {
                 WriteString(key);
-                Write(values[key]);
+                Write(value);
             }
         }
     }

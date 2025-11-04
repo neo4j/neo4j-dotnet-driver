@@ -272,7 +272,11 @@ public sealed class TransactionIT : AbstractRxIT
             .AssertEqual(
                 OnError<IRxTransaction>(
                     0,
-                    Matches<Exception>(exc => exc.Message.Should().Contain("InvalidBookmark"))));
+                    Matches<Exception>(exc => {
+                        var ne = exc as Neo4jException;
+                        ne.Should().NotBeNull();
+                        ne?.GqlStatus.Should().Be("08N12");
+                    })));
     }
 
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]

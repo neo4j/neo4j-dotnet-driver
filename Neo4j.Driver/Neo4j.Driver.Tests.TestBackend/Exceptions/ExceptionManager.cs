@@ -19,7 +19,6 @@ using System.Diagnostics;
 using System.Linq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Preview.GqlErrors;
 using Neo4j.Driver.Tests.TestBackend.Protocol;
 using Neo4j.Driver.Tests.TestBackend.Types;
 
@@ -130,9 +129,8 @@ internal static class ExceptionManager
         bool isCause = false)
     {
         var ne = ex as Neo4jException;
-        var gqlError = ne?.GetGqlErrorPreview();
         var diagnosticRecord =
-            gqlError?.GqlDiagnosticRecord?.ToDictionary(y => y.Key, y => NativeToCypher.Convert(y.Value));
+            ne?.GqlDiagnosticRecord?.ToDictionary(y => y.Key, y => NativeToCypher.Convert(y.Value));
 
         var data = new Dictionary<string, object>();
 
@@ -147,11 +145,11 @@ internal static class ExceptionManager
         data.OverwriteFrom(
             null,
             ("msg", exceptionMessage),
-            ("gqlStatus", gqlError?.GqlStatus),
-            ("statusDescription", gqlError?.GqlStatusDescription),
+            ("gqlStatus", ne?.GqlStatus),
+            ("statusDescription", ne?.GqlStatusDescription),
             ("diagnosticRecord", diagnosticRecord),
-            ("rawClassification", gqlError?.GqlRawClassification),
-            ("classification", gqlError?.GqlClassification));
+            ("rawClassification", ne?.GqlRawClassification),
+            ("classification", ne?.GqlClassification));
 
         if (ne?.InnerException != null)
         {

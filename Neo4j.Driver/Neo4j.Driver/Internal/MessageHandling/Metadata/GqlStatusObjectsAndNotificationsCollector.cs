@@ -65,10 +65,7 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool useRawStatu
                 .Where(y => y is not null)
                 .ToList();
 
-            if (!result.Any())
-            {
-                return null;
-            }
+            return result.Count != 0 ? result : null;
         }
 
         return null;

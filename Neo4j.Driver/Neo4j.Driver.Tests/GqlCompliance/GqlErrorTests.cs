@@ -18,7 +18,6 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.ExceptionHandling;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Preview.GqlErrors;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.GqlCompliance;
@@ -109,16 +108,15 @@ public class GqlErrorTests
         result.Code.Should().Be("Neo.ClientError.Transaction.Terminated");
         result.Message.Should().Be("Transaction terminated");
 
-        var gqlError = result.GetGqlErrorPreview();
-        gqlError.GqlStatus.Should().Be("GQL_STATUS_OUTER");
-        gqlError.GqlStatusDescription.Should().Be("Outer status description");
-        gqlError.GqlDiagnosticRecord.Should().NotBeNull();
-        gqlError.GqlDiagnosticRecord["outer_key"].Should().Be("outer_value");
-        gqlError.GqlRawClassification.Should().Be("OUTER_CLASSIFICATION");
-        gqlError.GqlClassification.Should().Be("DATABASE_ERROR");
+        result.GqlStatus.Should().Be("GQL_STATUS_OUTER");
+        result.GqlStatusDescription.Should().Be("Outer status description");
+        result.GqlDiagnosticRecord.Should().NotBeNull();
+        result.GqlDiagnosticRecord["outer_key"].Should().Be("outer_value");
+        result.GqlRawClassification.Should().Be("OUTER_CLASSIFICATION");
+        result.GqlClassification.Should().Be("DATABASE_ERROR");
 
         var innerException = (Neo4jException)result.InnerException;
-        gqlError = innerException.GetGqlErrorPreview();
+        var gqlError = innerException;
         innerException.Should().NotBeNull();
         innerException.Should().BeOfType<ClientException>();
         innerException.Code.Should().Be("Neo.ClientError.Transaction.LockClientStopped");
