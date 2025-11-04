@@ -167,7 +167,7 @@ internal static class SummaryJsonSerializer
     {
         if (notifications == null)
         {
-            return null;
+            return new List<object>();
         }
 
         if (notifications.All(x => x.Position == null))
