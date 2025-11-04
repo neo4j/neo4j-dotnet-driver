@@ -59,11 +59,13 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool useRawStatu
     {
         if (metadata.TryGetValue(key, out var x) && x is IList<object> statuses)
         {
-            return statuses
+            var result = statuses
                 .OfType<IDictionary<string, object>>()
                 .Select(parse)
                 .Where(y => y is not null)
                 .ToList();
+
+            return result.Count != 0 ? result : null;
         }
 
         return null;
