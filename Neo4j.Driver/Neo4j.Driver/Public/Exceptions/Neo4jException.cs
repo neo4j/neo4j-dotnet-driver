@@ -17,20 +17,13 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Preview.GqlErrors;
 
 namespace Neo4j.Driver;
 
 /// <summary>The base class for all Neo4j exceptions.</summary>
 [DataContract]
-public class Neo4jException : Exception, IGqlErrorPreview
+public class Neo4jException : Exception
 {
-    private readonly string _gqlClassification;
-    private readonly Dictionary<string, object> _gqlDiagnosticRecord;
-    private readonly string _gqlRawClassification;
-    private readonly string _gqlStatus;
-    private readonly string _gqlStatusDescription;
-
     /// <summary>Create a new <see cref="Neo4jException"/></summary>
     public Neo4jException()
     {
@@ -46,11 +39,11 @@ public class Neo4jException : Exception, IGqlErrorPreview
         : base(failureMessage.Message, innerException)
     {
         Code = failureMessage.Code;
-        _gqlStatus = failureMessage.GqlStatus;
-        _gqlStatusDescription = failureMessage.GqlStatusDescription;
-        _gqlClassification = failureMessage.GqlClassification;
-        _gqlRawClassification = failureMessage.GqlRawClassification;
-        _gqlDiagnosticRecord = failureMessage.GqlDiagnosticRecord;
+        GqlStatus = failureMessage.GqlStatus;
+        GqlStatusDescription = failureMessage.GqlStatusDescription;
+        GqlClassification = failureMessage.GqlClassification;
+        GqlRawClassification = failureMessage.GqlRawClassification;
+        GqlDiagnosticRecord = failureMessage.GqlDiagnosticRecord;
     }
 
     /// <summary>Create a new <see cref="Neo4jException"/> with an error message</summary>
@@ -100,20 +93,22 @@ public class Neo4jException : Exception, IGqlErrorPreview
     /// <summary>Gets or sets the code of a Neo4j exception.</summary>
     public string Code { get; set; }
 
-    /// <inheritdoc/>
-    string IGqlErrorPreview.GqlStatus => _gqlStatus;
+    /// <summary>Gets the GQL status of the exception.</summary>
+    public string GqlStatus { get; }
 
-    /// <inheritdoc/>
-    string IGqlErrorPreview.GqlStatusDescription => _gqlStatusDescription;
+    /// <summary>Gets the GQL status description of the exception.</summary>
+    public string GqlStatusDescription { get; }
 
-    /// <inheritdoc/>
-    string IGqlErrorPreview.GqlClassification => _gqlClassification;
+    /// <summary>Gets the GQL classification of the exception.</summary>
+    public string GqlClassification { get; }
 
-    /// <inheritdoc/>
-    string IGqlErrorPreview.GqlRawClassification => _gqlRawClassification;
+    /// <summary>The raw classification as received from the server.</summary>
+    public string GqlRawClassification { get; }
 
-    /// <inheritdoc/>
-    Dictionary<string, object> IGqlErrorPreview.GqlDiagnosticRecord => _gqlDiagnosticRecord;
+    /// <summary>
+    /// Gets further information about the status for diagnostic purposes.
+    /// </summary>
+    public Dictionary<string, object> GqlDiagnosticRecord { get; }
 
     internal static Neo4jException Create(FailureMessage failureMessage)
     {
