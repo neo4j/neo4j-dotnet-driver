@@ -70,7 +70,7 @@ public class GqlStatusObjectsAndNotificationsCollectorTests
 
         var collected = collector.Collected;
         collected.Should().NotBeNull();
-        collected.Notifications.Should().BeNull();
+        collected.Notifications.Should().NotBeNull().And.BeEmpty();
         collected.GqlStatusObjects.Should().BeNull();
     }
 
@@ -82,8 +82,8 @@ public class GqlStatusObjectsAndNotificationsCollectorTests
 
         var collected = collector.Collected;
         collected.Should().NotBeNull();
-        collected.GqlStatusObjects.Should().BeNull();
-        collected.Notifications.Should().BeNull();
+        collected.GqlStatusObjects.Should().NotBeNull().And.BeEmpty();
+        collected.Notifications.Should().NotBeNull().And.BeEmpty();
     }
 
     [Fact]
