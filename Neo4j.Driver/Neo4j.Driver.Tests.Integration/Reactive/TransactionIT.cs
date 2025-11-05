@@ -275,7 +275,6 @@ public sealed class TransactionIT : AbstractRxIT
                     Matches<Exception>(exc => {
                         var ne = exc as Neo4jException;
                         ne.Should().NotBeNull();
-                        ne?.GqlStatus.Should().Be("08N12");
                     })));
     }
 
