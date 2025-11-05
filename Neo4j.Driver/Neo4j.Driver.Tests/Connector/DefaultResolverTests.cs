@@ -26,38 +26,32 @@ namespace Neo4j.Driver.Tests.Connector;
 
 public class DefaultResolverTests
 {
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void ShouldResolve(bool ipv6Preferred)
+    [Fact]
+    public void ShouldResolve()
     {
         var resolverMock = new Mock<IHostResolver>();
-        var resolver = new DefaultHostResolver(resolverMock.Object, ipv6Preferred);
+        var resolver = new DefaultHostResolver(resolverMock.Object);
 
         resolver.Resolve("some_host");
 
         resolverMock.Verify(r => r.Resolve("some_host"));
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async void ShouldResolveAsync(bool ipv6Preferred)
+    [Fact]
+    public async void ShouldResolveAsync()
     {
         var resolverMock = new Mock<IHostResolver>();
-        var resolver = new DefaultHostResolver(resolverMock.Object, ipv6Preferred);
+        var resolver = new DefaultHostResolver(resolverMock.Object);
 
         await resolver.ResolveAsync("some_host");
 
         resolverMock.Verify(r => r.ResolveAsync("some_host"));
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void ShouldParseLocalhost(bool ipv6Preferred)
+    [Fact]
+    public void ShouldParseLocalhost()
     {
-        var resolver = new DefaultHostResolver(ipv6Preferred);
+        var resolver = new DefaultHostResolver();
         var ipAddresses = resolver.Resolve("LocALhOsT");
 
 #if NET452
@@ -68,12 +62,10 @@ public class DefaultResolverTests
         ipAddresses.Should().Contain(IPAddress.Parse("127.0.0.1"));
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async void ShouldParseLocalhostAsync(bool ipv6Preferred)
+    [Fact]
+    public async void ShouldParseLocalhostAsync()
     {
-        var resolver = new DefaultHostResolver(ipv6Preferred);
+        var resolver = new DefaultHostResolver();
         var ipAddresses = await resolver.ResolveAsync("LocALhOsT");
 
 #if NET452
@@ -83,169 +75,57 @@ public class DefaultResolverTests
 #endif
         ipAddresses.Should().Contain(IPAddress.Parse("127.0.0.1"));
     }
-
+    
     [Fact]
     public void ShouldParseLoopback()
     {
-        var resolver = new DefaultHostResolver(false);
-        var ipAddresses = resolver.Resolve("127.0.0.1");
-
-        ipAddresses.Should().HaveCount(1).And.Contain(IPAddress.Loopback);
-    }
-
-    [Fact]
-    public void ShouldParseLoopbackWhenIPv6Preferred()
-    {
-        var resolver = new DefaultHostResolver(true);
+        var resolver = new DefaultHostResolver();
         var ipAddresses = resolver.Resolve("127.0.0.1");
 
         ipAddresses.Should().HaveCount(2).And.ContainInOrder(IPAddress.IPv6Loopback, IPAddress.Loopback);
     }
-
+    
     [Fact]
     public async void ShouldParseLoopbackAsync()
     {
-        var resolver = new DefaultHostResolver(false);
-        var ipAddresses = await resolver.ResolveAsync("127.0.0.1");
-
-        ipAddresses.Should().HaveCount(1).And.Contain(IPAddress.Loopback);
-    }
-
-    [Fact]
-    public async void ShouldParseLoopbackWhenIPv6PreferredAsync()
-    {
-        var resolver = new DefaultHostResolver(true);
+        var resolver = new DefaultHostResolver();
         var ipAddresses = await resolver.ResolveAsync("127.0.0.1");
 
         ipAddresses.Should().HaveCount(2).And.ContainInOrder(IPAddress.IPv6Loopback, IPAddress.Loopback);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void ShouldParseIPv6Loopback(bool ipv6Preferred)
+    [Fact]
+    public void ShouldParseIPv6Loopback()
     {
-        var resolver = new DefaultHostResolver(ipv6Preferred);
+        var resolver = new DefaultHostResolver();
         var ipAddresses = resolver.Resolve("[::1]");
 
         ipAddresses.Should().HaveCount(1).And.Contain(IPAddress.IPv6Loopback);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async void ShouldParseIPv6LoopbackAsync(bool ipv6Preferred)
+    [Fact]
+    public async void ShouldParseIPv6LoopbackAsync()
     {
-        var resolver = new DefaultHostResolver(ipv6Preferred);
+        var resolver = new DefaultHostResolver();
         var ipAddresses = await resolver.ResolveAsync("[::1]");
 
         ipAddresses.Should().HaveCount(1).And.Contain(IPAddress.IPv6Loopback);
-    }
-
-    [Fact]
-    public void ShouldOrderIPv4First()
-    {
-        var resolverMock = new Mock<IHostResolver>();
-        resolverMock.Setup(x => x.Resolve(It.IsAny<string>()))
-            .Returns(
-                new[]
-                    { IPAddress.Parse("[::1]"), IPAddress.Parse("10.0.0.1"), IPAddress.Parse("192.168.0.11") });
-
-        var resolver = new DefaultHostResolver(resolverMock.Object, false);
-        var ipAddresses = resolver.Resolve("some_host");
-
-        ipAddresses.Should()
-            .HaveCount(3)
-            .And.ContainInOrder(
-                IPAddress.Parse("10.0.0.1"),
-                IPAddress.Parse("192.168.0.11"),
-                IPAddress.Parse("[::1]"));
-    }
-
-    [Fact]
-    public async void ShouldOrderIPv4FirstAsync()
-    {
-        var resolverMock = new Mock<IHostResolver>();
-        resolverMock.Setup(x => x.ResolveAsync(It.IsAny<string>()))
-            .Returns(
-                Task.FromResult(
-                    new[]
-                    {
-                        IPAddress.Parse("[::1]"), IPAddress.Parse("10.0.0.1"), IPAddress.Parse("192.168.0.11")
-                    }));
-
-        var resolver = new DefaultHostResolver(resolverMock.Object, false);
-        var ipAddresses = await resolver.ResolveAsync("some_host");
-
-        ipAddresses.Should()
-            .HaveCount(3)
-            .And.ContainInOrder(
-                IPAddress.Parse("10.0.0.1"),
-                IPAddress.Parse("192.168.0.11"),
-                IPAddress.Parse("[::1]"));
-    }
-
-    [Fact]
-    public void ShouldOrderIPv6FirstWhenIPv6Preferred()
-    {
-        var resolverMock = new Mock<IHostResolver>();
-        resolverMock.Setup(x => x.Resolve(It.IsAny<string>()))
-            .Returns(
-                new[]
-                    { IPAddress.Parse("10.0.0.1"), IPAddress.Parse("[::1]"), IPAddress.Parse("192.168.0.11") });
-
-        var resolver = new DefaultHostResolver(resolverMock.Object, true);
-        var ipAddresses = resolver.Resolve("some_host");
-
-        ipAddresses.Should()
-            .HaveCount(3)
-            .And.ContainInOrder(
-                IPAddress.Parse("[::1]"),
-                IPAddress.Parse("10.0.0.1"),
-                IPAddress.Parse("192.168.0.11"));
-    }
-
-    [Fact]
-    public async void ShouldOrderIPv6FirstWhenIPv6PreferredAsync()
-    {
-        var resolverMock = new Mock<IHostResolver>();
-        resolverMock.Setup(x => x.ResolveAsync(It.IsAny<string>()))
-            .Returns(
-                Task.FromResult(
-                    new[]
-                    {
-                        IPAddress.Parse("10.0.0.1"), IPAddress.Parse("[::1]"), IPAddress.Parse("192.168.0.11")
-                    }));
-
-        var resolver = new DefaultHostResolver(resolverMock.Object, true);
-        var ipAddresses = await resolver.ResolveAsync("some_host");
-
-        ipAddresses.Should()
-            .HaveCount(3)
-            .And.ContainInOrder(
-                IPAddress.Parse("[::1]"),
-                IPAddress.Parse("10.0.0.1"),
-                IPAddress.Parse("192.168.0.11"));
-    }
-
-    [MonoTheory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void ShouldNotResolveLocalhostOnMono(bool ipv6Preferred)
+    }        
+    
+    [MonoFact]
+    public void ShouldNotResolveLocalhostOnMono()
     {
         var resolverMock = new Mock<IHostResolver>(MockBehavior.Strict);
-        var resolver = new DefaultHostResolver(resolverMock.Object, ipv6Preferred);
+        var resolver = new DefaultHostResolver(resolverMock.Object);
 
         resolver.Resolve("localhost");
     }
 
-    [MonoTheory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async void ShouldNotResolveLocalhostOnMonoAsync(bool ipv6Preferred)
+    [MonoFact]
+    public async void ShouldNotResolveLocalhostOnMonoAsync()
     {
         var resolverMock = new Mock<IHostResolver>(MockBehavior.Strict);
-        var resolver = new DefaultHostResolver(resolverMock.Object, ipv6Preferred);
+        var resolver = new DefaultHostResolver(resolverMock.Object);
 
         await resolver.ResolveAsync("localhost");
     }

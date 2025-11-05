@@ -182,16 +182,7 @@ public sealed class ConfigBuilder
         _config.MaxConnectionLifetime = timeSpan;
         return this;
     }
-
-    /// <summary>Setting this option to true will enable ipv6 on socket connections.</summary>
-    /// <param name="enable">true to enable ipv6, false to only support ipv4 addresses.</param>
-    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
-    public ConfigBuilder WithIpv6Enabled(bool enable)
-    {
-        _config.Ipv6Enabled = enable;
-        return this;
-    }
-
+    
     /// <summary>
     /// Gets or internal sets a custom server address resolver used by the routing driver to resolve the initial
     /// address used to create the driver. Such resolution happens: 1) during the very first rediscovery when driver is

@@ -20,12 +20,12 @@ namespace Neo4j.Driver;
 
 /// <summary>
 /// The <see cref="IDriver"/> instance maintains the connections with a Neo4j database, providing an access point
-/// via the <see cref="IAsyncSession"/> method.
+/// via the <see cref="IAsyncSession"/> interface and the ExecutableQuery method.
 /// </summary>
 /// <remarks>
-/// The Driver maintains a connection pool buffering connections created by the user. The size of the buffer can
-/// be configured by the <see cref="Neo4j.Driver.Config.MaxConnectionPoolSize"/> property on the
-/// <see cref="Neo4j.Driver.Config"/> when creating the Driver.
+/// While the driver object is thread-safe, disposing is not.
+/// Make sure you are not using the driver object or any resources spawned from it(such as sessions or transactions)
+/// when it is disposed.
 /// </remarks>
 public interface IDriver : IDisposable, IAsyncDisposable
 {

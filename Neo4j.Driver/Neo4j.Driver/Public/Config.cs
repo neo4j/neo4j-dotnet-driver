@@ -32,7 +32,6 @@ namespace Neo4j.Driver;
 ///     <item><see cref="EncryptionLevel"/> : <c><see cref="EncryptionLevel"/> Encrypted</c> </item>
 ///     <item><see cref="TrustManager"/> : <c><see cref="TrustManager"/>CreateChainTrust()</c> </item>
 ///     <item><see cref="ConnectionTimeout"/>: <c>30s</c> </item> <item><see cref="SocketKeepAlive"/>: <c>true</c></item>
-///     <item><see cref="Ipv6Enabled"/>: <c>true</c></item> <br></br>
 ///     <item><see cref="MaxConnectionPoolSize"/> : <c>100</c> </item>
 ///     <item><see cref="ConnectionAcquisitionTimeout"/> : <c>1mins</c> </item>
 ///     <item><see cref="ConnectionIdleTimeout"/>: <see cref="InfiniteInterval"/></item>
@@ -158,9 +157,7 @@ public class Config
     /// given time will be closed once it is seen. Use <see cref="InfiniteInterval"/> to disable connection lifetime checking.
     /// </summary>
     public TimeSpan MaxConnectionLifetime { get; internal set; } = TimeSpan.FromHours(1);
-
-    /// <summary>The connections to support ipv6 addresses.</summary>
-    public bool Ipv6Enabled { get; internal set; } = false;
+    
 
     /// <summary>
     /// Gets or internal sets a custom server address resolver used by the routing driver to resolve the initial
