@@ -39,12 +39,12 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool useRawStatu
 
         var notifications = ConvertObjects(metadata, NotificationsKey, ConvertNotification);
         var statuses = ConvertObjects(metadata, StatusesKey, ConvertStatus);
-        if (statuses == null && notifications != null && !useRawStatuses)
+        if (statuses == null && notifications is { Count: > 0 } && !useRawStatuses)
         {
             statuses = ConvertObjects(metadata, NotificationsKey, ConvertNotificationValuesToStatus);
         }
 
-        if (notifications == null && statuses != null)
+        if (notifications is not { Count: > 0 } && statuses != null)
         {
             notifications = ConvertObjects(metadata, StatusesKey, ConvertStatusValuesToNotification);
         }
@@ -65,7 +65,7 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool useRawStatu
                 .Where(y => y is not null)
                 .ToList();
 
-            return result.Count != 0 ? result : null;
+            return result;
         }
 
         return null;

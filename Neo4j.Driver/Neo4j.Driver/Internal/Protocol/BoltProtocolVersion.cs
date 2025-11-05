@@ -20,7 +20,7 @@ namespace Neo4j.Driver.Internal.Protocol;
 //TODO: Consider converting to struct.
 internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>, IComparable<BoltProtocolVersion>
 {
-    // The int 1213486160 is 0x‭48 54 54 50 - or HTTP in ascii codes... determines the reserved version. It should never be sent by the server
+    // The int 1213486160 is 0x48 54 54 50 - or HTTP in ascii codes... determines the reserved version. It should never be sent by the server
     private const int MaxMajorVersion = 255;
     private const int MaxMinorVersion = 255;
     public const int ManifestSchema = 255;

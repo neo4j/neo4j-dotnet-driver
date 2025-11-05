@@ -165,11 +165,11 @@ internal static class SummaryJsonSerializer
 
     private static object MapNotifications(IList<INotification> notifications)
     {
-        if (notifications == null)
+        if (notifications is null)
         {
-            return new List<object>();
+            return null;
         }
-
+        
         if (notifications.All(x => x.Position == null))
         {
             return notifications.Select(
