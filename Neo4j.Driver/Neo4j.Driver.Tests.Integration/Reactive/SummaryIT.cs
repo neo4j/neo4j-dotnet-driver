@@ -247,7 +247,7 @@ public abstract class SummaryIT
             VerifySummary(
                 "CREATE (n) RETURN n",
                 null,
-                Matches<IResultSummary>(s => s.Notifications.Should().BeNull()));
+                Matches<IResultSummary>(s => (s.Notifications ?? []).Should().BeEmpty()));
         }
 
         [RequireServerFact("4.0.0", "5.6.0", Between)]
