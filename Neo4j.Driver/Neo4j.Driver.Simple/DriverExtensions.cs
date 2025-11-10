@@ -48,7 +48,7 @@ public static class DriverExtensions
 
         return new InternalSession(
             driver.AsyncSession(action).CastOrThrow<IInternalAsyncSession>(),
-            new RetryLogic(asyncDriver.Config.MaxTransactionRetryTime, asyncDriver.Config.Logger),
+            new RetryLogic(asyncDriver.Config.MaxTransactionRetryTime, asyncDriver.Config.Neo4JLogger),
             new BlockingExecutor());
     }
 }

@@ -957,7 +957,7 @@ public class ConnectionPoolTests
                     AuthTokenManagers.None,
                     new Config
                     {
-                        Logger = mockLogger.Object
+                        Neo4JLogger = mockLogger.Object
                     }),
                 new TestConnectionValidator());
 

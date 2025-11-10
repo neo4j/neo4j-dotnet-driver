@@ -30,18 +30,18 @@ internal class RxRetryLogic : IRxRetryLogic
     private readonly double _delayJitter;
     private readonly double _delayMultiplier;
     private readonly double _initialDelay;
-    private readonly ILogger _logger;
+    private readonly INeo4jLogger _neo4JLogger;
     private readonly int _maxRetryTimeout;
     private readonly Random _random;
 
-    public RxRetryLogic(TimeSpan maxRetryTimeout, ILogger logger)
+    public RxRetryLogic(TimeSpan maxRetryTimeout, INeo4jLogger neo4JLogger)
     {
         _maxRetryTimeout = (int)maxRetryTimeout.TotalMilliseconds;
         _initialDelay = TimeSpan.FromSeconds(1).TotalMilliseconds;
         _delayMultiplier = 2.0;
         _delayJitter = 0.2;
         _random = new Random(Guid.NewGuid().GetHashCode());
-        _logger = logger;
+        _neo4JLogger = neo4JLogger;
     }
 
     public IObservable<T> Retry<T>(IObservable<T> work)
@@ -76,7 +76,7 @@ internal class RxRetryLogic : IRxRetryLogic
                         var delayDuration = TimeSpan.FromMilliseconds(ComputeNextDelay(delay));
                         delay *= _delayMultiplier;
                         retryCount++;
-                        _logger?.Warn(exc, $"Transaction failed and will be retried in {delay} ms.");
+                        _neo4JLogger?.Warn(exc, $"Transaction failed and will be retried in {delay} ms.");
                         return Observable.Return(1).Delay(delayDuration);
                     });
             });

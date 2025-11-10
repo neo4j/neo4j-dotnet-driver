@@ -34,14 +34,14 @@ internal class AsyncRetryLogic : IAsyncRetryLogic
     private readonly double _initialRetryDelayMs;
     private readonly double _jitterFactor;
 
-    private readonly ILogger _logger;
+    private readonly INeo4jLogger _neo4JLogger;
     private readonly double _maxRetryTimeMs;
     private readonly double _multiplier;
 
-    public AsyncRetryLogic(TimeSpan maxRetryTimeout, ILogger logger)
+    public AsyncRetryLogic(TimeSpan maxRetryTimeout, INeo4jLogger neo4JLogger)
     {
         _maxRetryTimeMs = maxRetryTimeout.TotalMilliseconds;
-        _logger = logger;
+        _neo4JLogger = neo4JLogger;
         _initialRetryDelayMs = InitialRetryDelayMs;
         _multiplier = RetryDelayMultiplier;
         _jitterFactor = RetryDelayJitterFactor;
@@ -73,7 +73,7 @@ internal class AsyncRetryLogic : IAsyncRetryLogic
                 if (shouldRetry)
                 {
                     delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
-                    _logger.Warn(e, $"Transaction failed and will be retried in {delay} ms.");
+                    _neo4JLogger.Warn(e, $"Transaction failed and will be retried in {delay} ms.");
                     await Task.Delay(delay).ConfigureAwait(false); // blocking for this delay
                     delayMs *= _multiplier;
                 }

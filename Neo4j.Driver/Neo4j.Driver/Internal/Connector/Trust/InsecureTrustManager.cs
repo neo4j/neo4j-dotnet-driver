@@ -38,7 +38,7 @@ internal sealed class InsecureTrustManager : TrustManager
         {
             if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))
             {
-                Logger.Error(
+                Neo4JLogger.Error(
                     null,
                     $"{GetType().Name}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
 
@@ -46,7 +46,7 @@ internal sealed class InsecureTrustManager : TrustManager
             }
         }
 
-        Logger.Info($"{GetType().Name}: Trusting {uri} with provided certificate '{certificate.Subject}'.");
+        Neo4JLogger.Info($"{GetType().Name}: Trusting {uri} with provided certificate '{certificate.Subject}'.");
         return true;
     }
 }

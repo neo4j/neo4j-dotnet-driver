@@ -47,7 +47,7 @@ internal partial class AsyncSession : IResultResourceHandler, ITransactionResour
     public Task CloseAsync()
     {
         return TryExecuteAsync(
-            _logger,
+            _neo4JLogger,
             async () =>
             {
                 if (_isOpen)

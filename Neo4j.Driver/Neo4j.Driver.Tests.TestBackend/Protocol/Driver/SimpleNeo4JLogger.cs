@@ -17,7 +17,7 @@ using System;
 
 namespace Neo4j.Driver.Tests.TestBackend.Protocol.Driver;
 
-internal class SimpleLogger : ILogger
+internal class SimpleNeo4JLogger : INeo4jLogger
 {
     private string Now => DateTime.UtcNow.ToString("HH:mm:ss");
 

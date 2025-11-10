@@ -31,7 +31,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
     private readonly IClusterConnectionPool _clusterConnectionPool;
     private readonly IInitialServerAddressProvider _initialServerAddressProvider;
     private readonly ILoadBalancingStrategy _loadBalancingStrategy;
-    private readonly ILogger _logger;
+    private readonly INeo4jLogger _neo4JLogger;
     private readonly IRoutingTableManager _routingTableManager;
 
     private int _closedMarker;
@@ -48,12 +48,12 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             connectionFactory,
             DriverContext);
 
-        _logger = driverContext.Logger;
+        _neo4JLogger = driverContext.Neo4JLogger;
         _initialServerAddressProvider = new InitialServerAddressProvider(parsedUri, driverContext.Config.Resolver);
-        _routingTableManager = new RoutingTableManager(_initialServerAddressProvider, this, DriverContext, _logger);
+        _routingTableManager = new RoutingTableManager(_initialServerAddressProvider, this, DriverContext, _neo4JLogger);
         _loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy(
             _clusterConnectionPool,
-            _logger);
+            _neo4JLogger);
     }
 
     /// <summary>TEST ONLY.</summary>
@@ -66,12 +66,12 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         DriverContext driverContext = null)
     {
         DriverContext = driverContext;
-        _logger = NullLogger.Instance;
+        _neo4JLogger = NullNeo4JLogger.Instance;
         _clusterConnectionPool = clusterConnPool;
         _routingTableManager = routingTableManager;
         _loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy(
             clusterConnPool,
-            _logger);
+            _neo4JLogger);
     }
 
     private bool IsClosed => _closedMarker > 0;
@@ -117,7 +117,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
                 "Failed to acquire a new connection as the driver has already been disposed.");
         }
 
-        _logger.Debug($"LoadBalancer - Acquiring connection for '{database}'");
+        _neo4JLogger.Debug($"LoadBalancer - Acquiring connection for '{database}'");
         var conn = await AcquireConnectionAsync(mode, database, sessionConfig, bookmarks, forceAuth)
             .ConfigureAwait(false);
 
@@ -125,7 +125,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         //acquisition is then repeated with the cache not being used.
         if (_clusterConnectionPool.ConnectionCausesCacheDisable(conn))
         {
-            _logger.Debug($"LoadBalancer - Mixed cluster detected, some connections have no SSR. Re-acquiring " +
+            _neo4JLogger.Debug($"LoadBalancer - Mixed cluster detected, some connections have no SSR. Re-acquiring " +
                 $"connection without homeDB cache");
             await conn.CloseAsync().ConfigureAwait(false);
             conn = await AcquireConnectionAsync(mode, database, sessionConfig, bookmarks, forceAuth)
@@ -199,7 +199,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
 
     public Task OnConnectionErrorAsync(Uri uri, string database, Exception e)
     {
-        _logger.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
+        _neo4JLogger.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
         _routingTableManager.ForgetServer(uri, database);
         return _clusterConnectionPool.DeactivateAsync(uri);
     }
@@ -258,16 +258,16 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
 
         if (string.IsNullOrWhiteSpace(databaseForRouting) && _clusterConnectionPool.CanUseHomeDbCache())
         {
-            _logger.Debug($"Checking cached home database for {cacheKey}");
+            _neo4JLogger.Debug($"Checking cached home database for {cacheKey}");
             cachedDatabaseUsed = DriverContext.HomeDbCache.TryGetCached(cacheKey, out databaseForRouting);
 
             if (cachedDatabaseUsed)
             {
-                _logger.Debug($"Using cached home database {databaseForRouting} for {cacheKey}");
+                _neo4JLogger.Debug($"Using cached home database {databaseForRouting} for {cacheKey}");
             }
             else
             {
-                _logger.Debug($"No cached home database found for {cacheKey}");
+                _neo4JLogger.Debug($"No cached home database found for {cacheKey}");
             }
         }
 

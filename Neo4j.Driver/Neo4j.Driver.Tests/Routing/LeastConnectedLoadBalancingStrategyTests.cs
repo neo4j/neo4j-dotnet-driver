@@ -183,7 +183,7 @@ public class LeastConnectedLoadBalancingStrategyTests
     public void ShouldIncludeDatabaseNameInLogMessageForReader()
     {
         var address = new Uri("reader:7687");
-        var logger = new Mock<ILogger>();
+        var logger = new Mock<INeo4jLogger>();
         logger.Setup(x => x.IsDebugEnabled()).Returns(true);
         var connectionPoolMock = new Mock<IClusterConnectionPool>();
         var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object, logger.Object);
@@ -202,7 +202,7 @@ public class LeastConnectedLoadBalancingStrategyTests
     public void ShouldIncludeDatabaseNameInLogMessageForWriter()
     {
         var address = new Uri("reader:7687");
-        var logger = new Mock<ILogger>();
+        var logger = new Mock<INeo4jLogger>();
         logger.Setup(x => x.IsDebugEnabled()).Returns(true);
         var connectionPoolMock = new Mock<IClusterConnectionPool>();
         var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object, logger.Object);
@@ -219,8 +219,8 @@ public class LeastConnectedLoadBalancingStrategyTests
 
     private static LeastConnectedLoadBalancingStrategy NewLeastConnectedStrategy(
         IClusterConnectionPool connectionPool,
-        ILogger logger = null)
+        INeo4jLogger neo4JLogger = null)
     {
-        return new LeastConnectedLoadBalancingStrategy(connectionPool, logger ?? Mock.Of<ILogger>());
+        return new LeastConnectedLoadBalancingStrategy(connectionPool, neo4JLogger ?? Mock.Of<INeo4jLogger>());
     }
 }

@@ -34,7 +34,7 @@ public sealed class ResultStreamingTests
     public ResultStreamingTests(ITestOutputHelper output)
     {
         _output = output;
-        _setupConfig = o => o.WithLogger(TestLogger.Create(output));
+        _setupConfig = o => o.WithLogger(TestNeo4JLogger.Create(output));
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public sealed class ResultStreamingTests
         await using var driver = GraphDatabase.Driver(
             "bolt://127.0.0.1:9001",
             AuthTokens.None,
-            o => o.WithLogger(TestLogger.Create(_output)).WithFetchSize(2));
+            o => o.WithLogger(TestNeo4JLogger.Create(_output)).WithFetchSize(2));
 
         await using var session = driver.AsyncSession();
         var cursor =
@@ -78,7 +78,7 @@ public sealed class ResultStreamingTests
         using var driver = GraphDatabase.Driver(
             "bolt://127.0.0.1:9001",
             AuthTokens.None,
-            o => o.WithLogger(TestLogger.Create(_output)).WithFetchSize(2));
+            o => o.WithLogger(TestNeo4JLogger.Create(_output)).WithFetchSize(2));
 
         var session = driver.RxSession();
 
@@ -99,7 +99,7 @@ public sealed class ResultStreamingTests
         using var driver = GraphDatabase.Driver(
             "bolt://127.0.0.1:9001",
             AuthTokens.None,
-            o => o.WithLogger(TestLogger.Create(_output)).WithFetchSize(2));
+            o => o.WithLogger(TestNeo4JLogger.Create(_output)).WithFetchSize(2));
 
         var session = driver.RxSession();
 

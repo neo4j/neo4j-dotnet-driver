@@ -72,7 +72,7 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance,
+                NullNeo4JLogger.Instance,
                 driverContext: new DriverContext(new ("bolt://localhost"), null, new Config()));
 
             await tx.BeginTransactionAsync(
@@ -97,7 +97,7 @@ public class TransactionTests
         {
             var mockProtocol = new Mock<IBoltProtocol>();
             var mockConn = NewMockedConnection(mockProtocol);
-            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>(), NullLogger.Instance,
+            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>(), NullNeo4JLogger.Instance,
                 driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             var query = new Query("lala");
@@ -123,7 +123,7 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance,
+                NullNeo4JLogger.Instance,
                 driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             tx.TransactionError = new Exception();
@@ -141,7 +141,7 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance,
+                NullNeo4JLogger.Instance,
                 driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             var query = new Query("lala");
@@ -172,7 +172,7 @@ public class TransactionTests
             var mockProtocol = new Mock<IBoltProtocol>();
             var mockConn = NewMockedConnection(mockProtocol);
             var mockHandler = new Mock<ITransactionResourceHandler>();
-            var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object, NullLogger.Instance,
+            var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object, NullNeo4JLogger.Instance,
                 driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             mockConn.Invocations.Clear();
@@ -188,7 +188,7 @@ public class TransactionTests
             var mockProtocol = new Mock<IBoltProtocol>();
             var mockConn = NewMockedConnection(mockProtocol);
             var mockHandler = new Mock<ITransactionResourceHandler>();
-            var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object, NullLogger.Instance,
+            var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object, NullNeo4JLogger.Instance,
                 driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             mockConn.Invocations.Clear();
@@ -202,7 +202,7 @@ public class TransactionTests
         {
             var mockConn = NewMockedConnection();
             var mockHandler = new Mock<ITransactionResourceHandler>();
-            var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object, NullLogger.Instance,
+            var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object, NullNeo4JLogger.Instance,
                 driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             mockConn.Invocations.Clear();
@@ -220,7 +220,7 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance,
+                NullNeo4JLogger.Instance,
                 driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             mockConn.Invocations.Clear();
@@ -238,7 +238,7 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance,
+                NullNeo4JLogger.Instance,
                 driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             mockConn.Invocations.Clear();
@@ -260,7 +260,7 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance,
+                NullNeo4JLogger.Instance,
                 driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             mockConn.Invocations.Clear();
@@ -281,7 +281,7 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance,
+                NullNeo4JLogger.Instance,
                 driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             mockConn.Invocations.Clear();
@@ -299,7 +299,7 @@ public class TransactionTests
         public async Task ShouldBeOpenWhenConstructed()
         {
             var mockConn = NewMockedConnection();
-            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>(), NullLogger.Instance,
+            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>(), NullNeo4JLogger.Instance,
                 driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             await tx.BeginTransactionAsync(
@@ -316,7 +316,7 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance,
+                NullNeo4JLogger.Instance,
                 driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             await tx.BeginTransactionAsync(
@@ -335,7 +335,7 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance,
+                NullNeo4JLogger.Instance,
                 driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             await tx.BeginTransactionAsync(
@@ -354,7 +354,7 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance,
+                NullNeo4JLogger.Instance,
                 driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             await tx.BeginTransactionAsync(
@@ -373,7 +373,7 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance,
+                NullNeo4JLogger.Instance,
                 driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             await tx.BeginTransactionAsync(

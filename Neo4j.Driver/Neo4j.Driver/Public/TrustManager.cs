@@ -27,7 +27,7 @@ namespace Neo4j.Driver;
 /// </summary>
 public abstract class TrustManager
 {
-    internal ILogger Logger { get; set; }
+    internal INeo4jLogger Neo4JLogger { get; set; }
 
     /// <summary>Returns whether the endpoint should be trusted or not.</summary>
     /// <param name="uri">The uri towards which we're establishing connection</param>

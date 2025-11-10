@@ -30,7 +30,7 @@ public sealed class MultiDatabasesTests
 
     public MultiDatabasesTests(ITestOutputHelper output)
     {
-        _setupConfig = o => o.WithLogger(TestLogger.Create(output));
+        _setupConfig = o => o.WithLogger(TestNeo4JLogger.Create(output));
     }
 
     [Fact]

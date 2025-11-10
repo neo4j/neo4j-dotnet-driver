@@ -89,7 +89,7 @@ public class RxRetryLogicTests : AbstractRxTest
     public void ShouldLogRetries(int errorCount)
     {
         var error = new TransientException("code", "message");
-        var logger = new Mock<ILogger>();
+        var logger = new Mock<INeo4jLogger>();
         var retryLogic = new RxRetryLogic(TimeSpan.FromMinutes(1), logger.Object);
 
         retryLogic
@@ -113,7 +113,7 @@ public class RxRetryLogicTests : AbstractRxTest
     public void ShouldRetryAtLeastTwice()
     {
         var error = new TransientException("code", "message");
-        var logger = new Mock<ILogger>();
+        var logger = new Mock<INeo4jLogger>();
         var retryLogic = new RxRetryLogic(TimeSpan.FromSeconds(1), logger.Object);
 
         retryLogic
@@ -139,7 +139,7 @@ public class RxRetryLogicTests : AbstractRxTest
             .Cast<Exception>()
             .ToArray();
 
-        var logger = new Mock<ILogger>();
+        var logger = new Mock<INeo4jLogger>();
         var retryLogic = new RxRetryLogic(TimeSpan.FromSeconds(2), logger.Object);
 
         retryLogic

@@ -17,55 +17,41 @@ using System;
 
 namespace Neo4j.Driver.Internal.Logging;
 
-internal abstract class ReformattedLogger : ILogger
+internal class NullNeo4JLogger : INeo4jLogger
 {
-    private readonly ILogger _delegate;
+    public static readonly NullNeo4JLogger Instance = new();
 
-    protected ReformattedLogger(ILogger logger)
+    private NullNeo4JLogger()
     {
-        _delegate = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public void Error(Exception cause, string message, params object[] args)
     {
-        _delegate.Error(cause, Reformat(message), args);
     }
 
     public void Warn(Exception cause, string message, params object[] args)
     {
-        _delegate.Warn(cause, Reformat(message), args);
     }
 
     public void Info(string message, params object[] args)
     {
-        _delegate.Info(Reformat(message), args);
     }
 
     public void Debug(string message, params object[] args)
     {
-        if (IsDebugEnabled())
-        {
-            _delegate.Debug(Reformat(message), args);
-        }
     }
 
     public void Trace(string message, params object[] args)
     {
-        if (IsTraceEnabled())
-        {
-            _delegate.Trace(Reformat(message), args);
-        }
     }
 
     public bool IsTraceEnabled()
     {
-        return _delegate.IsTraceEnabled();
+        return false;
     }
 
     public bool IsDebugEnabled()
     {
-        return _delegate != null && _delegate.IsDebugEnabled();
+        return false;
     }
-
-    protected abstract string Reformat(string message);
 }

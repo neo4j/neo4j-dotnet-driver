@@ -103,9 +103,9 @@ public class ResponsePipelineTests
         pipeline.HasNoPendingMessages.Should().BeTrue();
     }
 
-    private static ResponsePipeline CreatePipelineWithHandler(ILogger logger = null)
+    private static ResponsePipeline CreatePipelineWithHandler(INeo4jLogger neo4JLogger = null)
     {
-        var pipeline = new ResponsePipeline(logger ?? NullLogger.Instance);
+        var pipeline = new ResponsePipeline(neo4JLogger ?? NullNeo4JLogger.Instance);
 
         var handler = new Mock<IResponseHandler>();
         pipeline.Enqueue(handler.Object);
@@ -118,7 +118,7 @@ public class ResponsePipelineTests
         [Fact]
         public void ShouldLog()
         {
-            var log = new Mock<ILogger>();
+            var log = new Mock<INeo4jLogger>();
             log.Setup(x => x.IsDebugEnabled()).Returns(true);
 
             var pipeline = CreatePipelineWithHandler(log.Object);
@@ -132,7 +132,7 @@ public class ResponsePipelineTests
         [Fact]
         public void ShouldNotLogIfDebugDisabled()
         {
-            var log = new Mock<ILogger>();
+            var log = new Mock<INeo4jLogger>();
             log.Setup(x => x.IsDebugEnabled()).Returns(false);
 
             var pipeline = CreatePipelineWithHandler(log.Object);
@@ -159,7 +159,7 @@ public class ResponsePipelineTests
         [Fact]
         public void ShouldInvokeHandler()
         {
-            var pipeline = new ResponsePipeline(NullLogger.Instance);
+            var pipeline = new ResponsePipeline(NullNeo4JLogger.Instance);
 
             var handler = new Mock<IResponseHandler>();
             pipeline.Enqueue(handler.Object);
@@ -176,7 +176,7 @@ public class ResponsePipelineTests
         [Fact]
         public void ShouldLog()
         {
-            var log = new Mock<ILogger>();
+            var log = new Mock<INeo4jLogger>();
             log.Setup(x => x.IsDebugEnabled()).Returns(true);
 
             var pipeline = CreatePipelineWithHandler(log.Object);
@@ -190,7 +190,7 @@ public class ResponsePipelineTests
         [Fact]
         public void ShouldNotLogIfDebugDisabled()
         {
-            var log = new Mock<ILogger>();
+            var log = new Mock<INeo4jLogger>();
             log.Setup(x => x.IsDebugEnabled()).Returns(false);
 
             var pipeline = CreatePipelineWithHandler(log.Object);
@@ -219,7 +219,7 @@ public class ResponsePipelineTests
         [Fact]
         public void ShouldInvokeHandler()
         {
-            var pipeline = new ResponsePipeline(NullLogger.Instance);
+            var pipeline = new ResponsePipeline(NullNeo4JLogger.Instance);
 
             var handler = new Mock<IResponseHandler>();
             pipeline.Enqueue(handler.Object);
@@ -236,7 +236,7 @@ public class ResponsePipelineTests
         [Fact]
         public void ShouldLog()
         {
-            var log = new Mock<ILogger>();
+            var log = new Mock<INeo4jLogger>();
             log.Setup(x => x.IsDebugEnabled()).Returns(true);
 
             var pipeline = CreatePipelineWithHandler(log.Object);
@@ -254,7 +254,7 @@ public class ResponsePipelineTests
         [Fact]
         public void ShouldNotLogIfDebugDisabled()
         {
-            var log = new Mock<ILogger>();
+            var log = new Mock<INeo4jLogger>();
             log.Setup(x => x.IsDebugEnabled()).Returns(false);
 
             var pipeline = CreatePipelineWithHandler(log.Object);
@@ -281,7 +281,7 @@ public class ResponsePipelineTests
         [Fact]
         public void ShouldInvokeHandler()
         {
-            var pipeline = new ResponsePipeline(NullLogger.Instance);
+            var pipeline = new ResponsePipeline(NullNeo4JLogger.Instance);
             var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
 
             var handler = new Mock<IResponseHandler>();
@@ -327,7 +327,7 @@ public class ResponsePipelineTests
         [Fact]
         public void ShouldRecordErrorAndThrowOnAssertNoProtocolViolation()
         {
-            var pipeline = new ResponsePipeline(NullLogger.Instance);
+            var pipeline = new ResponsePipeline(NullNeo4JLogger.Instance);
             var (code, message) = ("Neo.ClientError.Request.Invalid", "protocol exception.");
 
             var handler = new Mock<IResponseHandler>();
@@ -350,7 +350,7 @@ public class ResponsePipelineTests
         [Fact]
         public void ShouldLog()
         {
-            var log = new Mock<ILogger>();
+            var log = new Mock<INeo4jLogger>();
             log.Setup(x => x.IsDebugEnabled()).Returns(true);
 
             var pipeline = CreatePipelineWithHandler(log.Object);
@@ -363,7 +363,7 @@ public class ResponsePipelineTests
         [Fact]
         public void ShouldNotLogIfDebugDisabled()
         {
-            var log = new Mock<ILogger>();
+            var log = new Mock<INeo4jLogger>();
             log.Setup(x => x.IsDebugEnabled()).Returns(false);
 
             var pipeline = CreatePipelineWithHandler(log.Object);
@@ -388,7 +388,7 @@ public class ResponsePipelineTests
         [Fact]
         public void ShouldInvokeHandler()
         {
-            var pipeline = new ResponsePipeline(NullLogger.Instance);
+            var pipeline = new ResponsePipeline(NullNeo4JLogger.Instance);
 
             var handler = new Mock<IResponseHandler>();
             pipeline.Enqueue(handler.Object);

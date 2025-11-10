@@ -182,7 +182,7 @@ internal class NewDriver : ProtocolObject
                 TimeSpan.FromMilliseconds(data.livenessCheckTimeoutMs.Value));
         }
 
-        var logger = new SimpleLogger();
+        var logger = new SimpleNeo4JLogger();
         configBuilder.WithLogger(logger);
     }
 

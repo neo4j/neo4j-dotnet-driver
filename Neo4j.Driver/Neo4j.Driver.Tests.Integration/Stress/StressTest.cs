@@ -84,7 +84,7 @@ public abstract class StressTest : IDisposable
             builder =>
             {
                 builder
-                    .WithLogger(new StressTestLogger(_output, minLevel))
+                    .WithLogger(new StressTestNeo4JLogger(_output, minLevel))
                     .WithMaxConnectionPoolSize(100)
                     .WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(1));
 
@@ -109,12 +109,12 @@ public abstract class StressTest : IDisposable
         None
     }
 
-    private class StressTestLogger : ILogger
+    private class StressTestNeo4JLogger : INeo4jLogger
     {
         private readonly StressTestMinLogLevel _minLevel;
         private readonly ITestOutputHelper _output;
 
-        public StressTestLogger(ITestOutputHelper output, StressTestMinLogLevel minLevel)
+        public StressTestNeo4JLogger(ITestOutputHelper output, StressTestMinLogLevel minLevel)
         {
             _output = output ?? throw new ArgumentNullException(nameof(output));
             _minLevel = minLevel;

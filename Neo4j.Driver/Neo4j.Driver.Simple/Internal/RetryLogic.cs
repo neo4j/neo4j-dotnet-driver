@@ -30,18 +30,18 @@ internal class RetryLogic : IRetryLogic
     private readonly double _delayJitter;
     private readonly double _delayMultiplier;
     private readonly double _initialDelay;
-    private readonly ILogger _logger;
+    private readonly INeo4jLogger _neo4JLogger;
     private readonly int _maxRetryTimeout;
     private readonly Random _random;
 
-    public RetryLogic(TimeSpan maxRetryTimeout, ILogger logger)
+    public RetryLogic(TimeSpan maxRetryTimeout, INeo4jLogger neo4JLogger)
     {
         _maxRetryTimeout = (int)maxRetryTimeout.TotalMilliseconds;
         _initialDelay = TimeSpan.FromSeconds(1).TotalMilliseconds;
         _delayMultiplier = 2.0;
         _delayJitter = 0.2;
         _random = new Random(Guid.NewGuid().GetHashCode());
-        _logger = logger;
+        _neo4JLogger = neo4JLogger;
     }
 
     public T Retry<T>(Func<T> work)
@@ -69,7 +69,7 @@ internal class RetryLogic : IRetryLogic
                 if (shouldRetry)
                 {
                     var delay = TimeSpan.FromMilliseconds(ComputeNextDelay(delayMs));
-                    _logger?.Warn(e, $"Transaction failed and will be retried in {delay}ms.");
+                    _neo4JLogger?.Warn(e, $"Transaction failed and will be retried in {delay}ms.");
                     Thread.Sleep(delay);
                     delayMs *= _delayMultiplier;
                 }

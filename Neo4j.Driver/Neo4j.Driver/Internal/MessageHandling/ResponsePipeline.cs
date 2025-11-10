@@ -25,14 +25,14 @@ internal sealed class ResponsePipeline : IResponsePipeline
     private const string MessagePattern = "S: {0}";
 
     private readonly ConcurrentQueue<IResponseHandler> _handlers;
-    private readonly ILogger _logger;
+    private readonly INeo4jLogger _neo4JLogger;
 
     private IResponsePipelineError _error;
 
-    public ResponsePipeline(ILogger logger)
+    public ResponsePipeline(INeo4jLogger neo4JLogger)
     {
         _handlers = new ConcurrentQueue<IResponseHandler>();
-        _logger = logger;
+        _neo4JLogger = neo4JLogger;
         _error = null;
     }
 
@@ -124,33 +124,33 @@ internal sealed class ResponsePipeline : IResponsePipeline
 
     private void LogSuccess(IDictionary<string, object> meta)
     {
-        if (_logger.IsDebugEnabled())
+        if (_neo4JLogger.IsDebugEnabled())
         {
-            _logger.Debug(MessagePattern, new SuccessMessage(meta));
+            _neo4JLogger.Debug(MessagePattern, new SuccessMessage(meta));
         }
     }
 
     private void LogRecord(object[] fields)
     {
-        if (_logger.IsDebugEnabled())
+        if (_neo4JLogger.IsDebugEnabled())
         {
-            _logger.Debug(MessagePattern, new RecordMessage(fields));
+            _neo4JLogger.Debug(MessagePattern, new RecordMessage(fields));
         }
     }
 
     private void LogFailure(string code, string message)
     {
-        if (_logger.IsDebugEnabled())
+        if (_neo4JLogger.IsDebugEnabled())
         {
-            _logger.Debug(MessagePattern, new FailureMessage(code, message));
+            _neo4JLogger.Debug(MessagePattern, new FailureMessage(code, message));
         }
     }
 
     private void LogIgnored()
     {
-        if (_logger.IsDebugEnabled())
+        if (_neo4JLogger.IsDebugEnabled())
         {
-            _logger.Debug(MessagePattern, IgnoredMessage.Instance);
+            _neo4JLogger.Debug(MessagePattern, IgnoredMessage.Instance);
         }
     }
 }

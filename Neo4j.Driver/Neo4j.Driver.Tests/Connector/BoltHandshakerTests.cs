@@ -74,7 +74,7 @@ public class BoltHandshakerTests
 
         var boltProtocolVersion = await BoltHandshaker.Default.DoHandshakeAsync(
             socket.Object,
-            new Mock<ILogger>().Object,
+            new Mock<INeo4jLogger>().Object,
             CancellationToken.None);
 
         boltProtocolVersion.Should().Be(version);
@@ -103,7 +103,7 @@ public class BoltHandshakerTests
 
         var boltProtocolVersion = await BoltHandshaker.Default.DoHandshakeAsync(
             socket.Object,
-            new Mock<ILogger>().Object,
+            new Mock<INeo4jLogger>().Object,
             CancellationToken.None);
 
         boltProtocolVersion.Should().Be(new BoltProtocolVersion(BoltProtocolVersion.LatestVersion.MajorVersion, 
@@ -137,7 +137,7 @@ public class BoltHandshakerTests
         var exception = await Record.ExceptionAsync(
                 () => BoltHandshaker.Default.DoHandshakeAsync(
                     socket.Object,
-                    new Mock<ILogger>().Object,
+                    new Mock<INeo4jLogger>().Object,
                     CancellationToken.None))
             .ConfigureAwait(false);
 
@@ -156,7 +156,7 @@ public class BoltHandshakerTests
         var exception = await Record.ExceptionAsync(
             () => BoltHandshaker.Default.DoHandshakeAsync(
                 socket.Object,
-                new Mock<ILogger>().Object,
+                new Mock<INeo4jLogger>().Object,
                 CancellationToken.None));
 
         exception.Should().BeOfType<IOException>();
@@ -191,7 +191,7 @@ public class BoltHandshakerTests
 
         var exception = await Record.ExceptionAsync(() => BoltHandshaker.Default.DoHandshakeAsync(
             socket.Object,
-            new Mock<ILogger>().Object,
+            new Mock<INeo4jLogger>().Object,
             CancellationToken.None)).ConfigureAwait(false);
 
         exception.Should().BeOfType<ProtocolException>();    

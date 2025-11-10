@@ -31,7 +31,7 @@ public sealed class DirectDriverTests
     {
         SetupConfig = o => o
             .WithEncryptionLevel(EncryptionLevel.None)
-            .WithLogger(TestLogger.Create(output));
+            .WithLogger(TestNeo4JLogger.Create(output));
     }
 
     private Action<ConfigBuilder> SetupConfig { get; }
@@ -44,7 +44,7 @@ public sealed class DirectDriverTests
         void SetupConfig(ConfigBuilder o)
         {
             o.WithEncryptionLevel(EncryptionLevel.None);
-            o.WithLogger(new TestLogger(logs.Add, ExtendedLogLevel.Debug));
+            o.WithLogger(new TestNeo4JLogger(logs.Add, ExtendedLogLevel.Debug));
         }
 
         using var _ = BoltStubServer.Start("V4/accessmode_reader_implicit", 9001);

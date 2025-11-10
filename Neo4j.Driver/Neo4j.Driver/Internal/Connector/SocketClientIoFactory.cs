@@ -20,15 +20,15 @@ namespace Neo4j.Driver.Internal.Connector;
 
 internal interface IConnectionIoFactory
 {
-    ITcpSocketClient TcpSocketClient(DriverContext context, ILogger logger);
+    ITcpSocketClient TcpSocketClient(DriverContext context, INeo4jLogger neo4JLogger);
     MessageFormat Format(BoltProtocolVersion version, DriverContext context);
 
     IMessageReader MessageReader(
         ITcpSocketClient client,
         DriverContext context,
-        ILogger logger);
+        INeo4jLogger neo4JLogger);
 
-    (IChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, DriverContext context, ILogger logger);
+    (IChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, DriverContext context, INeo4jLogger neo4JLogger);
 }
 
 internal sealed class SocketClientIoFactory : IConnectionIoFactory
@@ -39,9 +39,9 @@ internal sealed class SocketClientIoFactory : IConnectionIoFactory
     {
     }
 
-    public ITcpSocketClient TcpSocketClient(DriverContext context, ILogger logger)
+    public ITcpSocketClient TcpSocketClient(DriverContext context, INeo4jLogger neo4JLogger)
     {
-        return new TcpSocketClient(context, logger);
+        return new TcpSocketClient(context, neo4JLogger);
     }
 
     public MessageFormat Format(BoltProtocolVersion version, DriverContext context)
@@ -52,19 +52,19 @@ internal sealed class SocketClientIoFactory : IConnectionIoFactory
     public IMessageReader MessageReader(
         ITcpSocketClient client,
         DriverContext context,
-        ILogger logger)
+        INeo4jLogger neo4JLogger)
     {
         if (context.Config.MessageReaderConfig.DisablePipelinedMessageReader)
         {
-            return new MessageReader(new ChunkReader(client.ReaderStream), context, logger);
+            return new MessageReader(new ChunkReader(client.ReaderStream), context, neo4JLogger);
         }
 
         return new PipelinedMessageReader(client.ReaderStream, context);
     }
 
-    public (IChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, DriverContext context, ILogger logger)
+    public (IChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, DriverContext context, INeo4jLogger neo4JLogger)
     {
-        var chunkWriter = new ChunkWriter(client.WriterStream, context, logger);
+        var chunkWriter = new ChunkWriter(client.WriterStream, context, neo4JLogger);
         var messageWriter = new MessageWriter(chunkWriter);
         return (chunkWriter, messageWriter);
     }

@@ -71,7 +71,7 @@ public class SyncRetryLogicTests
     public void ShouldLogRetries(int errorCount)
     {
         var error = new TransientException("code", "message");
-        var logger = new Mock<ILogger>();
+        var logger = new Mock<INeo4jLogger>();
         var retryLogic = new RetryLogic(TimeSpan.FromMinutes(1), logger.Object);
         var work = CreateFailingWork(
             1,
@@ -91,7 +91,7 @@ public class SyncRetryLogicTests
     public void ShouldRetryAtLeastTwice()
     {
         var error = new TransientException("code", "message");
-        var logger = new Mock<ILogger>();
+        var logger = new Mock<INeo4jLogger>();
         var retryLogic = new RetryLogic(TimeSpan.FromSeconds(1), logger.Object);
         var work = CreateFailingWork(TimeSpan.FromSeconds(2), 1, error);
 
@@ -114,7 +114,7 @@ public class SyncRetryLogicTests
             .Cast<Exception>()
             .ToArray();
 
-        var logger = new Mock<ILogger>();
+        var logger = new Mock<INeo4jLogger>();
         var retryLogic = new RetryLogic(TimeSpan.FromSeconds(2), logger.Object);
         var work = CreateFailingWork(TimeSpan.FromSeconds(1), 1, exceptions);
 

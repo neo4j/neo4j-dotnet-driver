@@ -27,7 +27,7 @@ internal class RoutingTableManager : IRoutingTableManager
     private readonly IDiscovery _discovery;
     private readonly DriverContext _driverContext;
     private readonly IInitialServerAddressProvider _initialServerAddressProvider;
-    private readonly ILogger _logger;
+    private readonly INeo4jLogger _neo4JLogger;
 
     private readonly IClusterConnectionPoolManager _poolManager;
 
@@ -40,13 +40,13 @@ internal class RoutingTableManager : IRoutingTableManager
         IInitialServerAddressProvider initialServerAddressProvider,
         IClusterConnectionPoolManager poolManager,
         DriverContext driverContext,
-        ILogger logger)
+        INeo4jLogger neo4JLogger)
     {
         _initialServerAddressProvider = initialServerAddressProvider;
         _discovery = new ClusterDiscovery();
         _poolManager = poolManager;
         _driverContext = driverContext;
-        _logger = logger;
+        _neo4JLogger = neo4JLogger;
         // Default value.
         _routingTablePurgeDelay = TimeSpan.FromSeconds(30);
     }
@@ -56,14 +56,14 @@ internal class RoutingTableManager : IRoutingTableManager
         IInitialServerAddressProvider initialServerAddressProvider,
         IDiscovery discovery,
         IClusterConnectionPoolManager poolManager,
-        ILogger logger,
+        INeo4jLogger neo4JLogger,
         TimeSpan routingTablePurgeDelay,
         params IRoutingTable[] routingTables)
     {
         _initialServerAddressProvider = initialServerAddressProvider;
         _discovery = discovery;
         _poolManager = poolManager;
-        _logger = logger;
+        _neo4JLogger = neo4JLogger;
         _routingTablePurgeDelay = routingTablePurgeDelay;
 
         foreach (var routingTable in routingTables)
@@ -198,7 +198,7 @@ internal class RoutingTableManager : IRoutingTableManager
 
         PurgeAged();
 
-        _logger.Info("Routing table is updated => {0}", newRoutingTable);
+        _neo4JLogger.Info("Routing table is updated => {0}", newRoutingTable);
     }
 
     private void PurgeAged()
@@ -232,7 +232,7 @@ internal class RoutingTableManager : IRoutingTableManager
             throw new ArgumentNullException(nameof(database));
         }
 
-        _logger.Debug("Updating routing table for database '{0}'.", database);
+        _neo4JLogger.Debug("Updating routing table for database '{0}'.", database);
 
         var existingTable = RoutingTableFor(database);
         if (existingTable == null)
@@ -335,7 +335,7 @@ internal class RoutingTableManager : IRoutingTableManager
                             return newRoutingTable;
                         }
 
-                        _logger.Debug(
+                        _neo4JLogger.Debug(
                             "Skipping stale routing table received from server '{0}' for database '{1}'",
                             router,
                             database);
@@ -356,16 +356,16 @@ internal class RoutingTableManager : IRoutingTableManager
                     var code = ne.Code;
                     if (failfast)
                     {
-                        _logger.Error(ex, logMsg, router, database, code);
+                        _neo4JLogger.Error(ex, logMsg, router, database, code);
                     }
                     else
                     {
-                        _logger.Warn(ex, logMsg, router, database, code);
+                        _neo4JLogger.Warn(ex, logMsg, router, database, code);
                     }
                 }
                 else
                 {
-                    _logger.Warn(ex, logMsg, router, database);
+                    _neo4JLogger.Warn(ex, logMsg, router, database);
                 }
 
                 if (failfast)

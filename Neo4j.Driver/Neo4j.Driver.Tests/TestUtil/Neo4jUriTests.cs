@@ -193,7 +193,7 @@ public class Neo4jUriTests
         public void ShouldBeNoEncryptionNoTrust(string scheme)
         {
             var raw = new Uri($"{scheme}://localhost/?");
-            var manager = Neo4jUri.ParseUriSchemeToEncryptionManager(raw, NullLogger.Instance);
+            var manager = Neo4jUri.ParseUriSchemeToEncryptionManager(raw, NullNeo4JLogger.Instance);
 
             manager.UseTls.Should().BeFalse();
             manager.TrustManager.Should().BeNull();
@@ -205,12 +205,12 @@ public class Neo4jUriTests
         public void ShouldBeEncryptionWithChainTrust(string scheme)
         {
             var raw = new Uri($"{scheme}://localhost/?");
-            var log = new Mock<ILogger>().Object;
+            var log = new Mock<INeo4jLogger>().Object;
             var manager = Neo4jUri.ParseUriSchemeToEncryptionManager(raw, log);
 
             manager.UseTls.Should().BeTrue();
             manager.TrustManager.Should().BeOfType<ChainTrustManager>();
-            manager.TrustManager.Logger.Should().Be(log);
+            manager.TrustManager.Neo4JLogger.Should().Be(log);
         }
 
         [Theory]
@@ -219,12 +219,12 @@ public class Neo4jUriTests
         public void ShouldBeEncryptionWithInsecureTrust(string scheme)
         {
             var raw = new Uri($"{scheme}://localhost/?");
-            var log = new Mock<ILogger>().Object;
+            var log = new Mock<INeo4jLogger>().Object;
             var manager = Neo4jUri.ParseUriSchemeToEncryptionManager(raw, log);
 
             manager.UseTls.Should().BeTrue();
             manager.TrustManager.Should().BeOfType<InsecureTrustManager>();
-            manager.TrustManager.Logger.Should().Be(log);
+            manager.TrustManager.Neo4JLogger.Should().Be(log);
         }
 
         [Theory]
@@ -235,7 +235,7 @@ public class Neo4jUriTests
         public void ShouldErrorForUnknownBoltUri(string scheme)
         {
             var raw = new Uri($"{scheme}://localhost/?");
-            var ex = Record.Exception(() => Neo4jUri.ParseUriSchemeToEncryptionManager(raw, NullLogger.Instance));
+            var ex = Record.Exception(() => Neo4jUri.ParseUriSchemeToEncryptionManager(raw, NullNeo4JLogger.Instance));
             ex.Should().BeOfType<NotSupportedException>();
         }
     }

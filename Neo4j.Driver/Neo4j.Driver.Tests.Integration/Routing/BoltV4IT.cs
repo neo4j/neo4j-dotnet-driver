@@ -35,7 +35,7 @@ public sealed class BoltV4IT : RoutingDriverTestBase
         _driver = GraphDatabase.Driver(
             Cluster.BoltRoutingUri,
             Cluster.AuthToken,
-            o => o.WithLogger(TestLogger.Create(output)));
+            o => o.WithLogger(TestNeo4JLogger.Create(output)));
     }
 
     [RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]

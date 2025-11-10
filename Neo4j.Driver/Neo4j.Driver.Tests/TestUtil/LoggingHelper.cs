@@ -19,9 +19,9 @@ namespace Neo4j.Driver.Tests.TestUtil;
 
 public static class LoggingHelper
 {
-    public static Mock<ILogger> GetTraceEnabledLogger()
+    public static Mock<INeo4jLogger> GetTraceEnabledLogger()
     {
-        var mockLogger = new Mock<ILogger>();
+        var mockLogger = new Mock<INeo4jLogger>();
         mockLogger.Setup(x => x.IsTraceEnabled()).Returns(true);
         mockLogger.Setup(x => x.IsDebugEnabled()).Returns(true);
         return mockLogger;

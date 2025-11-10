@@ -37,7 +37,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     private readonly DriverContext _driverContext;
     private readonly long _fetchSize;
 
-    private readonly ILogger _logger;
+    private readonly INeo4jLogger _neo4JLogger;
     private readonly INotificationsConfig _notificationsConfig;
     private readonly bool _reactive;
 
@@ -56,7 +56,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
 
     public AsyncSession(
         IConnectionProvider provider,
-        ILogger logger,
+        INeo4jLogger neo4JLogger,
         IAsyncRetryLogic retryLogic,
         long defaultFetchSize,
         SessionConfig config,
@@ -65,7 +65,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     {
         SessionConfig = config;
         _connectionProvider = provider;
-        _logger = logger;
+        _neo4JLogger = neo4JLogger;
         _retryLogic = retryLogic;
         _reactive = reactive;
         _driverContext = config.DriverContext;;
@@ -102,12 +102,12 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
 
         if (string.IsNullOrWhiteSpace(_database))
         {
-            _logger.Info($"Database '{db}' is pinned to the session.");
+            _neo4JLogger.Info($"Database '{db}' is pinned to the session.");
             _database = db;
         }
         else
         {
-            _logger.Info($"Database {_database} is already pinned to the session, ignoring {db}.");
+            _neo4JLogger.Info($"Database {_database} is already pinned to the session, ignoring {db}.");
         }
     }
 
@@ -174,7 +174,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     {
         var config = BuildTransactionConfig(action);
         return await TryExecuteAsync(
-                _logger,
+                _neo4JLogger,
                 () => BeginTransactionWithoutLoggingAsync(
                     mode,
                     config,
@@ -190,7 +190,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     {
         var options = BuildTransactionConfig(action);
         var result = TryExecuteAsync(
-            _logger,
+            _neo4JLogger,
             async () =>
             {
                 await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
@@ -312,7 +312,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             return TransactionConfig.Default;
         }
 
-        var builder = new TransactionConfigBuilder(_logger, new TransactionConfig());
+        var builder = new TransactionConfigBuilder(_neo4JLogger, new TransactionConfig());
         action.Invoke(builder);
         return builder.Build();
     }
@@ -351,7 +351,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     {
         transactionInfo ??= new TransactionInfo(QueryApiType.TransactionFunction, TelemetryEnabled, true);
         return TryExecuteAsync(
-            _logger,
+            _neo4JLogger,
             () => _retryLogic.RetryAsync(
                 async () =>
                 {
@@ -397,7 +397,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         var tx = new AsyncTransaction(
             _connection,
             this,
-            _logger,
+            _neo4JLogger,
             _database,
             LastBookmarks,
             _reactive,

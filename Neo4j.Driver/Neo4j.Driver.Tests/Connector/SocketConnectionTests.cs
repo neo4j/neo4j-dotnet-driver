@@ -35,7 +35,7 @@ public class SocketConnectionTests
 {
     private static IAuthToken AuthToken => AuthTokens.None;
     private static string UserAgent => Config.DefaultUserAgent;
-    private static ILogger Logger => new Mock<ILogger>().Object;
+    private static INeo4jLogger Neo4JLogger => new Mock<INeo4jLogger>().Object;
     private static Uri uri => new("http://neo4j.com");
     private static ServerInfo Server => new(uri);
     private static ISocketClient SocketClient => new Mock<ISocketClient>().Object;
@@ -44,7 +44,7 @@ public class SocketConnectionTests
         ISocketClient socketClient = null,
         IResponsePipeline pipeline = null,
         ServerInfo server = null,
-        ILogger logger = null,
+        INeo4jLogger neo4JLogger = null,
         IBoltProtocolFactory boltProtocolFactory = null,
         DriverContext context = null)
     {
@@ -53,7 +53,7 @@ public class SocketConnectionTests
         return new SocketConnection(
             socketClient,
             AuthToken,
-            logger ?? Logger,
+            neo4JLogger ?? Neo4JLogger,
             server,
             pipeline,
             AuthTokenManagers.None,
@@ -102,7 +102,7 @@ public class SocketConnectionTests
                 .Throws(new IOException("I will stop socket conn from initialization"));
 
             // ReSharper disable once ObjectCreationAsStatement
-            var conn = new SocketConnection(mockClient.Object, AuthToken, Logger, Server);
+            var conn = new SocketConnection(mockClient.Object, AuthToken, Neo4JLogger, Server);
             // When
             var error = await Record.ExceptionAsync(() => conn.InitAsync());
             // Then
@@ -339,13 +339,13 @@ public class SocketConnectionTests
         public async void ShouldNotThrowAndLogIfSocketDisposedAsync(Exception exc)
         {
             // Given
-            var logger = new Mock<ILogger>();
+            var logger = new Mock<INeo4jLogger>();
 
             var protocol = new Mock<IBoltProtocol>();
             protocol.Setup(x => x.LogoutAsync(It.IsAny<IConnection>())).ThrowsAsync(exc);
 
             var mockClient = new Mock<ISocketClient>();
-            var conn = NewSocketConnection(mockClient.Object, logger: logger.Object);
+            var conn = NewSocketConnection(mockClient.Object, neo4JLogger: logger.Object);
             conn.BoltProtocol = protocol.Object;
 
             var ex = await Record.ExceptionAsync(() => conn.CloseAsync());

@@ -264,7 +264,7 @@ public static class GraphDatabase
                 connectionFactory,
                 context);
 
-        var retryLogic = new AsyncRetryLogic(context.Config.MaxTransactionRetryTime, context.Config.Logger);
+        var retryLogic = new AsyncRetryLogic(context.Config.MaxTransactionRetryTime, context.Config.Neo4JLogger);
         return new Internal.Driver(
             parsedUri,
             connectionProvider,
