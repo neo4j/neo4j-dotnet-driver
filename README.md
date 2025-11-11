@@ -28,9 +28,10 @@ Thursday of each month to maintain versioning consistency with the core product 
 monthly cadence.
 
 As a policy, Neo4j will not release patch versions except on rare occasions. Bug fixes and updates will go into the
-latest minor version; users should upgrade to a later version to patch bug fixes. Driver upgrades within a major version
-will never contain breaking API changes, excluding the `Neo4j.Driver.Preview` namespace reserved for the preview of
-features.
+latest minor version; users should upgrade to a later version to patch bug fixes. 
+
+Driver upgrades within a major version will never contain breaking API changes, excluding the `Neo4j.Driver.Preview`
+namespace reserved for the preview of features.
 
 See also: https://neo4j.com/developer/kb/neo4j-supported-versions/
 
