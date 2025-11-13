@@ -5,18 +5,22 @@
         {
           "src": "../Neo4j.Driver/",
           "files": [
-            "Neo4j.Driver/Neo4j.Driver.csproj"
+            "Neo4j.Driver/Neo4j.Driver.csproj",
+            "Neo4j.Driver.Reactive/Neo4j.Driver.Reactive.csproj"
           ]
         }
       ],
       "dest": "api",
+      "msbuildProperties": {
+        "TargetFramework": "net9.0"
+      },
       "filter": "filterConfig.yaml",
       "includePrivateMembers": false,
       "disableGitFeatures": true,
       "disableDefaultFilter": false,
       "noRestore": false,
       "namespaceLayout": "flattened", 
-      "memberLayout": "separatePages ",
+      "memberLayout": "separatePages",
       "EnumSortOrder": "declaringOrder",
       "allowCompilationErrors": false
     }
