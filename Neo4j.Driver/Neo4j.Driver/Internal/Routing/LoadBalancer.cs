@@ -318,7 +318,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
                 return conn;
             }
 
-            //else  connection already removed by clusterConnection onError method
+            break;
         }
 
         throw new SessionExpiredException($"Failed to connect to any {mode.ToString().ToLower()} server.");
