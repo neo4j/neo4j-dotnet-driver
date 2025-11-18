@@ -50,7 +50,12 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
 
         _neo4JLogger = driverContext.Neo4JLogger;
         _initialServerAddressProvider = new InitialServerAddressProvider(parsedUri, driverContext.Config.Resolver);
-        _routingTableManager = new RoutingTableManager(_initialServerAddressProvider, this, DriverContext, _neo4JLogger);
+        _routingTableManager = new RoutingTableManager(
+            _initialServerAddressProvider,
+            this,
+            DriverContext,
+            _neo4JLogger);
+
         _loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy(
             _clusterConnectionPool,
             _neo4JLogger);
@@ -98,8 +103,9 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         Bookmarks bookmarks,
         bool forceAuth)
     {
-        return await AcquireConnectionInternalAsync(mode, database, sessionConfig, bookmarks, forceAuth)
-            .Timeout(DriverContext.Config.ConnectionAcquisitionTimeout, CancellationToken.None)
+        var cts = new CancellationTokenSource();
+        return await AcquireConnectionInternalAsync(mode, database, sessionConfig, bookmarks, forceAuth, cts.Token)
+            .Timeout(DriverContext.Config.ConnectionAcquisitionTimeout, cts.Token, () => cts.Cancel())
             .ConfigureAwait(false);
     }
 
@@ -108,7 +114,8 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         string database,
         SessionConfig sessionConfig,
         Bookmarks bookmarks,
-        bool forceAuth)
+        bool forceAuth,
+        CancellationToken cancellationToken = default)
     {
         if (IsClosed)
         {
@@ -118,15 +125,17 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         }
 
         _neo4JLogger.Debug($"LoadBalancer - Acquiring connection for '{database}'");
-        var conn = await AcquireConnectionAsync(mode, database, sessionConfig, bookmarks, forceAuth)
+        var conn = await AcquireConnectionAsync(mode, database, sessionConfig, bookmarks, forceAuth, cancellationToken)
             .ConfigureAwait(false);
 
         //If a non ssr connection is detected then the connection is not used and returned to the pool. Connection
         //acquisition is then repeated with the cache not being used.
         if (_clusterConnectionPool.ConnectionCausesCacheDisable(conn))
         {
-            _neo4JLogger.Debug($"LoadBalancer - Mixed cluster detected, some connections have no SSR. Re-acquiring " +
+            _neo4JLogger.Debug(
+                $"LoadBalancer - Mixed cluster detected, some connections have no SSR. Re-acquiring " +
                 $"connection without homeDB cache");
+
             await conn.CloseAsync().ConfigureAwait(false);
             conn = await AcquireConnectionAsync(mode, database, sessionConfig, bookmarks, forceAuth)
                 .ConfigureAwait(false);
@@ -250,7 +259,8 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         string database,
         SessionConfig sessionConfig,
         Bookmarks bookmarks,
-        bool forceAuth)
+        bool forceAuth,
+        CancellationToken cancellationToken = default)
     {
         var cachedDatabaseUsed = false;
         var databaseForRouting = sessionConfig?.Database ?? database;
@@ -318,7 +328,10 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
                 return conn;
             }
 
-            break;
+            if (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
         }
 
         throw new SessionExpiredException($"Failed to connect to any {mode.ToString().ToLower()} server.");
