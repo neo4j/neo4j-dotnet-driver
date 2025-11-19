@@ -271,7 +271,7 @@ internal static class TemporalHelpers
     
     public static string ToIsoDurationString(long months, long days, long seconds, int nanoseconds)
     {
-        // Normalize sign so that the entire duration is either non\-negative or negative
+        // Normalize sign so that the entire duration is either non-negative or negative
         var negative = months < 0 || days < 0 || seconds < 0 || nanoseconds < 0;
 
         // Work with absolute values
