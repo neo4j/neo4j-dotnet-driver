@@ -42,6 +42,7 @@ internal static class TemporalHelpers
     public const long NanosPerSecond = 1_000_000_000;
     public const long NanosPerDay = NanosPerHour * HoursPerDay;
 
+    private const int MonthsPerYear = 12;
     private const int HoursPerDay = 24;
     private const int MinutesPerHour = 60;
     private const int SecondsPerMinute = 60;
@@ -267,32 +268,80 @@ internal static class TemporalHelpers
                 $"{target} expects Offset values to be in minutes precision. Use of this instance ({offset}) as an offset will cause a truncation of {offset.Ticks % TimeSpan.TicksPerMinute}ns.");
         }
     }
-
+    
     public static string ToIsoDurationString(long months, long days, long seconds, int nanoseconds)
     {
-        var timePart = string.Empty;
+        // Normalize sign so that the entire duration is either non\-negative or negative
+        var negative = months < 0 || days < 0 || seconds < 0 || nanoseconds < 0;
 
-        if (seconds < 0 && nanoseconds > 0)
+        // Work with absolute values
+        months = Math.Abs(months);
+        days = Math.Abs(days);
+        seconds = Math.Abs(seconds);
+        nanoseconds = Math.Abs(nanoseconds);
+
+        // Normalize months -> years + remaining months
+        var years = months / MonthsPerYear;
+        months %= MonthsPerYear;
+
+        // Normalize nanoseconds -> seconds + remaining nanos
+        seconds += nanoseconds / NanosPerSecond;
+        nanoseconds = (int)(nanoseconds % NanosPerSecond);
+
+        // Normalize seconds -> days + hours + minutes + seconds
+        days += seconds / SecondsPerDay;
+        seconds %= SecondsPerDay;
+
+        var hours = seconds / SecondsPerHour;
+        seconds %= SecondsPerHour;
+
+        var minutes = seconds / SecondsPerMinute;
+        seconds %= SecondsPerMinute;
+
+        // Build ISO 8601 string
+        var sb = new System.Text.StringBuilder();
+        if (negative)
         {
-            seconds = seconds + 1;
-            nanoseconds = (int)NanosPerSecond - nanoseconds;
+            sb.Append('-');
+        }
 
-            if (seconds == 0)
+        sb.Append('P');
+
+        if (years != 0) sb.Append(years).Append('Y');
+        if (months != 0) sb.Append(months).Append('M');
+        if (days != 0) sb.Append(days).Append('D');
+
+        if (hours != 0 || minutes != 0 || seconds != 0 || nanoseconds != 0)
+        {
+            sb.Append('T');
+
+            if (hours != 0) sb.Append(hours).Append('H');
+            if (minutes != 0) sb.Append(minutes).Append('M');
+
+            if (seconds != 0 || nanoseconds != 0)
             {
-                timePart = "-";
+                if (nanoseconds == 0)
+                {
+                    sb.Append(seconds).Append('S');
+                }
+                else
+                {
+                    // fractional seconds, 9 digits of nanos
+                    sb.Append(seconds)
+                        .Append('.')
+                        .Append(nanoseconds.ToString("D9"))
+                        .Append('S');
+                }
             }
         }
 
-        if (nanoseconds == 0)
+        // ISO 8601 requires at least "P0D" when everything is zero
+        if (sb.Length == (negative ? 2 : 1)) // only "-P" or "P"
         {
-            timePart = $"{timePart}{seconds}";
-        }
-        else
-        {
-            timePart = $"{timePart}{seconds}.{nanoseconds:D9}";
+            sb.Append("0D");
         }
 
-        return $"P{months}M{days}DT{timePart}S";
+        return sb.ToString();
     }
 
     public static string ToIsoDateString(int year, int month, int day)
