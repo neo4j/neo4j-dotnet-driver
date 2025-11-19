@@ -34,7 +34,7 @@ internal sealed class SocketConnection : IConnection
     private readonly ISocketClient _client;
     private readonly string _idPrefix;
 
-    private readonly ILogger _logger;
+    private readonly INeo4jLogger _neo4JLogger;
 
     private readonly Queue<IRequestMessage> _messages = new();
     private readonly IBoltProtocolFactory _protocolFactory;
@@ -52,16 +52,16 @@ internal sealed class SocketConnection : IConnection
     {
         _idPrefix = $"conn-{uri.Host}:{uri.Port}-";
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
-        _logger = context.Logger != NullLogger.Instance
-            ? new PrefixLogger(context.Logger, FormatPrefix(_id))
-            : context.Logger;
+        _neo4JLogger = context.Neo4JLogger != NullNeo4JLogger.Instance
+            ? new PrefixNeo4JLogger(context.Neo4JLogger, FormatPrefix(_id))
+            : context.Neo4JLogger;
 
-        _client = new SocketClient(uri, context, _logger, null);
+        _client = new SocketClient(uri, context, _neo4JLogger, null);
         Context = context;
         AuthToken = authToken;
         _serverInfo = new ServerInfo(uri);
 
-        _responsePipeline = new ResponsePipeline(_logger);
+        _responsePipeline = new ResponsePipeline(_neo4JLogger);
         AuthTokenManager = context.AuthTokenManager;
         _protocolFactory = BoltProtocolFactory.Default;
     }
@@ -70,7 +70,7 @@ internal sealed class SocketConnection : IConnection
     internal SocketConnection(
         ISocketClient socketClient,
         IAuthToken authToken,
-        ILogger logger,
+        INeo4jLogger neo4JLogger,
         ServerInfo server,
         IResponsePipeline responsePipeline = null,
         IAuthTokenManager authTokenManager = null,
@@ -82,8 +82,8 @@ internal sealed class SocketConnection : IConnection
         _serverInfo = server ?? throw new ArgumentNullException(nameof(server));
         AuthTokenManager = authTokenManager;
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
-        _logger = new PrefixLogger(logger, FormatPrefix(_id));
-        _responsePipeline = responsePipeline ?? new ResponsePipeline(logger);
+        _neo4JLogger = new PrefixNeo4JLogger(neo4JLogger, FormatPrefix(_id));
+        _responsePipeline = responsePipeline ?? new ResponsePipeline(neo4JLogger);
         _protocolFactory = protocolFactory ?? BoltProtocolFactory.Default;
         Context = context;
     }
@@ -286,14 +286,14 @@ internal sealed class SocketConnection : IConnection
 
     public void UpdateId(string newConnId)
     {
-        _logger.Debug(
+        _neo4JLogger.Debug(
             "Connection '{0}' renamed to '{1}'. The new name identifies the connection uniquely both on the client side and the server side.",
             _id,
             newConnId);
 
         _id = newConnId;
 
-        if (_logger is PrefixLogger logger)
+        if (_neo4JLogger is PrefixNeo4JLogger logger)
         {
             logger.Prefix = FormatPrefix(_id);
         }
@@ -330,7 +330,7 @@ internal sealed class SocketConnection : IConnection
             }
             catch (Exception e)
             {
-                _logger.Debug($"Failed to logout user before closing connection due to error: {e.Message}");
+                _neo4JLogger.Debug($"Failed to logout user before closing connection due to error: {e.Message}");
             }
 
             await _client.DisposeAsync().ConfigureAwait(false);
@@ -338,7 +338,7 @@ internal sealed class SocketConnection : IConnection
         catch (Exception e)
         {
             // only log the exception if failed to close connection
-            _logger.Warn(e, "Failed to close connection properly.");
+            _neo4JLogger.Warn(e, "Failed to close connection properly.");
         }
     }
 

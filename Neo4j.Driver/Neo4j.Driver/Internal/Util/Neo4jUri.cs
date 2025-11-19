@@ -62,7 +62,7 @@ internal static class Neo4jUri
         }
     }
 
-    public static EncryptionManager ParseUriSchemeToEncryptionManager(Uri uri, ILogger logger)
+    public static EncryptionManager ParseUriSchemeToEncryptionManager(Uri uri, INeo4jLogger neo4JLogger)
     {
         var scheme = uri.Scheme.ToLower();
         switch (scheme)
@@ -75,11 +75,11 @@ internal static class Neo4jUri
             case "bolt+s":
             case "neo4j+s":
                 // encryption with chain trust
-                return new EncryptionManager(true, EncryptionManager.CreateSecureTrustManager(logger));
+                return new EncryptionManager(true, EncryptionManager.CreateSecureTrustManager(neo4JLogger));
 
             case "bolt+ssc":
             case "neo4j+ssc":
-                return new EncryptionManager(true, EncryptionManager.CreateInsecureTrustManager(logger));
+                return new EncryptionManager(true, EncryptionManager.CreateInsecureTrustManager(neo4JLogger));
 
             default:
                 throw new NotSupportedException($"Unsupported URI scheme: {scheme}");

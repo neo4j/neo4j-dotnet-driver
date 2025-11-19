@@ -34,7 +34,7 @@ public abstract class RoutingDriverTestBase : IDisposable
             AuthToken,
             builder =>
             {
-                builder.WithLogger(TestLogger.Create(output));
+                builder.WithLogger(TestNeo4JLogger.Create(output));
                 Cluster.Configure(builder);
             });
     }

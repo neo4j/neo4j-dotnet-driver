@@ -50,7 +50,7 @@ public class SocketClientTests
                 .Setup(
                     x => x.DoHandshakeAsync(
                         It.IsAny<ITcpSocketClient>(),
-                        It.IsAny<ILogger>(),
+                        It.IsAny<INeo4jLogger>(),
                         It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(Version));
         }
@@ -58,7 +58,7 @@ public class SocketClientTests
         return new SocketClient(
             FakeUri,
             TestDriverContext.With(FakeUri),
-            Mock.Of<ILogger>(),
+            Mock.Of<INeo4jLogger>(),
             factory.Object,
             mockPackstreamFactory.Object,
             boltHandshaker.Object);
@@ -73,7 +73,7 @@ public class SocketClientTests
 
         var mockIoFactory = new Mock<IConnectionIoFactory>();
         mockIoFactory
-            .Setup(x => x.TcpSocketClient(It.IsAny<DriverContext>(), It.IsAny<ILogger>()))
+            .Setup(x => x.TcpSocketClient(It.IsAny<DriverContext>(), It.IsAny<INeo4jLogger>()))
             .Returns(connMock.Object);
 
         configureFactory?.Invoke(mockIoFactory);
@@ -93,17 +93,17 @@ public class SocketClientTests
             new ChunkWriter(
                 new MemoryStream(),
                 TestDriverContext.MockContext,
-                Mock.Of<ILogger>());
+                Mock.Of<INeo4jLogger>());
 
         var mr = messageReader ?? Mock.Of<IMessageReader>();
         var mw = messageWriter ?? Mock.Of<IMessageWriter>();
 
         factory
-            .Setup(x => x.MessageReader(It.IsAny<ITcpSocketClient>(), It.IsAny<DriverContext>(), It.IsAny<ILogger>()))
+            .Setup(x => x.MessageReader(It.IsAny<ITcpSocketClient>(), It.IsAny<DriverContext>(), It.IsAny<INeo4jLogger>()))
             .Returns(mr);
 
         factory
-            .Setup(x => x.Writers(It.IsAny<ITcpSocketClient>(), It.IsAny<DriverContext>(), It.IsAny<ILogger>()))
+            .Setup(x => x.Writers(It.IsAny<ITcpSocketClient>(), It.IsAny<DriverContext>(), It.IsAny<INeo4jLogger>()))
             .Returns((cw, mw));
 
         factory.Setup(x => x.Format(Version, TestDriverContext.MockContext)).Returns(fmt);
@@ -121,7 +121,7 @@ public class SocketClientTests
                 .Setup(
                     x => x.DoHandshakeAsync(
                         It.IsAny<ITcpSocketClient>(),
-                        It.IsAny<ILogger>(),
+                        It.IsAny<INeo4jLogger>(),
                         It.IsAny<CancellationToken>()))
                 .ThrowsAsync(exception);
 
@@ -132,7 +132,7 @@ public class SocketClientTests
             mockHandshaker.Verify(
                 x => x.DoHandshakeAsync(
                     It.IsAny<ITcpSocketClient>(),
-                    It.IsAny<ILogger>(),
+                    It.IsAny<INeo4jLogger>(),
                     It.IsAny<CancellationToken>()),
                 Times.Once);
 

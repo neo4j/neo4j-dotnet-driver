@@ -72,7 +72,7 @@ public class TransactionConfigTests
         public void ShouldRoundUpWithBuilder()
         {
             var ts = TimeSpan.FromTicks(1);
-            var builder = new TransactionConfigBuilder(NullLogger.Instance, TransactionConfig.Default);
+            var builder = new TransactionConfigBuilder(NullNeo4JLogger.Instance, TransactionConfig.Default);
             builder.WithTimeout(ts);
 
             var config = builder.Build();

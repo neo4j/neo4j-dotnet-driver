@@ -66,7 +66,7 @@ internal sealed class RunResponseHandler : MetadataCollectingResponseHandler
         var dbInfo = GetMetadata<DatabaseInfoCollector, IDatabaseInfo>();
         if (_isDefaultDatabase && _homeDbCache != null && dbInfo?.Name != null)
         {
-            _sessionConfig.DriverContext.Logger?.Debug($"Caching database name '{dbInfo.Name}' for key '{_cacheKey}'");
+            _sessionConfig.DriverContext.Neo4JLogger?.Debug($"Caching database name '{dbInfo.Name}' for key '{_cacheKey}'");
             _homeDbCache.AddOrUpdate(_cacheKey, dbInfo.Name);
             _sessionConfig?.PinDatabase(dbInfo.Name);
         }

@@ -48,7 +48,7 @@ public class TransactionTimeoutTests
         if (expectedTimeout != inputMilliseconds)
         {
             // only logs if it changes the timeout
-            autoMocker.GetMock<ILogger>()
+            autoMocker.GetMock<INeo4jLogger>()
                 .Setup(
                     x => x.Info(
                         It.Is<string>(s => s.Contains("rounded up")),
@@ -57,7 +57,7 @@ public class TransactionTimeoutTests
         }
 
         var sut =
-            new TransactionConfigBuilder(autoMocker.GetMock<ILogger>().Object, TransactionConfig.Default)
+            new TransactionConfigBuilder(autoMocker.GetMock<INeo4jLogger>().Object, TransactionConfig.Default)
                 .WithTimeout(totalInput);
 
         var result = sut.Build().Timeout;

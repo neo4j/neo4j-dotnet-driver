@@ -37,7 +37,7 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
     private readonly MemoryStream _chunkStream;
     private readonly int _defaultBufferSize;
     private readonly Stream _downStream;
-    private readonly ILogger _logger;
+    private readonly INeo4jLogger _neo4JLogger;
     private readonly int _maxBufferSize;
     private long _dataPos = -1;
     private int _shrinkCounter;
@@ -45,7 +45,7 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
     private long _startPos = -1;
 
     //TODO: ArrayPool avoid creating a new array for each chunk writer
-    public ChunkWriter(Stream downStream, DriverContext context, ILogger logger)
+    public ChunkWriter(Stream downStream, DriverContext context, INeo4jLogger neo4JLogger)
     {
         _downStream = downStream ?? throw new ArgumentNullException(nameof(downStream));
 
@@ -56,7 +56,7 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
                 $"Property:{nameof(downStream.CanWrite)} is false but should be true");
         }
 
-        _logger = logger;
+        _neo4JLogger = neo4JLogger;
         _defaultBufferSize = context.Config.DefaultWriteBufferSize;
         _maxBufferSize = context.Config.MaxWriteBufferSize;
         _chunkStream = new MemoryStream(context.Config.DefaultWriteBufferSize);
@@ -154,7 +154,7 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
         _chunkStream.SetLength(0);
         if (_chunkStream.Capacity > _maxBufferSize)
         {
-            _logger.Info(
+            _neo4JLogger.Info(
                 $@"Shrinking write buffers to the default write buffer size {
                     _defaultBufferSize
                 } since its size reached {
@@ -173,10 +173,10 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
 
     private void LogStream(MemoryStream stream)
     {
-        if (_logger.IsTraceEnabled())
+        if (_neo4JLogger.IsTraceEnabled())
         {
             var buffer = stream.ToArray();
-            _logger.Trace("C: {0}", buffer.ToHexString(0, buffer.Length));
+            _neo4JLogger.Trace("C: {0}", buffer.ToHexString(0, buffer.Length));
         }
     }
 

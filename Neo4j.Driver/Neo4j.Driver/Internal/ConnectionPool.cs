@@ -42,7 +42,7 @@ internal sealed class ConnectionPool : IConnectionPool
     private readonly BlockingCollection<IPooledConnection> _idleConnections = new();
     private readonly ConcurrentHashSet<IPooledConnection> _inUseConnections = new();
 
-    private readonly ILogger _logger;
+    private readonly INeo4jLogger _neo4JLogger;
 
     private readonly IConnectionPoolListener _poolMetricsListener;
 
@@ -64,7 +64,7 @@ internal sealed class ConnectionPool : IConnectionPool
     {
         _uri = uri;
         _id = $"pool-{_uri.Host}:{_uri.Port}";
-        _logger = new PrefixLogger(driverContext.Logger, $"[{_id}]");
+        _neo4JLogger = new PrefixNeo4JLogger(driverContext.Neo4JLogger, $"[{_id}]");
 
         _connectionFactory = connectionFactory;
         DriverContext = driverContext;
@@ -130,7 +130,7 @@ internal sealed class ConnectionPool : IConnectionPool
             do
             {
                 var connection = await TryExecuteAsync(
-                        _logger,
+                        _neo4JLogger,
                         () => AcquireOrTimeoutAsync(database, sessionConfig, mode, ConnectionAcquisitionTimeout),
                         "Failed to acquire a connection from connection pool asynchronously.")
                     .ConfigureAwait(false);
@@ -158,7 +158,7 @@ internal sealed class ConnectionPool : IConnectionPool
                 }
                 catch (ReauthException ex)
                 {
-                    _logger.Debug(ex.ToString());
+                    _neo4JLogger.Debug(ex.ToString());
                     if (ex.IsUserSwitching)
                     {
                         throw;
@@ -178,7 +178,7 @@ internal sealed class ConnectionPool : IConnectionPool
     public async Task ReleaseAsync(IPooledConnection connection)
     {
         await TryExecuteAsync(
-                _logger,
+                _neo4JLogger,
                 async () =>
                 {
                     if (IsClosed)
@@ -625,7 +625,7 @@ internal sealed class ConnectionPool : IConnectionPool
         var allCloseTasks = new List<Task>();
         while (_idleConnections.TryTake(out var connection))
         {
-            _logger.Debug($"Disposing Available Connection {connection}");
+            _neo4JLogger.Debug($"Disposing Available Connection {connection}");
             allCloseTasks.Add(DestroyConnectionAsync(connection));
         }
 
@@ -658,7 +658,7 @@ internal sealed class ConnectionPool : IConnectionPool
 
         foreach (var inUseConnection in _inUseConnections)
         {
-            _logger.Info($"Disposing In Use Connection {inUseConnection}");
+            _neo4JLogger.Info($"Disposing In Use Connection {inUseConnection}");
 
             if (_inUseConnections.TryRemove(inUseConnection))
             {

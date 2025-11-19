@@ -21,14 +21,14 @@ namespace Neo4j.Driver.Internal.Routing;
 internal class LeastConnectedLoadBalancingStrategy : ILoadBalancingStrategy
 {
     private readonly IClusterConnectionPool _connectionPool;
-    private readonly ILogger _logger;
+    private readonly INeo4jLogger _neo4JLogger;
     private readonly RoundRobinArrayIndex _readersIndex = new();
     private readonly RoundRobinArrayIndex _writersIndex = new();
 
-    public LeastConnectedLoadBalancingStrategy(IClusterConnectionPool connectionPool, ILogger logger)
+    public LeastConnectedLoadBalancingStrategy(IClusterConnectionPool connectionPool, INeo4jLogger neo4JLogger)
     {
         _connectionPool = connectionPool;
-        _logger = logger;
+        _neo4JLogger = neo4JLogger;
     }
 
     public Uri SelectReader(IList<Uri> knownReaders, string forDatabase, string cachedDatabase = null)
@@ -99,9 +99,9 @@ internal class LeastConnectedLoadBalancingStrategy : ILoadBalancingStrategy
 
     private void LogDebug(string message)
     {
-        if (_logger.IsDebugEnabled())
+        if (_neo4JLogger.IsDebugEnabled())
         {
-            _logger.Debug(message);
+            _neo4JLogger.Debug(message);
         }
     }
 }

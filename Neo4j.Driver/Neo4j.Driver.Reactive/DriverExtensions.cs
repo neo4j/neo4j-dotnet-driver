@@ -48,6 +48,6 @@ public static class DriverExtensions
 
         return new InternalRxSession(
             reactiveDriver.Session(action, true),
-            new RxRetryLogic(reactiveDriver.Config.MaxTransactionRetryTime, reactiveDriver.Config.Logger));
+            new RxRetryLogic(reactiveDriver.Config.MaxTransactionRetryTime, reactiveDriver.Config.Neo4JLogger));
     }
 }

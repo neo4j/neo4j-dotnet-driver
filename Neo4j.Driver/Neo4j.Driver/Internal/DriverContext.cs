@@ -40,7 +40,7 @@ internal sealed class DriverContext
             initialUri,
             config.NullableEncryptionLevel,
             config.TrustManager,
-            config.Logger);
+            config.Neo4JLogger);
 
         DriverBookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
 
@@ -61,7 +61,7 @@ internal sealed class DriverContext
     public Config Config { get; }
 
     /// <summary>Shortcut to Config.Logger.</summary>
-    public ILogger Logger => Config.Logger;
+    public INeo4jLogger Neo4JLogger => Config.Neo4JLogger;
 
     public IAuthTokenManager AuthTokenManager { get; }
     public EncryptionManager EncryptionManager { get; }

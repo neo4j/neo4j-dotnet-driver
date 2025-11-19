@@ -48,7 +48,7 @@ internal sealed class RouteResponseHandler : MetadataCollectingResponseHandler
         if(_isDefaultRequest && metadata?["rt"] is IDictionary<string, object> rt && rt.TryGetValue("db", out var db))
         {
             var dbName = (string) db;
-            _sessionConfig?.DriverContext?.Logger?.Debug($"Caching database name '{dbName}' for key '{_cacheKey}'");
+            _sessionConfig?.DriverContext?.Neo4JLogger?.Debug($"Caching database name '{dbName}' for key '{_cacheKey}'");
             _homeDbCache.AddOrUpdate(_cacheKey, dbName);
             _sessionConfig?.PinDatabase(dbName);
         }

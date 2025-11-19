@@ -29,7 +29,7 @@ internal sealed class SocketClient : ISocketClient
     private const string MessagePattern = "C: {0}";
     private readonly IConnectionIoFactory _connectionIoFactory;
     private readonly IBoltHandshaker _handshaker;
-    private readonly ILogger _logger;
+    private readonly INeo4jLogger _neo4JLogger;
     private readonly IPackStreamFactory _packstreamFactory;
     private readonly ITcpSocketClient _tcpSocketClient;
 
@@ -45,7 +45,7 @@ internal sealed class SocketClient : ISocketClient
     public SocketClient(
         Uri uri,
         DriverContext context,
-        ILogger logger,
+        INeo4jLogger neo4JLogger,
         IConnectionIoFactory connectionIoFactory,
         IPackStreamFactory packstreamFactory = null,
         IBoltHandshaker boltHandshaker = null)
@@ -53,13 +53,13 @@ internal sealed class SocketClient : ISocketClient
         Context = context;
         Version = BoltProtocolVersion.Unknown;
         _uri = uri;
-        _logger = logger;
+        _neo4JLogger = neo4JLogger;
 
         _packstreamFactory = packstreamFactory ?? PackStreamFactory.Default;
         _connectionIoFactory = connectionIoFactory ?? SocketClientIoFactory.Default;
         _handshaker = boltHandshaker ?? BoltHandshaker.Default;
 
-        _tcpSocketClient = _connectionIoFactory.TcpSocketClient(context, _logger);
+        _tcpSocketClient = _connectionIoFactory.TcpSocketClient(context, _neo4JLogger);
     }
 
     public DriverContext Context { get; }
@@ -71,15 +71,15 @@ internal sealed class SocketClient : ISocketClient
     {
         await _tcpSocketClient.ConnectAsync(_uri, cancellationToken).ConfigureAwait(false);
 
-        _logger.Debug($"~~ [CONNECT] {_uri}");
+        _neo4JLogger.Debug($"~~ [CONNECT] {_uri}");
 
         Version = await _handshaker
-            .DoHandshakeAsync(_tcpSocketClient, _logger, cancellationToken)
+            .DoHandshakeAsync(_tcpSocketClient, _neo4JLogger, cancellationToken)
             .ConfigureAwait(false);
 
         _format = _connectionIoFactory.Format(Version, Context);
-        _messageReader = _connectionIoFactory.MessageReader(_tcpSocketClient, Context, _logger);
-        (_chunkWriter, _messageWriter) = _connectionIoFactory.Writers(_tcpSocketClient, Context, _logger);
+        _messageReader = _connectionIoFactory.MessageReader(_tcpSocketClient, Context, _neo4JLogger);
+        (_chunkWriter, _messageWriter) = _connectionIoFactory.Writers(_tcpSocketClient, Context, _neo4JLogger);
         SetOpened();
     }
 
@@ -93,14 +93,14 @@ internal sealed class SocketClient : ISocketClient
             foreach (var message in messages)
             {
                 _messageWriter.Write(message, writer);
-                _logger.Debug(MessagePattern, message);
+                _neo4JLogger.Debug(MessagePattern, message);
             }
 
             await _chunkWriter.SendAsync().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            _logger.Warn(ex, $"Unable to send message to server {_uri}, connection will be terminated. ({ex.Message})");
+            _neo4JLogger.Warn(ex, $"Unable to send message to server {_uri}, connection will be terminated. ({ex.Message})");
             await DisposeAsync().ConfigureAwait(false);
             throw;
         }
@@ -122,7 +122,7 @@ internal sealed class SocketClient : ISocketClient
         }
         catch (Exception ex)
         {
-            _logger.Error(
+            _neo4JLogger.Error(
                 ex,
                 $"Unable to read message from server {_uri}, connection will be terminated. ({ex.Message})");
             await DisposeAsync().ConfigureAwait(false);
@@ -136,7 +136,7 @@ internal sealed class SocketClient : ISocketClient
         }
         catch (ProtocolException exc)
         {
-            _logger.Warn(
+            _neo4JLogger.Warn(
                 exc,
                 "A bolt protocol error has occurred with server {0}, connection will be terminated.",
                 _uri.ToString());

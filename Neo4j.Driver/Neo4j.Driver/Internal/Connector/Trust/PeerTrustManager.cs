@@ -43,7 +43,7 @@ internal sealed class PeerTrustManager : TrustManager
         {
             if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))
             {
-                Logger.Error(
+                Neo4JLogger.Error(
                     null,
                     $"{GetType().Name}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
 
@@ -53,7 +53,7 @@ internal sealed class PeerTrustManager : TrustManager
 
         if (!CertHelper.CheckValidity(certificate, now))
         {
-            Logger.Error(
+            Neo4JLogger.Error(
                 null,
                 $"{GetType().Name}: Certificate '{certificate.Subject}' is not valid at the time of validity check '{now}'.");
 
@@ -64,18 +64,18 @@ internal sealed class PeerTrustManager : TrustManager
         {
             if (CertHelper.FindCertificate(_location, StoreName.Disallowed, certificate))
             {
-                Logger.Error(
+                Neo4JLogger.Error(
                     null,
                     $"{GetType().Name}: Certificate '{certificate.Subject}' is found in '{_location}\\Disallowed` store.");
 
                 return false;
             }
 
-            Logger.Info($"{GetType().Name}: Trusting {uri} with certificate '{certificate.Subject}'.");
+            Neo4JLogger.Info($"{GetType().Name}: Trusting {uri} with certificate '{certificate.Subject}'.");
             return true;
         }
 
-        Logger.Error(
+        Neo4JLogger.Error(
             null,
             $"{GetType().Name}: Unable to locate a certificate for {uri} in '{_location}\\TrustedPeople` store.");
 

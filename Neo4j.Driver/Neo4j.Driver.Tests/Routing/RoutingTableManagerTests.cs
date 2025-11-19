@@ -47,7 +47,7 @@ public static class RoutingTableManagerTests
         IClusterConnectionPoolManager poolManager,
         IDiscovery discovery = null,
         IInitialServerAddressProvider addressProvider = null,
-        ILogger logger = null)
+        INeo4jLogger neo4JLogger = null)
     {
         if (addressProvider == null)
         {
@@ -63,7 +63,7 @@ public static class RoutingTableManagerTests
             addressProvider,
             discovery,
             poolManager,
-            logger ?? NullLogger.Instance,
+            neo4JLogger ?? NullNeo4JLogger.Instance,
             TimeSpan.Zero,
             routingTable);
     }
@@ -361,14 +361,14 @@ public static class RoutingTableManagerTests
                         It.IsAny<IHomeDbCache>()))
                 .Throws(error);
 
-            var logger = new Mock<ILogger>();
+            var logger = new Mock<INeo4jLogger>();
             logger.Setup(x => x.Warn(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()));
 
             var manager = NewRoutingTableManager(
                 routingTable,
                 poolManagerMock.Object,
                 discovery.Object,
-                logger: logger.Object);
+                neo4JLogger: logger.Object);
 
             await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmarks.Empty);
 
@@ -395,14 +395,14 @@ public static class RoutingTableManagerTests
                         It.IsAny<IHomeDbCache>()))
                 .Throws(error);
 
-            var logger = new Mock<ILogger>();
+            var logger = new Mock<INeo4jLogger>();
             logger.Setup(x => x.Error(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()));
 
             var manager = NewRoutingTableManager(
                 routingTable,
                 poolManagerMock.Object,
                 discovery.Object,
-                logger: logger.Object);
+                neo4JLogger: logger.Object);
 
             var exc = await Record.ExceptionAsync(
                 () =>
@@ -432,14 +432,14 @@ public static class RoutingTableManagerTests
                         It.IsAny<IHomeDbCache>()))
                 .Throws(error);
 
-            var logger = new Mock<ILogger>();
+            var logger = new Mock<INeo4jLogger>();
             logger.Setup(x => x.Error(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()));
 
             var manager = NewRoutingTableManager(
                 routingTable,
                 poolManagerMock.Object,
                 discovery.Object,
-                logger: logger.Object);
+                neo4JLogger: logger.Object);
 
             var exc = await Record.ExceptionAsync(
                 () =>
@@ -591,7 +591,7 @@ public static class RoutingTableManagerTests
                 .Setup(x => x.DiscoverAsync(connE, "", null, Bookmarks.Empty, It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(routingTable);
 
-            var logger = new Mock<ILogger>();
+            var logger = new Mock<INeo4jLogger>();
             logger.Setup(
                 x => x.Warn(It.IsAny<ServiceUnavailableException>(), It.IsAny<string>(), It.IsAny<object[]>()));
 
@@ -600,7 +600,7 @@ public static class RoutingTableManagerTests
                 existingRoutingTable,
                 poolManager.Object,
                 discovery.Object,
-                logger: logger.Object);
+                neo4JLogger: logger.Object);
 
             // When
             var result = await manager
@@ -666,7 +666,7 @@ public static class RoutingTableManagerTests
                     x => x.DiscoverAsync(connE, "", null, Bookmarks.Empty, It.IsAny<IHomeDbCache>()))
                 .ReturnsAsync(routingTable);
 
-            var logger = new Mock<ILogger>();
+            var logger = new Mock<INeo4jLogger>();
             logger.Setup(
                 x =>
                     x.Warn(It.IsAny<ServiceUnavailableException>(), It.IsAny<string>(), It.IsAny<object[]>()));
@@ -677,7 +677,7 @@ public static class RoutingTableManagerTests
                     existingRoutingTable,
                     poolManager.Object,
                     discovery.Object,
-                    logger: logger.Object);
+                    neo4JLogger: logger.Object);
 
             // When
             var result =
@@ -731,7 +731,7 @@ public static class RoutingTableManagerTests
                 Mock.Of<IInitialServerAddressProvider>(),
                 Mock.Of<IDiscovery>(),
                 Mock.Of<IClusterConnectionPoolManager>(),
-                Mock.Of<ILogger>(),
+                Mock.Of<INeo4jLogger>(),
                 TimeSpan.MaxValue,
                 defaultRoutingTable,
                 fooRoutingTable,
@@ -773,7 +773,7 @@ public static class RoutingTableManagerTests
                 Mock.Of<IInitialServerAddressProvider>(),
                 Mock.Of<IDiscovery>(),
                 Mock.Of<IClusterConnectionPoolManager>(),
-                Mock.Of<ILogger>(),
+                Mock.Of<INeo4jLogger>(),
                 TimeSpan.MaxValue,
                 defaultRoutingTable,
                 fooRoutingTable,
@@ -850,7 +850,7 @@ public static class RoutingTableManagerTests
                 initialAddressProvider.Object,
                 discovery.Object,
                 poolManager.Object,
-                Mock.Of<ILogger>(),
+                Mock.Of<INeo4jLogger>(),
                 TimeSpan.MaxValue);
 
             // When
@@ -910,7 +910,7 @@ public static class RoutingTableManagerTests
                 initialAddressProvider.Object,
                 discovery.Object,
                 poolManager.Object,
-                Mock.Of<ILogger>(),
+                Mock.Of<INeo4jLogger>(),
                 TimeSpan.FromSeconds(1));
 
             // When
@@ -979,7 +979,7 @@ public static class RoutingTableManagerTests
                 initialAddressProvider.Object,
                 discovery.Object,
                 poolManager.Object,
-                Mock.Of<ILogger>(),
+                Mock.Of<INeo4jLogger>(),
                 TimeSpan.MaxValue);
 
             // When
@@ -1027,7 +1027,7 @@ public static class RoutingTableManagerTests
                 initialAddressProvider.Object,
                 discovery.Object,
                 poolManager.Object,
-                Mock.Of<ILogger>(),
+                Mock.Of<INeo4jLogger>(),
                 TimeSpan.MaxValue);
 
             manager.Awaiting(
@@ -1065,7 +1065,7 @@ public static class RoutingTableManagerTests
                 initialAddressProvider.Object,
                 discovery.Object,
                 poolManager.Object,
-                Mock.Of<ILogger>(),
+                Mock.Of<INeo4jLogger>(),
                 TimeSpan.MaxValue);
 
             var routingTable =

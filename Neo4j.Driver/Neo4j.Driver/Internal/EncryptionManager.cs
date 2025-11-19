@@ -34,22 +34,22 @@ internal class EncryptionManager
         Uri uri,
         EncryptionLevel? level,
         TrustManager trustManager,
-        ILogger logger)
+        INeo4jLogger neo4JLogger)
     {
         var configured = level.HasValue || trustManager != null;
         if (configured)
         {
             AssertSimpleUriScheme(uri, level, trustManager);
-            return CreateFromConfig(level, trustManager, logger);
+            return CreateFromConfig(level, trustManager, neo4JLogger);
         }
 
-        return CreateFromUriScheme(uri, logger);
+        return CreateFromUriScheme(uri, neo4JLogger);
     }
 
-    private static EncryptionManager CreateFromUriScheme(Uri uri, ILogger logger)
+    private static EncryptionManager CreateFromUriScheme(Uri uri, INeo4jLogger neo4JLogger)
     {
         // let the uri scheme to decide
-        return Neo4jUri.ParseUriSchemeToEncryptionManager(uri, logger);
+        return Neo4jUri.ParseUriSchemeToEncryptionManager(uri, neo4JLogger);
     }
 
     private static void AssertSimpleUriScheme(Uri uri, EncryptionLevel? encryptionLevel, TrustManager trustManager)
@@ -65,18 +65,18 @@ internal class EncryptionManager
     public static EncryptionManager CreateFromConfig(
         EncryptionLevel? nullableLevel,
         TrustManager trustManager,
-        ILogger logger)
+        INeo4jLogger neo4JLogger)
     {
         var encrypted = ParseEncrypted(nullableLevel);
         if (encrypted && trustManager == null)
         {
-            return new EncryptionManager(true, CreateSecureTrustManager(logger));
+            return new EncryptionManager(true, CreateSecureTrustManager(neo4JLogger));
         }
 
-        if (trustManager != null && trustManager.Logger == null)
+        if (trustManager != null && trustManager.Neo4JLogger == null)
         {
             // likely to be true, as this is passed in by a user and logger is internal so we should set it.
-            trustManager.Logger = logger;
+            trustManager.Neo4JLogger = neo4JLogger;
         }
 
         return new EncryptionManager(encrypted, trustManager);
@@ -98,17 +98,17 @@ internal class EncryptionManager
         }
     }
 
-    public static TrustManager CreateSecureTrustManager(ILogger logger)
+    public static TrustManager CreateSecureTrustManager(INeo4jLogger neo4JLogger)
     {
         var trustManager = TrustManager.CreateChainTrust();
-        trustManager.Logger = logger;
+        trustManager.Neo4JLogger = neo4JLogger;
         return trustManager;
     }
 
-    public static TrustManager CreateInsecureTrustManager(ILogger logger)
+    public static TrustManager CreateInsecureTrustManager(INeo4jLogger neo4JLogger)
     {
         var trustManager = TrustManager.CreateInsecure();
-        trustManager.Logger = logger;
+        trustManager.Neo4JLogger = neo4JLogger;
         return trustManager;
     }
 }

@@ -26,17 +26,17 @@ internal sealed class MessageReader : IMessageReader
 {
     private readonly IChunkReader _chunkReader;
     private readonly int _defaultBufferSize;
-    private readonly ILogger _logger;
+    private readonly INeo4jLogger _neo4JLogger;
     private readonly int _maxBufferSize;
     private readonly ByteBuffers _readerBuffers;
     private int _shrinkCounter;
 
-    public MessageReader(IChunkReader chunkReader, DriverContext driverContext, ILogger logger)
+    public MessageReader(IChunkReader chunkReader, DriverContext driverContext, INeo4jLogger neo4JLogger)
     {
         _chunkReader = chunkReader;
         _defaultBufferSize = driverContext.Config.DefaultReadBufferSize;
         _maxBufferSize = driverContext.Config.MaxReadBufferSize;
-        _logger = logger;
+        _neo4JLogger = neo4JLogger;
         BufferStream = new MemoryStream(driverContext.Config.MaxReadBufferSize);
         _readerBuffers = new ByteBuffers();
     }
@@ -84,7 +84,7 @@ internal sealed class MessageReader : IMessageReader
             return;
         }
 
-        _logger.Info(
+        _neo4JLogger.Info(
             $@"Shrinking read buffers to the default read buffer size {
                 _defaultBufferSize
             } since its size reached {

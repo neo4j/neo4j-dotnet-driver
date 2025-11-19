@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Tests.Internal.IO;
 
 public class ChunkWriterTests
 {
-    private readonly Mock<ILogger> _logger = new();
+    private readonly Mock<INeo4jLogger> _logger = new();
 
     private static DriverContext TestContext(int defaultRead, int defaultWrite, int maxRead, int maxWrite)
     {
@@ -204,7 +204,7 @@ public class ChunkWriterTests
     {
         var buffer = new byte[messageSize];
         var stream = new MemoryStream();
-        var logger = new Mock<ILogger>();
+        var logger = new Mock<INeo4jLogger>();
         var context = TestContext(defaultBufferSize, defaultBufferSize, maxBufferSize, maxBufferSize);
         var writer = new ChunkWriter(stream, context, logger.Object);
 
@@ -230,7 +230,7 @@ public class ChunkWriterTests
     {
         var buffer = new byte[messageSize];
         var stream = new MemoryStream();
-        var logger = new Mock<ILogger>();
+        var logger = new Mock<INeo4jLogger>();
         var context = TestContext(defaultBufferSize, defaultBufferSize, maxBufferSize, maxBufferSize);
         var writer = new ChunkWriter(
             stream,
@@ -260,7 +260,7 @@ public class ChunkWriterTests
     {
         var buffer = new byte[messageSize];
         var stream = new MemoryStream();
-        var logger = new Mock<ILogger>();
+        var logger = new Mock<INeo4jLogger>();
         var context = TestContext(defaultBufferSize, defaultBufferSize, maxBufferSize, maxBufferSize);
         var writer = new ChunkWriter(stream, context, logger.Object);
 
@@ -284,7 +284,7 @@ public class ChunkWriterTests
     {
         var buffer = new byte[messageSize];
         var stream = new MemoryStream();
-        var logger = new Mock<ILogger>();
+        var logger = new Mock<INeo4jLogger>();
         var context = TestContext(defaultBufferSize, defaultBufferSize, maxBufferSize, maxBufferSize);
 
         var writer = new ChunkWriter(stream, context, logger.Object);
@@ -303,7 +303,7 @@ public class ChunkWriterTests
     {
         var buffer = new byte[1536];
         var stream = new MemoryStream();
-        var logger = new Mock<ILogger>();
+        var logger = new Mock<INeo4jLogger>();
         var settings = TestContext(512, 512, 1024, 1024);
         var writer = new ChunkWriter(stream, settings, logger.Object);
 
@@ -327,7 +327,7 @@ public class ChunkWriterTests
     {
         var buffer = new byte[1536];
         var stream = new MemoryStream();
-        var logger = new Mock<ILogger>();
+        var logger = new Mock<INeo4jLogger>();
         var context = TestContext(512, 512, 1024, 1024);
         var writer = new ChunkWriter(stream, context, logger.Object);
 

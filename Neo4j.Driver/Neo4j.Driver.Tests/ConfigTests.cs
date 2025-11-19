@@ -37,7 +37,7 @@ public class ConfigTests
             var config = new Config();
             config.EncryptionLevel.Should().Be(EncryptionLevel.None);
             config.TrustManager.Should().BeNull();
-            config.Logger.Should().BeOfType<NullLogger>();
+            config.Neo4JLogger.Should().BeOfType<NullNeo4JLogger>();
             config.MaxIdleConnectionPoolSize.Should().Be(100);
             config.ConnectionTimeout.Should().Be(TimeSpan.FromSeconds(30));
             config.TlsVersion.Should().Be(SslProtocols.Tls12);
@@ -93,7 +93,7 @@ public class ConfigTests
 
             config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
             config.TrustManager.Should().BeNull();
-            config.Logger.Should().BeOfType<NullLogger>();
+            config.Neo4JLogger.Should().BeOfType<NullNeo4JLogger>();
             config.MaxIdleConnectionPoolSize.Should().Be(100);
         }
 
@@ -116,11 +116,11 @@ public class ConfigTests
         [Fact]
         public void WithLoggingShouldModifyTheSingleValue()
         {
-            var mockLogger = new Mock<ILogger>();
+            var mockLogger = new Mock<INeo4jLogger>();
             var config = Config.Builder.WithLogger(mockLogger.Object).Build();
             config.EncryptionLevel.Should().Be(EncryptionLevel.None);
             config.TrustManager.Should().BeNull();
-            config.Logger.Should().Be(mockLogger.Object);
+            config.Neo4JLogger.Should().Be(mockLogger.Object);
             config.MaxIdleConnectionPoolSize.Should().Be(100);
         }
 
@@ -130,7 +130,7 @@ public class ConfigTests
             var config = Config.Builder.WithLogger(null).Build();
             config.EncryptionLevel.Should().Be(EncryptionLevel.None);
             config.TrustManager.Should().BeNull();
-            config.Logger.Should().Be(NullLogger.Instance);
+            config.Neo4JLogger.Should().Be(NullNeo4JLogger.Instance);
             config.MaxIdleConnectionPoolSize.Should().Be(100);
         }
 
@@ -140,7 +140,7 @@ public class ConfigTests
             var config = Config.Builder.WithMaxIdleConnectionPoolSize(3).Build();
             config.EncryptionLevel.Should().Be(EncryptionLevel.None);
             config.TrustManager.Should().BeNull();
-            config.Logger.Should().BeOfType<NullLogger>();
+            config.Neo4JLogger.Should().BeOfType<NullNeo4JLogger>();
             config.MaxIdleConnectionPoolSize.Should().Be(3);
         }
 
@@ -151,7 +151,7 @@ public class ConfigTests
             config.EncryptionLevel.Should().Be(EncryptionLevel.None);
             config.NullableEncryptionLevel.Should().Be(EncryptionLevel.None);
             config.TrustManager.Should().BeNull();
-            config.Logger.Should().BeOfType<NullLogger>();
+            config.Neo4JLogger.Should().BeOfType<NullNeo4JLogger>();
             config.MaxIdleConnectionPoolSize.Should().Be(100);
         }
 
@@ -161,7 +161,7 @@ public class ConfigTests
             var config = Config.Builder.WithTrustManager(TrustManager.CreateChainTrust()).Build();
             config.EncryptionLevel.Should().Be(EncryptionLevel.None);
             config.TrustManager.Should().BeOfType<ChainTrustManager>();
-            config.Logger.Should().BeOfType<NullLogger>();
+            config.Neo4JLogger.Should().BeOfType<NullNeo4JLogger>();
             config.MaxIdleConnectionPoolSize.Should().Be(100);
         }
 
@@ -170,18 +170,18 @@ public class ConfigTests
         {
             var config = new Config();
             var config1 = Config.Builder.WithMaxIdleConnectionPoolSize(3).Build();
-            var mockLogger = new Mock<ILogger>();
+            var mockLogger = new Mock<INeo4jLogger>();
             var config2 = Config.Builder.WithLogger(mockLogger.Object).Build();
 
-            config2.Logger.Should().Be(mockLogger.Object);
+            config2.Neo4JLogger.Should().Be(mockLogger.Object);
             config2.MaxIdleConnectionPoolSize.Should().Be(100);
 
             config1.MaxIdleConnectionPoolSize.Should().Be(3);
-            config1.Logger.Should().BeOfType<NullLogger>();
+            config1.Neo4JLogger.Should().BeOfType<NullNeo4JLogger>();
 
             config.EncryptionLevel.Should().Be(EncryptionLevel.None);
             config.TrustManager.Should().BeNull();
-            config.Logger.Should().BeOfType<NullLogger>();
+            config.Neo4JLogger.Should().BeOfType<NullNeo4JLogger>();
             config.MaxIdleConnectionPoolSize.Should().Be(100);
         }
 
@@ -192,7 +192,7 @@ public class ConfigTests
             var config = Config.Builder.WithClientCertificateProvider(provider.Object).Build();
             config.EncryptionLevel.Should().Be(EncryptionLevel.None);
             config.TrustManager.Should().BeNull();
-            config.Logger.Should().BeOfType<NullLogger>();
+            config.Neo4JLogger.Should().BeOfType<NullNeo4JLogger>();
             config.MaxIdleConnectionPoolSize.Should().Be(100);
             config.ClientCertificateProvider.Should().Be(provider.Object);
         }

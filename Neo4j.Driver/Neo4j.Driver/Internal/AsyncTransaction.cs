@@ -34,7 +34,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     private readonly IConnection _connection;
     private readonly DriverContext _driverContext;
     private readonly long _fetchSize;
-    private readonly ILogger _logger;
+    private readonly INeo4jLogger _neo4JLogger;
     private readonly INotificationsConfig _notificationsConfig;
     private readonly bool _reactive;
     private readonly ITransactionResourceHandler _resourceHandler;
@@ -50,7 +50,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     public AsyncTransaction(
         IConnection connection,
         ITransactionResourceHandler resourceHandler,
-        ILogger logger,
+        INeo4jLogger neo4JLogger,
         string database = null,
         Bookmarks bookmark = null,
         bool reactive = false,
@@ -62,7 +62,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         _connection = new TransactionConnection(this, connection);
         _resourceHandler = resourceHandler ?? throw new ArgumentNullException(nameof(resourceHandler));
         _bookmarks = bookmark;
-        _logger = logger;
+        _neo4JLogger = neo4JLogger;
         _reactive = reactive;
         Database = database;
         _fetchSize = fetchSize;
@@ -108,7 +108,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         var result = _state.RunAsync(
             query,
             _connection,
-            _logger,
+            _neo4JLogger,
             _reactive,
             _fetchSize,
             this,
@@ -257,7 +257,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         Task<IResultCursor> RunAsync(
             Query query,
             IConnection connection,
-            ILogger logger,
+            INeo4jLogger neo4JLogger,
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
@@ -280,7 +280,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         public Task<IResultCursor> RunAsync(
             Query query,
             IConnection connection,
-            ILogger logger,
+            INeo4jLogger neo4JLogger,
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
@@ -315,7 +315,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         public Task<IResultCursor> RunAsync(
             Query query,
             IConnection connection,
-            ILogger logger,
+            INeo4jLogger neo4JLogger,
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
@@ -350,7 +350,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         public Task<IResultCursor> RunAsync(
             Query query,
             IConnection connection,
-            ILogger logger,
+            INeo4jLogger neo4JLogger,
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
@@ -385,7 +385,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         public Task<IResultCursor> RunAsync(
             Query query,
             IConnection connection,
-            ILogger logger,
+            INeo4jLogger neo4JLogger,
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,

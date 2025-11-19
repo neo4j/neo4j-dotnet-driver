@@ -23,11 +23,11 @@ namespace Neo4j.Driver.Internal.Auth;
 internal sealed class DefaultTlsNegotiator : ITlsNegotiator
 {
     private readonly EncryptionManager _encryptionManager;
-    private readonly ILogger _logger;
+    private readonly INeo4jLogger _neo4JLogger;
 
-    public DefaultTlsNegotiator(ILogger logger, EncryptionManager encryptionManager)
+    public DefaultTlsNegotiator(INeo4jLogger neo4JLogger, EncryptionManager encryptionManager)
     {
-        _logger = logger;
+        _neo4JLogger = neo4JLogger;
         _encryptionManager = encryptionManager;
     }
 
@@ -41,7 +41,7 @@ internal sealed class DefaultTlsNegotiator : ITlsNegotiator
             {
                 if (errors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable))
                 {
-                    _logger?.Error(null, $"{GetType().Name}: Certificate not available.");
+                    _neo4JLogger?.Error(null, $"{GetType().Name}: Certificate not available.");
                     return false;
                 }
 
@@ -53,11 +53,11 @@ internal sealed class DefaultTlsNegotiator : ITlsNegotiator
 
                 if (trust)
                 {
-                    _logger?.Debug("Trust is established, resuming connection.");
+                    _neo4JLogger?.Debug("Trust is established, resuming connection.");
                 }
                 else
                 {
-                    _logger?.Error(null, "Trust not established, aborting communication.");
+                    _neo4JLogger?.Error(null, "Trust not established, aborting communication.");
                 }
 
                 return trust;

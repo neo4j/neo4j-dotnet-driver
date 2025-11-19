@@ -35,11 +35,11 @@ namespace Neo4j.Driver.Tests;
 
 public class AsyncSessionTests
 {
-    internal static AsyncSession NewSession(IConnection connection, bool reactive = false, ILogger logger = null)
+    internal static AsyncSession NewSession(IConnection connection, bool reactive = false, INeo4jLogger neo4JLogger = null)
     {
         return new AsyncSession(
             new TestConnectionProvider(connection),
-            logger ?? NullLogger.Instance,
+            neo4JLogger ?? NullNeo4JLogger.Instance,
             null,
             0,
             new Driver.SessionConfig(),
@@ -302,7 +302,7 @@ public class AsyncSessionTests
 
             var session = new AsyncSession(
                 new TestConnectionProvider(mockConn.Object),
-                NullLogger.Instance,
+                NullNeo4JLogger.Instance,
                 new AsyncRetryLogic(TimeSpan.Zero, null),
                 0,
                 new Driver.SessionConfig(),

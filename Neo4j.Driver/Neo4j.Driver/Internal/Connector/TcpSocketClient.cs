@@ -30,15 +30,15 @@ namespace Neo4j.Driver.Internal.Connector;
 
 internal sealed class TcpSocketClient : ITcpSocketClient
 {
-    private readonly ILogger _logger;
+    private readonly INeo4jLogger _neo4JLogger;
     public Uri ConnectionUri { get; private set; }
 
     private Socket _client;
 
-    public TcpSocketClient(DriverContext driverContext, ILogger logger = null)
+    public TcpSocketClient(DriverContext driverContext, INeo4jLogger neo4JLogger = null)
     {
         DriverContext = driverContext;
-        _logger = logger;
+        _neo4JLogger = neo4JLogger;
     }
 
     private DriverContext DriverContext { get; }
@@ -192,7 +192,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
         catch (Exception e)
         {
             var timeoutValue = DriverContext.Config.ConnectionTimeout;
-            _logger?.Error(
+            _neo4JLogger?.Error(
                 e,
                 $"Failed to close connect to the server {address}:{port}" +
                 $" after connection timed out {timeoutValue.TotalMilliseconds}ms.");
@@ -219,7 +219,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
     private SslStream CreateSecureStream(Uri uri)
     {
         var negotiator = DriverContext.Config.TlsNegotiator ??
-            new DefaultTlsNegotiator(_logger, DriverContext.EncryptionManager);
+            new DefaultTlsNegotiator(_neo4JLogger, DriverContext.EncryptionManager);
 
         return negotiator.NegotiateTls(uri, ReaderStream);
     }

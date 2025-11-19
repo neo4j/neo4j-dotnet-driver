@@ -33,7 +33,7 @@ public class AsyncRetryLogicTests
     [MemberData(nameof(NonTransientErrors))]
     public async Task ShouldNotRetryOnNonTransientErrors(Exception error)
     {
-        var retryLogic = new AsyncRetryLogic(TimeSpan.FromSeconds(5), new TestLogger(Console.WriteLine));
+        var retryLogic = new AsyncRetryLogic(TimeSpan.FromSeconds(5), new TestNeo4JLogger(Console.WriteLine));
         var work = CreateFailingWork(0, error);
 
         var exc = await Record.ExceptionAsync(() => retryLogic.RetryAsync(() => work.Work(null)));
@@ -46,7 +46,7 @@ public class AsyncRetryLogicTests
     [MemberData(nameof(TransientErrors))]
     public async Task ShouldRetryOnTransientErrors(Exception error)
     {
-        var retryLogic = new AsyncRetryLogic(TimeSpan.FromSeconds(5), NullLogger.Instance);
+        var retryLogic = new AsyncRetryLogic(TimeSpan.FromSeconds(5), NullNeo4JLogger.Instance);
         var work = CreateFailingWork(5, error);
 
         var result = await retryLogic.RetryAsync(() => work.Work(null));
@@ -58,7 +58,7 @@ public class AsyncRetryLogicTests
     [Fact]
     public async Task ShouldNotRetryOnSuccess()
     {
-        var retryLogic = new AsyncRetryLogic(TimeSpan.FromSeconds(5), NullLogger.Instance);
+        var retryLogic = new AsyncRetryLogic(TimeSpan.FromSeconds(5), NullNeo4JLogger.Instance);
         var work = CreateFailingWork(5);
 
         var result = await retryLogic.RetryAsync(() => work.Work(null));
@@ -74,7 +74,7 @@ public class AsyncRetryLogicTests
     public async Task ShouldLogRetries(int errorCount)
     {
         var error = new TransientException("code", "message");
-        var logger = new Mock<ILogger>();
+        var logger = new Mock<INeo4jLogger>();
         var retryLogic = new AsyncRetryLogic(TimeSpan.FromMinutes(1), logger.Object);
         var work = CreateFailingWork(
             1,
@@ -94,7 +94,7 @@ public class AsyncRetryLogicTests
     public async Task ShouldRetryAtLeastTwice()
     {
         var error = new TransientException("code", "message");
-        var logger = new Mock<ILogger>();
+        var logger = new Mock<INeo4jLogger>();
         var retryLogic = new AsyncRetryLogic(TimeSpan.FromSeconds(1), logger.Object);
         var work = CreateFailingWork(TimeSpan.FromSeconds(2), 1, error);
 
@@ -117,7 +117,7 @@ public class AsyncRetryLogicTests
             .Cast<Exception>()
             .ToArray();
 
-        var logger = new Mock<ILogger>();
+        var logger = new Mock<INeo4jLogger>();
         var retryLogic = new AsyncRetryLogic(TimeSpan.FromSeconds(2), logger.Object);
         var work = CreateFailingWork(TimeSpan.FromSeconds(1), 1, exceptions);
 

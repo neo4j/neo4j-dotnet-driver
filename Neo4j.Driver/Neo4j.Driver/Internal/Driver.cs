@@ -77,7 +77,7 @@ internal sealed class Driver : IInternalDriver
 
         var session = new AsyncSession(
             _connectionProvider,
-            Config.Logger,
+            Config.Neo4JLogger,
             _retryLogic,
             Config.FetchSize,
             sessionConfig,

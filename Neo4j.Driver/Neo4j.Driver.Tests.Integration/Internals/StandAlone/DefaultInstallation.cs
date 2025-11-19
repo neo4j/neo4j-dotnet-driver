@@ -58,8 +58,8 @@ public static class DefaultInstallation
     {
         var configuredLevelStr = Environment.GetEnvironmentVariable("NEOLOGLEVEL");
         var logger = Enum.TryParse<ExtendedLogLevel>(configuredLevelStr ?? "", true, out var configuredLevel)
-            ? new TestLogger(Console.WriteLine, configuredLevel)
-            : new TestLogger(s => Debug.WriteLine(s), ExtendedLogLevel.Debug);
+            ? new TestNeo4JLogger(Console.WriteLine, configuredLevel)
+            : new TestNeo4JLogger(s => Debug.WriteLine(s), ExtendedLogLevel.Debug);
 
         return GraphDatabase.Driver(boltUri, authToken, o => { o.WithLogger(logger); });
     }

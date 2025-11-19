@@ -620,7 +620,7 @@ public class ExamplesAsync
                 _driver = GraphDatabase.Driver(
                     uri,
                     AuthTokens.Basic(user, password),
-                    configBuilder => configBuilder.WithLogger(new SimpleLogger()));
+                    configBuilder => configBuilder.WithLogger(new SimpleNeo4JLogger()));
             }
 
             public void Dispose()
@@ -732,7 +732,7 @@ public class ExamplesAsync
             }
         }
 
-        internal class SimpleLogger : ILogger
+        internal class SimpleNeo4JLogger : INeo4jLogger
         {
             public void Debug(string message, params object[] args)
             {

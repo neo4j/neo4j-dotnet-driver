@@ -45,7 +45,7 @@ internal sealed class CertificateTrustManager : TrustManager
         {
             if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))
             {
-                Logger.Error(
+                Neo4JLogger.Error(
                     null,
                     $"{nameof(CertificateTrustManager)}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
 
@@ -55,7 +55,7 @@ internal sealed class CertificateTrustManager : TrustManager
 
         if (!CertHelper.CheckValidity(certificate, now))
         {
-            Logger.Error(
+            Neo4JLogger.Error(
                 null,
                 $"{nameof(CertificateTrustManager)}: Certificate '{certificate.Subject}' is not valid at the time of validity check '{now}'.");
 
@@ -72,7 +72,7 @@ internal sealed class CertificateTrustManager : TrustManager
 
     private X509Chain CreateChainAgainstStore(X509Certificate2 certificate)
     {
-        Logger.Info(
+        Neo4JLogger.Info(
             $"{nameof(CertificateTrustManager)}: Building chain against extra store certificate '{certificate.Subject}'.");
 
         // build chain against certificates passed, as some may not have been used when .net assessed trust.
@@ -88,7 +88,7 @@ internal sealed class CertificateTrustManager : TrustManager
     {
         if (chain.ChainStatus.Any(ShouldFailChain))
         {
-            Logger.Error(
+            Neo4JLogger.Error(
                 null,
                 $"{nameof(CertificateTrustManager)}: Unable to locate a certificate for {uri} in provided trusted certificates.");
 
@@ -99,14 +99,14 @@ internal sealed class CertificateTrustManager : TrustManager
         {
             if (CertHelper.FindCertificate(_trustedCertificates, chain.ChainElements[i].Certificate))
             {
-                Logger.Info(
+                Neo4JLogger.Info(
                     $"{nameof(CertificateTrustManager)}: Trusting {uri} with certificate '{certificate.Subject}'.");
 
                 return true;
             }
         }
 
-        Logger.Error(
+        Neo4JLogger.Error(
             null,
             $"{nameof(CertificateTrustManager)}: Unable to locate a certificate for {uri} in provided trusted certificates.");
 

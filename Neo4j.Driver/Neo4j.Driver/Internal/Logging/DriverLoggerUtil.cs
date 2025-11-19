@@ -20,7 +20,7 @@ namespace Neo4j.Driver.Internal.Logging;
 
 internal static class DriverLoggerUtil
 {
-    public static async Task TryExecuteAsync(ILogger logger, Func<Task> func, string message = null)
+    public static async Task TryExecuteAsync(INeo4jLogger neo4JLogger, Func<Task> func, string message = null)
     {
         try
         {
@@ -28,12 +28,12 @@ internal static class DriverLoggerUtil
         }
         catch (Exception ex)
         {
-            logger.Error(ex, message);
+            neo4JLogger.Error(ex, message);
             throw;
         }
     }
 
-    public static async Task<T> TryExecuteAsync<T>(ILogger logger, Func<Task<T>> func, string message = null)
+    public static async Task<T> TryExecuteAsync<T>(INeo4jLogger neo4JLogger, Func<Task<T>> func, string message = null)
     {
         try
         {
@@ -41,7 +41,7 @@ internal static class DriverLoggerUtil
         }
         catch (Exception ex)
         {
-            logger.Error(ex, message);
+            neo4JLogger.Error(ex, message);
             throw;
         }
     }

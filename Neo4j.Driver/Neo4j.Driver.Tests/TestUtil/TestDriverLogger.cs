@@ -18,18 +18,18 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.Tests.TestUtil;
 
-public class TestLogger : ILogger
+public class TestNeo4JLogger : INeo4jLogger
 {
     private readonly ExtendedLogLevel _level;
     private readonly Action<string> _logMethod;
 
-    public TestLogger(ITestOutputHelper output, ExtendedLogLevel level = ExtendedLogLevel.Info)
+    public TestNeo4JLogger(ITestOutputHelper output, ExtendedLogLevel level = ExtendedLogLevel.Info)
     {
         _level = level;
         _logMethod = output.WriteLine;
     }
 
-    public TestLogger(Action<string> logMethod, ExtendedLogLevel level = ExtendedLogLevel.Info)
+    public TestNeo4JLogger(Action<string> logMethod, ExtendedLogLevel level = ExtendedLogLevel.Info)
     {
         _level = level;
         _logMethod = logMethod;
@@ -88,7 +88,7 @@ public class TestLogger : ILogger
         _logMethod(formattableString);
     }
 
-    public static ILogger Create(ITestOutputHelper output)
+    public static INeo4jLogger Create(ITestOutputHelper output)
     {
         var logLevel = ExtendedLogLevel.Error;
         var logLevelStr = Environment.GetEnvironmentVariable("NEOLOGLEVEL");
@@ -97,7 +97,7 @@ public class TestLogger : ILogger
             logLevel = Enum.Parse<ExtendedLogLevel>(logLevelStr, true);
         }
 
-        return new TestLogger(output, logLevel);
+        return new TestNeo4JLogger(output, logLevel);
     }
 }
 

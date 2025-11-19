@@ -71,12 +71,12 @@ public sealed class ConfigBuilder
         return this;
     }
 
-    /// <summary>Sets the <see cref="Config"/> to use a given <see cref="ILogger"/> instance.</summary>
-    /// <param name="logger">The <see cref="ILogger"/> instance to use, if <c>null</c> no logging will occur.</param>
+    /// <summary>Sets the <see cref="Config"/> to use a given <see cref="INeo4jLogger"/> instance.</summary>
+    /// <param name="neo4JLogger">The <see cref="INeo4jLogger"/> instance to use, if <c>null</c> no logging will occur.</param>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
-    public ConfigBuilder WithLogger(ILogger logger)
+    public ConfigBuilder WithLogger(INeo4jLogger neo4JLogger)
     {
-        _config.Logger = logger ?? NullLogger.Instance;
+        _config.Neo4JLogger = neo4JLogger ?? NullNeo4JLogger.Instance;
         return this;
     }
 

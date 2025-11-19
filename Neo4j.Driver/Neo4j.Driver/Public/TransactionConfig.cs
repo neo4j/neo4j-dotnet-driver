@@ -113,13 +113,13 @@ public sealed class TransactionConfig
 public sealed class TransactionConfigBuilder
 {
     private readonly TransactionConfig _config;
-    private readonly ILogger _logger;
+    private readonly INeo4jLogger _neo4JLogger;
 
     internal TransactionConfigBuilder(
-        ILogger logger,
+        INeo4jLogger neo4JLogger,
         TransactionConfig config)
     {
-        _logger = logger;
+        _neo4JLogger = neo4JLogger;
         _config = config;
     }
 
@@ -163,7 +163,7 @@ public sealed class TransactionConfigBuilder
         {
             var timeSpan = TimeSpan.FromMilliseconds(Math.Ceiling(timeout.Value.TotalMilliseconds));
             _config.Timeout = timeSpan;
-            _logger.Info(
+            _neo4JLogger.Info(
                 $"Transaction timeout {timeout} contains sub-millisecond precision and will be rounded up to {timeSpan}.");
         }
 

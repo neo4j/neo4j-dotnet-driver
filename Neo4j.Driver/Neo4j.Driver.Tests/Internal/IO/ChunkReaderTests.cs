@@ -285,7 +285,7 @@ public class ChunkReaderTests
             new StaticAuthTokenManager(AuthTokens.None),
             new Config());
 
-        var writer = new ChunkWriter(stream, cs, new Mock<ILogger>().Object);
+        var writer = new ChunkWriter(stream, cs, new Mock<INeo4jLogger>().Object);
 
         writer.OpenChunk();
         writer.Write(buffer, 0, buffer.Length);
