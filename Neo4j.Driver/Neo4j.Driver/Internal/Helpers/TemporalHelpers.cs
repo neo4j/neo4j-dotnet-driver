@@ -268,80 +268,53 @@ internal static class TemporalHelpers
                 $"{target} expects Offset values to be in minutes precision. Use of this instance ({offset}) as an offset will cause a truncation of {offset.Ticks % TimeSpan.TicksPerMinute}ns.");
         }
     }
-    
+
     public static string ToIsoDurationString(long months, long days, long seconds, int nanoseconds)
     {
-        // Normalize sign so that the entire duration is either non\-negative or negative
-        var negative = months < 0 || days < 0 || seconds < 0 || nanoseconds < 0;
-
-        // Work with absolute values
-        months = Math.Abs(months);
-        days = Math.Abs(days);
-        seconds = Math.Abs(seconds);
-        nanoseconds = Math.Abs(nanoseconds);
-
-        // Normalize months -> years + remaining months
-        var years = months / MonthsPerYear;
-        months %= MonthsPerYear;
-
-        // Normalize nanoseconds -> seconds + remaining nanos
-        seconds += nanoseconds / NanosPerSecond;
+        // carry the excess up each level
+        seconds += nanoseconds / (int)NanosPerSecond;
         nanoseconds = (int)(nanoseconds % NanosPerSecond);
-
-        // Normalize seconds -> days + hours + minutes + seconds
-        days += seconds / SecondsPerDay;
-        seconds %= SecondsPerDay;
-
-        var hours = seconds / SecondsPerHour;
-        seconds %= SecondsPerHour;
-
         var minutes = seconds / SecondsPerMinute;
         seconds %= SecondsPerMinute;
-
-        // Build ISO 8601 string
-        var sb = new System.Text.StringBuilder();
-        if (negative)
+        var hours = minutes / MinutesPerHour;
+        minutes %= MinutesPerHour;
+        days += hours / HoursPerDay;
+        hours %= HoursPerDay;
+        var years = months / MonthsPerYear;
+        months %= MonthsPerYear;
+        
+        // do negative second/nanosecond handling
+        var negativeTime = hours < 0 || minutes < 0 || seconds < 0 || nanoseconds < 0;
+        var timeSign = negativeTime ? "-" : "";
+        if (seconds < 0 && nanoseconds > 0)
         {
-            sb.Append('-');
+            seconds += 1;
+            nanoseconds = (int)(NanosPerSecond - nanoseconds);
         }
+        hours = Math.Abs(hours);
+        minutes = Math.Abs(minutes);
+        seconds = Math.Abs(seconds);
+        nanoseconds = Math.Abs(nanoseconds);
+        
+        var dateComponent = years != 0 || months != 0 || days != 0
+            ? $"{IfNonZero('Y', years)}{Always('M', months)}{Always('D', days)}"
+            : "";
+        
+        string timeComponent = hours != 0 || minutes != 0 || seconds != 0 || nanoseconds != 0
+            ? $"T{timeSign}{IfNonZero('H', hours)}{IfNonZero('M', minutes)}{Seconds()}"
+            : "";
 
-        sb.Append('P');
-
-        if (years != 0) sb.Append(years).Append('Y');
-        if (months != 0) sb.Append(months).Append('M');
-        if (days != 0) sb.Append(days).Append('D');
-
-        if (hours != 0 || minutes != 0 || seconds != 0 || nanoseconds != 0)
+        // if both empty, return P0D
+        if (dateComponent == "" && timeComponent == "")
         {
-            sb.Append('T');
-
-            if (hours != 0) sb.Append(hours).Append('H');
-            if (minutes != 0) sb.Append(minutes).Append('M');
-
-            if (seconds != 0 || nanoseconds != 0)
-            {
-                if (nanoseconds == 0)
-                {
-                    sb.Append(seconds).Append('S');
-                }
-                else
-                {
-                    // fractional seconds, 9 digits of nanos
-                    sb.Append(seconds)
-                        .Append('.')
-                        .Append(nanoseconds.ToString("D9"))
-                        .Append('S');
-                }
-            }
-        }
-
-        // ISO 8601 requires at least "P0D" when everything is zero
-        if (sb.Length == (negative ? 2 : 1)) // only "-P" or "P"
-        {
-            sb.Append("0D");
-        }
-
-        return sb.ToString();
+            return "P0D";
+        }       
+        
+        return $"P{dateComponent}{timeComponent}";
+        
+        string Always(char identifier, long amount) => $"{amount}{identifier}";
+        string IfNonZero(char identifier, long amount) => amount != 0 ? Always(identifier, amount) : "";
+        string Seconds() => nanoseconds == 0 ? $"{seconds}S" : $"{seconds}.{nanoseconds:D9}S";
     }
 
     public static string ToIsoDateString(int year, int month, int day)
