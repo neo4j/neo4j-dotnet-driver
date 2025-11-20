@@ -17,7 +17,7 @@
     <PropertyGroup Condition="'$(Configuration)'=='DebugDelaySigned'">
         <DelaySign>true</DelaySign>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(Configuration)'=='ReleaseSigned'">
+    <PropertyGroup Condition="'$(Configuration)'=='Release'">
         <SignAssembly>true</SignAssembly>
         <DelaySign>false</DelaySign>
         <AssemblyOriginatorKeyFile>..\neo4j.snk</AssemblyOriginatorKeyFile>

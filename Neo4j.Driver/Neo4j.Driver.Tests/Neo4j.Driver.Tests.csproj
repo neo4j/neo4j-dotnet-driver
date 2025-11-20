@@ -2,7 +2,7 @@
     <Import Project="..\common.props"/>
     <PropertyGroup>
         <IsPackable>false</IsPackable>
-        <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
+        <Configurations>Debug;Release;DebugDelaySigned</Configurations>
         <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
         <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
         <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
@@ -14,6 +14,7 @@
         <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
         <LangVersion>default</LangVersion>
         <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+        <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
     <ItemGroup>
         <Content Include="App.config"/>

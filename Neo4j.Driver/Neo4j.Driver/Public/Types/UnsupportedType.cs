@@ -20,7 +20,8 @@ namespace Neo4j.Driver;
 
 /// <summary>
 /// Represents a type unknown to the driver, received from the server.
-/// This type is used for instance when a newer DBMS produces a result containing a type that the current version of the driver does not yet understand.
+/// This type is used for instance when a newer DBMS produces a result containing a type that the current version of the
+/// driver does not yet understand.
 ///
 /// Note that this type may only be received from the server, but cannot be sent to the server (e.g., as a query parameter).
 /// 
