@@ -5,7 +5,7 @@
         <IsPackable>false</IsPackable>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
         <GenerateProgramFile>false</GenerateProgramFile>
-        <Configurations>Debug;Release;DebugDelaySigned</Configurations>
+        <Configurations>Debug;Release;DebugDelaySigned;Testkit</Configurations>
         <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
         <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
         <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
@@ -17,6 +17,12 @@
         <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
         <RootNamespace>Neo4j.Driver.IntegrationTests</RootNamespace>
         <Platforms>AnyCPU</Platforms>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <Optimize Condition=" '$(Optimize)' == '' ">true</Optimize>
+      <SignAssembly>true</SignAssembly>
+      <DelaySign>false</DelaySign>
+      <AssemblyOriginatorKeyFile>..\neo4j.snk</AssemblyOriginatorKeyFile>
     </PropertyGroup>
     <ItemGroup>
         <Content Include="App.config"/>

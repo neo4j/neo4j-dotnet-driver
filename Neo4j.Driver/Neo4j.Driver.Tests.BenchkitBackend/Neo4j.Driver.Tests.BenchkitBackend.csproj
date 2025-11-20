@@ -6,10 +6,16 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <LangVersion>default</LangVersion>
+        <Configurations>Debug;Release;Testkit</Configurations>
+        <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
         <NoWarn>1701;1702;1591;CS1591</NoWarn>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Testkit' ">
+      <Optimize Condition=" '$(Optimize)' == '' ">true</Optimize>
     </PropertyGroup>
 
     <ItemGroup>

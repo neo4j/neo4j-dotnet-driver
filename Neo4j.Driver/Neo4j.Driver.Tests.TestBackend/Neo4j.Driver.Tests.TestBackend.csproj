@@ -6,9 +6,15 @@
         <TargetFramework>net8.0</TargetFramework>
         <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-        <Configurations>Debug;Release;DebugDelaySigned</Configurations>
+        <Configurations>Debug;Release;DebugDelaySigned;Testkit</Configurations>
         <LangVersion>default</LangVersion>
         <Platforms>AnyCPU</Platforms>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <Optimize Condition=" '$(Optimize)' == '' ">true</Optimize>
+      <SignAssembly>true</SignAssembly>
+      <DelaySign>false</DelaySign>
+      <AssemblyOriginatorKeyFile>..\neo4j.snk</AssemblyOriginatorKeyFile>
     </PropertyGroup>
 
     <ItemGroup>

@@ -2,7 +2,7 @@
     <Import Project="..\common.props"/>
     <PropertyGroup>
         <IsPackable>false</IsPackable>
-        <Configurations>Debug;Release;DebugDelaySigned</Configurations>
+        <Configurations>Debug;Release;DebugDelaySigned;Testkit</Configurations>
         <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
         <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
         <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
@@ -15,6 +15,9 @@
         <LangVersion>default</LangVersion>
         <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
         <Platforms>AnyCPU</Platforms>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'Testkit' ">
+      <Optimize Condition=" '$(Optimize)' == '' ">true</Optimize>
     </PropertyGroup>
     <ItemGroup>
         <Content Include="App.config"/>
