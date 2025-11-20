@@ -291,17 +291,18 @@ internal static class TemporalHelpers
             seconds += 1;
             nanoseconds = (int)(NanosPerSecond - nanoseconds);
         }
+        
         hours = Math.Abs(hours);
         minutes = Math.Abs(minutes);
         seconds = Math.Abs(seconds);
         nanoseconds = Math.Abs(nanoseconds);
         
         var dateComponent = years != 0 || months != 0 || days != 0
-            ? $"{IfNonZero('Y', years)}{Always('M', months)}{Always('D', days)}"
+            ? $"{IfNonZero(years, 'Y')}{IfNonZero(months, 'M')}{IfNonZero(days, 'D')}"
             : "";
         
         string timeComponent = hours != 0 || minutes != 0 || seconds != 0 || nanoseconds != 0
-            ? $"T{timeSign}{IfNonZero('H', hours)}{IfNonZero('M', minutes)}{Seconds()}"
+            ? $"T{timeSign}{IfNonZero(hours, 'H')}{IfNonZero(minutes, 'M')}{Seconds()}"
             : "";
 
         // if both empty, return P0D
@@ -311,10 +312,20 @@ internal static class TemporalHelpers
         }       
         
         return $"P{dateComponent}{timeComponent}";
-        
-        string Always(char identifier, long amount) => $"{amount}{identifier}";
-        string IfNonZero(char identifier, long amount) => amount != 0 ? Always(identifier, amount) : "";
-        string Seconds() => nanoseconds == 0 ? $"{seconds}S" : $"{seconds}.{nanoseconds:D9}S";
+
+        string IfNonZero(long amount, char identifier) => amount != 0 ? $"{amount}{identifier}" : "";
+       
+        string Seconds()
+        {
+            if (seconds == 0 && nanoseconds == 0)
+            {
+                return "";
+            }
+
+            var secstr = $"{seconds}";
+            var nanosecstr = nanoseconds > 0 ? $".{nanoseconds:D9}" : "";
+            return secstr + nanosecstr + "S";
+        }
     }
 
     public static string ToIsoDateString(int year, int month, int day)
