@@ -215,18 +215,12 @@ public sealed class Duration : TemporalValue, IEquatable<Duration>, IComparable,
     /// <returns>A 32-bit signed integer hash code.</returns>
     public override int GetHashCode()
     {
-        unchecked
-        {
-            var hashCode = Months.GetHashCode();
-            hashCode = (hashCode * 397) ^ Days.GetHashCode();
-            hashCode = (hashCode * 397) ^ Seconds.GetHashCode();
-            hashCode = (hashCode * 397) ^ Nanos;
-            return hashCode;
-        }
+        return HashCode.Combine(Months, Days, Seconds, Nanos);
     }
 
-    /// <summary>Converts the value of the current <see cref="Duration"/> object to its equivalent string representation.</summary>
-    /// <returns>String representation of this Point.</returns>
+    /// <summary>Converts the value of the current <see cref="Duration"/> object to its equivalent string representation
+    /// as an ISO 8601 duration string.</summary>
+    /// <returns>ISO 8601 duration string representation of this Duration.</returns>
     public override string ToString()
     {
         return TemporalHelpers.ToIsoDurationString(Months, Days, Seconds, Nanos);

@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections;
+using System.Globalization;
 using FluentAssertions;
 using Xunit;
 
@@ -67,18 +68,17 @@ public class DurationTests
     }
 
     [Theory]
-    [InlineData(15, 32, 785, 789215800, "P15M32DT785.789215800S")]
-    [InlineData(0, 32, 785, 789215800, "P0M32DT785.789215800S")]
-    [InlineData(0, 0, 785, 789215800, "P0M0DT785.789215800S")]
-    [InlineData(0, 0, 0, 789215800, "P0M0DT0.789215800S")]
-    [InlineData(0, 0, -1, 0, "P0M0DT-1S")]
-    [InlineData(0, 0, 0, 999999999, "P0M0DT0.999999999S")]
-    [InlineData(0, 0, -1, 5, "P0M0DT-0.999999995S")]
-    [InlineData(0, 0, -1, 999999999, "P0M0DT-0.000000001S")]
-    [InlineData(500, 0, 0, 0, "P500M0DT0S")]
-    [InlineData(0, 0, 0, 5, "P0M0DT0.000000005S")]
-    [InlineData(0, 0, -500, 1, "P0M0DT-499.999999999S")]
-    [InlineData(0, 0, -500, 0, "P0M0DT-500S")]
+    [InlineData(15, 32, 785, 789215800, "P1Y3M32DT13M5.789215800S")] // 15M -> 1Y3M, 785S -> 13M5S
+    [InlineData(0, 32, 785, 789215800, "P32DT13M5.789215800S")]    // 785S -> 13M5S
+    [InlineData(0, 0, 785, 789215800, "PT13M5.789215800S")]      // 785S -> 13M5S
+    [InlineData(0, 0, 0, 789215800, "PT0.789215800S")]
+    [InlineData(0, 0, -1, 0, "PT-1S")]
+    [InlineData(0, 0, 0, 999999999, "PT0.999999999S")]
+    [InlineData(0, 0, -1, 5, "PT-0.999999995S")]
+    [InlineData(0, 0, -1, 999999999, "PT-0.000000001S")]
+    [InlineData(0, 0, 0, 5, "PT0.000000005S")]
+    [InlineData(0, 0, -500, 1, "PT-8M19.999999999S")]          // -500S -> -8M20S, then +1NS
+    [InlineData(0, 0, -500, 0, "PT-8M20S")]                    // -500S -> -8M20S
     [InlineData(-10, 5, -2, 500, "P-10M5DT-1.999999500S")]
     [InlineData(-10, -5, -2, 500, "P-10M-5DT-1.999999500S")]
     public void ShouldGenerateCorrectString(int months, int days, int seconds, int nanoseconds, string expected)
@@ -233,11 +233,13 @@ public class DurationTests
     public void ShouldBeConvertableToString()
     {
         var duration = new Duration(12, 15, 59, 660000999);
-        var durationStr1 = Convert.ToString(duration);
+        var durationStr1 = Convert.ToString(duration, CultureInfo.InvariantCulture);
         var durationStr2 = Convert.ChangeType(duration, typeof(string));
 
-        durationStr1.Should().Be("P12M15DT59.660000999S");
-        durationStr2.Should().Be("P12M15DT59.660000999S");
+        const string expected = "P1Y15DT59.660000999S";
+
+        durationStr1.Should().Be(expected);
+        durationStr2.Should().Be(expected);
     }
 
     [Fact]

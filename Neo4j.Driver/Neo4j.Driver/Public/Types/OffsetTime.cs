@@ -170,8 +170,8 @@ public sealed class OffsetTime : TemporalValue,
             return 1;
         }
 
-        var thisNanoOfDay = this.ToNanoOfDay() - OffsetSeconds * TemporalHelpers.NanosPerSecond;
-        var otherNanoOfDay = other.ToNanoOfDay() - other.OffsetSeconds * TemporalHelpers.NanosPerSecond;
+        var thisNanoOfDay = this.ToNanoOfDay() - (long)OffsetSeconds * TemporalHelpers.NanosPerSecond;
+        var otherNanoOfDay = other.ToNanoOfDay() - (long)other.OffsetSeconds * TemporalHelpers.NanosPerSecond;
 
         if (thisNanoOfDay < 0)
         {

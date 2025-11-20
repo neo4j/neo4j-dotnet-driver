@@ -42,12 +42,13 @@ internal static class TemporalHelpers
     public const long NanosPerSecond = 1_000_000_000;
     public const long NanosPerDay = NanosPerHour * HoursPerDay;
 
+    private const int MonthsPerYear = 12;
     private const int HoursPerDay = 24;
     private const int MinutesPerHour = 60;
     private const int SecondsPerMinute = 60;
     private const int SecondsPerHour = SecondsPerMinute * MinutesPerHour;
     private const int SecondsPerDay = SecondsPerHour * HoursPerDay;
-    private const long NanosPerMinute = NanosPerSecond * SecondsPerMinute;
+    private const long NanosPerMinute = (long)NanosPerSecond * SecondsPerMinute;
     private const long NanosPerHour = NanosPerMinute * MinutesPerHour;
 
     private const long Days0000To1970 = DaysPerCycle * 5L - (30L * 365L + 7L);
@@ -270,29 +271,61 @@ internal static class TemporalHelpers
 
     public static string ToIsoDurationString(long months, long days, long seconds, int nanoseconds)
     {
-        var timePart = string.Empty;
-
+        // carry the excess up each level
+        seconds += nanoseconds / NanosPerSecond;
+        nanoseconds %= (int)NanosPerSecond;
+        var minutes = seconds / SecondsPerMinute;
+        seconds %= SecondsPerMinute;
+        var hours = minutes / MinutesPerHour;
+        minutes %= MinutesPerHour;
+        days += hours / HoursPerDay;
+        hours %= HoursPerDay;
+        var years = months / MonthsPerYear;
+        months %= MonthsPerYear;
+        
+        // do negative second/nanosecond handling
+        var negativeTime = hours < 0 || minutes < 0 || seconds < 0 || nanoseconds < 0;
+        var timeSign = negativeTime ? "-" : "";
         if (seconds < 0 && nanoseconds > 0)
         {
-            seconds = seconds + 1;
+            seconds++;
             nanoseconds = (int)NanosPerSecond - nanoseconds;
+        }
+        
+        hours = Math.Abs(hours);
+        minutes = Math.Abs(minutes);
+        seconds = Math.Abs(seconds);
+        nanoseconds = Math.Abs(nanoseconds);
+        
+        var dateComponent = years != 0 || months != 0 || days != 0
+            ? $"{IfNonZero(years, 'Y')}{IfNonZero(months, 'M')}{IfNonZero(days, 'D')}"
+            : "";
+        
+        string timeComponent = hours != 0 || minutes != 0 || seconds != 0 || nanoseconds != 0
+            ? $"T{timeSign}{IfNonZero(hours, 'H')}{IfNonZero(minutes, 'M')}{Seconds()}"
+            : "";
 
-            if (seconds == 0)
+        // if both empty, return P0D
+        if (dateComponent == "" && timeComponent == "")
+        {
+            return "P0D";
+        }       
+        
+        return $"P{dateComponent}{timeComponent}";
+
+        string IfNonZero(long amount, char identifier) => amount != 0 ? $"{amount}{identifier}" : "";
+       
+        string Seconds()
+        {
+            if (seconds == 0 && nanoseconds == 0)
             {
-                timePart = "-";
+                return "";
             }
-        }
 
-        if (nanoseconds == 0)
-        {
-            timePart = $"{timePart}{seconds}";
+            var secstr = $"{seconds}";
+            var nanosecstr = nanoseconds > 0 ? $".{nanoseconds:D9}" : "";
+            return secstr + nanosecstr + "S";
         }
-        else
-        {
-            timePart = $"{timePart}{seconds}.{nanoseconds:D9}";
-        }
-
-        return $"P{months}M{days}DT{timePart}S";
     }
 
     public static string ToIsoDateString(int year, int month, int day)
