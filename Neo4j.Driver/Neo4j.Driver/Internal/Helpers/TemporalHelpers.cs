@@ -39,7 +39,7 @@ internal static class TemporalHelpers
     public const int MaxOffset = 64_800;
 
     public const long NanosPerMillisecond = 1_000_000;
-    public const int NanosPerSecond = 1_000_000_000;
+    public const long NanosPerSecond = 1_000_000_000;
     public const long NanosPerDay = NanosPerHour * HoursPerDay;
 
     private const int MonthsPerYear = 12;
@@ -273,7 +273,7 @@ internal static class TemporalHelpers
     {
         // carry the excess up each level
         seconds += nanoseconds / NanosPerSecond;
-        nanoseconds = nanoseconds % NanosPerSecond;
+        nanoseconds %= (int)NanosPerSecond;
         var minutes = seconds / SecondsPerMinute;
         seconds %= SecondsPerMinute;
         var hours = minutes / MinutesPerHour;
@@ -289,7 +289,7 @@ internal static class TemporalHelpers
         if (seconds < 0 && nanoseconds > 0)
         {
             seconds++;
-            nanoseconds = NanosPerSecond - nanoseconds;
+            nanoseconds = (int)NanosPerSecond - nanoseconds;
         }
         
         hours = Math.Abs(hours);
