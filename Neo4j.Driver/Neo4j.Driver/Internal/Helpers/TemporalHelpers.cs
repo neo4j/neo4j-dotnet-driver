@@ -39,7 +39,7 @@ internal static class TemporalHelpers
     public const int MaxOffset = 64_800;
 
     public const long NanosPerMillisecond = 1_000_000;
-    public const long NanosPerSecond = 1_000_000_000;
+    public const int NanosPerSecond = 1_000_000_000;
     public const long NanosPerDay = NanosPerHour * HoursPerDay;
 
     private const int MonthsPerYear = 12;
@@ -48,7 +48,7 @@ internal static class TemporalHelpers
     private const int SecondsPerMinute = 60;
     private const int SecondsPerHour = SecondsPerMinute * MinutesPerHour;
     private const int SecondsPerDay = SecondsPerHour * HoursPerDay;
-    private const long NanosPerMinute = NanosPerSecond * SecondsPerMinute;
+    private const long NanosPerMinute = (long)NanosPerSecond * SecondsPerMinute;
     private const long NanosPerHour = NanosPerMinute * MinutesPerHour;
 
     private const long Days0000To1970 = DaysPerCycle * 5L - (30L * 365L + 7L);
@@ -272,8 +272,8 @@ internal static class TemporalHelpers
     public static string ToIsoDurationString(long months, long days, long seconds, int nanoseconds)
     {
         // carry the excess up each level
-        seconds += nanoseconds / (int)NanosPerSecond;
-        nanoseconds = (int)(nanoseconds % NanosPerSecond);
+        seconds += nanoseconds / NanosPerSecond;
+        nanoseconds = nanoseconds % NanosPerSecond;
         var minutes = seconds / SecondsPerMinute;
         seconds %= SecondsPerMinute;
         var hours = minutes / MinutesPerHour;
@@ -288,8 +288,8 @@ internal static class TemporalHelpers
         var timeSign = negativeTime ? "-" : "";
         if (seconds < 0 && nanoseconds > 0)
         {
-            seconds += 1;
-            nanoseconds = (int)(NanosPerSecond - nanoseconds);
+            seconds++;
+            nanoseconds = NanosPerSecond - nanoseconds;
         }
         
         hours = Math.Abs(hours);
