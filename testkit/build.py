@@ -6,6 +6,7 @@ import os, subprocess
 
 
 def run(args):
+    print(f"Running: {' '.join(args)}")
     subprocess.run(
         args, universal_newlines=True, stderr=subprocess.STDOUT, check=True)
 
