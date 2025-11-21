@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <Import Project="..\common.props"/>
     <PropertyGroup>
-        <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+        <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
         <PackageId>Neo4j.Driver.Simple$(PackageIdSuffix)</PackageId>
         <Authors>Neo4j</Authors>
         <Description>Synchronous extensions for the official .NET driver.</Description>
