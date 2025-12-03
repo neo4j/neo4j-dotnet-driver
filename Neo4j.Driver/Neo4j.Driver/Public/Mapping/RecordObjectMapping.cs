@@ -269,7 +269,7 @@ public class RecordObjectMapping : IRecordObjectMapping
 
     public MethodInfo GetMapMethodForType(Type type)
     {
-        return _mapMethods.AddOrUpdate(type, GetMapMethod, (_, m) => m);
+        return _mapMethods.GetOrAdd(type, GetMapMethod);
 
         MethodInfo GetMapMethod(Type t)
         {
