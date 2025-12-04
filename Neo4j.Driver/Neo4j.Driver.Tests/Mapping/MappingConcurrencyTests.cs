@@ -13,9 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Mapping;
 using Xunit;
 using Xunit.Abstractions;
@@ -65,5 +70,66 @@ public class MappingConcurrencyTests(ITestOutputHelper testOutputHelper)
         await Task.WhenAll(threads.Select(t => t.Start()));
 
         testOutputHelper.WriteLine("All threads finished.");
+    }
+
+    [Fact]
+    public async Task MapMethods_ShouldBeThreadSafe()
+    {
+        var testObjects = CreateMultiTypedArray(100);
+
+        const int numberOfThreads = 4;
+        var tasks = new List<Task>(numberOfThreads);
+        var resetEvent = new ManualResetEventSlim(false);
+
+        for (var i = 0; i < numberOfThreads; i++)
+        {
+            tasks.Add(
+                Task.Run(() =>
+                {
+                    resetEvent.Wait(); // Wait for the signal to start
+                    for (var j = 0; j < 100; j++)
+                    {
+                        foreach (var obj in testObjects)
+                        {
+                            obj.AsType(obj.GetType());
+                        }
+
+                        MappingExtensions.ResetAsMethods();
+                    }
+                }));
+        }
+
+        resetEvent.Set(); // Signal all tasks to start
+        await Task.WhenAll(tasks);
+    }
+
+    private static object[] CreateMultiTypedArray(int numValues)
+    {
+        return Enumerable.Range(0, numValues)
+            .Select(_ => GetUniquelyTypedValue())
+            .ToArray();
+    }
+
+    private static object GetUniquelyTypedValue()
+    {
+        var typeName = $"Type_{Guid.NewGuid()}";
+
+        var asmName = new AssemblyName($"Asm_{Guid.NewGuid()}");
+        var asmBuilder = AssemblyBuilder.DefineDynamicAssembly(
+            asmName,
+            AssemblyBuilderAccess.Run);
+
+        var moduleBuilder = asmBuilder.DefineDynamicModule($"Module{Guid.NewGuid()}");
+
+        // Create a completely empty public class
+        var typeBuilder = moduleBuilder.DefineType(
+            typeName,
+            TypeAttributes.Public | TypeAttributes.Class);
+
+        Type emittedType = typeBuilder.CreateTypeInfo();
+
+        // Instantiate it
+        var instance = Activator.CreateInstance(emittedType);
+        return instance;
     }
 }
