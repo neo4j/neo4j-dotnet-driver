@@ -6,11 +6,12 @@ import os, subprocess
 
 
 def run(args):
+    print(f"Running: {' '.join(args)}")
     subprocess.run(
         args, universal_newlines=True, stderr=subprocess.STDOUT, check=True)
 
 if __name__ == "__main__":
     run(["dotnet", "restore", "--disable-parallel", "-v", "n", "Neo4j.Driver/Neo4j.Driver.sln"])
     run(["dotnet", "clean", "./Neo4j.Driver/Neo4j.Driver.sln"])
-    run(["dotnet", "build", "./Neo4j.Driver/Neo4j.Driver.sln"])
-    run(["dotnet", "publish", "./Neo4j.Driver/Neo4j.Driver.Tests.TestBackend/Neo4j.Driver.Tests.TestBackend.csproj", "--self-contained", "false", "--output", "./bin/Publish"])
+    run(["dotnet", "build", "./Neo4j.Driver/Neo4j.Driver.sln", "--configuration", "testkit"])
+    run(["dotnet", "publish", "./Neo4j.Driver/Neo4j.Driver.Tests.TestBackend/Neo4j.Driver.Tests.TestBackend.csproj", "--self-contained", "false", "--output", "./bin/Publish", "--configuration", "testkit"])

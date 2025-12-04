@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 RUN apt update \
 	&& ln -fs /usr/share/zoneinfo/Europe/London /etc/localtime \
@@ -13,6 +13,7 @@ RUN apt update \
 # install .NET runtime 8.0.0
 RUN wget https://dot.net/v1/dotnet-install.sh
 RUN bash dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet
+RUN bash dotnet-install.sh --channel 9.0 --install-dir /usr/share/dotnet
 
 ENV PYTHON=python3
 ENV DOTNET_DRIVER_USING_LOCAL_SERVER=true
