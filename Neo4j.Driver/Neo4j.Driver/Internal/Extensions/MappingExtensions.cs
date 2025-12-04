@@ -14,7 +14,7 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Reflection;
 using Neo4j.Driver.Mapping;
 
@@ -25,15 +25,16 @@ internal static class MappingExtensions
     private static readonly MethodInfo AsGenericMethod =
         typeof(ValueExtensions).GetMethod(nameof(ValueExtensions.As), [typeof(object)]);
 
-    private static readonly Dictionary<Type, MethodInfo> AsMethods = new();
+    private static readonly ConcurrentDictionary<Type, MethodInfo> AsMethods = new();
+    
+    internal static void ResetAsMethods()
+    {
+        AsMethods.Clear();
+    }
 
     public static object AsType(this object obj, Type type)
     {
-        if (!AsMethods.TryGetValue(type, out var asMethod))
-        {
-            asMethod = AsGenericMethod.MakeGenericMethod(type);
-            AsMethods[type] = asMethod;
-        }
+        var asMethod = AsMethods.GetOrAdd(type, t => AsGenericMethod.MakeGenericMethod(t));
 
         try
         {
