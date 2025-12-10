@@ -16,6 +16,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using Neo4j.Driver.Internal;
@@ -32,15 +33,20 @@ namespace Neo4j.Driver;
 /// </remarks>
 public abstract class Vector : IValue, IVector, IEquatable<IVector>
 {
-    public static readonly HashSet<Type> SupportedTypes =
-    [
-        typeof(float), // f32
-        typeof(double), // f64
-        typeof(sbyte), // i8
-        typeof(short), // i16
-        typeof(int), // i32
-        typeof(long) // i64
-    ];
+    /// <summary>
+    /// The set of supported types for vector elements. No other types are allowed.
+    /// </summary>
+    public static IEnumerable<Type> SupportedTypes => TypeNameMap.Keys;
+
+    private static readonly Dictionary<Type, string> TypeNameMap = new()
+    {
+        [typeof(sbyte)] = "INTEGER8",
+        [typeof(short)] = "INTEGER16",
+        [typeof(int)] = "INTEGER32",
+        [typeof(long)] = "INTEGER",
+        [typeof(float)] = "FLOAT32",
+        [typeof(double)] = "FLOAT",
+    };
 
     /// <summary>
     /// Determines whether the specified type is supported for use as a vector element.
@@ -51,18 +57,18 @@ public abstract class Vector : IValue, IVector, IEquatable<IVector>
     /// </returns>
     public static bool IsSupported(Type type)
     {
-        return SupportedTypes.Contains(type);
+        return TypeNameMap.ContainsKey(type);
     }
 
     /// <summary>
     /// Gets the elements of the vector as an array of objects, regardless of their underlying type.
     /// </summary>
-    public abstract IEnumerable<object> UntypedValues { get; }
+    public IEnumerable<object> UntypedValues { get; protected set; }
 
     /// <summary>
     /// Gets the original byte stream from which the vector was deserialized, if applicable.
     /// </summary>
-    public abstract byte[] OriginalByteStream { get; }
+    public byte[] OriginalByteStream { get; protected set; }
 
     /// <summary>
     /// Creates a new <see cref="Vector{T}"/> instance from the specified collection of values.
@@ -107,73 +113,50 @@ public abstract class Vector : IValue, IVector, IEquatable<IVector>
     /// </summary>
     public abstract Type ElementType { get; }
 
+    /// <summary>
+    /// Gets the number of elements in the vector.
+    /// </summary>
+    public abstract int Count { get; }
+
     /// <inheritdoc />
     public bool Equals(IVector other)
     {
         return other != null && UntypedValues.SequenceEqual(other.UntypedValues);
     }
-}
 
-/// <summary>
-/// Represents a mathematical vector with elements of a specific supported numeric type.
-/// </summary>
-/// <typeparam name="T">
-/// The type of the vector elements. Must be one of the supported numeric types: <see cref="float"/>,
-/// <see cref="double"/>, <see cref="sbyte"/>, <see cref="short"/>, <see cref="int"/>, or <see cref="long"/>.
-/// </typeparam>
-public class Vector<T> : Vector, IVector<T> where T : struct
-{
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Vector{T}"/> class.
-    /// </summary>
-    /// <exception cref="NotSupportedException">
-    /// Thrown if <typeparamref name="T"/> is not a supported numeric type.
-    /// </exception>
-    public Vector()
+    /// <inheritdoc />
+    public override string ToString()
     {
-        if (!IsSupported(typeof(T)))
+        var elementType = GetTypeString(ElementType);
+        var elements = string.Join(", ", UntypedValues.Select(FormatElement));
+        return $"vector([{elements}], {Count}, {elementType} NOT NULL)";
+    }
+
+    private static string GetTypeString(Type type)
+    {
+        return IsSupported(type)
+            ? TypeNameMap[type]
+            : throw new NotSupportedException($"Type {type.Name} is not supported");
+    }
+
+    private static string FormatElement(object element)
+    {
+        return element switch
         {
-            throw new NotSupportedException($"Type {typeof(T).Name} is not supported for Vector.");
-        }
+            double d => FormatDouble(d),
+            float f => FormatDouble(f),
+            _ => element?.ToString() ?? "null"
+        };
     }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Vector{T}"/> class with the specified values.
-    /// </summary>
-    /// <param name="values">The array of values to initialize the vector with. Must not be null or empty.</param>
-    /// <param name="originalByteStream">The original byte stream from which the vector was deserialized, if applicable.</param>
-    /// <exception cref="ArgumentException">Thrown if <paramref name="values"/> is null or empty.</exception>
-    /// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> is not a supported numeric type.</exception>
-    public Vector(T[] values, byte[] originalByteStream = null) : this()
+    private static string FormatDouble(double value)
     {
-        Values = values ?? throw new ArgumentException("Values cannot be null.", nameof(values));
-        OriginalByteStream = originalByteStream;
-        UntypedValues = Values.Select(x => (object)x);
+        return value switch
+        {
+            double.NaN => "NaN",
+            double.PositiveInfinity => "Infinity",
+            double.NegativeInfinity => "-Infinity",
+            _ => value.ToString(CultureInfo.InvariantCulture)
+        };
     }
-
-    /// <summary>
-    /// Gets the array of values contained in the vector.
-    /// </summary>
-    public IReadOnlyList<T> Values { get; }
-
-    /// <inheritdoc cref="Values"/>
-    public override IEnumerable<object> UntypedValues { get; }
-
-    /// <inheritdoc />
-    public override byte[] OriginalByteStream { get; }
-
-    /// <inheritdoc />
-    public override Type ElementType => typeof(T);
-
-    /// <inheritdoc />
-    public IEnumerator<T> GetEnumerator() => Values.GetEnumerator();
-
-    /// <inheritdoc />
-    public int Count => Values.Count;
-
-    /// <inheritdoc />
-    public T this[int index] => Values[index];
-
-    /// <inheritdoc />
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
