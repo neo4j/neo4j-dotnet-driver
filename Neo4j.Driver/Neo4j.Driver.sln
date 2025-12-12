@@ -21,7 +21,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Reactive", "Neo4j.Driver.Reactive\Neo4j.Driver.Reactive.csproj", "{FC537A38-3DD9-4C6D-8127-003F59E405AC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Simple", "Neo4j.Driver.Simple\Neo4j.Driver.Simple.csproj", "{E8F84B5A-79EE-4B9F-B423-BF363F6CB923}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Tests.SimpleDriver", "Neo4j.Driver.Tests.SimpleDriver\Neo4j.Driver.Tests.SimpleDriver.csproj", "{E8F84B5A-79EE-4B9F-B423-BF363F6CB923}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Tests.TestBackend", "Neo4j.Driver.Tests.TestBackend\Neo4j.Driver.Tests.TestBackend.csproj", "{D68071A7-6012-43BD-9C65-146D1D22B931}"
 EndProject
