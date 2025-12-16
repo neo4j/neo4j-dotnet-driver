@@ -15,7 +15,7 @@
         <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
         <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
         <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
-        <Configurations>Debug;Release;DebugDelaySigned;Testkit</Configurations>
+        <Configurations>Debug;Release;CI</Configurations>
         <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Neo4j.Driver.Simple.xml</DocumentationFile>
         <RootNamespace>Neo4j.Driver</RootNamespace>
         <Version>6.0.0</Version>

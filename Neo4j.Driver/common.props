@@ -10,13 +10,6 @@
         <XunitVersion>2.4.1</XunitVersion>
         <MSTestVersion>16.1.1</MSTestVersion>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(Configuration)'=='DebugDelaySigned' OR '$(Configuration)'=='ReleaseSigned'">
-        <PackageIdSuffix>.Signed</PackageIdSuffix>
-        <DefineConstants>$(DefineConstants);STRONGNAMED</DefineConstants>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Configuration)'=='DebugDelaySigned'">
-        <DelaySign>true</DelaySign>
-    </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)'=='Release'">
         <SignAssembly>true</SignAssembly>
         <DelaySign>false</DelaySign>

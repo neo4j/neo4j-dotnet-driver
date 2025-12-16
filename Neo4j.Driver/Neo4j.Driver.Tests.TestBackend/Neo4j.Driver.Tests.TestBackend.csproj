@@ -6,7 +6,7 @@
         <TargetFramework>net8.0</TargetFramework>
         <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-        <Configurations>Debug;Release;DebugDelaySigned;Testkit</Configurations>
+        <Configurations>Debug;Release;CI</Configurations>
         <LangVersion>default</LangVersion>
         <Platforms>AnyCPU</Platforms>
     </PropertyGroup>

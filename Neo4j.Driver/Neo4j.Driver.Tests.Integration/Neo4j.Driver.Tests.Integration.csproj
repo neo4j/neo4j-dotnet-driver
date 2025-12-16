@@ -5,7 +5,7 @@
         <IsPackable>false</IsPackable>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
         <GenerateProgramFile>false</GenerateProgramFile>
-        <Configurations>Debug;Release;DebugDelaySigned;Testkit</Configurations>
+        <Configurations>Debug;Release;CI</Configurations>
         <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
         <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
         <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
