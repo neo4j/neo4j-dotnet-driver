@@ -19,7 +19,7 @@
         <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
         <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
         <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
-        <Configurations>Debug;Release;DebugDelaySigned;Testkit</Configurations>
+        <Configurations>Debug;Release;CI</Configurations>
         <LangVersion>latest</LangVersion>
         <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Neo4j.Driver.xml</DocumentationFile>
         <Version>6.0.0</Version>
@@ -36,16 +36,13 @@
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='ReleaseSigned|net6.0|AnyCPU'">
         <WarningLevel>2</WarningLevel>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='DebugDelaySigned|net6.0|AnyCPU'">
-        <WarningLevel>2</WarningLevel>
-    </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
         <Optimize Condition=" '$(Optimize)' == '' ">true</Optimize>
         <SignAssembly>true</SignAssembly>
         <DelaySign>false</DelaySign>
         <AssemblyOriginatorKeyFile>..\neo4j.snk</AssemblyOriginatorKeyFile>
     </PropertyGroup>
-    <PropertyGroup Condition=" '$(Configuration)' == 'Testkit' ">
+    <PropertyGroup Condition=" '$(Configuration)' == 'CI' ">
         <Optimize Condition=" '$(Optimize)' == '' ">true</Optimize>
     </PropertyGroup>
     <ItemGroup>
@@ -57,8 +54,5 @@
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="System.IO.Pipelines" Version="8.0.0" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="6.0.0" />
     </ItemGroup>
 </Project>

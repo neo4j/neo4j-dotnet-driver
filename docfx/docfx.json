@@ -12,7 +12,8 @@
       ],
       "dest": "api",
       "msbuildProperties": {
-        "TargetFramework": "net9.0"
+        "TargetFramework": "net10.0",
+        "Configuration": "CI"
       },
       "filter": "filterConfig.yaml",
       "includePrivateMembers": false,
