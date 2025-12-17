@@ -27,19 +27,20 @@ public static class ResultCursorExtensions
 {
     /// <summary>Return the only record in the result stream.</summary>
     /// <param name="result">The result stream</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <returns>The only record in the result stream.</returns>
     /// <remarks>
     /// Throws <exception cref="InvalidOperationException"></exception> if the result contains more than one record or
     /// the result is empty.
     /// </remarks>
-    public static async Task<IRecord> SingleAsync(this IResultCursor result)
+    public static async Task<IRecord> SingleAsync(this IResultCursor result, CancellationToken cancellationToken = default)
     {
         if (result == null)
         {
             throw new ArgumentNullException(nameof(result));
         }
 
-        var enumerator = result.GetAsyncEnumerator();
+        var enumerator = result.GetAsyncEnumerator(cancellationToken);
         await using (enumerator.ConfigureAwait(false))
         {
             if (!await enumerator.MoveNextAsync().ConfigureAwait(false))
@@ -60,20 +61,24 @@ public static class ResultCursorExtensions
     /// <summary>Return the only record in the result stream.</summary>
     /// <param name="result">The result stream</param>
     /// <param name="operation">The operation to carry out on each record.</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <typeparam name="T">The type of the record after specified operation.</typeparam>
     /// <returns>The only record after specified operation in the result stream.</returns>
     /// <remarks>
     /// Throws <exception cref="InvalidOperationException"></exception> if the result contains more than one record or
     /// the result is empty.
     /// </remarks>
-    public static async Task<T> SingleAsync<T>(this IResultCursor result, Func<IRecord, T> operation)
+    public static async Task<T> SingleAsync<T>(
+        this IResultCursor result, 
+        Func<IRecord, T> operation,
+        CancellationToken cancellationToken = default)
     {
         if (result == null)
         {
             throw new ArgumentNullException(nameof(result));
         }
 
-        var enumerator = result.GetAsyncEnumerator();
+        var enumerator = result.GetAsyncEnumerator(cancellationToken);
         await using (enumerator.ConfigureAwait(false))
         {
             if (!await enumerator.MoveNextAsync().ConfigureAwait(false))
@@ -138,11 +143,13 @@ public static class ResultCursorExtensions
     /// Optional, the driver has no knowledge of the expected result size so use the default
     /// <see cref="List{T}"/> constructor: <see cref="List{T}()"/>. a capacity can be provided to cost of extending this list.
     /// </param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <returns>A list of collected operation result.</returns>
     public static async Task<List<T>> ToListAsync<T>(
         this IResultCursor result,
         Func<IRecord, T> operation,
-        int initialCapacity = 0)
+        int initialCapacity = 0,
+        CancellationToken cancellationToken = default)
     {
         if (result == null)
         {
@@ -150,7 +157,7 @@ public static class ResultCursorExtensions
         }
 
         var list = initialCapacity <= 0 ? new List<T>() : new List<T>(initialCapacity);
-        var enumerator = result.GetAsyncEnumerator();
+        var enumerator = result.GetAsyncEnumerator(cancellationToken);
         await using (enumerator.ConfigureAwait(false))
         {
             while (await enumerator.MoveNextAsync().ConfigureAwait(false))
@@ -166,17 +173,19 @@ public static class ResultCursorExtensions
     /// <summary>Read each record in the result stream and apply the operation on each record.</summary>
     /// <param name="result">The result stream.</param>
     /// <param name="operation">The operation is carried out on each record.</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <returns>The result summary after all records have been processed.</returns>
     public static async Task<IResultSummary> ForEachAsync(
         this IResultCursor result,
-        Action<IRecord> operation)
+        Action<IRecord> operation,
+        CancellationToken cancellationToken = default)
     {
         if (result == null)
         {
             throw new ArgumentNullException(nameof(result));
         }
 
-        var enumerator = result.GetAsyncEnumerator();
+        var enumerator = result.GetAsyncEnumerator(cancellationToken);
         await using (enumerator.ConfigureAwait(false))
         {
             while (await enumerator.MoveNextAsync().ConfigureAwait(false))
