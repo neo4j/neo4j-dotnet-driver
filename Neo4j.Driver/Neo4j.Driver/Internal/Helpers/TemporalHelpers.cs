@@ -233,7 +233,7 @@ internal static class TemporalHelpers
                 $"Year component ({date.Year}) of this instance is not valid for a {target} instance.");
         }
     }
-#if NET6_0_OR_GREATER
+
     public static void AssertValidDateOnly(IHasDateComponents date)
     {
         if (date.Year > DateOnly.MaxValue.Year || date.Year < DateOnly.MinValue.Year)
@@ -242,7 +242,6 @@ internal static class TemporalHelpers
                 $"Year component ({date.Year}) of this instance is not valid for a DateOnly instance.");
         }
     }
-#endif
     public static void AssertNoOverflow(TimeSpan offset, string target)
     {
         if (Math.Abs(offset.TotalHours) > 14)
@@ -400,7 +399,6 @@ internal static class TemporalHelpers
         return zonedDateTime.ToEpochSeconds() - zonedDateTime.OffsetSeconds;
     }
 
-#if NET6_0_OR_GREATER
     public static long ToNanoOfDay(this TimeOnly time)
     {
         return time.Hour * NanosPerHour +
@@ -413,5 +411,4 @@ internal static class TemporalHelpers
     {
         return ComputeEpochDays(date.Year, date.Month, date.Day);
     }
-#endif
 }

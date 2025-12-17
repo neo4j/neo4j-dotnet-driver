@@ -313,11 +313,7 @@ internal ref struct SpanPackStreamReader
     {
         var slice = _reader.Slice(Index, length);
         Index += length;
-#if NET6_0_OR_GREATER
         return Encoding.UTF8.GetString(slice);
-#else
-        return Encoding.UTF8.GetString(slice.ToArray());
-#endif
     }
 
     public int ReadMapHeader()

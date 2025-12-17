@@ -511,7 +511,6 @@ public sealed class ConfigBuilder
         return this;
     }
 
-#if NET5_0_OR_GREATER
     /// <summary>
     /// Enables TLS13 when establishing a connection. The default is
     /// <see cref="System.Security.Authentication.SslProtocols.Tls12"/>.
@@ -522,7 +521,6 @@ public sealed class ConfigBuilder
         _config.TlsVersion = SslProtocols.Tls13;
         return this;
     }
-#endif
 
     /// <summary>Sets a custom <see cref="ITlsNegotiator"/> to use when establishing a TLS connection. Note
     /// that this overrides the default TLS negotiator, which handles certificate-based trust, so if you

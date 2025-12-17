@@ -54,11 +54,9 @@ public class DefaultResolverTests
         var resolver = new DefaultHostResolver();
         var ipAddresses = resolver.Resolve("LocALhOsT");
 
-#if NET452
-            ipAddresses.Should().Contain(IPAddress.IPv6Loopback);
-            ipAddresses.Should().Contain(IPAddress.Loopback);
-            ipAddresses.Should().Contain(IPAddress.Parse("[::1]"));
-#endif
+        ipAddresses.Should().Contain(IPAddress.IPv6Loopback);
+        ipAddresses.Should().Contain(IPAddress.Loopback);
+        ipAddresses.Should().Contain(IPAddress.Parse("[::1]"));
         ipAddresses.Should().Contain(IPAddress.Parse("127.0.0.1"));
     }
 
@@ -68,11 +66,9 @@ public class DefaultResolverTests
         var resolver = new DefaultHostResolver();
         var ipAddresses = await resolver.ResolveAsync("LocALhOsT");
 
-#if NET452
-            ipAddresses.Should().Contain(IPAddress.IPv6Loopback);
-            ipAddresses.Should().Contain(IPAddress.Loopback);
-            ipAddresses.Should().Contain(IPAddress.Parse("[::1]"));
-#endif
+        ipAddresses.Should().Contain(IPAddress.IPv6Loopback);
+        ipAddresses.Should().Contain(IPAddress.Loopback);
+        ipAddresses.Should().Contain(IPAddress.Parse("[::1]"));
         ipAddresses.Should().Contain(IPAddress.Parse("127.0.0.1"));
     }
     

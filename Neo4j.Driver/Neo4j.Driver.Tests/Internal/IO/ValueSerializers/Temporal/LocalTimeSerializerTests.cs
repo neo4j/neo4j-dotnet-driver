@@ -82,7 +82,6 @@ public class LocalTimeSerializerTests : PackStreamSerializerTests
         value.Should().BeOfType<LocalTime>().Which.Nanosecond.Should().Be(128000987);
     }
 
-#if NET6_0_OR_GREATER
     [Fact]
     public void ShouldSerializeTimeOnly()
     {
@@ -100,5 +99,4 @@ public class LocalTimeSerializerTests : PackStreamSerializerTests
         reader.ReadStructSignature().Should().Be((byte)'t');
         reader.Read().Should().Be(45359128000000L);
     }
-#endif
 }

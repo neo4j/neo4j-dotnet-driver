@@ -39,7 +39,6 @@ public class LocalDateTests
         cypherDate.ToDateTime().Should().Be(date);
     }
 
-#if NET6_0_OR_GREATER
     [Fact]
     public void ShouldCreateDateWithDateOnly()
     {
@@ -48,7 +47,6 @@ public class LocalDateTests
 
         cypherDate.ToDateOnly().Should().Be(date);
     }
-#endif
 
     [Theory]
     [InlineData(-1000000000)]
@@ -97,7 +95,6 @@ public class LocalDateTests
         ex.Should().NotBeNull().And.BeOfType<ValueOverflowException>();
     }
 
-#if NET6_0_OR_GREATER
     [Theory]
     [InlineData(-9999)]
     [InlineData(-1)]
@@ -111,7 +108,6 @@ public class LocalDateTests
 
         ex.Should().NotBeNull().And.BeOfType<ValueOverflowException>();
     }
-#endif
 
     [Theory]
     [InlineData(1947, 12, 17, "1947-12-17")]

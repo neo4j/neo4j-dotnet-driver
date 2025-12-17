@@ -26,7 +26,6 @@ namespace Neo4j.Driver.Tests.Extensions;
 
 public class StreamExtensionTests
 {
-#if NET6_0_OR_GREATER
     [Fact]
     public async Task ShouldReadAndThrowOnTimeout()
     {
@@ -53,7 +52,6 @@ public class StreamExtensionTests
 
         streamMock.Verify(x => x.Close(), Times.Once);
     }
-#endif
 
     [Theory]
     [InlineData(300)]
