@@ -68,6 +68,9 @@ public interface IResultSummary
     /// problematic queries or other valuable information that can be presented in a client. Unlike failures or errors,
     /// notifications do not affect the execution of a query.
     /// </remarks>
+    [Obsolete(
+        "Notifications are being replaced by GQL Statuses. Please use GqlStatusObjects property instead. "+ 
+        "This property will be removed in a future release.")]
     IList<INotification> Notifications { get; }
 
     /// <summary>

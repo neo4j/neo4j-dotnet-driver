@@ -48,13 +48,10 @@ internal static class GqlErrors
         {
             message.GqlRawClassification = classification.ToString();
             message.GqlClassification = UnknownError;
-            foreach (var c in new[] { ClientError, DatabaseError, TransientError })
+            
+            if(classification is string and (ClientError or TransientError or DatabaseError))
             {
-                if (classification is string cl && cl == c)
-                {
-                    message.GqlClassification = c;
-                    break;
-                }
+                message.GqlClassification = classification.ToString();
             }
         }
         else
