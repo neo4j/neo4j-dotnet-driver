@@ -68,6 +68,8 @@ internal sealed class SummaryBuilder
         public bool HasProfile => Profile != null;
         public IPlan Plan { get; }
         public IProfiledPlan Profile { get; }
+        
+        [Obsolete("This API is deprecated and will be removed in a future release. Use GqlStatusObjects instead.")]
         public IList<INotification> Notifications { get; }
         public IList<IGqlStatusObject> GqlStatusObjects { get; }
         public TimeSpan ResultAvailableAfter { get; }

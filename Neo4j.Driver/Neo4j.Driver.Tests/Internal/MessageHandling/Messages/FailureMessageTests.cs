@@ -34,8 +34,12 @@ public class FailureMessageTests
     [Fact]
     public void ShouldIncludeValuesInToString()
     {
-        var message = new FailureMessage("e.g.Code", "e.g.Message");
-        message.ToString().Should().Be("FAILURE code=e.g.Code, message=e.g.Message");
+        var message = new FailureMessage("e.g.Code", "e.g.Message")
+        {
+            GqlStatus = "e.g.Gql Status"
+        };
+
+        message.ToString().Should().Be("FAILURE gqlStatus=e.g.Gql Status, message=e.g.Message");
     }
 
     [Fact]

@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
@@ -32,7 +33,8 @@ internal sealed class FailureMessage : IResponseMessage
         Message = message;
     }
 
-    /// <summary>Code is the Neo4j-specific error code, to be deprecated in favor of GqlStatus.</summary>
+    /// <summary>Code is the Neo4j-specific error code, now deprecated in favor of <see cref="GqlStatus"/>.</summary>
+    [Obsolete("This property is deprecated and will be removed in future versions. Use GqlStatus instead.")]
     public string Code { get; set; }
 
     /// <summary>The specific error message describing the failure.</summary>
@@ -71,6 +73,6 @@ internal sealed class FailureMessage : IResponseMessage
 
     public override string ToString()
     {
-        return $"FAILURE code={Code}, message={Message}";
+        return $"FAILURE gqlStatus={GqlStatus}, message={Message}";
     }
 }
