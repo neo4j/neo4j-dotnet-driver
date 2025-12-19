@@ -82,11 +82,7 @@ internal class ChainTrustManager : TrustManager
         out X509Chain chain)
     {
         var time = DateTime.Now;
-#if NET452
-            var newChain = new X509Chain(_useMachineCtx)
-#else
         var newChain = new X509Chain()
-#endif
         {
             ChainPolicy =
             {

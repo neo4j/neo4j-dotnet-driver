@@ -197,7 +197,6 @@ public class ConfigTests
             config.ClientCertificateProvider.Should().Be(provider.Object);
         }
 
-#if NET5_0_OR_GREATER
         [Fact]
         public void WithTlsVersionShouldModifyTheSingleValue()
         {
@@ -207,7 +206,6 @@ public class ConfigTests
             config.MaxIdleConnectionPoolSize.Should().Be(100);
             config.TlsVersion.Should().Be(SslProtocols.Tls13);
         }
-#endif
 
         [Fact]
         public void WithTlsNegotiator_ShouldSetTlsNegotiator()

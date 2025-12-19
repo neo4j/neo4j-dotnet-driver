@@ -49,14 +49,8 @@ internal static class StreamExtensions
 
         try
         {
-#if NET6_0_OR_GREATER
             // .netcore 3.0+ network streams support cancellation tokens.
             return await stream.ReadAsync(buffer.AsMemory(offset, count), source.Token).ConfigureAwait(false);
-#else
-            // .net standard implementation relies on closing stream
-            using var _ = source.Token.Register(stream.Close);
-            return await stream.ReadAsync(buffer, offset, count, source.Token).ConfigureAwait(false);
-#endif
         }
         catch (Exception ex)
         {
@@ -77,49 +71,12 @@ internal static class StreamExtensions
 
     private static Task<int> ReadWithoutTimeoutAsync(Stream stream, byte[] buffer, int offset, int count)
     {
-#if NET6_0_OR_GREATER
         // .netcore 3.0+ network streams support cancellation tokens.
         return stream.ReadAsync(buffer.AsMemory(offset, count)).AsTask();
-#else
-        // .net standard implementation relies on closing stream
-        return stream.ReadAsync(buffer, offset, count);
-#endif
     }
 
     private static bool IsCancellationException(Exception ex)
     {
-#if NET6_0_OR_GREATER
         return ex is OperationCanceledException;
-#else
-        return ex is OperationCanceledException or ObjectDisposedException or IOException;
-#endif
     }
-#if !NET6_0_OR_GREATER
-    public static void Write(this Stream stream, byte[] bytes)
-    {
-        stream.Write(bytes, 0, bytes.Length);
-    }
-
-    public static int Read(this Stream stream, byte[] bytes)
-    {
-        int hasRead;
-        var offset = 0;
-        var toRead = bytes.Length;
-
-        do
-        {
-            hasRead = stream.Read(bytes, offset, toRead);
-            offset += hasRead;
-            toRead -= hasRead;
-        } while (toRead > 0 && hasRead > 0);
-
-        if (hasRead <= 0)
-        {
-            throw new IOException(
-                $"Failed to read more from input stream. Expected {bytes.Length} bytes, received {offset}.");
-        }
-
-        return offset;
-    }
-#endif
 }

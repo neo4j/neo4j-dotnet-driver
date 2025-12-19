@@ -39,7 +39,6 @@ public class LocalTimeTests
         cypherTime.ToTimeSpan().Should().Be(time);
     }
 
-#if NET6_0_OR_GREATER
     [Fact]
     public void ShouldCreateTimeWithTimeOnly()
     {
@@ -48,7 +47,6 @@ public class LocalTimeTests
 
         cypherTime.ToTimeOnly().Should().Be(time);
     }
-#endif
 
     [Theory]
     [InlineData(-1)]
@@ -107,7 +105,6 @@ public class LocalTimeTests
         ex.Should().NotBeNull().And.BeOfType<ValueTruncationException>();
     }
 
-#if NET6_0_OR_GREATER
     [Theory]
     [InlineData(1)]
     [InlineData(20)]
@@ -122,7 +119,6 @@ public class LocalTimeTests
 
         ex.Should().NotBeNull().And.BeOfType<ValueTruncationException>();
     }
-#endif
 
     [Theory]
     [InlineData(13, 15, 59, 274000000, "13:15:59.274000000")]

@@ -62,7 +62,6 @@ public class LocalDateSerializerTests : PackStreamSerializerTests
         value.Should().BeOfType<LocalDate>().Which.Day.Should().Be(31);
     }
 
-#if NET6_0_OR_GREATER
     [Fact]
     public void ShouldSerializeDateOnly()
     {
@@ -79,7 +78,6 @@ public class LocalDateSerializerTests : PackStreamSerializerTests
         reader.ReadStructSignature().Should().Be((byte)'D');
         reader.Read().Should().Be(-7063L);
     }
-#endif
 
     [Fact]
     public void ShouldDeserializeSpanDate()
@@ -99,7 +97,6 @@ public class LocalDateSerializerTests : PackStreamSerializerTests
         value.Should().BeOfType<LocalDate>().Which.Day.Should().Be(31);
     }
 
-#if NET6_0_OR_GREATER
     [Fact]
     public void ShouldSerializeSpanDateOnly()
     {
@@ -115,5 +112,4 @@ public class LocalDateSerializerTests : PackStreamSerializerTests
         reader.NextByte().Should().Be((byte)'D');
         reader.Read().Should().Be(-7063L);
     }
-#endif
 }

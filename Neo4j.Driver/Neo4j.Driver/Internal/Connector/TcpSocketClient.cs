@@ -13,8 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if !NET6_0_OR_GREATER
-#endif
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -171,15 +169,8 @@ internal sealed class TcpSocketClient : ITcpSocketClient
     private async Task ConnectAsync(IPAddress address, int port, CancellationToken cancellationToken)
     {
         var ctr = cancellationToken.Register(_client.Close);
-#if NET6_0_OR_GREATER
         await using var _ = ctr.ConfigureAwait(false);
         await _client.ConnectAsync(new IPEndPoint(address, port), cancellationToken).ConfigureAwait(false);
-#else
-        using var _ = ctr;
-        await _client.ConnectAsync(new IPEndPoint(address, port))
-            .Timeout(DriverContext.Config.ConnectionTimeout, cancellationToken)
-            .ConfigureAwait(false);
-#endif
     }
 
     private Task TryCleanUpAsync(IPAddress address, int port)
