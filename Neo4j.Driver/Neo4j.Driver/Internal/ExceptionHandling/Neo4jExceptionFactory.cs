@@ -105,7 +105,8 @@ internal class Neo4jExceptionFactory
     public Neo4jException GetException(FailureMessage failureMessage)
     {
         var factoryInfo =
-            _exceptionFactories.FirstOrDefault(f => _simpleWildcardHelper.StringMatches(failureMessage.Code, f.Code));
+            _exceptionFactories.FirstOrDefault(
+                f => _simpleWildcardHelper.StringMatches(failureMessage.CodeInternal, f.Code));
 
         if (factoryInfo is null)
         {

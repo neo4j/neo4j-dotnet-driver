@@ -77,7 +77,7 @@ internal static class PackStreamBitConverter
 
     /// <summary>Converts a float (Float32) to bytes.</summary>
     /// <param name="value">The float (Float32) value to convert.</param>
-    /// <returns>The specified float (Float32) value as an array of bytes.</returns
+    /// <returns>The specified float (Float32) value as an array of bytes.</returns>
     public static byte[] GetBytes(float value)
     {
         var bytes = BitConverter.GetBytes(value);

@@ -17,7 +17,9 @@ using System;
 
 namespace Neo4j.Driver.Internal.Result;
 
+#pragma warning disable CS0618 // Type or member is obsolete
 internal sealed class Notification : INotification
+#pragma warning restore CS0618 // Type or member is obsolete
 {
     public Notification(
         string code,

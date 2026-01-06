@@ -62,6 +62,7 @@ public class UnsupportedType
         Message = message;
     }
 
+    /// <inheritdoc />
     public override string ToString()
     {
         return $"UnsupportedType({Name})";

@@ -375,7 +375,8 @@ public sealed class ConfigBuilder
         CertificateTrustRule certificateTrustRule,
         IReadOnlyList<string> trustedCaCertificateFileNames = null)
     {
-        var certs = trustedCaCertificateFileNames?.Select(x => new X509Certificate2(x)).ToList();
+        var loader = new InternalX509CertificateLoader();
+        var certs = trustedCaCertificateFileNames?.Select(x => loader.LoadCertificate(x)).ToList();
         return WithCertificateTrustRule(certificateTrustRule, certs);
     }
 

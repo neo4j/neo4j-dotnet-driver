@@ -24,6 +24,8 @@ internal sealed class DefaultTlsNegotiator : ITlsNegotiator
 {
     private readonly EncryptionManager _encryptionManager;
     private readonly INeo4jLogger _neo4JLogger;
+    private readonly IInternalX509CertificateLoader _internalX509CertificateLoader 
+        = new InternalX509CertificateLoader();
 
     public DefaultTlsNegotiator(INeo4jLogger neo4JLogger, EncryptionManager encryptionManager)
     {
@@ -45,9 +47,10 @@ internal sealed class DefaultTlsNegotiator : ITlsNegotiator
                     return false;
                 }
 
+                var certData = certificate!.Export(X509ContentType.Cert);
                 var trust = _encryptionManager.TrustManager.ValidateServerCertificate(
                     uri,
-                    new X509Certificate2(certificate.Export(X509ContentType.Cert)),
+                    _internalX509CertificateLoader.LoadCertificate(certData),
                     chain,
                     errors);
 

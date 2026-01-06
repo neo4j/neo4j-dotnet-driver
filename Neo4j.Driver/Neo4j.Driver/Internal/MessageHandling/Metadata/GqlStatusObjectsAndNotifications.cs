@@ -21,7 +21,7 @@ using Neo4j.Driver.Internal.Result;
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
 
 internal sealed record GqlStatusObjectsAndNotifications(
-    IList<INotification> Notifications,
+    IList<Notification> Notifications,
     IList<IGqlStatusObject> GqlStatusObjects,
     bool UseRawStatuses)
 {
@@ -62,7 +62,7 @@ internal sealed record GqlStatusObjectsAndNotifications(
         return status?.Length > 1 ? status.Substring(0, 2) : "";
     }
 
-    public IList<INotification> FinalizeNotifications(CursorMetadata cursorMetadata)
+    public IList<Notification> FinalizeNotifications(CursorMetadata cursorMetadata)
     {
         return Notifications;
     }

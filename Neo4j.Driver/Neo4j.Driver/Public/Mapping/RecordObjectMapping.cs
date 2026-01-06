@@ -267,6 +267,11 @@ public class RecordObjectMapping : IRecordObjectMapping
         provider.CreateMappers(Instance);
     }
 
+    /// <summary>
+    /// Gets the map method for the given type.
+    /// </summary>
+    /// <param name="type">The type to get the map method for.</param>
+    /// <returns>The map method.</returns>
     public MethodInfo GetMapMethodForType(Type type)
     {
         return _mapMethods.GetOrAdd(type, GetMapMethod);

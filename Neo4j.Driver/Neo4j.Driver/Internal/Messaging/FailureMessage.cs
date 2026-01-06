@@ -29,13 +29,17 @@ internal sealed class FailureMessage : IResponseMessage
 
     public FailureMessage(string code, string message)
     {
-        Code = code;
+        CodeInternal = code;
         Message = message;
     }
 
     /// <summary>Code is the Neo4j-specific error code, now deprecated in favor of <see cref="GqlStatus"/>.</summary>
     [Obsolete("This property is deprecated and will be removed in future versions. Use GqlStatus instead.")]
     public string Code { get; set; }
+    
+#pragma warning disable CS0618 // Type or member is obsolete
+    internal string CodeInternal { get => Code; set => Code = value; }
+#pragma warning restore CS0618 // Type or member is obsolete
 
     /// <summary>The specific error message describing the failure.</summary>
     public string Message { get; set; }

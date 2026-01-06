@@ -53,12 +53,23 @@ internal sealed class SummaryBuilder
             Counters = builder.Counters ?? new Counters();
             Profile = builder.Profile;
             Plan = Profile ?? builder.Plan;
-            Notifications = builder.StatusAndNotifications?.FinalizeNotifications(cursorMetadata);
             GqlStatusObjects = builder.StatusAndNotifications?.FinalizeStatusObjects(cursorMetadata);
             ResultAvailableAfter = TimeSpan.FromMilliseconds(builder.ResultAvailableAfter);
             ResultConsumedAfter = TimeSpan.FromMilliseconds(builder.ResultConsumedAfter);
             Server = builder.Server;
             Database = builder.Database ?? new DatabaseInfo();
+
+            var finalizedNotifications = builder.StatusAndNotifications?.FinalizeNotifications(cursorMetadata);
+            if (finalizedNotifications == null)
+            {
+                Notifications = null;
+            }
+            else
+            {
+#pragma warning disable CS0618 // Type or member is obsolete
+                Notifications = new List<INotification>(finalizedNotifications);
+#pragma warning restore CS0618 // Type or member is obsolete
+            }
         }
 
         public Query Query { get; }
@@ -77,6 +88,7 @@ internal sealed class SummaryBuilder
         public IServerInfo Server { get; }
         public IDatabaseInfo Database { get; }
 
+#pragma warning disable CS0618 // Type or member is obsolete
         public override string ToString()
         {
             return $"{GetType().Name}{{{nameof(Query)}={Query}, " +
@@ -91,4 +103,5 @@ internal sealed class SummaryBuilder
                 $"{nameof(Database)}={Database}}}";
         }
     }
+#pragma warning restore CS0618 // Type or member is obsolete
 }

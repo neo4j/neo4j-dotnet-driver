@@ -56,7 +56,7 @@ internal sealed class FailureMessageSerializer : ReadOnlySerializer, IPackStream
             {
                 case "neo4j_code":
                 case "code":
-                    response.Code = FixCodeForBolt5(majorVersion, value?.ToString() ?? string.Empty);
+                    response.CodeInternal = FixCodeForBolt5(majorVersion, value?.ToString() ?? string.Empty);
                     break;
 
                 case "message":

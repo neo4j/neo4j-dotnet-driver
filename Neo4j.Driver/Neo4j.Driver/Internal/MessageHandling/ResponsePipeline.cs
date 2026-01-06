@@ -81,7 +81,7 @@ internal sealed class ResponsePipeline : IResponsePipeline
 
     public void OnFailure(FailureMessage failureMessage)
     {
-        LogFailure(failureMessage.Code, failureMessage.Message);
+        LogFailure(failureMessage.CodeInternal, failureMessage.Message);
         var handler = Dequeue();
         _error = new ResponsePipelineError(ErrorExtensions.ParseServerException(failureMessage));
         handler.OnFailure(_error);
