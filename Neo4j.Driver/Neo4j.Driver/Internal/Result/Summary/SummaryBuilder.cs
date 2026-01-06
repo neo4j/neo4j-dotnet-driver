@@ -59,10 +59,17 @@ internal sealed class SummaryBuilder
             Server = builder.Server;
             Database = builder.Database ?? new DatabaseInfo();
 
+            var finalizedNotifications = builder.StatusAndNotifications?.FinalizeNotifications(cursorMetadata);
+            if (finalizedNotifications == null)
+            {
+                Notifications = null;
+            }
+            else
+            {
 #pragma warning disable CS0618 // Type or member is obsolete
-            Notifications = new List<INotification>(
-                builder.StatusAndNotifications?.FinalizeNotifications(cursorMetadata) ?? []);
+                Notifications = new List<INotification>(finalizedNotifications);
 #pragma warning restore CS0618 // Type or member is obsolete
+            }
         }
 
         public Query Query { get; }
