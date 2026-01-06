@@ -41,6 +41,7 @@
         <SignAssembly>true</SignAssembly>
         <DelaySign>false</DelaySign>
         <AssemblyOriginatorKeyFile>..\neo4j.snk</AssemblyOriginatorKeyFile>
+        <DefineConstants>TRACE, STRONGNAMED</DefineConstants>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)' == 'CI' ">
         <Optimize Condition=" '$(Optimize)' == '' ">true</Optimize>

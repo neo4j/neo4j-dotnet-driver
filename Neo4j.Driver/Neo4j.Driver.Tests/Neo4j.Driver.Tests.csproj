@@ -14,7 +14,7 @@
         <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
         <LangVersion>default</LangVersion>
         <Platforms>AnyCPU</Platforms>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFrameworks>net10.0;net8.0;net9.0</TargetFrameworks>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)' == 'CI' ">
       <Optimize Condition=" '$(Optimize)' == '' ">true</Optimize>

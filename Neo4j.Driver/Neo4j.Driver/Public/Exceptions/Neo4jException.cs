@@ -38,7 +38,7 @@ public class Neo4jException : Exception
     internal Neo4jException(FailureMessage failureMessage, Exception innerException = null)
         : base(failureMessage.Message, innerException)
     {
-        Code = failureMessage.Code;
+        Code = failureMessage.CodeInternal;
         GqlStatus = failureMessage.GqlStatus;
         GqlStatusDescription = failureMessage.GqlStatusDescription;
         GqlClassification = failureMessage.GqlClassification;

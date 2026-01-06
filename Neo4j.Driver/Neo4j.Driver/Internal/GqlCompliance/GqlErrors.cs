@@ -32,7 +32,7 @@ internal static class GqlErrors
 
     public static void FillGqlDefaults(FailureMessage message)
     {
-        message.Code ??= UnknownNeo4JCode;
+        message.CodeInternal ??= UnknownNeo4JCode;
         message.Message ??= UnknownMessage;
         message.GqlStatus ??= UnknownGqlStatus;
 

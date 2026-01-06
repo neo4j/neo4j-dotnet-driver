@@ -71,7 +71,7 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool useRawStatu
         return null;
     }
 
-    private static INotification ConvertNotification(IDictionary<string, object> notification)
+    private static Notification ConvertNotification(IDictionary<string, object> notification)
     {
         var code = notification.GetValue("code", string.Empty);
         var title = notification.GetValue("title", string.Empty);
@@ -160,7 +160,7 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool useRawStatu
             !string.IsNullOrEmpty(code));
     }
 
-    private static INotification ConvertStatusValuesToNotification(IDictionary<string, object> gqlStatus)
+    private static Notification ConvertStatusValuesToNotification(IDictionary<string, object> gqlStatus)
     {
         var code = gqlStatus.GetValue<string>("neo4j_code", null);
         if (code == null)
