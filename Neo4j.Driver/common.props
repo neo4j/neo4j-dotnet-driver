@@ -6,24 +6,18 @@
         <AssemblyFileVersion>6.0.0.0</AssemblyFileVersion>
         <FileVersion>6.0.0.0</FileVersion>
     </PropertyGroup>
+
     <PropertyGroup>
         <XunitVersion>2.4.1</XunitVersion>
         <MSTestVersion>16.1.1</MSTestVersion>
     </PropertyGroup>
+
     <PropertyGroup Condition="'$(Configuration)'=='Release'">
         <SignAssembly>true</SignAssembly>
         <DelaySign>false</DelaySign>
         <AssemblyOriginatorKeyFile>..\neo4j.snk</AssemblyOriginatorKeyFile>
     </PropertyGroup>
 
-    <!--
-      <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)'=='ReleaseSigned'">
-        <GetFrameworkSdkPath>
-          <Output TaskParameter="Path" PropertyName="WindowsSdkPath" />
-        </GetFrameworkSdkPath>
-        <Exec Command="&quot;$(SDK40ToolsPath)sn.exe&quot; -R &quot;$(TargetPath)&quot; &quot;$(SignatureFile)&quot;" />
-      </Target>
-    -->
     <PropertyGroup>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
         <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
