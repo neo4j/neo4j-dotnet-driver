@@ -74,8 +74,7 @@ public interface IResultSummary
     IList<INotification> Notifications { get; }
 
     /// <summary>
-    /// This is a preview API, This API may change between minor revisions.<br/> Gets the GQL statuses produced by the
-    /// server when executing a statement or query.
+    /// Gets the GQL statuses produced by the server when executing a statement or query.
     /// </summary>
     /// <seealso cref="IGqlStatusObject">For more information about GQL Statuses</seealso>
     /// <since>5.23.0</since>

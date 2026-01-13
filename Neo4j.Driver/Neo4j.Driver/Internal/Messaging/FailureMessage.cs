@@ -57,8 +57,7 @@ internal sealed class FailureMessage : IResponseMessage
     public string GqlRawClassification { get; set; }
 
     /// <summary>
-    /// GqlDiagnosticRecord returns further information about the status for diagnostic purposes. GqlDiagnosticRecord
-    /// is part of the GQL compliant errors preview feature.
+    /// GqlDiagnosticRecord returns further information about the status for diagnostic purposes. 
     /// </summary>
     public Dictionary<string, object> GqlDiagnosticRecord { get; set; }
 

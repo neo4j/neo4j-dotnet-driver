@@ -18,8 +18,7 @@ using System.Collections.Generic;
 namespace Neo4j.Driver;
 
 /// <summary>
-/// This is a preview API, This API may change between minor revisions.<br/> The GQL-status object as defined by
-/// the GQL standard. Returned by <see cref="IResultSummary.GqlStatusObjects"/>
+/// The GQL-status object as defined by the GQL standard. Returned by <see cref="IResultSummary.GqlStatusObjects"/>
 /// </summary>
 /// <seealso cref="IResultSummary.GqlStatusObjects"/>
 /// <since>5.23.0</since>

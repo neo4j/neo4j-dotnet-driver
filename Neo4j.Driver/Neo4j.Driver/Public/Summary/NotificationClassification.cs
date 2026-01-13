@@ -16,9 +16,8 @@
 namespace Neo4j.Driver;
 
 /// <summary>
-/// This is a preview API, This API may change between minor revisions.<br/> Represents the classification of
-/// server notifications surfaced by <see cref="IGqlStatusObject"/>.<br/> Used in conjunction with
-/// <see cref="NotificationSeverity"/>.
+/// Represents the classification of server notifications surfaced by <see cref="IGqlStatusObject"/>. Used in
+/// conjunction with <see cref="NotificationSeverity"/>.
 /// </summary>
 /// <since>5.23.0</since>
 public enum NotificationClassification
