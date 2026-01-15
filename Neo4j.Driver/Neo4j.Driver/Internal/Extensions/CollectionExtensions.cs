@@ -23,7 +23,7 @@ using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal;
 
-internal static partial class CollectionExtensions
+internal static class CollectionExtensions
 {
     private const string DefaultItemSeparator = ", ";
     private static readonly TypeInfo NeoValueTypeInfo = typeof(IValue).GetTypeInfo();
@@ -31,158 +31,115 @@ internal static partial class CollectionExtensions
     private static readonly IParameterValueTransformer _parameterValueTransformer =
         new ParameterValueTransformer();
     
-    private static readonly IObjectToDictionaryConverter _objectToDictionaryConverter = 
-        new ObjectToDictionaryConverter();
+    private static readonly IObjectToDictionaryConverter _objectToParameterDictionaryConverter = 
+        new ObjectToParameterDictionaryConverter();
 
-    public static T GetMandatoryValue<T>(
-        this IDictionary<string, object> dictionary,
-        string key,
-        Func<string, Exception> exceptionFact)
+    extension(object obj)
     {
-        if (!dictionary.ContainsKey(key))
+        public string ToContentString(string separator = DefaultItemSeparator)
         {
-            throw exceptionFact($"Expected key '{key}' to be present in the dictionary, but could not find.");
-        }
-
-        return (T)dictionary[key];
-    }
-
-    public static TValue GetValueOrDefault<TKey, TValue>(
-        this IDictionary<TKey, TValue> dict,
-        TKey key,
-        TValue defaultValue = default)
-    {
-        return dict.TryGetValue(key, out var value) ? value : defaultValue;
-    }
-
-    public static T GetValue<T>(this IDictionary<string, object> dict, string key, T defaultValue)
-    {
-        return dict.TryGetValue(key, out var value) ? (T)value : defaultValue;
-    }
-
-    public static bool TryGetValue<T>(this IDictionary<string, object> dict, string key, T defaultValue, out T value)
-    {
-        if (dict.TryGetValue(key, out var uncastValue))
-        {
-            value = (T)uncastValue;
-            return true;
-        }
-
-        value = defaultValue;
-        return false;
-    }
-
-    private static string ToContentString(this IDictionary dict, string separator)
-    {
-        var dictStrings = dict.Keys.Cast<object>()
-            .Select(key => $"{{{key.ToContentString()}, {dict[key].ToContentString()}}}");
-
-        return $"[{string.Join(separator, dictStrings)}]";
-    }
-
-    private static string ToContentString(this IEnumerable enumerable, string separator)
-    {
-        var listStrings = from object item in enumerable select item.ToContentString();
-        return $"[{string.Join(separator, listStrings)}]";
-    }
-
-    public static string ToContentString(this object o, string separator = DefaultItemSeparator)
-    {
-        if (o == null)
-        {
-            return "NULL";
-        }
-
-        if (o is string)
-        {
-            return o.ToString();
-        }
-
-        if (o is IDictionary)
-        {
-            return ToContentString((IDictionary)o, separator);
-        }
-
-        if (o is IEnumerable)
-        {
-            return ToContentString((IEnumerable)o, separator);
-        }
-
-        return o.ToString();
-    }
-
-    public static IDictionary<string, object> ToDictionary(this object o)
-    {
-        return _objectToDictionaryConverter.Convert(o);
-    }
-
-    private static IDictionary<string, object> FillDictionary(object o, IDictionary<string, object> dict)
-    {
-        foreach (var propInfo in o.GetType().GetRuntimeProperties())
-        {
-            var name = propInfo.Name;
-            var value = propInfo.GetValue(o);
-            var valueTransformed = _parameterValueTransformer.Transform(value);
-
-            dict.Add(name, valueTransformed);
-        }
-
-        return dict;
-    }
-
-    private static bool NeedsConversion(this Type type)
-    {
-        if (type == typeof(string))
-        {
-            return false;
-        }
-
-        var typeInfo = type.GetTypeInfo();
-
-        if (typeInfo.IsValueType)
-        {
-            return false;
-        }
-
-        if (NeoValueTypeInfo.IsAssignableFrom(typeInfo))
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    public static void FillMissingFrom<TKey, TValue>(
-        this IDictionary<TKey, TValue> dict,
-        IDictionary<TKey, TValue> other)
-    {
-        foreach (var key in other.Keys)
-        {
-            if (!dict.ContainsKey(key))
+            return obj switch
             {
-                dict[key] = other[key];
+                null => "NULL",
+                string => obj.ToString(),
+                IDictionary dictionary => dictionary.ToContentString(separator),
+                IEnumerable enumerable => enumerable.ToContentString(separator),
+                _ => obj.ToString()
+            };
+        }
+
+        public IDictionary<string, object> ToParameterDictionary()
+        {
+            return _objectToParameterDictionaryConverter.Convert(obj);
+        }
+    }
+
+    extension(IDictionary<string, object> dict)
+    {
+        public T GetMandatoryValue<T>(
+            string key,
+            Func<string, Exception> exceptionFact)
+        {
+            return dict.TryGetValue(key, out var value)
+                ? (T)value
+                : throw exceptionFact($"Expected key '{key}' to be present in the dictionary, but could not find.");
+        }
+    
+        public T GetValue<T>(string key, T defaultValue)
+        {
+            return dict.TryGetValue(key, out var value) ? (T)value : defaultValue;
+        }
+
+        public bool TryGetValue<T>(string key, T defaultValue, out T value)
+        {
+            if (dict.TryGetValue(key, out var uncastValue))
+            {
+                value = (T)uncastValue;
+                return true;
+            }
+
+            value = defaultValue;
+            return false;
+        }
+    }
+
+    extension<TKey, TValue>(IDictionary<TKey, TValue> dict)
+    {
+        public TValue GetValueOrDefault(
+            TKey key,
+            TValue defaultValue = default)
+        {
+            return dict.TryGetValue(key, out var value) ? value : defaultValue;
+        }
+
+        public void FillMissingFrom(
+            IDictionary<TKey, TValue> other)
+        {
+            foreach (var key in other.Keys)
+            {
+                if (!dict.ContainsKey(key))
+                {
+                    dict[key] = other[key];
+                }
+            }
+        }
+
+        public void OverwriteFrom(params (TKey key, TValue value)[] pairs)
+        {
+            dict.OverwriteFrom(default, pairs);
+        }
+
+        public void OverwriteFrom(
+            TValue ignoreValue,
+            params (TKey key, TValue value)[] pairs)
+        {
+            foreach (var (key, value) in pairs)
+            {
+                if (!Equals(value, ignoreValue))
+                {
+                    dict[key] = value;
+                }
             }
         }
     }
 
-    public static void OverwriteFrom<TKey, TValue>(
-        this IDictionary<TKey, TValue> dict,
-        params (TKey key, TValue value)[] pairs)
+    extension(IDictionary dict)
     {
-        OverwriteFrom(dict, default, pairs);
+        private string ToContentString(string separator)
+        {
+            var dictStrings = dict.Keys.Cast<object>()
+                .Select(key => $"{{{key.ToContentString()}, {dict[key].ToContentString()}}}");
+
+            return $"[{string.Join(separator, dictStrings)}]";
+        }
     }
 
-    public static void OverwriteFrom<TKey, TValue>(
-        this IDictionary<TKey, TValue> dict,
-        TValue ignoreValue,
-        params (TKey key, TValue value)[] pairs)
+    extension(IEnumerable enumerable)
     {
-        foreach (var (key, value) in pairs)
+        private string ToContentString(string separator)
         {
-            if (!Equals(value, ignoreValue))
-            {
-                dict[key] = value;
-            }
+            var listStrings = from object item in enumerable select item.ToContentString();
+            return $"[{string.Join(separator, listStrings)}]";
         }
     }
 }

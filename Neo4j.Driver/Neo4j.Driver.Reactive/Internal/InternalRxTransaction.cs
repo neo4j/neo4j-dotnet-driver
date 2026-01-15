@@ -49,7 +49,7 @@ internal class InternalRxTransaction : IRxTransaction
 
     public IRxResult Run(string query, object parameters)
     {
-        return Run(new Query(query, parameters.ToDictionary()));
+        return Run(new Query(query, parameters.ToParameterDictionary()));
     }
 
     public IRxResult Run(Query query)

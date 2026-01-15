@@ -23,9 +23,9 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.Util;
 
-public class ObjectToDictionaryConverterTests
+public class ObjectToParameterDictionaryConverterTests
 {
-    private readonly ObjectToDictionaryConverter _converter = new();
+    private readonly ObjectToParameterDictionaryConverter _converter = new();
 
     [Fact]
     public void ShouldReturnNullGivenNull()

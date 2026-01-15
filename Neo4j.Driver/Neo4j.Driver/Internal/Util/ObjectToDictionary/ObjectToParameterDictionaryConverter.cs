@@ -21,10 +21,10 @@ using System.Reflection;
 
 namespace Neo4j.Driver.Internal.Util;
 
-internal class ObjectToDictionaryConverter(IParameterValueTransformer parameterValueTransformer = null)
+internal class ObjectToParameterDictionaryConverter(IParameterValueTransformer parameterValueTransformer = null)
     : IObjectToDictionaryConverter
 {
-    private IParameterValueTransformer _parameterValueTransformer = 
+    private readonly IParameterValueTransformer _parameterValueTransformer = 
         parameterValueTransformer ?? new ParameterValueTransformer();
 
     public IDictionary<string, object> Convert(object o)
@@ -48,7 +48,7 @@ internal class ObjectToDictionaryConverter(IParameterValueTransformer parameterV
         var typeInfo = o.GetType().GetTypeInfo();
 
         // get all the interfaces implemented by the type and make sure that one of them is
-        // IDictionary<string,?>
+        // IDictionary<string, T>
         var interfaces = typeInfo.ImplementedInterfaces;
         var canUse = interfaces.Any(i => i.IsGenericType &&
             i.GetGenericTypeDefinition() == typeof(IDictionary<,>) &&

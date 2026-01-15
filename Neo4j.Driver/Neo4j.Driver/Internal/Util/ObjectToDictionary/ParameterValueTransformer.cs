@@ -42,6 +42,7 @@ internal class ParameterValueTransformer : IParameterValueTransformer
 
                 if (NeedsConversion(elementType))
                 {
+                    // recursive call
                     value = array.Cast<object>().Select(Transform).ToList();
                 }
 
@@ -104,35 +105,29 @@ internal class ParameterValueTransformer : IParameterValueTransformer
                 break;
             }
 
+            case IEnumerable enumerable and not string:
+            {
+                var valueTypeInfo = valueType.GetTypeInfo();
+                var elementType = (Type)null;
+
+                if (valueTypeInfo.IsGenericType && valueTypeInfo.GetGenericTypeDefinition() == typeof(List<>))
+                {
+                    elementType = valueTypeInfo.GenericTypeArguments[0];
+                }
+
+                if (elementType == null || NeedsConversion(elementType))
+                {
+                    var converted = enumerable.Cast<object>().Select(Transform);
+                    value = new List<object>(converted);
+                }
+                break;
+            }
+            
             default:
             {
-                if (value is IEnumerable enumerable and not string)
+                if (NeedsConversion(valueType))
                 {
-                    var valueTypeInfo = valueType.GetTypeInfo();
-                    var elementType = (Type)null;
-
-                    if (valueTypeInfo.IsGenericType && valueTypeInfo.GetGenericTypeDefinition() == typeof(List<>))
-                    {
-                        elementType = valueTypeInfo.GenericTypeArguments[0];
-                    }
-
-                    if (elementType == null || NeedsConversion(elementType))
-                    {
-                        var convertedList = new List<object>();
-                        foreach (var element in enumerable)
-                        {
-                            convertedList.Add(Transform(element));
-                        }
-
-                        value = convertedList;
-                    }
-                }
-                else
-                {
-                    if (NeedsConversion(valueType))
-                    {
-                        value = FillDictionary(value, new Dictionary<string, object>());
-                    }
+                    value = FillDictionary(value, new Dictionary<string, object>());
                 }
 
                 break;

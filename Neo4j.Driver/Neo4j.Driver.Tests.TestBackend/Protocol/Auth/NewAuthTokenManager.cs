@@ -46,7 +46,7 @@ internal class NewAuthTokenManager : TestAuthTokenManager
 
         if (result.data.requestId == requestId)
         {
-            return new AuthToken(result.data.auth.data.ToDictionary());
+            return new AuthToken(result.data.auth.data.ToParameterDictionary());
         }
 
         throw new Exception("GetTokenAsync: request IDs did not match");

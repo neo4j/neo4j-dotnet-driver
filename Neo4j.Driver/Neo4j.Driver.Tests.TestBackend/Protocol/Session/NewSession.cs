@@ -92,7 +92,7 @@ internal class NewSession : ProtocolObject
 
         if (data.authorizationToken is not null)
         {
-            configBuilder.WithAuthToken(new AuthToken(data.authorizationToken.data.ToDictionary()));
+            configBuilder.WithAuthToken(new AuthToken(data.authorizationToken.data.ToParameterDictionary()));
         }
 
         if (data.bookmarkManagerId != null)

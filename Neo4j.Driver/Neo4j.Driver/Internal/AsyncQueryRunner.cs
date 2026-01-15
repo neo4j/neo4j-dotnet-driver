@@ -36,7 +36,7 @@ internal abstract class AsyncQueryRunner : IAsyncQueryRunner
 
     public Task<IResultCursor> RunAsync(string query, object parameters)
     {
-        return RunAsync(new Query(query, parameters.ToDictionary()));
+        return RunAsync(new Query(query, parameters.ToParameterDictionary()));
     }
 
     public void Dispose()

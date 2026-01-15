@@ -24,6 +24,13 @@
       <SignAssembly>true</SignAssembly>
       <DelaySign>false</DelaySign>
       <AssemblyOriginatorKeyFile>..\neo4j.snk</AssemblyOriginatorKeyFile>
+      <NoWarn>1701;1702;0618</NoWarn>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'CI' ">
+      <NoWarn>1701;1702;0618</NoWarn>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <NoWarn>1701;1702;0618</NoWarn>
     </PropertyGroup>
     <ItemGroup>
         <Content Include="App.config"/>
@@ -34,9 +41,7 @@
         <PackageReference Include="Moq" Version="4.20.69"/>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
         <PackageReference Include="Portable.BouncyCastle" Version="1.8.8"/>
-        <PackageReference Include="System.Net.Http" Version="4.3.4" />
         <PackageReference Include="System.Reactive" Version="5.0.0"/>
-        <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
         <PackageReference Include="TeamCity.VSTest.TestAdapter" Version="1.0.23"/>
         <PackageReference Include="xunit" Version="$(XunitVersion)"/>
         <PackageReference Include="xunit.runner.console" Version="$(XunitVersion)"/>

@@ -21,6 +21,7 @@ internal interface IInternalX509CertificateLoader
 {
     X509Certificate2 LoadCertificate(byte[] rawData);
     X509Certificate2 LoadCertificate(string filename);
+    X509Certificate2 LoadCertificate(byte[] rawData, string password, X509KeyStorageFlags flags);
 }
 
 // this class is to hide away the conditional compilation for .NET >= 9
@@ -34,6 +35,16 @@ internal class InternalX509CertificateLoader : IInternalX509CertificateLoader
         return new X509Certificate2(rawData);
 #endif
     }
+
+    public X509Certificate2 LoadCertificate(byte[] rawData, string password, X509KeyStorageFlags flags)
+    {
+#if NET9_0_OR_GREATER
+        return X509CertificateLoader.LoadPkcs12(rawData, password, flags, Pkcs12LoaderLimits.Defaults);
+#else
+        return new X509Certificate2(rawData, password, flags);
+#endif
+    }
+    
 
     public X509Certificate2 LoadCertificate(string filename)
     {

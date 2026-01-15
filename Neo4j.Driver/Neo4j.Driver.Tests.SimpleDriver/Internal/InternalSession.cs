@@ -43,7 +43,7 @@ internal class InternalSession : ISession
 
     public IResult Run(string query, object parameters)
     {
-        return Run(new Query(query, parameters.ToDictionary()));
+        return Run(new Query(query, parameters.ToParameterDictionary()));
     }
 
     public IResult Run(string query, IDictionary<string, object> parameters)
