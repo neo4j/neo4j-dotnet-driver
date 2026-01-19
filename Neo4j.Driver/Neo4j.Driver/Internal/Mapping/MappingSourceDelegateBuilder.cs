@@ -30,37 +30,27 @@ internal class MappingSourceDelegateBuilder : IMappingSourceDelegateBuilder
 
     public MappingValueDelegate GetMappingDelegate(EntityMappingInfo entityMappingInfo)
     {
-        return TryGetValue;
-
-        bool TryGetValue(IRecord record, out object value)
+        return (record, out value) =>
         {
             var translate = !entityMappingInfo.Explicit;
-            if (!_pathFinder.TryGetValueByPath(record, entityMappingInfo.Path, translate, out var foundValue))
+
+            if (!_pathFinder.TryGetValueByPath(record, entityMappingInfo.Path, translate, out value))
             {
                 value = entityMappingInfo.DefaultValue;
                 return entityMappingInfo.Optional;
             }
 
-            switch (entityMappingInfo)
+            var (result, returnValue) = (entityMappingInfo.EntityMappingSource, value) switch
             {
-                case { EntityMappingSource: EntityMappingSource.NodeLabel }
-                    when foundValue is INode node:
-                {
-                    value = node.Labels;
-                    return true;
-                }
+                (EntityMappingSource.NodeLabel, INode node) => (true, node.Labels),
+                (EntityMappingSource.RelationshipType, IRelationship relationship) => (true, relationship.Type),
+                _ => (true, value)
+            };
 
-                case { EntityMappingSource: EntityMappingSource.RelationshipType }
-                    when foundValue is IRelationship relationship:
-                {
-                    value = relationship.Type;
-                    return true;
-                }
-
-                default:
-                    value = foundValue;
-                    return true;
-            }
-        }
+            value = returnValue;
+            return result;
+        };
     }
 }
+
+

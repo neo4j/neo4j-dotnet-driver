@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Linq;
 using System.Reflection;
 using Neo4j.Driver.Mapping;
@@ -28,20 +29,17 @@ internal record EntityMappingInfo(
 
 internal static class ExtensionsForEntityMappingInfo
 {
-    public static EntityMappingInfo GetEntityMappingInfo(this PropertyInfo propertyInfo)
+    public static EntityMappingInfo GetEntityMappingInfo<T>(this T target) where T : ICustomAttributeProvider
     {
-        var path = propertyInfo.Name;
-        var result = new EntityMappingInfo(path, EntityMappingSource.Property);
-        result = GetEntityMappingInfoAffectedByAttributes(result, propertyInfo);
-        return result;
-    }
+        var path = target switch
+        {
+            PropertyInfo { Name: var n } => n,
+            ParameterInfo { Name: var n } => n,
+            _ => throw new NotSupportedException("Only properties and parameters are supported")
+        };
 
-    public static EntityMappingInfo GetEntityMappingInfo(this ParameterInfo parameterInfo)
-    {
-        var path = parameterInfo.Name;
         var result = new EntityMappingInfo(path, EntityMappingSource.Property);
-        result = GetEntityMappingInfoAffectedByAttributes(result, parameterInfo);
-        return result;
+        return GetEntityMappingInfoAffectedByAttributes(result, target);
     }
 
     private static EntityMappingInfo GetEntityMappingInfoAffectedByAttributes(

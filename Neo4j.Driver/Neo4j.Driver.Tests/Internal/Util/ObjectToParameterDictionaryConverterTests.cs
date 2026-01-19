@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Util;
+using Neo4j.Driver.Mapping;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.Util;
@@ -36,16 +37,16 @@ public class ObjectToParameterDictionaryConverterTests
 
     [Theory]
     [InlineData((sbyte)0)]
-    [InlineData((byte)0)]
-    [InlineData((short)0)]
-    [InlineData((ushort)0)]
-    [InlineData(0)]
-    [InlineData((uint)0)]
-    [InlineData((long)0)]
-    [InlineData((ulong)0)]
-    [InlineData((char)0)]
-    [InlineData((float)0)]
-    [InlineData((double)0)]
+    [InlineData((byte)1)]
+    [InlineData((short)2)]
+    [InlineData((ushort)3)]
+    [InlineData(4)]
+    [InlineData((uint)5)]
+    [InlineData((long)6)]
+    [InlineData((ulong)7)]
+    [InlineData((char)8)]
+    [InlineData((float)9)]
+    [InlineData((double)10)]
     [InlineData(true)]
     public void ShouldHandleSimpleTypes(object value)
     {
@@ -83,9 +84,10 @@ public class ObjectToParameterDictionaryConverterTests
         var dict = _converter.Convert(new { key1 = "value1", key2 = "value2" });
         dict.Should().NotBeNull();
         dict.Should().HaveCount(2);
-        dict.Should().Contain(
-            new KeyValuePair<string, object>("key1", "value1"),
-            new KeyValuePair<string, object>("key2", "value2"));
+        dict.Should()
+            .Contain(
+                new KeyValuePair<string, object>("key1", "value1"),
+                new KeyValuePair<string, object>("key2", "value2"));
     }
 
     [Fact]
@@ -103,12 +105,13 @@ public class ObjectToParameterDictionaryConverterTests
     [Fact]
     public void ShouldHandlePoco()
     {
-        var dict = _converter.Convert(new MyPOCO { Key1 = "value1", Key2 = "value2" });
+        var dict = _converter.Convert(new MyPoco { Key1 = "value1", Key2 = "value2" });
         dict.Should().NotBeNull();
         dict.Should().HaveCount(2);
-        dict.Should().Contain(
-            new KeyValuePair<string, object>("Key1", "value1"),
-            new KeyValuePair<string, object>("Key2", "value2"));
+        dict.Should()
+            .Contain(
+                new KeyValuePair<string, object>("Key1", "value1"),
+                new KeyValuePair<string, object>("Key2", "value2"));
     }
 
     [Fact]
@@ -122,24 +125,27 @@ public class ObjectToParameterDictionaryConverterTests
         innerObjectObject.Should().NotBeNull();
         innerObjectObject.Should().BeAssignableTo<IDictionary<string, object>>();
         var innerObject = (IDictionary<string, object>)innerObjectObject;
-        innerObject.Should().Contain(
-            new KeyValuePair<string, object>("Key1", 1),
-            new KeyValuePair<string, object>("Key2", "a"),
-            new KeyValuePair<string, object>("Key3", 0L));
+        innerObject.Should()
+            .Contain(
+                new KeyValuePair<string, object>("Key1", 1),
+                new KeyValuePair<string, object>("Key2", "a"),
+                new KeyValuePair<string, object>("Key3", 0L));
     }
 
     [Fact]
     public void ShouldHandleDictionary()
     {
-        var dict = _converter.Convert(new
-        {
-            InnerDictionary = new Dictionary<string, object>
+        var dict = _converter.Convert(
+            new
             {
-                { "Key1", 1 },
-                { "Key2", "a" },
-                { "Key3", 0L }
-            }
-        });
+                InnerDictionary = new Dictionary<string, object>
+                {
+                    { "Key1", 1 },
+                    { "Key2", "a" },
+                    { "Key3", 0L }
+                }
+            });
+
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("InnerDictionary");
@@ -147,10 +153,11 @@ public class ObjectToParameterDictionaryConverterTests
         innerDictionaryObject.Should().NotBeNull();
         innerDictionaryObject.Should().BeAssignableTo<IDictionary<string, object>>();
         var innerDictionary = (IDictionary<string, object>)innerDictionaryObject;
-        innerDictionary.Should().Contain(
-            new KeyValuePair<string, object>("Key1", 1),
-            new KeyValuePair<string, object>("Key2", "a"),
-            new KeyValuePair<string, object>("Key3", 0L));
+        innerDictionary.Should()
+            .Contain(
+                new KeyValuePair<string, object>("Key1", 1),
+                new KeyValuePair<string, object>("Key2", "a"),
+                new KeyValuePair<string, object>("Key3", 0L));
     }
 
     [Fact]
@@ -170,15 +177,17 @@ public class ObjectToParameterDictionaryConverterTests
     [Fact]
     public void ShouldHandleCollectionsOfArbitraryObjects()
     {
-        var dict = _converter.Convert(new
-        {
-            InnerCollection = new List<object>
+        var dict = _converter.Convert(
+            new
             {
-                new { a = "a" },
-                3,
-                new MyPOCO { Key1 = "value1" }
-            }
-        });
+                InnerCollection = new List<object>
+                {
+                    new { a = "a" },
+                    3,
+                    new MyPoco { Key1 = "value1" }
+                }
+            });
+
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("InnerCollection");
@@ -187,27 +196,30 @@ public class ObjectToParameterDictionaryConverterTests
         innerCollectionObject.Should().BeAssignableTo<IList<object>>();
         var innerCollection = (IList<object>)innerCollectionObject;
         innerCollection.Should().HaveCount(3);
-        innerCollection.Should().Contain(
-            o => o is IDictionary<string, object> &&
+        innerCollection.Should()
+            .Contain(o => o is IDictionary<string, object> &&
                 ((IDictionary<string, object>)o).Contains(new KeyValuePair<string, object>("a", "a")));
+
         innerCollection.Should().Contain(3);
-        innerCollection.Should().Contain(
-            o => o is IDictionary<string, object> &&
+        innerCollection.Should()
+            .Contain(o => o is IDictionary<string, object> &&
                 ((IDictionary<string, object>)o).Contains(new KeyValuePair<string, object>("Key1", "value1")));
     }
 
     [Fact]
     public void ShouldHandleDictionaryOfArbitraryObjects()
     {
-        var dict = _converter.Convert(new
-        {
-            InnerDictionary = new Dictionary<string, object>
+        var dict = _converter.Convert(
+            new
             {
-                { "a", new { a = "a" } },
-                { "b", "b" },
-                { "c", 3 }
-            }
-        });
+                InnerDictionary = new Dictionary<string, object>
+                {
+                    { "a", new { a = "a" } },
+                    { "b", "b" },
+                    { "c", 3 }
+                }
+            });
+
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("InnerDictionary");
@@ -218,7 +230,11 @@ public class ObjectToParameterDictionaryConverterTests
         innerDictionary.Should().HaveCount(3);
         innerDictionary.Should().ContainKey("a");
         innerDictionary["a"].Should().BeAssignableTo<IDictionary<string, object>>();
-        innerDictionary["a"].As<IDictionary<string, object>>().Should().Contain(new KeyValuePair<string, object>("a", "a"));
+        innerDictionary["a"]
+            .As<IDictionary<string, object>>()
+            .Should()
+            .Contain(new KeyValuePair<string, object>("a", "a"));
+
         innerDictionary.Should().Contain(new KeyValuePair<string, object>("b", "b"));
         innerDictionary.Should().Contain(new KeyValuePair<string, object>("c", 3));
     }
@@ -226,8 +242,8 @@ public class ObjectToParameterDictionaryConverterTests
     [Fact]
     public void ShouldRaiseExceptionWhenDictionaryKeysAreNotStrings()
     {
-        var ex = Record.Exception(
-            () => _converter.Convert(new
+        var ex = Record.Exception(() => _converter.Convert(
+            new
             {
                 InnerDictionary = new Dictionary<int, object>
                 {
@@ -236,6 +252,7 @@ public class ObjectToParameterDictionaryConverterTests
                     { 3, 3 }
                 }
             }));
+
         ex.Should().NotBeNull();
         ex.Should().BeOfType<InvalidOperationException>();
         ex.Message.Should().Contain("string keys");
@@ -244,15 +261,17 @@ public class ObjectToParameterDictionaryConverterTests
     [Fact]
     public void ShouldHandleListOfArbitraryObjects()
     {
-        var dict = _converter.Convert(new
-        {
-            InnerList = new List<object>
+        var dict = _converter.Convert(
+            new
             {
-                new { a = "a" },
-                "b",
-                3
-            }
-        });
+                InnerList = new List<object>
+                {
+                    new { a = "a" },
+                    "b",
+                    3
+                }
+            });
+
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("InnerList");
@@ -289,6 +308,7 @@ public class ObjectToParameterDictionaryConverterTests
             { "Key1", new Person { Name = "John", Age = 30 } },
             { "Key2", new Person { Name = "Jane", Age = 25 } }
         };
+
         var result = _converter.Convert(sourceDictionary);
         result.Should().HaveCount(2);
         result["Key1"].Should().BeEquivalentTo(sourceDictionary["Key1"]);
@@ -315,6 +335,7 @@ public class ObjectToParameterDictionaryConverterTests
                 }
             }
         };
+
         var result = _converter.Convert(nestedDictionary);
         result.Should().ContainKey("Nested");
         var innerDict = result["Nested"].As<Dictionary<string, Person>>();
@@ -336,7 +357,7 @@ public class ObjectToParameterDictionaryConverterTests
     }
 
     [Fact]
-    public void ShouldHandleEnumerableofEnumerable()
+    public void ShouldHandleEnumerableOfEnumerable()
     {
         var array = new[] { 1, 2, 3 };
         IEnumerable element = new MyCollection<int>(array);
@@ -349,16 +370,48 @@ public class ObjectToParameterDictionaryConverterTests
         s.Should().Be("[[1, 2, 3], a]");
     }
 
-    private class MyPOCO
+    [Fact]
+    public void ShouldUseSimpleMappingSource()
+    {
+        var dict = _converter.Convert(new ClassWithMappingAttributes { SomeProperty = "someValue" });
+        dict.Should().ContainKey("someField");
+        dict["someField"].Should().Be("someValue");
+    }
+
+    [Fact]
+    public void ShouldUseLastPartOfPathAsMappingSource()
+    {
+        var dict = _converter.Convert(new ClassWithMappingAttributes { ValueFromNode = "someValue" });
+        dict.Should().ContainKey("value");
+        dict["value"].Should().Be("someValue");
+    }
+
+    private class MyPoco
     {
         public string Key1 { get; set; }
         public string Key2 { get; set; }
     }
 
+    private class ClassWithMappingAttributes
+    {
+        [MappingSource("someField")]
+        public string SomeProperty { get; init; }
+
+        [MappingSource("node.value")]
+        public string ValueFromNode { get; init; }
+
+        public string DifferentlyCased { get; init; }
+    }
+
     public class MyCollection<T> : IEnumerable<T>
     {
         private readonly IEnumerable<T> _values;
-        public MyCollection(IEnumerable<T> values) { _values = values; }
+
+        public MyCollection(IEnumerable<T> values)
+        {
+            _values = values;
+        }
+
         public string Name => "My Collection implements IEnumerable<T>";
         public IEnumerator<T> GetEnumerator() => _values.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

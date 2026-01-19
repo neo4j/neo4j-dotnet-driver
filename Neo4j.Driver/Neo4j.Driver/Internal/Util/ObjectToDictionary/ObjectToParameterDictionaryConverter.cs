@@ -18,6 +18,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Neo4j.Driver.Internal.Mapping;
 
 namespace Neo4j.Driver.Internal.Util;
 
@@ -67,6 +68,14 @@ internal class ObjectToParameterDictionaryConverter(IParameterValueTransformer p
         foreach (var propInfo in o.GetType().GetRuntimeProperties())
         {
             var name = propInfo.Name;
+            
+            // see if there is an explicit mapping for this property
+            var emi = propInfo.GetEntityMappingInfo();
+            if (emi.Explicit)
+            {
+                name = emi.Path;
+            }
+            
             var value = propInfo.GetValue(o);
             var valueTransformed = _parameterValueTransformer.Transform(value);
 
