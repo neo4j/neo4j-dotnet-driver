@@ -30,7 +30,7 @@ public class MappingSourceDelegateBuilderTests
     {
         var record = TestRecord.Create(new[] { "a" }, new object[] { "b" });
         var getter = new MappingSourceDelegateBuilder();
-        var mappingSource = new EntityMappingInfo("a", EntityMappingSource.Property);
+        var mappingSource = new EntityMappingInfo { Path = "a", EntityMappingSource = EntityMappingSource.Property };
 
         var mappingDelegate = getter.GetMappingDelegate(mappingSource);
         var found = mappingDelegate(record, out var value);
@@ -44,7 +44,7 @@ public class MappingSourceDelegateBuilderTests
     {
         var record = TestRecord.Create(new[] { "a" }, new object[] { "b" });
         var getter = new MappingSourceDelegateBuilder();
-        var mappingSource = new EntityMappingInfo("c", EntityMappingSource.Property);
+        var mappingSource = new EntityMappingInfo { Path = "c", EntityMappingSource = EntityMappingSource.Property };
 
         var mappingDelegate = getter.GetMappingDelegate(mappingSource);
         var found = mappingDelegate(record, out var value);
@@ -58,8 +58,8 @@ public class MappingSourceDelegateBuilderTests
         var node = new Node(1, new[] { "Actor", "Director" }, new Dictionary<string, object>());
         var record = TestRecord.Create(new[] { "a" }, new object[] { node });
         var getter = new MappingSourceDelegateBuilder();
-        var mappingSource = new EntityMappingInfo("zzz", EntityMappingSource.NodeLabel);
-        mappingSource = mappingSource with { Path = "a" };
+        var mappingSource = new EntityMappingInfo { Path = "zzz", EntityMappingSource = EntityMappingSource.NodeLabel };
+        mappingSource.Path = "a";
 
         var mappingDelegate = getter.GetMappingDelegate(mappingSource);
         var found = mappingDelegate(record, out var value);
@@ -74,7 +74,7 @@ public class MappingSourceDelegateBuilderTests
         var rel = new Relationship(1, 2, 3, "ACTED_IN", new Dictionary<string, object>());
         var record = TestRecord.Create(new[] { "a" }, new object[] { rel });
         var getter = new MappingSourceDelegateBuilder();
-        var mappingSource = new EntityMappingInfo("a", EntityMappingSource.RelationshipType);
+        var mappingSource = new EntityMappingInfo { Path = "a", EntityMappingSource = EntityMappingSource.RelationshipType };
 
         var mappingDelegate = getter.GetMappingDelegate(mappingSource);
         var found = mappingDelegate(record, out var value);

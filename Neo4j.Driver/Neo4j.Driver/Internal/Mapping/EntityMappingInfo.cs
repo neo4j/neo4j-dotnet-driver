@@ -13,57 +13,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Linq;
-using System.Reflection;
 using Neo4j.Driver.Mapping;
 
 namespace Neo4j.Driver.Internal.Mapping;
 
-internal record EntityMappingInfo(
-    string Path,
-    EntityMappingSource EntityMappingSource,
-    bool Optional = false,
-    object DefaultValue = null,
-    bool Explicit = false);
-
-internal static class ExtensionsForEntityMappingInfo
+/// <summary>
+/// Represents metadata for mapping an entity during the mapping process in the Neo4j driver.
+/// Contains information about the path, source, optionality, default value, and
+/// explicitness.
+/// </summary>
+public class EntityMappingInfo
 {
-    public static EntityMappingInfo GetEntityMappingInfo<T>(this T target) where T : ICustomAttributeProvider
-    {
-        var path = target switch
-        {
-            PropertyInfo { Name: var n } => n,
-            ParameterInfo { Name: var n } => n,
-            _ => throw new NotSupportedException("Only properties and parameters are supported")
-        };
+    /// <summary>
+    /// Gets or sets the path to the data in the source (e.g. a field name in a record or a property name in a node).
+    /// </summary>
+    public string Path { get; set; }
 
-        var result = new EntityMappingInfo(path, EntityMappingSource.Property);
-        return GetEntityMappingInfoAffectedByAttributes(result, target);
-    }
+    /// <summary>
+    /// Gets or sets the source type for the mapping (e.g. Property, Label, Id).
+    /// </summary>
+    public EntityMappingSource EntityMappingSource { get; set; }
 
-    private static EntityMappingInfo GetEntityMappingInfoAffectedByAttributes(
-        EntityMappingInfo info,
-        ICustomAttributeProvider provider)
-    {
-        // check for MappingSourceAttribute
-        if (provider.GetCustomAttributes(typeof(MappingSourceAttribute), false).FirstOrDefault() is
-            MappingSourceAttribute sourceAttribute)
-        {
-            info = info with
-            {
-                Path = sourceAttribute.EntityMappingInfo.Path,
-                EntityMappingSource = sourceAttribute.EntityMappingInfo.EntityMappingSource,
-                Explicit = true
-            };
-        }
+    /// <summary>
+    /// Gets or sets a value indicating whether the mapping is optional. 
+    /// If <c>true</c>, the mapping will not throw an exception if the source value is missing.
+    /// </summary>
+    public bool Optional { get; set; }
 
-        var optional = provider.IsDefined(typeof(MappingOptionalAttribute), false);
-        var defaultValueAttribute =
-            provider.GetCustomAttributes(typeof(MappingDefaultValueAttribute), false).FirstOrDefault() as
-                MappingDefaultValueAttribute;
+    /// <summary>
+    /// Gets or sets the default value to be used if the source value is missing and the mapping is optional.
+    /// </summary>
+    public object DefaultValue { get; set; }
 
-        var defaultValue = defaultValueAttribute?.DefaultValue;
-        return info with { Optional = optional, DefaultValue = defaultValue };
-    }
+    /// <summary>
+    /// Gets or sets a value indicating whether this mapping was explicitly defined by the user.
+    /// </summary>
+    public bool Explicit { get; set; }
 }

@@ -34,7 +34,7 @@ internal class MappingBuilder<T> : IMappingBuilder<T>
     {
         _builtMapper.AddMappingBySetter(
             GetPropertySetter(destination),
-            new EntityMappingInfo(path, entityMappingSource, optional),
+            new EntityMappingInfo { Path = path, EntityMappingSource = entityMappingSource, Optional = optional },
             converter is null ? null : o => converter.Invoke(o));
 
         return this;

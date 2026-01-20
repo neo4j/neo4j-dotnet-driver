@@ -44,7 +44,7 @@ public enum EntityMappingSource
 /// be mapped, or a dot-separated path to a nested field.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
-public class MappingSourceAttribute : Attribute
+public class MappingSourceAttribute : Attribute, IEntityMappingInfoProvider
 {
     /// <summary>
     /// Instructs the default mapper to use a different field than the property name when mapping a value to the
@@ -57,7 +57,7 @@ public class MappingSourceAttribute : Attribute
     /// </param>
     public MappingSourceAttribute(string path)
     {
-        EntityMappingInfo = new EntityMappingInfo(path, EntityMappingSource.Property);
+        EntityMappingInfo = new EntityMappingInfo { Path = path, EntityMappingSource = EntityMappingSource.Property };
     }
 
     /// <summary>
@@ -72,8 +72,11 @@ public class MappingSourceAttribute : Attribute
     /// <param name="entityMappingSource">The source of the value to be mapped.</param>
     public MappingSourceAttribute(string key, EntityMappingSource entityMappingSource)
     {
-        EntityMappingInfo = new EntityMappingInfo(key, entityMappingSource);
+        EntityMappingInfo = new EntityMappingInfo { Path = key, EntityMappingSource = entityMappingSource };
     }
 
-    internal EntityMappingInfo EntityMappingInfo { get; private set; }
+    /// <summary>
+    /// Gets the entity mapping info.
+    /// </summary>
+    public EntityMappingInfo EntityMappingInfo { get; }
 }

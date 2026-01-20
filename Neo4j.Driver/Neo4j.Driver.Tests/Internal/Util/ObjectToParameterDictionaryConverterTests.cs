@@ -370,20 +370,15 @@ public class ObjectToParameterDictionaryConverterTests
         s.Should().Be("[[1, 2, 3], a]");
     }
 
-    [Fact]
-    public void ShouldUseSimpleMappingSource()
-    {
-        var dict = _converter.Convert(new ClassWithMappingAttributes { SomeProperty = "someValue" });
-        dict.Should().ContainKey("someField");
-        dict["someField"].Should().Be("someValue");
-    }
 
     [Fact]
-    public void ShouldUseLastPartOfPathAsMappingSource()
+    public void ShouldObserveParameterMappingAttribute()
     {
-        var dict = _converter.Convert(new ClassWithMappingAttributes { ValueFromNode = "someValue" });
-        dict.Should().ContainKey("value");
-        dict["value"].Should().Be("someValue");
+        var dict = _converter.Convert(
+            new ClassWithMappingAttributes { SomeProperty = "someValue" });
+
+        dict.Should().ContainKey("someParameter");
+        dict["someParameter"].Should().Be("someValue");
     }
 
     private class MyPoco
@@ -394,15 +389,18 @@ public class ObjectToParameterDictionaryConverterTests
 
     private class ClassWithMappingAttributes
     {
-        [MappingSource("someField")]
+        [ParameterMapping("someParameter")]
         public string SomeProperty { get; init; }
-
-        [MappingSource("node.value")]
-        public string ValueFromNode { get; init; }
 
         public string DifferentlyCased { get; init; }
     }
 
+    public class ClassWithDotInMappingSourceAndParameterMapping
+    {
+        [MappingSource("object.property")]
+        [ParameterMapping("mappedProperty")]
+        public string PropertyWithDotInMappingSource { get; init; }
+    }
     public class MyCollection<T> : IEnumerable<T>
     {
         private readonly IEnumerable<T> _values;

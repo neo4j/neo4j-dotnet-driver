@@ -67,15 +67,10 @@ internal class ObjectToParameterDictionaryConverter(IParameterValueTransformer p
     {
         foreach (var propInfo in o.GetType().GetRuntimeProperties())
         {
-            var name = propInfo.Name;
-            
-            // see if there is an explicit mapping for this property
+            // TODO * here is where we will get all the custom attributes and get info from
+            // TODO * whichever ones will provide it
             var emi = propInfo.GetEntityMappingInfo();
-            if (emi.Explicit)
-            {
-                name = emi.Path;
-            }
-            
+            var name = propInfo.Name;
             var value = propInfo.GetValue(o);
             var valueTransformed = _parameterValueTransformer.Transform(value);
 
