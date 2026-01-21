@@ -22,11 +22,16 @@ using Neo4j.Driver.Internal.Mapping;
 
 namespace Neo4j.Driver.Internal.Util;
 
-internal class ObjectToParameterDictionaryConverter(IParameterValueTransformer parameterValueTransformer = null)
+internal class ObjectToParameterDictionaryConverter(
+    IParameterValueTransformer parameterValueTransformer = null,
+    IMappingBindingProvider mappingBindingProvider = null)
     : IObjectToDictionaryConverter
 {
     private readonly IParameterValueTransformer _parameterValueTransformer = 
         parameterValueTransformer ?? new ParameterValueTransformer();
+
+    private readonly IMappingBindingProvider _mappingBindingProvider =
+        mappingBindingProvider ?? new MappingBindingProvider();
 
     public IDictionary<string, object> Convert(object o)
     {
@@ -67,10 +72,8 @@ internal class ObjectToParameterDictionaryConverter(IParameterValueTransformer p
     {
         foreach (var propInfo in o.GetType().GetRuntimeProperties())
         {
-            // TODO * here is where we will get all the custom attributes and get info from
-            // TODO * whichever ones will provide it
-            var emi = propInfo.GetEntityMappingInfo();
-            var name = propInfo.Name;
+            var mappingBinding = _mappingBindingProvider.GetMappingBinding(propInfo);
+            var name = mappingBinding.ParameterName ?? propInfo.Name;
             var value = propInfo.GetValue(o);
             var valueTransformed = _parameterValueTransformer.Transform(value);
 

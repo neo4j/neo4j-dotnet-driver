@@ -18,17 +18,18 @@ using Neo4j.Driver.Internal.Mapping;
 namespace Neo4j.Driver.Mapping;
 
 /// <summary>
-/// Defines an interface that provides metadata for entity mapping used in the Neo4j driver.
-/// This interface allows access to the <see cref="EntityMappingInfo"/> object, which encapsulates
-/// details about the mapping configuration for an entity. This interface is intended to be
+/// Defines an interface that provides metadata for object mapping used in the Neo4j driver.
+/// This interface allows access to the <see cref="MappingBinding"/> object, which encapsulates
+/// details about the mapping configuration for an object. This interface is intended to be
 /// implemented by attributes decorating a property or parameter.
 /// </summary>
-public interface IEntityMappingInfoProvider
+public interface IMappingBindingMutator
 {
     /// <summary>
-    /// Encapsulates metadata information necessary for mapping an entity within the Neo4j driver.
-    /// This class holds details such as the mapping path, source, whether the mapping is optional,
-    /// the default value to use if the mapping is not present, and whether the mapping is explicit.
+    /// Modifies the provided <see cref="MappingBinding"/> instance to update or transform
+    /// its metadata configuration. This method is  used to define or adjust how
+    /// object mapping is performed in the context of the Neo4j driver.
     /// </summary>
-    EntityMappingInfo EntityMappingInfo { get; }
+    /// <param name="binding">The <see cref="MappingBinding"/> instance to be mutated.</param>
+    void Mutate(MappingBinding binding);
 }

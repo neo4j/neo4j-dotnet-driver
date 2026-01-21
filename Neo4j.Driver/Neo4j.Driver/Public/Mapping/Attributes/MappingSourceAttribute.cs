@@ -19,7 +19,7 @@ using Neo4j.Driver.Internal.Mapping;
 namespace Neo4j.Driver.Mapping;
 
 /// <summary>Represents a mapping from an entity itself rather than any of its properties.</summary>
-public enum EntityMappingSource
+public enum MappingSource
 {
     /// <summary>The value of the specified property will be used as the value.</summary>
     Property,
@@ -44,8 +44,11 @@ public enum EntityMappingSource
 /// be mapped, or a dot-separated path to a nested field.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
-public class MappingSourceAttribute : Attribute, IEntityMappingInfoProvider
+public class MappingSourceAttribute : Attribute, IMappingBindingMutator
 {
+    private readonly MappingSource? _mappingSource;
+    private readonly string _path;
+
     /// <summary>
     /// Instructs the default mapper to use a different field than the property name when mapping a value to the
     /// marked property.
@@ -57,7 +60,7 @@ public class MappingSourceAttribute : Attribute, IEntityMappingInfoProvider
     /// </param>
     public MappingSourceAttribute(string path)
     {
-        EntityMappingInfo = new EntityMappingInfo { Path = path, EntityMappingSource = EntityMappingSource.Property };
+        _path = path;
     }
 
     /// <summary>
@@ -69,14 +72,21 @@ public class MappingSourceAttribute : Attribute, IEntityMappingInfoProvider
     /// first part of the path is the key for the entity (or dictionary) field in the record, and the last part is the key
     /// within that entity or dictionary.
     /// </param>
-    /// <param name="entityMappingSource">The source of the value to be mapped.</param>
-    public MappingSourceAttribute(string key, EntityMappingSource entityMappingSource)
+    /// <param name="mappingSource">The source of the value to be mapped.</param>
+    public MappingSourceAttribute(string key, MappingSource mappingSource)
     {
-        EntityMappingInfo = new EntityMappingInfo { Path = key, EntityMappingSource = entityMappingSource };
+        _path = key;
+        _mappingSource = mappingSource;
     }
 
-    /// <summary>
-    /// Gets the entity mapping info.
-    /// </summary>
-    public EntityMappingInfo EntityMappingInfo { get; }
+    /// <inheritdoc/>
+    public void Mutate(MappingBinding binding)
+    {
+        binding.Path = _path;
+        binding.Explicit = true;
+        if (_mappingSource.HasValue)
+        {
+            binding.MappingSource = _mappingSource.Value;
+        }
+    }
 }

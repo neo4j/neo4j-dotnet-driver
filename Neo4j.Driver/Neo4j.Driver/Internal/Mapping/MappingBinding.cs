@@ -22,8 +22,24 @@ namespace Neo4j.Driver.Internal.Mapping;
 /// Contains information about the path, source, optionality, default value, and
 /// explicitness.
 /// </summary>
-public class EntityMappingInfo
+public class MappingBinding
 {
+    /// <summary>
+    /// Represents a mapping binding used to associate a specific path
+    /// with a mapping source in Neo4j operations.
+    /// </summary>
+    /// <param name="path">The path to the data in the source (e.g. a field name in a record or a property name
+    /// in a node).</param>
+    /// <param name="mappingSource">The source type for the mapping (e.g. Property, Label, Id).</param>
+    /// <param name="optional">If <c>true</c>, the mapping will not throw an exception if the source value is
+    /// missing.</param>
+    internal MappingBinding(string path, MappingSource mappingSource, bool optional = false)
+    {
+        Path = path;
+        MappingSource = mappingSource;
+        Optional = optional;
+    }
+
     /// <summary>
     /// Gets or sets the path to the data in the source (e.g. a field name in a record or a property name in a node).
     /// </summary>
@@ -32,7 +48,7 @@ public class EntityMappingInfo
     /// <summary>
     /// Gets or sets the source type for the mapping (e.g. Property, Label, Id).
     /// </summary>
-    public EntityMappingSource EntityMappingSource { get; set; }
+    public MappingSource MappingSource { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the mapping is optional. 
@@ -49,4 +65,9 @@ public class EntityMappingInfo
     /// Gets or sets a value indicating whether this mapping was explicitly defined by the user.
     /// </summary>
     public bool Explicit { get; set; }
+
+    /// <summary>
+    /// Gets the name of the parameter that will be set when mapping to Cypher parameters.
+    /// </summary>
+    public string ParameterName { get; set; }
 }

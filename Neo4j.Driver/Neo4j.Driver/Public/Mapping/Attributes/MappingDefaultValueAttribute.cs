@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System;
+using Neo4j.Driver.Internal.Mapping;
 
 namespace Neo4j.Driver.Mapping;
 
@@ -28,4 +29,11 @@ public class MappingDefaultValueAttribute(object defaultValue) : MappingOptional
 {
     /// <summary>The default value to use if the property is not present in the record.</summary>
     public object DefaultValue => defaultValue;
+
+    /// <inheritdoc />
+    public override void Mutate(MappingBinding binding)
+    {
+        base.Mutate(binding);
+        binding.DefaultValue = defaultValue;
+    }
 }

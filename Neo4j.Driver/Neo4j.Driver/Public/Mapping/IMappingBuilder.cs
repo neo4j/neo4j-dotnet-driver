@@ -32,7 +32,7 @@ public interface IMappingBuilder<TObject>
     /// <summary>Defines a mapping from a field in the record to a property on the object.</summary>
     /// <param name="destination">The property to map to.</param>
     /// <param name="path">The key of the field in the record.</param>
-    /// <param name="entityMappingSource">A value indicating the type of value to be mapped from the specified field.</param>
+    /// <param name="mappingSource">A value indicating the type of value to be mapped from the specified field.</param>
     /// <param name="converter">
     /// An optional converter function to convert the value from the field value to the type of the
     /// property.
@@ -49,7 +49,7 @@ public interface IMappingBuilder<TObject>
     IMappingBuilder<TObject> Map<TProperty>(
         Expression<Func<TObject, TProperty>> destination,
         string path,
-        EntityMappingSource entityMappingSource = EntityMappingSource.Property,
+        MappingSource mappingSource = MappingSource.Property,
         Func<object, TProperty> converter = null,
         bool optional = false);
 

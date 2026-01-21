@@ -85,15 +85,15 @@ public class LabelCaptureTests : MappingTestWithGlobalState
 
     public class TestMappedClass
     {
-        [MappingSource("Person", EntityMappingSource.NodeLabel)]
+        [MappingSource("Person", MappingSource.NodeLabel)]
         [MappingOptional]
         public string Label { get; set; }
 
-        [MappingSource("Person", EntityMappingSource.NodeLabel)]
+        [MappingSource("Person", MappingSource.NodeLabel)]
         [MappingOptional]
         public List<string> Labels { get; set; }
 
-        [MappingSource("Relationship", EntityMappingSource.RelationshipType)]
+        [MappingSource("Relationship", MappingSource.RelationshipType)]
         [MappingOptional]
         public string RelationshipType { get; set; }
     }
@@ -108,19 +108,19 @@ public class LabelCaptureTests : MappingTestWithGlobalState
                     .Map(
                         x => x.Label,
                         "Person",
-                        EntityMappingSource.NodeLabel,
+                        MappingSource.NodeLabel,
                         x => string.Join("|", ((string[])x).Select(y => y.ToUpper())),
                         true)
                     .Map(
                         x => x.Labels,
                         "Person",
-                        EntityMappingSource.NodeLabel,
+                        MappingSource.NodeLabel,
                         x => ((string[])x).Select(y => y.Replace("a", "x")).ToList(),
                         true)
                     .Map(
                         x => x.RelationshipType,
                         "Relationship",
-                        EntityMappingSource.RelationshipType,
+                        MappingSource.RelationshipType,
                         x => x?.ToString()?.ToLower(),
                         true));
         }

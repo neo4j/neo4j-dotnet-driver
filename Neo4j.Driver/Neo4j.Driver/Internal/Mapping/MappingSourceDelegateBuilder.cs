@@ -21,29 +21,29 @@ internal delegate bool MappingValueDelegate(IRecord record, out object value);
 
 internal interface IMappingSourceDelegateBuilder
 {
-    MappingValueDelegate GetMappingDelegate(EntityMappingInfo entityMappingInfo);
+    MappingValueDelegate GetMappingDelegate(MappingBinding mappingBinding);
 }
 
 internal class MappingSourceDelegateBuilder : IMappingSourceDelegateBuilder
 {
     private readonly IRecordPathFinder _pathFinder = new RecordPathFinder();
 
-    public MappingValueDelegate GetMappingDelegate(EntityMappingInfo entityMappingInfo)
+    public MappingValueDelegate GetMappingDelegate(MappingBinding mappingBinding)
     {
         return (record, out value) =>
         {
-            var translate = !entityMappingInfo.Explicit;
+            var translate = !mappingBinding.Explicit;
 
-            if (!_pathFinder.TryGetValueByPath(record, entityMappingInfo.Path, translate, out value))
+            if (!_pathFinder.TryGetValueByPath(record, mappingBinding.Path, translate, out value))
             {
-                value = entityMappingInfo.DefaultValue;
-                return entityMappingInfo.Optional;
+                value = mappingBinding.DefaultValue;
+                return mappingBinding.Optional;
             }
 
-            var (result, returnValue) = (entityMappingInfo.EntityMappingSource, value) switch
+            var (result, returnValue) = (EntityMappingSource: mappingBinding.MappingSource, value) switch
             {
-                (EntityMappingSource.NodeLabel, INode node) => (true, node.Labels),
-                (EntityMappingSource.RelationshipType, IRelationship relationship) => (true, relationship.Type),
+                (MappingSource.NodeLabel, INode node) => (true, node.Labels),
+                (MappingSource.RelationshipType, IRelationship relationship) => (true, relationship.Type),
                 _ => (true, value)
             };
 

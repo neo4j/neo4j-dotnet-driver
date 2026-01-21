@@ -13,22 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using Neo4j.Driver.Internal.Mapping;
+using System.Reflection;
 
-namespace Neo4j.Driver.Mapping;
+namespace Neo4j.Driver.Internal.Mapping;
 
-/// <summary>
-/// If a property or is decorated with this attribute, it will be considered optional. The mapper will not throw
-/// an exception if it cannot find the named value in the record. This attribute will have no effect when using
-/// custom-defined mappers.
-/// </summary>
-[AttributeUsage(AttributeTargets.Property)]
-public class MappingOptionalAttribute : Attribute, IMappingBindingMutator
+internal interface IMappingBindingProvider
 {
-    /// <inheritdoc />
-    public virtual void Mutate(MappingBinding binding)
-    {
-        binding.Optional = true;
-    }
+    MappingBinding GetMappingBinding<T>(T target) where T : ICustomAttributeProvider;
 }

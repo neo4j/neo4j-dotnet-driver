@@ -28,13 +28,13 @@ internal class MappingBuilder<T> : IMappingBuilder<T>
     public IMappingBuilder<T> Map<TProperty>(
         Expression<Func<T, TProperty>> destination,
         string path,
-        EntityMappingSource entityMappingSource = EntityMappingSource.Property,
+        MappingSource mappingSource = MappingSource.Property,
         Func<object, TProperty> converter = null,
         bool optional = false)
     {
         _builtMapper.AddMappingBySetter(
             GetPropertySetter(destination),
-            new EntityMappingInfo { Path = path, EntityMappingSource = entityMappingSource, Optional = optional },
+            new MappingBinding(path, mappingSource, optional),
             converter is null ? null : o => converter.Invoke(o));
 
         return this;
@@ -64,9 +64,9 @@ internal class MappingBuilder<T> : IMappingBuilder<T>
 
     internal void Map(
         MethodInfo propertySetter,
-        EntityMappingInfo entityMappingInfo)
+        MappingBinding mappingBinding)
     {
-        _builtMapper.AddMappingBySetter(propertySetter, entityMappingInfo);
+        _builtMapper.AddMappingBySetter(propertySetter, mappingBinding);
     }
 
     internal IMappingBuilder<T> UseConstructor(ConstructorInfo constructor)

@@ -24,6 +24,7 @@ namespace Neo4j.Driver.Internal.Mapping;
 internal static class DefaultMapper
 {
     private static readonly ConcurrentDictionary<Type, object> Mappers = new();
+    private static readonly IMappingBindingProvider MappingBindingProvider = new MappingBindingProvider();
 
     public static void Reset()
     {
@@ -35,12 +36,13 @@ internal static class DefaultMapper
         mappedSetters ??= [];
         var type = typeof(T);
 
-        // if we already have a mapper for this type, return it
-        if (Mappers.TryGetValue(type, out var mapper))
-        {
-            return (IRecordMapper<T>)mapper;
-        }
+        var result = Mappers.GetOrAdd(type, _ => BuildDefaultMapper<T>(mappedSetters, type));
+        return (IRecordMapper<T>)result;
+    }
 
+    private static IRecordMapper<T> BuildDefaultMapper<T>(IReadOnlySet<MethodInfo> mappedSetters, Type type)
+    {
+        object mapper;
         // decide which constructor we're going to use
         var mappingBuilder = new MappingBuilder<T>();
         var constructor = GetCorrectConstructor<T>();
@@ -62,14 +64,12 @@ internal static class DefaultMapper
                 continue;
             }
 
-            // check if there is a MappingSourceAttribute: if there is, use the specified mapping source;
-            // if not, look for a property on the entity with the same name as the property on the object
-            var mappingSource = property.GetEntityMappingInfo();
+            var mappingBinding = MappingBindingProvider.GetMappingBinding(property);
 
             // don't re-map any fields that were already mapped by the constructor
-            if (!usedEntitySources.Contains(mappingSource.Path))
+            if (!usedEntitySources.Contains(mappingBinding.Path))
             {
-                mappingBuilder.Map(property.SetMethod, mappingSource);
+                mappingBuilder.Map(property.SetMethod, mappingBinding);
             }
         }
 
@@ -87,7 +87,8 @@ internal static class DefaultMapper
 
         foreach (var parameter in constructor.GetParameters())
         {
-            var key = parameter.GetCustomAttribute<MappingSourceAttribute>()?.EntityMappingInfo?.Path;
+            var mappingBinding = MappingBindingProvider.GetMappingBinding(parameter);
+            var key = mappingBinding?.Path;
             if (key == null || isRecordType)
             {
                 key = parameter.Name;

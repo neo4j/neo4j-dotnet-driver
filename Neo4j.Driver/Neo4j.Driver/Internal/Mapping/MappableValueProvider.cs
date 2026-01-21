@@ -33,7 +33,7 @@ internal interface IMappableValueProvider
 
     object GetConvertedValue(
         IRecord record,
-        EntityMappingInfo mappingInfo,
+        MappingBinding mappingBinding,
         Type propertyType,
         Func<object, object> converter);
 }
@@ -93,11 +93,11 @@ internal class MappableValueProvider : IMappableValueProvider
 
     public object GetConvertedValue(
         IRecord record,
-        EntityMappingInfo mappingInfo,
+        MappingBinding mappingBinding,
         Type propertyType,
         Func<object, object> converter = null)
     {
-        var getter = _mappingSourceDelegateBuilder.GetMappingDelegate(mappingInfo);
+        var getter = _mappingSourceDelegateBuilder.GetMappingDelegate(mappingBinding);
         var found = getter(record, out var value);
         return value switch
         {

@@ -116,7 +116,7 @@ public class MappableValueProviderTests
     [Fact]
     public void GetConvertedValueShouldReturnNullWhenFieldNotFound()
     {
-        var entityMappingInfo = new EntityMappingInfo { Path = "field-name", EntityMappingSource = EntityMappingSource.Property };
+        var entityMappingInfo = new MappingBinding("field-name", MappingSource.Property);
         _mocker.GetMock<IMappingSourceDelegateBuilder>()
             .Setup(x => x.GetMappingDelegate(entityMappingInfo))
             .Returns(GetMockMappingDelegate(null, false));
@@ -135,7 +135,7 @@ public class MappableValueProviderTests
     public void GetConvertedValueShouldUseTypeConversion()
     {
         var expected = new Guid("b19f766c-4f74-41a9-a73d-6298697d81a7");
-        var entityMappingInfo = new EntityMappingInfo { Path = "field-name", EntityMappingSource = EntityMappingSource.Property };
+        var entityMappingInfo = new MappingBinding("field-name", MappingSource.Property);
         _mocker.GetMock<IMappingSourceDelegateBuilder>()
             .Setup(x => x.GetMappingDelegate(entityMappingInfo))
             .Returns(GetMockMappingDelegate(expected.ToString(), true));
@@ -160,7 +160,7 @@ public class MappableValueProviderTests
     [Fact]
     public void ShouldReturnNullWhenValueIsNull()
     {
-        var entityMappingInfo = new EntityMappingInfo { Path = "field-name", EntityMappingSource = EntityMappingSource.Property };
+        var entityMappingInfo = new MappingBinding("field-name", MappingSource.Property);
         _mocker.GetMock<IMappingSourceDelegateBuilder>()
             .Setup(x => x.GetMappingDelegate(entityMappingInfo))
             .Returns(GetMockMappingDelegate(null, true));
@@ -178,7 +178,7 @@ public class MappableValueProviderTests
     [Fact]
     public void ShouldPrioritiseConverterIfProvided()
     {
-        var entityMappingInfo = new EntityMappingInfo { Path = "field-name", EntityMappingSource = EntityMappingSource.Property };
+        var entityMappingInfo = new MappingBinding("field-name", MappingSource.Property);
         var complexValue = new Dictionary<string, string> { { "key", "value" }, { "key2", "value2" } };
 
         _mocker.GetMock<IMappingSourceDelegateBuilder>()
@@ -199,7 +199,7 @@ public class MappableValueProviderTests
     [Fact]
     public void ShouldReturnEntitiesUnchanged()
     {
-        var entityMappingInfo = new EntityMappingInfo { Path = "field-name", EntityMappingSource = EntityMappingSource.Property };
+        var entityMappingInfo = new MappingBinding("field-name", MappingSource.Property);
         var complexValue = new Node(0, new[] { "label" }, new Dictionary<string, object> { { "key", "value" } });
 
         _mocker.GetMock<IMappingSourceDelegateBuilder>()
@@ -219,7 +219,7 @@ public class MappableValueProviderTests
     [Fact]
     public void ShouldReturnDictionariesUnchanged()
     {
-        var entityMappingInfo = new EntityMappingInfo { Path = "field-name", EntityMappingSource = EntityMappingSource.Property };
+        var entityMappingInfo = new MappingBinding("field-name", MappingSource.Property);
         var complexValue = new Dictionary<string, object> { { "key", "value" } };
 
         _mocker.GetMock<IMappingSourceDelegateBuilder>()
@@ -239,7 +239,7 @@ public class MappableValueProviderTests
     [Fact]
     public void ShouldCreateCommaSeparatedList()
     {
-        var entityMappingInfo = new EntityMappingInfo { Path = "field-name", EntityMappingSource = EntityMappingSource.Property };
+        var entityMappingInfo = new MappingBinding("field-name", MappingSource.Property);
         var numbers = new List<object> { 321, 654, 987 };
 
         _mocker.GetMock<IMappingSourceDelegateBuilder>()
@@ -259,7 +259,7 @@ public class MappableValueProviderTests
     [Fact]
     public void ShouldCreateMappedList()
     {
-        var entityMappingInfo = new EntityMappingInfo { Path = "field-name", EntityMappingSource = EntityMappingSource.Property };
+        var entityMappingInfo = new MappingBinding("field-name", MappingSource.Property);
         var numbers = new List<object> { 321, 654, 987 };
 
         _mocker.GetMock<IMappingSourceDelegateBuilder>()
@@ -283,7 +283,7 @@ public class MappableValueProviderTests
     [Fact]
     public void ShouldConvertValueToRequestedType()
     {
-        var entityMappingInfo = new EntityMappingInfo { Path = "field-name", EntityMappingSource = EntityMappingSource.Property };
+        var entityMappingInfo = new MappingBinding("field-name", MappingSource.Property);
         var value = 123;
 
         _mocker.GetMock<IMappingSourceDelegateBuilder>()

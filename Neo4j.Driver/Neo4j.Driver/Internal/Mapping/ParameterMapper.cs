@@ -29,6 +29,7 @@ internal interface IParameterMapper
 internal class ParameterMapper : IParameterMapper
 {
     private readonly IMappableValueProvider _mappableValueProvider = new MappableValueProvider();
+    private readonly IMappingBindingProvider _mappingBindingProvider = new MappingBindingProvider();
 
     public Func<IRecord, T> GetParameterMappedCall<T>(MethodBase method, object target = null)
     {
@@ -38,7 +39,7 @@ internal class ParameterMapper : IParameterMapper
             parameter => new
             {
                 parameter,
-                mapping = parameter.GetEntityMappingInfo()
+                mapping = _mappingBindingProvider.GetMappingBinding(parameter)
             });
 
         return MapFromRecord;

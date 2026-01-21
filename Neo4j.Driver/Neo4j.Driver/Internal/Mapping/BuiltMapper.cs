@@ -92,18 +92,18 @@ internal class BuiltMapper<T> : IRecordMapper<T>
 
     public void AddMappingBySetter(
         MethodInfo propertySetter,
-        EntityMappingInfo entityMappingInfo,
+        MappingBinding mappingBinding,
         Func<object, object> converter = null)
     {
         // this part only happens once, at the time of building the mapper
         var propertyType = propertySetter.GetParameters()[0].ParameterType;
-        AddMapping(propertySetter, GetValue, entityMappingInfo.Optional);
+        AddMapping(propertySetter, GetValue, mappingBinding.Optional);
         return;
 
         // this part happens every time a record is mapped
         object GetValue(IRecord record)
         {
-            return _mappableValueProvider.GetConvertedValue(record, entityMappingInfo, propertyType, converter);
+            return _mappableValueProvider.GetConvertedValue(record, mappingBinding, propertyType, converter);
         }
     }
 
