@@ -13,9 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Mapping;
-
-namespace Neo4j.Driver.Internal.Mapping;
+namespace Neo4j.Driver.Mapping;
 
 /// <summary>
 /// Represents metadata for mapping an entity during the mapping process in the Neo4j driver.

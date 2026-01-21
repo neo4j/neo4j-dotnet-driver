@@ -22,16 +22,12 @@ namespace Neo4j.Driver.Mapping;
 /// This attribute is used to specify the name of the parameter to be used when mapping a property to a Cypher parameter.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property)]
-public class ParameterMappingAttribute(string parameterName) : Attribute, IMappingBindingMutator
+public class ParameterMappingAttribute : MappingBindingsAttribute
 {
     /// <summary>
-    /// The name of the parameter to be used when mapping a property to a Cypher parameter.
+    /// This attribute is used to specify the name of the parameter to be used when mapping a property to a Cypher parameter.
     /// </summary>
-    public string ParameterName { get; } = parameterName;
-
-    /// <inheritdoc />
-    public void Mutate(MappingBinding binding)
+    public ParameterMappingAttribute(string parameterName) : base(parameterName: parameterName)
     {
-        binding.ParameterName = ParameterName;
     }
 }
