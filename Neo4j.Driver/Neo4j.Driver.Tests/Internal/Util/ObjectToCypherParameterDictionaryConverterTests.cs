@@ -17,16 +17,19 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using FluentAssertions;
+using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Util;
 using Neo4j.Driver.Mapping;
+using Neo4j.Driver.Mapping.ConventionTranslation;
+using Neo4j.Driver.Tests.Mapping;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.Util;
 
-public class ObjectToParameterDictionaryConverterTests
+public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGlobalState
 {
-    private readonly ObjectToParameterDictionaryConverter _converter = new();
+    private readonly ObjectToCypherParameterDictionaryConverter _converter = new();
 
     [Fact]
     public void ShouldReturnNullGivenNull()
@@ -370,15 +373,159 @@ public class ObjectToParameterDictionaryConverterTests
         s.Should().Be("[[1, 2, 3], a]");
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ShouldObserveMappingBindingsAttribute(bool translateCypherParameters)
+    {
+        RecordObjectMapping.TranslateIdentifiers(translateCypherParameters);
+        var propertyValue = Guid.NewGuid().ToString();
+        var testObj = new ParameterMappingTestClass
+        {
+            MappingBindingsDecorated = propertyValue,
+        };
+        
+        var parameters = _converter.Convert(testObj);
+        
+        parameters.Should().ContainKey("decorated_property_with_bindings");
+        parameters["decorated_property_with_bindings"].Should().Be(propertyValue);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ShouldObserveCypherParameterMappingAttribute(bool translateCypherParameters)
+    {
+        RecordObjectMapping.TranslateIdentifiers(translateCypherParameters);
+        var propertyValue = Guid.NewGuid().ToString();
+        var testObj = new ParameterMappingTestClass
+        {
+            SomeProperty = propertyValue,
+        };
+
+        var parameters = _converter.Convert(testObj);
+
+        parameters.Should().ContainKey("explicitParamName");
+        parameters["explicitParamName"].Should().Be(propertyValue);
+    }
 
     [Fact]
-    public void ShouldObserveParameterMappingAttribute()
+    public void ShouldNotTranslateParametersByDefault()
     {
-        var dict = _converter.Convert(
-            new ClassWithMappingAttributes { SomeProperty = "someValue" });
+        var mockTranslator = new Mock<IConventionTranslator>();
+        mockTranslator.Setup(t => t.Translate(It.IsAny<string>()))
+            .Returns<string>(s => s.ToLowerInvariant());
 
-        dict.Should().ContainKey("someParameter");
-        dict["someParameter"].Should().Be("someValue");
+        ((IRecordObjectMapping)RecordObjectMapping.Instance).TranslateIdentifiers(mockTranslator.Object);
+        var propertyValue = Guid.NewGuid().ToString();
+        var testObj = new ParameterMappingTestClass
+        {
+            NotDecoratedProperty = propertyValue,
+        };
+        
+        var parameters = _converter.Convert(testObj);
+        
+        parameters.Should().ContainKey("NotDecoratedProperty");
+        parameters["NotDecoratedProperty"].Should().Be(propertyValue);
+    }
+
+    [Fact]
+    public void ShouldNotTranslateParametersWhenToldNotTo()
+    {
+        var mockTranslator = new Mock<IConventionTranslator>();
+        mockTranslator.Setup(t => t.Translate(It.IsAny<string>()))
+            .Returns<string>(s => s.ToLowerInvariant());
+
+        ((IRecordObjectMapping)RecordObjectMapping.Instance).TranslateIdentifiers(mockTranslator.Object, false);
+        var propertyValue = Guid.NewGuid().ToString();
+        var testObj = new ParameterMappingTestClass
+        {
+            NotDecoratedProperty = propertyValue,
+        };
+
+        var parameters = _converter.Convert(testObj);
+
+        parameters.Should().ContainKey("NotDecoratedProperty");
+        parameters["NotDecoratedProperty"].Should().Be(propertyValue);
+    }
+
+    [Fact]
+    public void ShouldTranslateParameters()
+    {
+        var mockTranslator = new Mock<IConventionTranslator>();
+        mockTranslator.Setup(t => t.Translate(It.IsAny<string>()))
+            .Returns<string>(s => s.ToLowerInvariant());
+        
+        ((IRecordObjectMapping)RecordObjectMapping.Instance).TranslateIdentifiers(mockTranslator.Object, true);
+        var propertyValue = Guid.NewGuid().ToString();
+        var testObj = new ParameterMappingTestClass
+        {
+            NotDecoratedProperty = propertyValue,
+        };
+
+        var parameters = _converter.Convert(testObj);
+
+        parameters.Should().ContainKey("notdecoratedproperty");
+        parameters["notdecoratedproperty"].Should().Be(propertyValue);
+    }
+
+    [Fact]
+    public void LaterAttributesShouldOverrideEarlierAttributes()
+    {
+        // test using MultiplyDecoratedProperty to ensure that the CypherParameterMapping attribute on the
+        // property is used, not the MappingSource one
+        var propertyValue = Guid.NewGuid().ToString();
+        var testObj = new ParameterMappingTestClass
+        {
+            MultiplyDecoratedProperty = propertyValue,
+        };
+        
+        var parameters = _converter.Convert(testObj);
+        
+        parameters.Should().ContainKey("multiply_decorated_property");
+        parameters["multiply_decorated_property"].Should().Be(propertyValue);
+    }
+
+    [Fact]
+    public void CustomCypherParameterAttributeShouldWork()
+    {
+        var propertyValue = Guid.NewGuid().ToString();
+        var testObj = new ParameterMappingTestClass
+        {
+            CustomDecoratedProperty = propertyValue,
+        };
+        
+        var parameters = _converter.Convert(testObj);
+        
+        parameters.Should().ContainKey("CustomParameterName");
+        parameters["CustomParameterName"].Should().Be(propertyValue);
+    }
+
+    private class ParameterMappingTestClass
+    {
+        [MappingBindings(CypherParameterName = "decorated_property_with_bindings")]
+        public string MappingBindingsDecorated { get; init; }
+
+        [CypherParameterMapping("explicitParamName")] 
+        public string SomeProperty { get; init; }
+        
+        public string NotDecoratedProperty { get; init; }
+
+        [MappingSource("not_used", CypherParameterName = "shouldn't_be_used")]
+        [CypherParameterMapping("multiply_decorated_property")]
+        public string MultiplyDecoratedProperty { get; init; }
+
+        [CustomCypherParameter]
+        public string CustomDecoratedProperty { get; init; }
+    }
+    
+    [AttributeUsage(AttributeTargets.Property)]
+    private class CustomCypherParameterAttribute : Attribute, IMappingBindingMutator
+    {
+        public void Mutate(MappingBinding binding)
+        {
+            binding.CypherParameterName = "CustomParameterName";
+        }
     }
 
     private class MyPoco
@@ -386,21 +533,7 @@ public class ObjectToParameterDictionaryConverterTests
         public string Key1 { get; set; }
         public string Key2 { get; set; }
     }
-
-    private class ClassWithMappingAttributes
-    {
-        [ParameterMapping("someParameter")]
-        public string SomeProperty { get; init; }
-
-        public string DifferentlyCased { get; init; }
-    }
-
-    public class ClassWithDotInMappingSourceAndParameterMapping
-    {
-        [MappingSource("object.property")]
-        [ParameterMapping("mappedProperty")]
-        public string PropertyWithDotInMappingSource { get; init; }
-    }
+    
     public class MyCollection<T> : IEnumerable<T>
     {
         private readonly IEnumerable<T> _values;

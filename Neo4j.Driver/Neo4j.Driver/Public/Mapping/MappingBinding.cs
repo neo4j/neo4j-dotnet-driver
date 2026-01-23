@@ -17,8 +17,6 @@ namespace Neo4j.Driver.Mapping;
 
 /// <summary>
 /// Represents metadata for mapping an entity during the mapping process in the Neo4j driver.
-/// Contains information about the path, source, optionality, default value, and
-/// explicitness.
 /// </summary>
 public class MappingBinding
 {
@@ -67,5 +65,11 @@ public class MappingBinding
     /// <summary>
     /// Gets the name of the parameter that will be set when mapping to Cypher parameters.
     /// </summary>
-    public string ParameterName { get; set; }
+    public string CypherParameterName { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether parameter names in the mapping process
+    /// should be translated using any configured naming convention translation.
+    /// </summary>
+    public bool TranslateParameterConventions { get; set; }
 }

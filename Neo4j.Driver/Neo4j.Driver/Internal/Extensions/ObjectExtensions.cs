@@ -23,8 +23,8 @@ internal static class ObjectExtensions
 {
     private const string DefaultItemSeparator = ", ";
     
-    private static readonly IObjectToDictionaryConverter _objectToParameterDictionaryConverter = 
-        new ObjectToParameterDictionaryConverter();
+    private static readonly IObjectToCypherParameterDictionaryConverter ObjectToCypherParameterParameterDictionaryConverter = 
+        new ObjectToCypherParameterDictionaryConverter();
 
     extension(object obj)
     {
@@ -42,7 +42,7 @@ internal static class ObjectExtensions
 
         public IDictionary<string, object> ToParameterDictionary()
         {
-            return _objectToParameterDictionaryConverter.Convert(obj);
+            return ObjectToCypherParameterParameterDictionaryConverter.Convert(obj);
         }
     }
 }

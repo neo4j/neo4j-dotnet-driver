@@ -17,7 +17,7 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Util;
 
-internal interface IObjectToDictionaryConverter
+internal interface IObjectToCypherParameterDictionaryConverter
 {
     IDictionary<string, object> Convert(object obj);
 }

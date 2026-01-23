@@ -36,8 +36,8 @@ public class MappingSourceAttribute : MappingBindingsAttribute
     /// within that entity or dictionary.
     /// </param>
     public MappingSourceAttribute(string path)
-        : base(path: path)
     {
+        Path = path;
     }
     /// <summary>
     /// Instructs the default mapper to use a different field than the property name when mapping a value to the
@@ -50,8 +50,9 @@ public class MappingSourceAttribute : MappingBindingsAttribute
     /// </param>
     /// <param name="mappingSource">The source of the value to be mapped.</param>
     public MappingSourceAttribute(string key, MappingSource mappingSource) 
-        : base(path: key, mappingSource: mappingSource)
     {
+        Path = key;
+        Source = mappingSource;
     }
 
     /// <inheritdoc/>

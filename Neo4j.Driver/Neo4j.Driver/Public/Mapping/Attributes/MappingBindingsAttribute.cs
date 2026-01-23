@@ -52,38 +52,7 @@ public class MappingBindingsAttribute : Attribute, IMappingBindingMutator
     /// <summary>
     /// Gets or sets the name of the parameter that will be set when mapping to Cypher parameters.
     /// </summary>
-    public string ParameterName { get; set; }
-
-    /// <summary>
-    /// Represents an attribute that provides metadata for defining custom
-    /// mapping bindings in Neo4j object mapping. This attribute is used
-    /// to customize how properties or parameters are mapped when interacting
-    /// with the Neo4j database.
-    /// </summary>
-    /// <param name="path">The path to the data in the source (e.g. a field name in a record or a property name
-    /// in a node).</param>
-    /// <param name="mappingSource">The source type for the mapping (e.g. Property, Label, Id).</param>
-    /// <param name="optional">If <c>true</c>, the mapping will not throw an exception if the source value is
-    /// missing.</param>
-    /// <param name="defaultValue">The default value to be used if the source value is missing and the mapping is optional.</param>
-    /// <param name="isExplicit">If <c>true</c>, this mapping binding was explicitly defined by the user.</param>
-    /// <param name="parameterName">The name of the parameter that will be set when mapping to Cypher parameters.</param>
-    /// <seealso cref="MappingBinding"/>
-    public MappingBindingsAttribute(
-        string path = null,
-        MappingSource? mappingSource = null,
-        bool? optional = null,
-        object defaultValue = null,
-        bool? isExplicit = null,
-        string parameterName = null)
-    {
-        Path = path;
-        Source = mappingSource;
-        Optional = optional;
-        DefaultValue = defaultValue;
-        Explicit = isExplicit;
-        ParameterName = parameterName;
-    }
+    public string CypherParameterName { get; set; }
 
     /// <inheritdoc />
     public virtual void Mutate(MappingBinding binding)
@@ -93,6 +62,6 @@ public class MappingBindingsAttribute : Attribute, IMappingBindingMutator
         binding.Optional = Optional ?? binding.Optional;
         binding.DefaultValue = DefaultValue ?? binding.DefaultValue;
         binding.Explicit = Explicit ?? binding.Explicit;
-        binding.ParameterName = ParameterName ?? binding.ParameterName;
+        binding.CypherParameterName = CypherParameterName ?? binding.CypherParameterName;
     }
 }
