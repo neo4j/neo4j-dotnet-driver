@@ -22,7 +22,7 @@ using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver.Internal.Util;
 
-internal class ParameterValueTransformer : IParameterValueTransformer
+internal class CypherParameterValueTransformer : ICypherParameterValueTransformer
 {
     private static readonly TypeInfo NeoValueTypeInfo = typeof(IValue).GetTypeInfo();
 

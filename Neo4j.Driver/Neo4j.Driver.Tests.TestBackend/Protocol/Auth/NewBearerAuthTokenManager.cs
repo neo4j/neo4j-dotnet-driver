@@ -41,7 +41,7 @@ internal class NewBearerAuthTokenManager : NewNeo4jAuthTokenManager
 
         if (result.data.requestId == requestId)
         {
-            var token = new AuthToken(result.data.auth.data.auth.data.ToParameterDictionary());
+            var token = new AuthToken(result.data.auth.data.auth.data.ToCypherParameterDictionary());
             var expiresInMs = result.data.auth.data.expiresInMs;
             var expiry = expiresInMs == 0
                 ? DateTime.MaxValue

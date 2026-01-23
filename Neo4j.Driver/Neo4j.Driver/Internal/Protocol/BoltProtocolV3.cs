@@ -117,7 +117,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
 
         //Since 4.4 the Routing information will contain a db.
         //Earlier versions need to populate this here as it's not received in the older route response...
-        var finalDictionary = record.Values.ToParameterDictionary();
+        var finalDictionary = record.Values.ToCypherParameterDictionary();
         finalDictionary["db"] = database;
 
         return (IReadOnlyDictionary<string, object>)finalDictionary;

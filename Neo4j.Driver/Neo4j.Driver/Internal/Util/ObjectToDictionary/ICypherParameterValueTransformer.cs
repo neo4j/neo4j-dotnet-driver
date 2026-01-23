@@ -15,7 +15,7 @@
 
 namespace Neo4j.Driver.Internal.Util;
 
-internal interface IParameterValueTransformer
+internal interface ICypherParameterValueTransformer
 {
     object Transform(object value);
 }

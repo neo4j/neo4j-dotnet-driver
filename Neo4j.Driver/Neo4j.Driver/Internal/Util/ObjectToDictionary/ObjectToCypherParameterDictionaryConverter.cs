@@ -24,12 +24,12 @@ using Neo4j.Driver.Mapping;
 namespace Neo4j.Driver.Internal.Util;
 
 internal class ObjectToCypherParameterDictionaryConverter(
-    IParameterValueTransformer parameterValueTransformer = null,
+    ICypherParameterValueTransformer cypherParameterValueTransformer = null,
     IMappingBindingProvider mappingBindingProvider = null)
     : IObjectToCypherParameterDictionaryConverter
 {
-    private readonly IParameterValueTransformer _parameterValueTransformer =
-        parameterValueTransformer ?? new ParameterValueTransformer();
+    private readonly ICypherParameterValueTransformer _cypherParameterValueTransformer =
+        cypherParameterValueTransformer ?? new CypherParameterValueTransformer();
 
     private readonly IMappingBindingProvider _mappingBindingProvider =
         mappingBindingProvider ?? new MappingBindingProvider();
@@ -78,7 +78,7 @@ internal class ObjectToCypherParameterDictionaryConverter(
                 RecordObjectMapping.Instance.GetTranslatedCypherParameterName(propInfo.Name);
 
             var value = propInfo.GetValue(o);
-            var valueTransformed = _parameterValueTransformer.Transform(value);
+            var valueTransformed = _cypherParameterValueTransformer.Transform(value);
 
             dict.Add(name, valueTransformed);
         }

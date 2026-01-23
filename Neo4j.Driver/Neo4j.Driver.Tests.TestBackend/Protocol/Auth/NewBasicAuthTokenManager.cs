@@ -58,7 +58,7 @@ internal class NewBasicAuthTokenManager : NewNeo4jAuthTokenManager
 
         if (result.data.requestId == requestId)
         {
-            var token = new AuthToken(result.data.auth.data.ToParameterDictionary());
+            var token = new AuthToken(result.data.auth.data.ToCypherParameterDictionary());
             return token;
         }
 

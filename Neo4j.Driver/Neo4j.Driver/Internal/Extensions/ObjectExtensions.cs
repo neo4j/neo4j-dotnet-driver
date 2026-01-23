@@ -40,7 +40,7 @@ internal static class ObjectExtensions
             };
         }
 
-        public IDictionary<string, object> ToParameterDictionary()
+        public IDictionary<string, object> ToCypherParameterDictionary()
         {
             return ObjectToCypherParameterParameterDictionaryConverter.Convert(obj);
         }

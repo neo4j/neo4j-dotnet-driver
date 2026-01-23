@@ -39,7 +39,7 @@ internal class InternalTransaction : ITransaction
 
     public IResult Run(string query, object parameters)
     {
-        return Run(new Query(query, parameters.ToParameterDictionary()));
+        return Run(new Query(query, parameters.ToCypherParameterDictionary()));
     }
 
     public IResult Run(string query, IDictionary<string, object> parameters)

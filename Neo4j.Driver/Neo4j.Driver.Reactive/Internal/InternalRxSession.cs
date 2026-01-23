@@ -54,7 +54,7 @@ internal class InternalRxSession : IRxSession
 
     public IRxResult Run(string query, object parameters)
     {
-        return Run(new Query(query, parameters.ToParameterDictionary()), null);
+        return Run(new Query(query, parameters.ToCypherParameterDictionary()), null);
     }
 
     public IRxResult Run(Query query)
@@ -69,7 +69,7 @@ internal class InternalRxSession : IRxSession
 
     public IRxResult Run(string query, object parameters, Action<TransactionConfigBuilder> action)
     {
-        return Run(new Query(query, parameters.ToParameterDictionary()), action);
+        return Run(new Query(query, parameters.ToCypherParameterDictionary()), action);
     }
 
     public IRxResult Run(Query query, Action<TransactionConfigBuilder> action)

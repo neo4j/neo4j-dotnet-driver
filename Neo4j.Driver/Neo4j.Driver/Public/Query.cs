@@ -31,7 +31,7 @@ public class Query
     /// <param name="text">The query's text</param>
     /// <param name="parameters">The query parameters, specified as an object which is then converted into key-value pairs.</param>
     public Query(string text, object parameters)
-        : this(text, parameters.ToParameterDictionary())
+        : this(text, parameters.ToCypherParameterDictionary())
     {
     }
 
