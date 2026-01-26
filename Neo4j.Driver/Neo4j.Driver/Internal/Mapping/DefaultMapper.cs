@@ -42,7 +42,6 @@ internal static class DefaultMapper
 
     private static IRecordMapper<T> BuildDefaultMapper<T>(IReadOnlySet<MethodInfo> mappedSetters, Type type)
     {
-        object mapper;
         // decide which constructor we're going to use
         var mappingBuilder = new MappingBuilder<T>();
         var constructor = GetCorrectConstructor<T>();
@@ -73,11 +72,7 @@ internal static class DefaultMapper
             }
         }
 
-        mapper = mappingBuilder.Build();
-
-        // cache the mapper for future use
-        Mappers.TryAdd(type, mapper);
-        return (IRecordMapper<T>)mapper;
+        return mappingBuilder.Build();
     }
 
     private static HashSet<string> GetUsedEntitySources<T>(ConstructorInfo constructor)

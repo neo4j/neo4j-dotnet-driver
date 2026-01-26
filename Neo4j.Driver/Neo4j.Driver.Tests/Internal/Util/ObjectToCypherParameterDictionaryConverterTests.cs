@@ -472,8 +472,6 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [Fact]
     public void LaterAttributesShouldOverrideEarlierAttributes()
     {
-        // test using MultiplyDecoratedProperty to ensure that the CypherParameterMapping attribute on the
-        // property is used, not the MappingSource one
         var propertyValue = Guid.NewGuid().ToString();
         var testObj = new ParameterMappingTestClass
         {
