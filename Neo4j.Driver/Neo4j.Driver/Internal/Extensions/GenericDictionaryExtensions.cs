@@ -33,12 +33,13 @@ internal static class GenericDictionaryExtensions
         public void FillMissingFrom(
             IDictionary<TKey, TValue> other)
         {
-            foreach (var key in other.Keys)
+            var missing = other
+                .Keys
+                .Where(key => !dict.ContainsKey(key));
+            
+            foreach (var key in missing)
             {
-                if (!dict.ContainsKey(key))
-                {
-                    dict[key] = other[key];
-                }
+                dict[key] = other[key];
             }
         }
 
@@ -69,4 +70,3 @@ internal static class GenericDictionaryExtensions
         }
     }
 }
-

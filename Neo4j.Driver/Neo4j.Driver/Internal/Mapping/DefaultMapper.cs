@@ -39,7 +39,7 @@ internal static class DefaultMapper
         var result = Mappers.GetOrAdd(type, _ => BuildDefaultMapper<T>(mappedSetters, type));
         return (IRecordMapper<T>)result;
     }
-
+    
     private static IRecordMapper<T> BuildDefaultMapper<T>(IReadOnlySet<MethodInfo> mappedSetters, Type type)
     {
         // decide which constructor we're going to use

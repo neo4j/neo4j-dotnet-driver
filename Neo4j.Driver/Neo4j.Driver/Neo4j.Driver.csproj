@@ -26,7 +26,6 @@
         <LangVersion>latest</LangVersion>
         <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
         <Platforms>AnyCPU</Platforms>
-        <Nullable>disable</Nullable>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net6.0|AnyCPU'">
         <WarningLevel>2</WarningLevel>
