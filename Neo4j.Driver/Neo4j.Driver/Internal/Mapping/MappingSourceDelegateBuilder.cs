@@ -21,46 +21,36 @@ internal delegate bool MappingValueDelegate(IRecord record, out object value);
 
 internal interface IMappingSourceDelegateBuilder
 {
-    MappingValueDelegate GetMappingDelegate(EntityMappingInfo entityMappingInfo);
+    MappingValueDelegate GetMappingDelegate(MappingBinding mappingBinding);
 }
 
 internal class MappingSourceDelegateBuilder : IMappingSourceDelegateBuilder
 {
     private readonly IRecordPathFinder _pathFinder = new RecordPathFinder();
 
-    public MappingValueDelegate GetMappingDelegate(EntityMappingInfo entityMappingInfo)
+    public MappingValueDelegate GetMappingDelegate(MappingBinding mappingBinding)
     {
-        return TryGetValue;
-
-        bool TryGetValue(IRecord record, out object value)
+        return (record, out value) =>
         {
-            var translate = !entityMappingInfo.Explicit;
-            if (!_pathFinder.TryGetValueByPath(record, entityMappingInfo.Path, translate, out var foundValue))
+            var translate = !mappingBinding.Explicit;
+
+            if (!_pathFinder.TryGetValueByPath(record, mappingBinding.Path, translate, out value))
             {
-                value = entityMappingInfo.DefaultValue;
-                return entityMappingInfo.Optional;
+                value = mappingBinding.DefaultValue;
+                return mappingBinding.Optional;
             }
 
-            switch (entityMappingInfo)
+            var (result, returnValue) = (mappingBinding.MappingSource, value) switch
             {
-                case { EntityMappingSource: EntityMappingSource.NodeLabel }
-                    when foundValue is INode node:
-                {
-                    value = node.Labels;
-                    return true;
-                }
+                (MappingSource.NodeLabel, INode node) => (true, node.Labels),
+                (MappingSource.RelationshipType, IRelationship relationship) => (true, relationship.Type),
+                _ => (true, value)
+            };
 
-                case { EntityMappingSource: EntityMappingSource.RelationshipType }
-                    when foundValue is IRelationship relationship:
-                {
-                    value = relationship.Type;
-                    return true;
-                }
-
-                default:
-                    value = foundValue;
-                    return true;
-            }
-        }
+            value = returnValue;
+            return result;
+        };
     }
 }
+
+

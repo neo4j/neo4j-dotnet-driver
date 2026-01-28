@@ -42,9 +42,15 @@
         <DelaySign>false</DelaySign>
         <AssemblyOriginatorKeyFile>..\neo4j.snk</AssemblyOriginatorKeyFile>
         <DefineConstants>TRACE, STRONGNAMED</DefineConstants>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)' == 'CI' ">
         <Optimize Condition=" '$(Optimize)' == '' ">true</Optimize>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+      <DebugType>full</DebugType>
     </PropertyGroup>
     <ItemGroup>
         <None Remove="Internal\Temporal\windowsZones.xml"/>

@@ -17,15 +17,19 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using FluentAssertions;
+using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Util;
+using Neo4j.Driver.Mapping;
+using Neo4j.Driver.Mapping.ConventionTranslation;
+using Neo4j.Driver.Tests.Mapping;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.Util;
 
-public class ObjectToDictionaryConverterTests
+public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGlobalState
 {
-    private readonly ObjectToDictionaryConverter _converter = new();
+    private readonly ObjectToCypherParameterDictionaryConverter _converter = new();
 
     [Fact]
     public void ShouldReturnNullGivenNull()
@@ -36,16 +40,16 @@ public class ObjectToDictionaryConverterTests
 
     [Theory]
     [InlineData((sbyte)0)]
-    [InlineData((byte)0)]
-    [InlineData((short)0)]
-    [InlineData((ushort)0)]
-    [InlineData(0)]
-    [InlineData((uint)0)]
-    [InlineData((long)0)]
-    [InlineData((ulong)0)]
-    [InlineData((char)0)]
-    [InlineData((float)0)]
-    [InlineData((double)0)]
+    [InlineData((byte)1)]
+    [InlineData((short)2)]
+    [InlineData((ushort)3)]
+    [InlineData(4)]
+    [InlineData((uint)5)]
+    [InlineData((long)6)]
+    [InlineData((ulong)7)]
+    [InlineData((char)8)]
+    [InlineData((float)9)]
+    [InlineData((double)10)]
     [InlineData(true)]
     public void ShouldHandleSimpleTypes(object value)
     {
@@ -83,9 +87,10 @@ public class ObjectToDictionaryConverterTests
         var dict = _converter.Convert(new { key1 = "value1", key2 = "value2" });
         dict.Should().NotBeNull();
         dict.Should().HaveCount(2);
-        dict.Should().Contain(
-            new KeyValuePair<string, object>("key1", "value1"),
-            new KeyValuePair<string, object>("key2", "value2"));
+        dict.Should()
+            .Contain(
+                new KeyValuePair<string, object>("key1", "value1"),
+                new KeyValuePair<string, object>("key2", "value2"));
     }
 
     [Fact]
@@ -103,12 +108,13 @@ public class ObjectToDictionaryConverterTests
     [Fact]
     public void ShouldHandlePoco()
     {
-        var dict = _converter.Convert(new MyPOCO { Key1 = "value1", Key2 = "value2" });
+        var dict = _converter.Convert(new MyPoco { Key1 = "value1", Key2 = "value2" });
         dict.Should().NotBeNull();
         dict.Should().HaveCount(2);
-        dict.Should().Contain(
-            new KeyValuePair<string, object>("Key1", "value1"),
-            new KeyValuePair<string, object>("Key2", "value2"));
+        dict.Should()
+            .Contain(
+                new KeyValuePair<string, object>("Key1", "value1"),
+                new KeyValuePair<string, object>("Key2", "value2"));
     }
 
     [Fact]
@@ -122,24 +128,27 @@ public class ObjectToDictionaryConverterTests
         innerObjectObject.Should().NotBeNull();
         innerObjectObject.Should().BeAssignableTo<IDictionary<string, object>>();
         var innerObject = (IDictionary<string, object>)innerObjectObject;
-        innerObject.Should().Contain(
-            new KeyValuePair<string, object>("Key1", 1),
-            new KeyValuePair<string, object>("Key2", "a"),
-            new KeyValuePair<string, object>("Key3", 0L));
+        innerObject.Should()
+            .Contain(
+                new KeyValuePair<string, object>("Key1", 1),
+                new KeyValuePair<string, object>("Key2", "a"),
+                new KeyValuePair<string, object>("Key3", 0L));
     }
 
     [Fact]
     public void ShouldHandleDictionary()
     {
-        var dict = _converter.Convert(new
-        {
-            InnerDictionary = new Dictionary<string, object>
+        var dict = _converter.Convert(
+            new
             {
-                { "Key1", 1 },
-                { "Key2", "a" },
-                { "Key3", 0L }
-            }
-        });
+                InnerDictionary = new Dictionary<string, object>
+                {
+                    { "Key1", 1 },
+                    { "Key2", "a" },
+                    { "Key3", 0L }
+                }
+            });
+
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("InnerDictionary");
@@ -147,10 +156,11 @@ public class ObjectToDictionaryConverterTests
         innerDictionaryObject.Should().NotBeNull();
         innerDictionaryObject.Should().BeAssignableTo<IDictionary<string, object>>();
         var innerDictionary = (IDictionary<string, object>)innerDictionaryObject;
-        innerDictionary.Should().Contain(
-            new KeyValuePair<string, object>("Key1", 1),
-            new KeyValuePair<string, object>("Key2", "a"),
-            new KeyValuePair<string, object>("Key3", 0L));
+        innerDictionary.Should()
+            .Contain(
+                new KeyValuePair<string, object>("Key1", 1),
+                new KeyValuePair<string, object>("Key2", "a"),
+                new KeyValuePair<string, object>("Key3", 0L));
     }
 
     [Fact]
@@ -170,15 +180,17 @@ public class ObjectToDictionaryConverterTests
     [Fact]
     public void ShouldHandleCollectionsOfArbitraryObjects()
     {
-        var dict = _converter.Convert(new
-        {
-            InnerCollection = new List<object>
+        var dict = _converter.Convert(
+            new
             {
-                new { a = "a" },
-                3,
-                new MyPOCO { Key1 = "value1" }
-            }
-        });
+                InnerCollection = new List<object>
+                {
+                    new { a = "a" },
+                    3,
+                    new MyPoco { Key1 = "value1" }
+                }
+            });
+
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("InnerCollection");
@@ -187,27 +199,30 @@ public class ObjectToDictionaryConverterTests
         innerCollectionObject.Should().BeAssignableTo<IList<object>>();
         var innerCollection = (IList<object>)innerCollectionObject;
         innerCollection.Should().HaveCount(3);
-        innerCollection.Should().Contain(
-            o => o is IDictionary<string, object> &&
+        innerCollection.Should()
+            .Contain(o => o is IDictionary<string, object> &&
                 ((IDictionary<string, object>)o).Contains(new KeyValuePair<string, object>("a", "a")));
+
         innerCollection.Should().Contain(3);
-        innerCollection.Should().Contain(
-            o => o is IDictionary<string, object> &&
+        innerCollection.Should()
+            .Contain(o => o is IDictionary<string, object> &&
                 ((IDictionary<string, object>)o).Contains(new KeyValuePair<string, object>("Key1", "value1")));
     }
 
     [Fact]
     public void ShouldHandleDictionaryOfArbitraryObjects()
     {
-        var dict = _converter.Convert(new
-        {
-            InnerDictionary = new Dictionary<string, object>
+        var dict = _converter.Convert(
+            new
             {
-                { "a", new { a = "a" } },
-                { "b", "b" },
-                { "c", 3 }
-            }
-        });
+                InnerDictionary = new Dictionary<string, object>
+                {
+                    { "a", new { a = "a" } },
+                    { "b", "b" },
+                    { "c", 3 }
+                }
+            });
+
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("InnerDictionary");
@@ -218,7 +233,11 @@ public class ObjectToDictionaryConverterTests
         innerDictionary.Should().HaveCount(3);
         innerDictionary.Should().ContainKey("a");
         innerDictionary["a"].Should().BeAssignableTo<IDictionary<string, object>>();
-        innerDictionary["a"].As<IDictionary<string, object>>().Should().Contain(new KeyValuePair<string, object>("a", "a"));
+        innerDictionary["a"]
+            .As<IDictionary<string, object>>()
+            .Should()
+            .Contain(new KeyValuePair<string, object>("a", "a"));
+
         innerDictionary.Should().Contain(new KeyValuePair<string, object>("b", "b"));
         innerDictionary.Should().Contain(new KeyValuePair<string, object>("c", 3));
     }
@@ -226,8 +245,8 @@ public class ObjectToDictionaryConverterTests
     [Fact]
     public void ShouldRaiseExceptionWhenDictionaryKeysAreNotStrings()
     {
-        var ex = Record.Exception(
-            () => _converter.Convert(new
+        var ex = Record.Exception(() => _converter.Convert(
+            new
             {
                 InnerDictionary = new Dictionary<int, object>
                 {
@@ -236,6 +255,7 @@ public class ObjectToDictionaryConverterTests
                     { 3, 3 }
                 }
             }));
+
         ex.Should().NotBeNull();
         ex.Should().BeOfType<InvalidOperationException>();
         ex.Message.Should().Contain("string keys");
@@ -244,15 +264,17 @@ public class ObjectToDictionaryConverterTests
     [Fact]
     public void ShouldHandleListOfArbitraryObjects()
     {
-        var dict = _converter.Convert(new
-        {
-            InnerList = new List<object>
+        var dict = _converter.Convert(
+            new
             {
-                new { a = "a" },
-                "b",
-                3
-            }
-        });
+                InnerList = new List<object>
+                {
+                    new { a = "a" },
+                    "b",
+                    3
+                }
+            });
+
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("InnerList");
@@ -289,6 +311,7 @@ public class ObjectToDictionaryConverterTests
             { "Key1", new Person { Name = "John", Age = 30 } },
             { "Key2", new Person { Name = "Jane", Age = 25 } }
         };
+
         var result = _converter.Convert(sourceDictionary);
         result.Should().HaveCount(2);
         result["Key1"].Should().BeEquivalentTo(sourceDictionary["Key1"]);
@@ -315,6 +338,7 @@ public class ObjectToDictionaryConverterTests
                 }
             }
         };
+
         var result = _converter.Convert(nestedDictionary);
         result.Should().ContainKey("Nested");
         var innerDict = result["Nested"].As<Dictionary<string, Person>>();
@@ -336,7 +360,7 @@ public class ObjectToDictionaryConverterTests
     }
 
     [Fact]
-    public void ShouldHandleEnumerableofEnumerable()
+    public void ShouldHandleEnumerableOfEnumerable()
     {
         var array = new[] { 1, 2, 3 };
         IEnumerable element = new MyCollection<int>(array);
@@ -349,16 +373,174 @@ public class ObjectToDictionaryConverterTests
         s.Should().Be("[[1, 2, 3], a]");
     }
 
-    private class MyPOCO
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ShouldObserveMappingBindingsAttribute(bool translateCypherParameters)
+    {
+        RecordObjectMapping.TranslateIdentifiers(translateCypherParameters);
+        var propertyValue = Guid.NewGuid().ToString();
+        var testObj = new ParameterMappingTestClass
+        {
+            MappingBindingsDecorated = propertyValue,
+        };
+        
+        var parameters = _converter.Convert(testObj);
+        
+        parameters.Should().ContainKey("decorated_property_with_bindings");
+        parameters["decorated_property_with_bindings"].Should().Be(propertyValue);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ShouldObserveCypherParameterMappingAttribute(bool translateCypherParameters)
+    {
+        RecordObjectMapping.TranslateIdentifiers(translateCypherParameters);
+        var propertyValue = Guid.NewGuid().ToString();
+        var testObj = new ParameterMappingTestClass
+        {
+            SomeProperty = propertyValue,
+        };
+
+        var parameters = _converter.Convert(testObj);
+
+        parameters.Should().ContainKey("explicitParamName");
+        parameters["explicitParamName"].Should().Be(propertyValue);
+    }
+
+    [Fact]
+    public void ShouldNotTranslateParametersByDefault()
+    {
+        var mockTranslator = new Mock<IConventionTranslator>();
+        mockTranslator.Setup(t => t.Translate(It.IsAny<string>()))
+            .Returns<string>(s => s.ToLowerInvariant());
+
+        ((IRecordObjectMapping)RecordObjectMapping.Instance).TranslateIdentifiers(mockTranslator.Object);
+        var propertyValue = Guid.NewGuid().ToString();
+        var testObj = new ParameterMappingTestClass
+        {
+            NotDecoratedProperty = propertyValue,
+        };
+        
+        var parameters = _converter.Convert(testObj);
+        
+        parameters.Should().ContainKey("NotDecoratedProperty");
+        parameters["NotDecoratedProperty"].Should().Be(propertyValue);
+    }
+
+    [Fact]
+    public void ShouldNotTranslateParametersWhenToldNotTo()
+    {
+        var mockTranslator = new Mock<IConventionTranslator>();
+        mockTranslator.Setup(t => t.Translate(It.IsAny<string>()))
+            .Returns<string>(s => s.ToLowerInvariant());
+
+        ((IRecordObjectMapping)RecordObjectMapping.Instance).TranslateIdentifiers(mockTranslator.Object, false);
+        var propertyValue = Guid.NewGuid().ToString();
+        var testObj = new ParameterMappingTestClass
+        {
+            NotDecoratedProperty = propertyValue,
+        };
+
+        var parameters = _converter.Convert(testObj);
+
+        parameters.Should().ContainKey("NotDecoratedProperty");
+        parameters["NotDecoratedProperty"].Should().Be(propertyValue);
+    }
+
+    [Fact]
+    public void ShouldTranslateParameters()
+    {
+        var mockTranslator = new Mock<IConventionTranslator>();
+        mockTranslator.Setup(t => t.Translate(It.IsAny<string>()))
+            .Returns<string>(s => s.ToLowerInvariant());
+        
+        ((IRecordObjectMapping)RecordObjectMapping.Instance).TranslateIdentifiers(mockTranslator.Object, true);
+        var propertyValue = Guid.NewGuid().ToString();
+        var testObj = new ParameterMappingTestClass
+        {
+            NotDecoratedProperty = propertyValue,
+        };
+
+        var parameters = _converter.Convert(testObj);
+
+        parameters.Should().ContainKey("notdecoratedproperty");
+        parameters["notdecoratedproperty"].Should().Be(propertyValue);
+    }
+
+    [Fact]
+    public void LaterAttributesShouldOverrideEarlierAttributes()
+    {
+        var propertyValue = Guid.NewGuid().ToString();
+        var testObj = new ParameterMappingTestClass
+        {
+            MultiplyDecoratedProperty = propertyValue,
+        };
+        
+        var parameters = _converter.Convert(testObj);
+        
+        parameters.Should().ContainKey("multiply_decorated_property");
+        parameters["multiply_decorated_property"].Should().Be(propertyValue);
+    }
+
+    [Fact]
+    public void CustomCypherParameterAttributeShouldWork()
+    {
+        var propertyValue = Guid.NewGuid().ToString();
+        var testObj = new ParameterMappingTestClass
+        {
+            CustomDecoratedProperty = propertyValue,
+        };
+        
+        var parameters = _converter.Convert(testObj);
+        
+        parameters.Should().ContainKey("CustomParameterName");
+        parameters["CustomParameterName"].Should().Be(propertyValue);
+    }
+
+    private class ParameterMappingTestClass
+    {
+        [MappingBindings(CypherParameterName = "decorated_property_with_bindings")]
+        public string MappingBindingsDecorated { get; init; }
+
+        [CypherParameterMapping("explicitParamName")] 
+        public string SomeProperty { get; init; }
+        
+        public string NotDecoratedProperty { get; init; }
+
+        [MappingSource("not_used", CypherParameterName = "shouldn't_be_used")]
+        [CypherParameterMapping("multiply_decorated_property")]
+        public string MultiplyDecoratedProperty { get; init; }
+
+        [CustomCypherParameter]
+        public string CustomDecoratedProperty { get; init; }
+    }
+    
+    [AttributeUsage(AttributeTargets.Property)]
+    private class CustomCypherParameterAttribute : Attribute, IMappingBindingMutator
+    {
+        public void Mutate(MappingBinding binding)
+        {
+            binding.CypherParameterName = "CustomParameterName";
+        }
+    }
+
+    private class MyPoco
     {
         public string Key1 { get; set; }
         public string Key2 { get; set; }
     }
-
+    
     public class MyCollection<T> : IEnumerable<T>
     {
         private readonly IEnumerable<T> _values;
-        public MyCollection(IEnumerable<T> values) { _values = values; }
+
+        public MyCollection(IEnumerable<T> values)
+        {
+            _values = values;
+        }
+
         public string Name => "My Collection implements IEnumerable<T>";
         public IEnumerator<T> GetEnumerator() => _values.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

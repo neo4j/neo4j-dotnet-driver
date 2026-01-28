@@ -307,7 +307,7 @@ public abstract class SummaryIT
             VerifySummary(
                 query,
                 parameters,
-                MatchesSummary(new { Query = new Query(query, parameters.ToDictionary()) }));
+                MatchesSummary(new { Query = new Query(query, parameters.ToCypherParameterDictionary()) }));
         }
 
         private void VerifySummary(string query, object parameters, Func<IResultSummary, bool> predicate)

@@ -18,33 +18,13 @@ using Neo4j.Driver.Internal.Mapping;
 
 namespace Neo4j.Driver.Mapping;
 
-/// <summary>Represents a mapping from an entity itself rather than any of its properties.</summary>
-public enum EntityMappingSource
-{
-    /// <summary>The value of the specified property will be used as the value.</summary>
-    Property,
-
-    /// <summary>
-    /// If the value of the specified property is a relationship, then the relationship type will be used as the
-    /// value. Otherwise, the property will be ignored.
-    /// </summary>
-    RelationshipType,
-
-    /// <summary>
-    /// If the value of the specified property is a node, then the labels will be used as the value. If the
-    /// destination property is a string, then the labels will be joined with a comma. If the destination property is a list,
-    /// then the labels will be added to the list. Otherwise, the property will be ignored.
-    /// </summary>
-    NodeLabel
-}
-
 /// <summary>
 /// Instructs the default mapper to use a different field than the property name when mapping a value to the
 /// marked property. This attribute does not affect custom-defined mappers. A path may consist of the name of the field to
 /// be mapped, or a dot-separated path to a nested field.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
-public class MappingSourceAttribute : Attribute
+public class MappingSourceAttribute : MappingBindingsAttribute
 {
     /// <summary>
     /// Instructs the default mapper to use a different field than the property name when mapping a value to the
@@ -57,9 +37,8 @@ public class MappingSourceAttribute : Attribute
     /// </param>
     public MappingSourceAttribute(string path)
     {
-        EntityMappingInfo = new EntityMappingInfo(path, EntityMappingSource.Property);
+        Path = path;
     }
-
     /// <summary>
     /// Instructs the default mapper to use a different field than the property name when mapping a value to the
     /// marked property.
@@ -69,11 +48,17 @@ public class MappingSourceAttribute : Attribute
     /// first part of the path is the key for the entity (or dictionary) field in the record, and the last part is the key
     /// within that entity or dictionary.
     /// </param>
-    /// <param name="entityMappingSource">The source of the value to be mapped.</param>
-    public MappingSourceAttribute(string key, EntityMappingSource entityMappingSource)
+    /// <param name="mappingSource">The source of the value to be mapped.</param>
+    public MappingSourceAttribute(string key, MappingSource mappingSource) 
     {
-        EntityMappingInfo = new EntityMappingInfo(key, entityMappingSource);
+        Path = key;
+        Source = mappingSource;
     }
 
-    internal EntityMappingInfo EntityMappingInfo { get; private set; }
+    /// <inheritdoc/>
+    public override void Mutate(MappingBinding binding)
+    {
+        base.Mutate(binding);
+        binding.Explicit = true;
+    }
 }

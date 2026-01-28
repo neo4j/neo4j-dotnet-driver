@@ -18,27 +18,34 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Neo4j.Driver.Internal.Mapping;
+using Neo4j.Driver.Mapping;
 
 namespace Neo4j.Driver.Internal.Util;
 
-internal class ObjectToDictionaryConverter(IParameterValueTransformer parameterValueTransformer = null)
-    : IObjectToDictionaryConverter
+internal class ObjectToCypherParameterDictionaryConverter(
+    ICypherParameterValueTransformer cypherParameterValueTransformer = null,
+    IMappingBindingProvider mappingBindingProvider = null)
+    : IObjectToCypherParameterDictionaryConverter
 {
-    private IParameterValueTransformer _parameterValueTransformer = 
-        parameterValueTransformer ?? new ParameterValueTransformer();
+    private readonly ICypherParameterValueTransformer _cypherParameterValueTransformer =
+        cypherParameterValueTransformer ?? new CypherParameterValueTransformer();
+
+    private readonly IMappingBindingProvider _mappingBindingProvider =
+        mappingBindingProvider ?? new MappingBindingProvider();
 
     public IDictionary<string, object> Convert(object o)
     {
-        switch (o)
+        return o switch
         {
-            case null: return null;
-            case Dictionary<string, object> dict: return dict;
-            case IDictionary<string, object> dictInt: return new Dictionary<string, object>(dictInt);
-            case IReadOnlyDictionary<string, object> dictIntRo: return dictIntRo.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-            case var _ when TryGetDictionaryOfStringKeys(o, out var dictStr): return dictStr;
-            case IEnumerable<KeyValuePair<string, object>> kvpSeq: return kvpSeq.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-            default: return FillDictionary(o, new Dictionary<string, object>());
-        }
+            null => null,
+            Dictionary<string, object> dict => dict,
+            IDictionary<string, object> dictInt => new Dictionary<string, object>(dictInt),
+            IReadOnlyDictionary<string, object> dictIntRo => dictIntRo.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+            var _ when TryGetDictionaryOfStringKeys(o, out var dictStr) => dictStr,
+            IEnumerable<KeyValuePair<string, object>> kvpSeq => kvpSeq.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+            _ => FillDictionary(o, new Dictionary<string, object>())
+        };
     }
 
     private static bool TryGetDictionaryOfStringKeys(object o, out IDictionary<string, object> dictionary)
@@ -48,7 +55,7 @@ internal class ObjectToDictionaryConverter(IParameterValueTransformer parameterV
         var typeInfo = o.GetType().GetTypeInfo();
 
         // get all the interfaces implemented by the type and make sure that one of them is
-        // IDictionary<string,?>
+        // IDictionary<string, T>
         var interfaces = typeInfo.ImplementedInterfaces;
         var canUse = interfaces.Any(i => i.IsGenericType &&
             i.GetGenericTypeDefinition() == typeof(IDictionary<,>) &&
@@ -66,9 +73,12 @@ internal class ObjectToDictionaryConverter(IParameterValueTransformer parameterV
     {
         foreach (var propInfo in o.GetType().GetRuntimeProperties())
         {
-            var name = propInfo.Name;
+            var mappingBinding = _mappingBindingProvider.GetMappingBinding(propInfo);
+            var name = mappingBinding.CypherParameterName ??
+                RecordObjectMapping.Instance.GetTranslatedCypherParameterName(propInfo.Name);
+
             var value = propInfo.GetValue(o);
-            var valueTransformed = _parameterValueTransformer.Transform(value);
+            var valueTransformed = _cypherParameterValueTransformer.Transform(value);
 
             dict.Add(name, valueTransformed);
         }

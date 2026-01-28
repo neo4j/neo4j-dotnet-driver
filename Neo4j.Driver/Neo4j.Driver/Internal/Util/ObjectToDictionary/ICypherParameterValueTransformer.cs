@@ -13,11 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
-
 namespace Neo4j.Driver.Internal.Util;
 
-internal interface IObjectToDictionaryConverter
+internal interface ICypherParameterValueTransformer
 {
-    IDictionary<string, object> Convert(object obj);
+    object Transform(object value);
 }

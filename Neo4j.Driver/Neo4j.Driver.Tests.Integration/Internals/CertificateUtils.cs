@@ -19,6 +19,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Neo4j.Driver.Internal.Auth;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Crypto;
@@ -126,7 +127,8 @@ public static class CertificateUtils
 
         store.Save(stream, password.ToCharArray(), SecureRandom.GetInstance("SHA256PRNG"));
 
-        var dotnetCertificate = new X509Certificate2(
+        var loader = new InternalX509CertificateLoader();
+        var dotnetCertificate = loader.LoadCertificate(
             stream.ToArray(),
             password,
             X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable);

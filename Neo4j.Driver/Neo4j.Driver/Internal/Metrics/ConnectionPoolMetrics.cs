@@ -137,6 +137,6 @@ internal class ConnectionPoolMetrics : IInternalConnectionPoolMetrics
 
     public override string ToString()
     {
-        return this.ToDictionary().ToContentString();
+        return this.ToCypherParameterDictionary().ToContentString();
     }
 }

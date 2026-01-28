@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System;
+using Neo4j.Driver.Internal.Mapping;
 
 namespace Neo4j.Driver.Mapping;
 
@@ -23,19 +24,11 @@ namespace Neo4j.Driver.Mapping;
 /// custom-defined mappers.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property)]
-public class MappingOptionalAttribute : Attribute
+public class MappingOptionalAttribute : Attribute, IMappingBindingMutator
 {
-}
-
-/// <summary>
-/// If a property is decorated with this attribute, it will be considered optional. The mapper will not throw an
-/// exception if it cannot find the named value in the record; instead, it will use the default value provided. This
-/// attribute will have no effect when using custom-defined mappers.
-/// </summary>
-/// <param name="defaultValue">The default value to use if the property is not present in the record.</param>
-[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
-public class MappingDefaultValueAttribute(object defaultValue) : MappingOptionalAttribute
-{
-    /// <summary>The default value to use if the property is not present in the record.</summary>
-    public object DefaultValue => defaultValue;
+    /// <inheritdoc />
+    public virtual void Mutate(MappingBinding binding)
+    {
+        binding.Optional = true;
+    }
 }

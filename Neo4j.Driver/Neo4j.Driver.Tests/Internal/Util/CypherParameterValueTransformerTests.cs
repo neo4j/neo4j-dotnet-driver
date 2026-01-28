@@ -21,9 +21,9 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.Util;
 using Xunit;
 
-public class ParameterValueTransformerTests
+public class CypherParameterValueTransformerTests
 {
-    private readonly ParameterValueTransformer _transformer = new();
+    private readonly CypherParameterValueTransformer _transformer = new();
 
     [Fact]
     public void Transform_Null_ReturnsNull()
