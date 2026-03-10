@@ -23,4 +23,9 @@ WORKDIR /app
 # Copy from build stage
 COPY --from=build /app .
 
+# Add non-root user and set it as the user to run the container
+RUN useradd -m appuser
+RUN chown -R appuser /app
+USER appuser
+
 ENTRYPOINT ["dotnet", "Neo4j.Driver.Tests.BenchkitBackend.dll"]
