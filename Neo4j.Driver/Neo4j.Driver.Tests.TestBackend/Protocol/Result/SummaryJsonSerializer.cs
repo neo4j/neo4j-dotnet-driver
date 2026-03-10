@@ -119,32 +119,37 @@ internal static class SummaryJsonSerializer
             return null;
         }
 
-        if (plan.HasPageCacheStats)
+        IDictionary<string, object> result = new Dictionary<string, object>
         {
-            return new
-            {
-                args = plan.Arguments,
-                operatorType = plan.OperatorType,
-                children = plan.Children.Select(MapToProfilePlan).ToList(),
-                identifiers = plan.Identifiers,
-                time = plan.Time,
-                pageCacheHitRatio = plan.PageCacheHitRatio,
-                pageCacheMisses = plan.PageCacheMisses,
-                pageCacheHits = plan.PageCacheHits,
-                rows = plan.Records,
-                dbHits = plan.DbHits
-            };
+            ["args"] = plan.Arguments,
+            ["operatorType"] = plan.OperatorType,
+            ["children"] = plan.Children.Select(MapToProfilePlan).ToList(),
+            ["identifiers"] = plan.Identifiers
+        };
+
+        if (plan.HasTime)
+        {
+            result["time"] = plan.Time;
         }
 
-        return new
+        if (plan.HasPageCacheStats)
         {
-            args = plan.Arguments,
-            operatorType = plan.OperatorType,
-            children = plan.Children.Select(MapToProfilePlan).ToList(),
-            identifiers = plan.Identifiers,
-            rows = plan.Records,
-            dbHits = plan.DbHits
-        };
+            result["pageCacheHitRatio"] = plan.PageCacheHitRatio;
+            result["pageCacheMisses"] = plan.PageCacheMisses;
+            result["pageCacheHits"] = plan.PageCacheHits;
+        }
+
+        if (plan.HasRecords)
+        {
+            result["rows"] = plan.Records;
+        }
+
+        if (plan.HasDbHits)
+        {
+            result["dbHits"] = plan.DbHits;
+        }
+
+        return result;
     }
 
     private static object MapToPlanJson(IPlan plan)

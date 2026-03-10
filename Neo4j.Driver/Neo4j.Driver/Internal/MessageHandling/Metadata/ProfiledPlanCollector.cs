@@ -60,8 +60,8 @@ internal class ProfiledPlanCollector : IMetadataCollector<IProfiledPlan>
 
         var args = profileDictionary.GetValue("args", new Dictionary<string, object>());
         var identifiers = profileDictionary.GetValue("identifiers", new List<object>()).Cast<string>();
-        var dbHits = profileDictionary.GetValue<long>("dbHits", 0);
-        var rows = profileDictionary.GetValue<long>("rows", 0);
+        var foundDbHits = profileDictionary.TryGetValue<long>("dbHits", 0, out var dbHits);
+        var foundRows = profileDictionary.TryGetValue<long>("rows", 0, out var rows);
         var foundPage = profileDictionary.TryGetValue<long>("pageCacheHits", 0, out var pageCacheHits);
         var foundMisses = profileDictionary.TryGetValue("pageCacheMisses", 0L, out var pageCacheMisses);
         var foundHitRatio = profileDictionary.TryGetValue("pageCacheHitRatio", 0.0, out var pageCacheHitRatio);
@@ -69,7 +69,7 @@ internal class ProfiledPlanCollector : IMetadataCollector<IProfiledPlan>
 
         var children = profileDictionary.GetValue("children", new List<object>());
 
-        var foundStats = foundMisses || foundPage || foundHitRatio || foundTime;
+        var foundStats = foundMisses || foundPage || foundHitRatio;
 
         var childPlans = children
             .Select(child => child as IDictionary<string, object>)
@@ -88,6 +88,9 @@ internal class ProfiledPlanCollector : IMetadataCollector<IProfiledPlan>
             pageCacheMisses,
             pageCacheHitRatio,
             time,
-            foundStats);
+            foundStats,
+            foundDbHits,
+            foundRows,
+            foundTime);
     }
 }

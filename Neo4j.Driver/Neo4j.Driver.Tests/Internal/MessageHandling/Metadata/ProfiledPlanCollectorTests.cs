@@ -55,6 +55,9 @@ public class ProfiledPlanCollectorTests
         0,
         0,
         0,
+        false,
+        true,
+        true,
         false);
 
     [Fact]
@@ -205,6 +208,9 @@ public class ProfiledPlanCollectorTests
                     0,
                     0,
                     0,
+                    false,
+                    true,
+                    true,
                     false));
     }
 
@@ -244,6 +250,9 @@ public class ProfiledPlanCollectorTests
                     2,
                     3,
                     4,
+                    true,
+                    true,
+                    true,
                     true));
     }
 
@@ -286,7 +295,59 @@ public class ProfiledPlanCollectorTests
                     0,
                     0,
                     0,
+                    false,
+                    true,
+                    true,
                     false));
+    }
+
+    [Fact]
+    public void ShouldCollectWithPresetZeroStats()
+    {
+        var metadata = new Dictionary<string, object>
+        {
+            {
+                Key, new Dictionary<string, object>
+                {
+                    { "operatorType", "opType" },
+                    { "dbHits", 0L },
+                    { "rows", 0L },
+                    { "time", 0L },
+                    { "pageCacheHits", 0L },
+                    { "pageCacheMisses", 0L },
+                    { "pageCacheHitRatio", 0.0 },
+                    { "args", new Dictionary<string, object> { { "a", 1L } } },
+                    {
+                        "identifiers", new List<object>
+                        {
+                            "a", "b", "c"
+                        }
+                    }
+                }
+            }
+        };
+
+        var collector = new ProfiledPlanCollector();
+
+        collector.Collect(metadata);
+
+        collector.Collected.Should()
+            .BeEquivalentTo(
+                new ProfiledPlan(
+                    "opType",
+                    new Dictionary<string, object> { { "a", 1L } },
+                    new List<string> { "a", "b", "c" },
+                    new List<IProfiledPlan>(),
+                    0,
+                    0,
+                    0,
+                    0,
+                    0.0,
+                    0,
+                    true,
+                    true,
+                    true,
+                    true));
     }
 
     [Fact]
@@ -352,6 +413,9 @@ public class ProfiledPlanCollectorTests
                             0,
                             0,
                             0,
+                            false,
+                            true,
+                            true,
                             false)
                     },
                     5,
@@ -360,6 +424,9 @@ public class ProfiledPlanCollectorTests
                     0,
                     0,
                     0,
+                    false,
+                    true,
+                    true,
                     false));
     }
 
@@ -450,6 +517,9 @@ public class ProfiledPlanCollectorTests
                                     0,
                                     0,
                                     0,
+                                    false,
+                                    true,
+                                    true,
                                     false)
                             },
                             15,
@@ -458,6 +528,9 @@ public class ProfiledPlanCollectorTests
                             0,
                             0,
                             0,
+                            false,
+                            true,
+                            true,
                             false)
                     },
                     5,
@@ -466,6 +539,9 @@ public class ProfiledPlanCollectorTests
                     0,
                     0,
                     0,
+                    false,
+                    true,
+                    true,
                     false));
     }
 

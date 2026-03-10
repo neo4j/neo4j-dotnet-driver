@@ -44,6 +44,15 @@ public interface IProfiledPlan : IPlan
     /// <summary>Gets if the number page cache hits and misses and the ratio was recorded.</summary>
     bool HasPageCacheStats { get; }
 
+    /// <summary>Gets if <see cref="DbHits"/> was recorded.</summary>
+    bool HasDbHits { get; }
+
+    /// <summary>Gets if <see cref="Records"/> was recorded.</summary>
+    bool HasRecords { get; }
+
+    /// <summary>Gets if <see cref="Time"/> was recorded.</summary>
+    bool HasTime { get; }
+
     /// <summary>
     /// Gets zero or more child profiled plans. A profiled plan is a tree, where each child is another profiled plan.
     /// The children are where this part of the plan gets its input records - unless this is an
