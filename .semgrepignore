@@ -1,0 +1,10 @@
+# Ignore everything
+/*
+
+# except:
+!/Neo4j.Driver/
+!/Neo4j.Driver/**
+!/Neo4j.Driver/Neo4j.Driver/
+!/Neo4j.Driver/Neo4j.Driver/**
+!/Neo4j.Driver/Neo4j.Driver.Reactive/
+!/Neo4j.Driver/Neo4j.Driver.Reactive/**
