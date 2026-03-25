@@ -33,7 +33,10 @@ internal sealed class SummaryBuilder
     public QueryType QueryType { get; set; }
     public ICounters Counters { get; set; }
     public IPlan Plan { get; set; }
+#pragma warning disable CS0618 // Type or member is obsolete
     public IProfiledPlan Profile { get; set; }
+#pragma warning restore CS0618 // Type or member is obsolete
+    public IProfile QueryProfile { get; set; }
     public GqlStatusObjectsAndNotifications StatusAndNotifications { get; set; }
     public long ResultAvailableAfter { get; set; } = -1L;
     public long ResultConsumedAfter { get; set; } = -1L;
@@ -52,7 +55,8 @@ internal sealed class SummaryBuilder
             QueryType = builder.QueryType;
             Counters = builder.Counters ?? new Counters();
             Profile = builder.Profile;
-            Plan = Profile ?? builder.Plan;
+            QueryProfile = builder.QueryProfile;
+            Plan = QueryProfile ?? builder.Plan;
             GqlStatusObjects = builder.StatusAndNotifications?.FinalizeStatusObjects(cursorMetadata);
             ResultAvailableAfter = TimeSpan.FromMilliseconds(builder.ResultAvailableAfter);
             ResultConsumedAfter = TimeSpan.FromMilliseconds(builder.ResultConsumedAfter);
@@ -72,7 +76,10 @@ internal sealed class SummaryBuilder
         public bool HasPlan => Plan != null;
         public bool HasProfile => Profile != null;
         public IPlan Plan { get; }
+#pragma warning disable CS0618 // Type or member is obsolete
         public IProfiledPlan Profile { get; }
+#pragma warning restore CS0618 // Type or member is obsolete
+        public IProfile QueryProfile { get; }
         
         [Obsolete("This API is deprecated and will be removed in a future release. Use GqlStatusObjects instead.")]
         public IList<INotification> Notifications { get; }
@@ -89,7 +96,7 @@ internal sealed class SummaryBuilder
                 $"{nameof(Counters)}={Counters}, " +
                 $"{nameof(QueryType)}={QueryType}, " +
                 $"{nameof(Plan)}={Plan}, " +
-                $"{nameof(Profile)}={Profile}, " +
+                $"{nameof(QueryProfile)}={QueryProfile}, " +
                 $"{nameof(Notifications)}={Notifications.ToContentString()}, " +
                 $"{nameof(ResultAvailableAfter)}={ResultAvailableAfter:g}, " +
                 $"{nameof(ResultConsumedAfter)}={ResultConsumedAfter:g}, " +

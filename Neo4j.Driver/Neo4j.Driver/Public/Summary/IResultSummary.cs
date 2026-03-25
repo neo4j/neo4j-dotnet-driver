@@ -57,7 +57,16 @@ public interface IResultSummary
     /// was profiled), the query plan will contain detailed information about what each step of the plan did. That more
     /// in-depth version of the query plan becomes available here.
     /// </remarks>
+    [Obsolete("Use QueryProfile instead")]
     IProfiledPlan Profile { get; }
+
+    /// <summary>Gets the profile for the executed query if available, otherwise null.</summary>
+    /// <remarks>
+    /// This describes how the database did execute your query. If the query you executed (<see cref="HasProfile"/>
+    /// was profiled), the query plan will contain detailed information about what each step of the plan did. That more
+    /// in-depth version of the query plan becomes available here.
+    /// </remarks>
+    IProfile QueryProfile { get; }
 
     /// <summary>
     /// Gets a list of notifications produced while executing the query. The list will be empty if no notifications

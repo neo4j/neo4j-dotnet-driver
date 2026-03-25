@@ -42,7 +42,10 @@ internal sealed class PullResponseHandler : MetadataCollectingResponseHandler
         AddMetadata<TypeCollector, QueryType>();
         AddMetadata<CountersCollector, ICounters>();
         AddMetadata<PlanCollector, IPlan>();
+#pragma warning disable CS0618 // Type or member is obsolete
         AddMetadata<ProfiledPlanCollector, IProfiledPlan>();
+#pragma warning restore CS0618 // Type or member is obsolete
+        AddMetadata<ProfileCollector, IProfile>();
         AddMetadata<DatabaseInfoCollector, IDatabaseInfo>();
         AddMetadata(new GqlStatusObjectsAndNotificationsCollector(useRawStatuses));
     }
@@ -58,7 +61,10 @@ internal sealed class PullResponseHandler : MetadataCollectingResponseHandler
         _summaryBuilder.ResultConsumedAfter = GetMetadata<TimeToLastCollector, long>();
         _summaryBuilder.Counters = GetMetadata<CountersCollector, ICounters>();
         _summaryBuilder.Plan = GetMetadata<PlanCollector, IPlan>();
+#pragma warning disable CS0618 // Type or member is obsolete
         _summaryBuilder.Profile = GetMetadata<ProfiledPlanCollector, IProfiledPlan>();
+#pragma warning restore CS0618 // Type or member is obsolete
+        _summaryBuilder.QueryProfile = GetMetadata<ProfileCollector, IProfile>();
         _summaryBuilder.QueryType = GetMetadata<TypeCollector, QueryType>();
         _summaryBuilder.Database = GetMetadata<DatabaseInfoCollector, IDatabaseInfo>();
         _summaryBuilder.StatusAndNotifications =

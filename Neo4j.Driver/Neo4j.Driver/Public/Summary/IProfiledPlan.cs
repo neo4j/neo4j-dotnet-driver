@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 
 namespace Neo4j.Driver;
@@ -21,6 +22,7 @@ namespace Neo4j.Driver;
 /// This is the same as a regular <see cref="IPlan"/> - except this plan has been executed, meaning it also
 /// contains detailed information about how much work each step of the plan incurred on the database.
 /// </summary>
+[Obsolete("Use IProfile instead")]
 public interface IProfiledPlan : IPlan
 {
     /// <summary>Gets the number of times this part of the plan touched the underlying data stores</summary>
@@ -43,15 +45,6 @@ public interface IProfiledPlan : IPlan
 
     /// <summary>Gets if the number page cache hits and misses and the ratio was recorded.</summary>
     bool HasPageCacheStats { get; }
-
-    /// <summary>Gets if <see cref="DbHits"/> was recorded.</summary>
-    bool HasDbHits { get; }
-
-    /// <summary>Gets if <see cref="Records"/> was recorded.</summary>
-    bool HasRecords { get; }
-
-    /// <summary>Gets if <see cref="Time"/> was recorded.</summary>
-    bool HasTime { get; }
 
     /// <summary>
     /// Gets zero or more child profiled plans. A profiled plan is a tree, where each child is another profiled plan.

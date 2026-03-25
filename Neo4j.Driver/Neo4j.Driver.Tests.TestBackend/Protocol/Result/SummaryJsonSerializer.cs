@@ -40,7 +40,7 @@ internal static class SummaryJsonSerializer
                     database = summary.Database?.Name,
                     serverInfo = GetServerInfo(summary),
                     counters = GetCountersFromSummary(summary.Counters),
-                    profile = MapToProfilePlan(summary.Profile),
+                    profile = MapToProfilePlan(summary.QueryProfile),
                     resultAvailableAfter = GetTotalMilliseconds(summary.ResultAvailableAfter),
                     resultConsumedAfter = GetTotalMilliseconds(summary.ResultConsumedAfter),
                     gqlStatusObjects = MapGqlStatusObjects(summary.GqlStatusObjects)
@@ -112,7 +112,7 @@ internal static class SummaryJsonSerializer
         };
     }
 
-    private static object MapToProfilePlan(IProfiledPlan plan)
+    private static object MapToProfilePlan(IProfile plan)
     {
         if (plan == null)
         {
@@ -127,27 +127,12 @@ internal static class SummaryJsonSerializer
             ["identifiers"] = plan.Identifiers
         };
 
-        if (plan.HasTime)
-        {
-            result["time"] = plan.Time;
-        }
-
-        if (plan.HasPageCacheStats)
-        {
-            result["pageCacheHitRatio"] = plan.PageCacheHitRatio;
-            result["pageCacheMisses"] = plan.PageCacheMisses;
-            result["pageCacheHits"] = plan.PageCacheHits;
-        }
-
-        if (plan.HasRecords)
-        {
-            result["rows"] = plan.Records;
-        }
-
-        if (plan.HasDbHits)
-        {
-            result["dbHits"] = plan.DbHits;
-        }
+        result["time"] = plan.Time;
+        result["pageCacheHitRatio"] = plan.PageCacheHitRatio;
+        result["pageCacheMisses"] = plan.PageCacheMisses;
+        result["pageCacheHits"] = plan.PageCacheHits;
+        result["rows"] = plan.Rows;
+        result["dbHits"] = plan.DbHits;
 
         return result;
     }
