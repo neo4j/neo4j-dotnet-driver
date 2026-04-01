@@ -1,0 +1,9 @@
+:include .gitignore
+
+/testkit/
+/Neo4j.Driver/Neo4j.Driver.Tests/
+/Neo4j.Driver/Neo4j.Driver.Tests.BenchkitBackend/
+/Neo4j.Driver/Neo4j.Driver.Tests.Integration/
+/Neo4j.Driver/Neo4j.Driver.Tests.TestBackend/
+/Neo4j.Driver/Neo4j.Driver.Tests.TestBackend.UnitTests.Client
+/Neo4j.Driver/Neo4j.Driver.Tests.TestBackend.UnitTests
