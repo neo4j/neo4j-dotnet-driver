@@ -17,6 +17,7 @@ using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
+using Neo4j.Driver.Internal.Util;
 using Neo4j.Driver.Tests.Result;
 using Xunit;
 using Xunit.Abstractions;
@@ -158,7 +159,16 @@ public sealed class ResultIT : DirectDriverTestBase
             var child = profile.Children[0];
             child.DbHits.Should().Be(0L);
             child.Records.Should().Be(1L);
-            child.HasPageCacheStats.Should().BeTrue();
+
+            var availableVersion = ServerVersion.From(BoltkitHelper.ServerVersion());
+            if (availableVersion.CompareTo(ServerVersion.From("4.2")) > 0)
+            {
+                child.HasPageCacheStats.Should().BeTrue();
+            }
+            else
+            {
+                child.HasPageCacheStats.Should().BeFalse();
+            }
             child.PageCacheHits.Should().Be(0L);
             child.PageCacheMisses.Should().Be(0L);
             child.PageCacheHitRatio.Should().Be(0.0);
@@ -198,10 +208,21 @@ public sealed class ResultIT : DirectDriverTestBase
             var child = profile.Children[0];
             child.DbHits.Should().Be(0L);
             child.Rows.Should().Be(1L);
-            child.PageCacheHits.Should().Be(0L);
-            child.PageCacheMisses.Should().Be(0L);
-            child.PageCacheHitRatio.Should().Be(0.0);
-            child.Time.Should().Be(0L);
+            var availableVersion = ServerVersion.From(BoltkitHelper.ServerVersion());
+            if (availableVersion.CompareTo(ServerVersion.From("4.2")) > 0)
+            {
+                child.PageCacheHits.Should().Be(0L);
+                child.PageCacheMisses.Should().Be(0L);
+                child.PageCacheHitRatio.Should().Be(0.0);
+                child.Time.Should().Be(0L);
+            }
+            else
+            {
+                child.PageCacheHits.Should().BeNull();
+                child.PageCacheMisses.Should().BeNull();
+                child.PageCacheHitRatio.Should().BeNull();
+                child.Time.Should().BeNull();
+            }
         }
         finally
         {
