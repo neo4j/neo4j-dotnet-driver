@@ -1082,4 +1082,91 @@ public static class RoutingTableManagerTests
                 Times.Once);
         }
     }
+
+    public class RoutingErrorPropagation
+    {
+        // Provide an address provider with no initial routers so the outer UpdateRoutingTableAsync
+        // does not retry with additional routers, keeping exception counts predictable.
+        private static IInitialServerAddressProvider EmptyAddressProvider() =>
+            Mock.Of<IInitialServerAddressProvider>(p => p.Get() == new HashSet<Uri>());
+
+        [Fact]
+        public async Task ShouldAttachPerRouterExceptionsAsAggregateInnerOnAllRoutersFailed()
+        {
+            var uri1 = new Uri("bolt://router-1:7687");
+            var uri2 = new Uri("bolt://router-2:7687");
+            var error1 = new ServiceUnavailableException("Connection refused to router-1");
+            var error2 = new ServiceUnavailableException("Connection refused to router-2");
+
+            var routingTable = new RoutingTable(null, new[] { uri1, uri2 });
+            var poolManager = new Mock<IClusterConnectionPoolManager>();
+            poolManager.Setup(x => x.CreateClusterConnectionAsync(uri1, It.IsAny<SessionConfig>()))
+                .ThrowsAsync(error1);
+            poolManager.Setup(x => x.CreateClusterConnectionAsync(uri2, It.IsAny<SessionConfig>()))
+                .ThrowsAsync(error2);
+
+            var manager = NewRoutingTableManager(routingTable, poolManager.Object, addressProvider: EmptyAddressProvider());
+
+            var exception = await Record.ExceptionAsync(
+                () => manager.UpdateRoutingTableAsync(AccessMode.Read, "", null, Bookmarks.Empty));
+
+            exception.Should().BeOfType<ServiceUnavailableException>()
+                .Which.Message.Should().Contain("Failed to connect to any routing server");
+
+            var aggregate = exception.InnerException.Should().BeOfType<AggregateException>().Subject;
+            aggregate.InnerExceptions.Should().HaveCount(2)
+                .And.Contain(error1)
+                .And.Contain(error2);
+        }
+
+        [Fact]
+        public async Task ShouldAttachDiscoveryExceptionInAggregate()
+        {
+            var uri = new Uri("bolt://router:7687");
+            var discoveryError = new ServiceUnavailableException("Timed out during routing discovery");
+            var conn = Mock.Of<IConnection>();
+
+            var routingTable = new RoutingTable(null, new[] { uri });
+            var poolManager = new Mock<IClusterConnectionPoolManager>();
+            poolManager.Setup(x => x.CreateClusterConnectionAsync(uri, It.IsAny<SessionConfig>()))
+                .ReturnsAsync(conn);
+
+            var discovery = new Mock<IDiscovery>();
+            discovery.Setup(x => x.DiscoverAsync(conn, It.IsAny<string>(), It.IsAny<SessionConfig>(),
+                    It.IsAny<Bookmarks>(), It.IsAny<IHomeDbCache>()))
+                .ThrowsAsync(discoveryError);
+
+            var manager = NewRoutingTableManager(routingTable, poolManager.Object, discovery.Object,
+                addressProvider: EmptyAddressProvider());
+
+            var exception = await Record.ExceptionAsync(
+                () => manager.UpdateRoutingTableAsync(AccessMode.Read, "", null, Bookmarks.Empty));
+
+            exception.Should().BeOfType<ServiceUnavailableException>()
+                .Which.Message.Should().Contain("Failed to connect to any routing server");
+
+            var aggregate = exception.InnerException.Should().BeOfType<AggregateException>().Subject;
+            aggregate.InnerExceptions.Should().ContainSingle().Which.Should().Be(discoveryError);
+        }
+
+        [Fact]
+        public async Task ShouldHaveNoInnerExceptionWhenRoutersReturnNullWithoutError()
+        {
+            // null return means the server is not in the pool (unknown to pool), no exception to collect
+            var uri = new Uri("bolt://router:7687");
+            var routingTable = new RoutingTable(null, new[] { uri });
+            var poolManager = new Mock<IClusterConnectionPoolManager>();
+            poolManager.Setup(x => x.CreateClusterConnectionAsync(uri, It.IsAny<SessionConfig>()))
+                .ReturnsAsync((IConnection)null);
+
+            var manager = NewRoutingTableManager(routingTable, poolManager.Object,
+                addressProvider: EmptyAddressProvider());
+
+            var exception = await Record.ExceptionAsync(
+                () => manager.UpdateRoutingTableAsync(AccessMode.Read, "", null, Bookmarks.Empty));
+
+            exception.Should().BeOfType<ServiceUnavailableException>();
+            exception.InnerException.Should().BeNull();
+        }
+    }
 }
