@@ -66,7 +66,18 @@ Specifying the database avoids a server round-trip to determine the home databas
 
 ### ExecutableQuery — single-query transactions
 
-`ExecutableQuery` is the most concise API for running a single query in its own transaction. It handles retries and result materialisation automatically. Use `WithMap` to project each record into a type:
+`ExecutableQuery` is the most concise API for running a single query in its own transaction. It handles retries and result materialisation automatically.
+
+`ExecuteAsync` returns an `EagerResult<IReadOnlyList<IRecord>>` containing all records (`Result`), the returned column names (`Keys`), and a query summary (`Summary`). It can be destructured directly:
+
+```csharp
+var (records, summary, keys) = await driver
+    .ExecutableQuery("MATCH (n:Movie) RETURN n.title, n.released")
+    .WithConfig(new QueryConfig(database: "neo4j"))
+    .ExecuteAsync();
+```
+
+To map results directly to a type, chain `AsObjectsAsync<T>()`:
 
 ```csharp
 record Movie(string title, int released);
