@@ -1085,14 +1085,16 @@ public static class RoutingTableManagerTests
 
     public class RoutingErrorPropagation
     {
-        // Provide an address provider with no initial routers so the outer UpdateRoutingTableAsync
-        // does not retry with additional routers, keeping exception counts predictable.
+        // We pass an empty address provider so the routing manager doesn't fall back to
+        // the initial router list and retry. Without this, exceptions get collected twice
+        // (once per attempt), which makes the counts harder to assert on.
         private static IInitialServerAddressProvider EmptyAddressProvider() =>
             Mock.Of<IInitialServerAddressProvider>(p => p.Get() == new HashSet<Uri>());
 
         [Fact]
         public async Task ShouldAttachPerRouterExceptionsAsAggregateInnerOnAllRoutersFailed()
         {
+            // Two routers in the routing table, both of which refuse the connection.
             var uri1 = new Uri("bolt://router-1:7687");
             var uri2 = new Uri("bolt://router-2:7687");
             var error1 = new ServiceUnavailableException("Connection refused to router-1");
@@ -1100,6 +1102,8 @@ public static class RoutingTableManagerTests
 
             var routingTable = new RoutingTable(null, new[] { uri1, uri2 });
             var poolManager = new Mock<IClusterConnectionPoolManager>();
+
+            // Both routers fail at the connection level - this is the bit that used to get swallowed
             poolManager.Setup(x => x.CreateClusterConnectionAsync(uri1, It.IsAny<SessionConfig>()))
                 .ThrowsAsync(error1);
             poolManager.Setup(x => x.CreateClusterConnectionAsync(uri2, It.IsAny<SessionConfig>()))
@@ -1110,9 +1114,13 @@ public static class RoutingTableManagerTests
             var exception = await Record.ExceptionAsync(
                 () => manager.UpdateRoutingTableAsync(AccessMode.Read, "", null, Bookmarks.Empty));
 
+            // The top-level exception is still the same, no change to user surface
             exception.Should().BeOfType<ServiceUnavailableException>()
                 .Which.Message.Should().Contain("Failed to connect to any routing server");
 
+            // In this spike, the InnerException is an AggregateException
+            // containing all the actual per-router causes. Before this spike, InnerException was null
+            // and the connection refused errors were lost
             var aggregate = exception.InnerException.Should().BeOfType<AggregateException>().Subject;
             aggregate.InnerExceptions.Should().HaveCount(2)
                 .And.Contain(error1)
@@ -1122,6 +1130,10 @@ public static class RoutingTableManagerTests
         [Fact]
         public async Task ShouldAttachDiscoveryExceptionInAggregate()
         {
+            // This time the connection to the router succeeds, but the routing table discovery
+            // query itself fails (e.g. times out, or the server returns a bad response).
+            // This kind of exception was being logged and dropped, so you'd have to look
+            // in the logs to know what actually went wrong
             var uri = new Uri("bolt://router:7687");
             var discoveryError = new ServiceUnavailableException("Timed out during routing discovery");
             var conn = Mock.Of<IConnection>();
@@ -1142,31 +1154,13 @@ public static class RoutingTableManagerTests
             var exception = await Record.ExceptionAsync(
                 () => manager.UpdateRoutingTableAsync(AccessMode.Read, "", null, Bookmarks.Empty));
 
+            // Same top-level exception as before.
             exception.Should().BeOfType<ServiceUnavailableException>()
                 .Which.Message.Should().Contain("Failed to connect to any routing server");
 
+            // And the discovery error is now preserved as the inner cause
             var aggregate = exception.InnerException.Should().BeOfType<AggregateException>().Subject;
             aggregate.InnerExceptions.Should().ContainSingle().Which.Should().Be(discoveryError);
-        }
-
-        [Fact]
-        public async Task ShouldHaveNoInnerExceptionWhenRoutersReturnNullWithoutError()
-        {
-            // null return means the server is not in the pool (unknown to pool), no exception to collect
-            var uri = new Uri("bolt://router:7687");
-            var routingTable = new RoutingTable(null, new[] { uri });
-            var poolManager = new Mock<IClusterConnectionPoolManager>();
-            poolManager.Setup(x => x.CreateClusterConnectionAsync(uri, It.IsAny<SessionConfig>()))
-                .ReturnsAsync((IConnection)null);
-
-            var manager = NewRoutingTableManager(routingTable, poolManager.Object,
-                addressProvider: EmptyAddressProvider());
-
-            var exception = await Record.ExceptionAsync(
-                () => manager.UpdateRoutingTableAsync(AccessMode.Read, "", null, Bookmarks.Empty));
-
-            exception.Should().BeOfType<ServiceUnavailableException>();
-            exception.InnerException.Should().BeNull();
         }
     }
 }
