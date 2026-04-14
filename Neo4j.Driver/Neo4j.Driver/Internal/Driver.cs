@@ -25,13 +25,13 @@ namespace Neo4j.Driver.Internal;
 internal sealed class Driver : IInternalDriver
 {
     private readonly DefaultBookmarkManager _bookmarkManager;
-    private readonly INeo4jServer _server;
+    private readonly IProtocolAdapter _server;
 
     private int _closedMarker;
 
     internal Driver(
         Uri uri,
-        INeo4jServer server,
+        IProtocolAdapter server,
         DriverContext driverContext)
     {
         Uri = uri;

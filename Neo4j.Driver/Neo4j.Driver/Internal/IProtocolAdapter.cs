@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal;
 /// (capabilities, connectivity, routing) and acts as a session factory.
 /// The existing Bolt stack sits behind this interface unchanged.
 /// </summary>
-internal interface INeo4jServer : IAsyncDisposable
+internal interface IProtocolAdapter : IAsyncDisposable
 {
     IInternalAsyncSession CreateSession(
         SessionConfig config,

@@ -410,7 +410,7 @@ public class AsyncSessionTests
         private static Driver.Internal.Driver NewDriver()
         {
             var context = TestDriverContext.MockContext;
-            var server = new BoltServer(
+            var server = new BoltProtocolAdapter(
                 new TestConnectionProvider(Mock.Of<IConnection>()),
                 context);
 

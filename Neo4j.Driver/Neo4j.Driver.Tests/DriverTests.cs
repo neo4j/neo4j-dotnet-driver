@@ -137,7 +137,7 @@ public class DriverTests
     [Fact]
     public async void ShouldVerifyConnection()
     {
-        var mock = new Mock<INeo4jServer>();
+        var mock = new Mock<IProtocolAdapter>();
         mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
             .Returns(Task.FromResult(new Mock<IServerInfo>().Object));
 
@@ -150,7 +150,7 @@ public class DriverTests
     [Fact]
     public async void ShouldTryVerifyConnection()
     {
-        var mock = new Mock<INeo4jServer>();
+        var mock = new Mock<IProtocolAdapter>();
         mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
             .Returns(Task.FromResult(new Mock<IServerInfo>().Object));
 
@@ -167,7 +167,7 @@ public class DriverTests
     [Fact]
     public async void ShouldCatchInTryVerifyConnection()
     {
-        var mock = new Mock<INeo4jServer>();
+        var mock = new Mock<IProtocolAdapter>();
         mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
             .ThrowsAsync(new Exception("broken"));
 
@@ -185,7 +185,7 @@ public class DriverTests
     public async void ShouldGetInfoConnection()
     {
         var mockServerInfo = new Mock<IServerInfo>().Object;
-        var mock = new Mock<INeo4jServer>();
+        var mock = new Mock<IProtocolAdapter>();
         mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
             .Returns(Task.FromResult(mockServerInfo));
 
@@ -203,7 +203,7 @@ public class DriverTests
     [Fact]
     public async void ShouldTestSupportMultiDb()
     {
-        var mock = new Mock<INeo4jServer>();
+        var mock = new Mock<IProtocolAdapter>();
         mock.Setup(x => x.SupportsMultiDbAsync()).Returns(Task.FromResult(true));
         var driver = new InternalDriver(
             new Uri("bolt://localhost"),

@@ -20,17 +20,17 @@ using Neo4j.Driver.Internal.Routing;
 namespace Neo4j.Driver.Internal;
 
 /// <summary>
-/// INeo4jServer implementation that wraps the existing Bolt connection stack.
+/// IProtocolAdapter implementation that wraps the existing Bolt connection stack.
 /// This is the strangler-fig seam: all driver traffic flows through here,
 /// and the entire internal stack beneath it is unchanged.
 /// </summary>
-internal sealed class BoltServer : INeo4jServer
+internal sealed class BoltProtocolAdapter : IProtocolAdapter
 {
     private readonly IConnectionProvider _connectionProvider;
     private readonly DriverContext _context;
     private readonly IAsyncRetryLogic _retryLogic;
 
-    public BoltServer(IConnectionProvider connectionProvider, DriverContext context)
+    public BoltProtocolAdapter(IConnectionProvider connectionProvider, DriverContext context)
     {
         _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
         _context = context ?? throw new ArgumentNullException(nameof(context));
