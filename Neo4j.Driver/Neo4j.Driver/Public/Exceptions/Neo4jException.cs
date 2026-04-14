@@ -118,6 +118,71 @@ public class Neo4jException : Exception
     /// </summary>
     public Dictionary<string, object> GqlDiagnosticRecord { get; }
 
+    /// <summary>
+    /// Returns whether this exception, or any <see cref="Neo4jException"/> in its GQL cause chain,
+    /// has the specified GQL status code.
+    /// </summary>
+    /// <param name="gqlStatus">The GQL status code to search for.</param>
+    /// <returns>
+    /// <c>true</c> if a matching <see cref="Neo4jException"/> is found in the cause chain;
+    /// otherwise <c>false</c>.
+    /// </returns>
+    public bool ContainsGqlStatus(string gqlStatus)
+    {
+        return TryFindByGqlStatus(gqlStatus, out _);
+    }
+
+    /// <summary>
+    /// Returns the first <see cref="Neo4jException"/> in the GQL cause chain — starting with this
+    /// exception — whose <see cref="GqlStatus"/> matches the specified value.
+    /// </summary>
+    /// <param name="gqlStatus">The GQL status code to search for.</param>
+    /// <returns>The first matching <see cref="Neo4jException"/>.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when no exception in the cause chain has the specified GQL status code.
+    /// Use <see cref="TryFindByGqlStatus"/> to avoid the exception.
+    /// </exception>
+    public Neo4jException FindByGqlStatus(string gqlStatus)
+    {
+        if (TryFindByGqlStatus(gqlStatus, out var result))
+        {
+            return result;
+        }
+
+        throw new InvalidOperationException(
+            $"No exception with GQL status '{gqlStatus}' was found in the cause chain.");
+    }
+
+    /// <summary>
+    /// Searches the GQL cause chain — starting with this exception — for a <see cref="Neo4jException"/>
+    /// whose <see cref="GqlStatus"/> matches the specified value.
+    /// </summary>
+    /// <param name="gqlStatus">The GQL status code to search for.</param>
+    /// <param name="result">
+    /// When this method returns <c>true</c>, contains the first matching <see cref="Neo4jException"/>;
+    /// otherwise <c>null</c>.
+    /// </param>
+    /// <returns>
+    /// <c>true</c> if a matching exception was found; otherwise <c>false</c>.
+    /// </returns>
+    public bool TryFindByGqlStatus(string gqlStatus, out Neo4jException result)
+    {
+        var current = this;
+        while (current is not null)
+        {
+            if (current.GqlStatus == gqlStatus)
+            {
+                result = current;
+                return true;
+            }
+
+            current = current.InnerException as Neo4jException;
+        }
+
+        result = null;
+        return false;
+    }
+
     internal static Neo4jException Create(FailureMessage failureMessage)
     {
         Exception innerException = null;
