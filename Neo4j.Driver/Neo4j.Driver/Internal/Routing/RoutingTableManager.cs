@@ -379,6 +379,7 @@ internal class RoutingTableManager : IRoutingTableManager
                     throw;
                 }
 
+                routingTable.Remove(router);
                 collectedExceptions?.Add(ex);
             }
         }
