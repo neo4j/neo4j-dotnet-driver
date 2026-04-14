@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
@@ -59,21 +60,70 @@ public class Neo4jExceptionGqlStatusFinderTests
         }
 
         [Fact]
-        public void ReturnsNull_WhenNoMatchInChain()
+        public void Throws_WhenNoMatchInChain()
         {
             var causeMsg = new FailureMessage { GqlStatus = "08N01" };
             var rootMsg = new FailureMessage { GqlStatus = "42N04", GqlCause = causeMsg };
             var root = Neo4jException.Create(rootMsg);
 
-            root.FindByGqlStatus("99Z99").Should().BeNull();
+            var act = () => root.FindByGqlStatus("99Z99");
+
+            act.Should().Throw<InvalidOperationException>()
+                .WithMessage("*99Z99*");
         }
 
         [Fact]
-        public void ReturnsNull_WhenExceptionHasNoGqlStatus()
+        public void Throws_WhenExceptionHasNoGqlStatus()
         {
             var ex = new Neo4jException("code", "message");
 
-            ex.FindByGqlStatus("42N04").Should().BeNull();
+            var act = () => ex.FindByGqlStatus("42N04");
+
+            act.Should().Throw<InvalidOperationException>();
+        }
+    }
+
+    public class TryFindByGqlStatus
+    {
+        [Fact]
+        public void ReturnsTrueAndSetsResult_WhenThisExceptionMatches()
+        {
+            var ex = ExceptionWithStatus("42N04");
+
+            ex.TryFindByGqlStatus("42N04", out var result).Should().BeTrue();
+            result.Should().BeSameAs(ex);
+        }
+
+        [Fact]
+        public void ReturnsTrueAndSetsCause_WhenRootDoesNotMatch()
+        {
+            var causeMsg = new FailureMessage { GqlStatus = "42N04" };
+            var rootMsg = new FailureMessage { GqlStatus = "08N01", GqlCause = causeMsg };
+            var root = Neo4jException.Create(rootMsg);
+            var cause = (Neo4jException)root.InnerException;
+
+            root.TryFindByGqlStatus("42N04", out var result).Should().BeTrue();
+            result.Should().BeSameAs(cause);
+        }
+
+        [Fact]
+        public void ReturnsFalseAndSetsNull_WhenNoMatchInChain()
+        {
+            var causeMsg = new FailureMessage { GqlStatus = "08N01" };
+            var rootMsg = new FailureMessage { GqlStatus = "42N04", GqlCause = causeMsg };
+            var root = Neo4jException.Create(rootMsg);
+
+            root.TryFindByGqlStatus("99Z99", out var result).Should().BeFalse();
+            result.Should().BeNull();
+        }
+
+        [Fact]
+        public void ReturnsFalse_WhenExceptionHasNoGqlStatus()
+        {
+            var ex = new Neo4jException("code", "message");
+
+            ex.TryFindByGqlStatus("42N04", out var result).Should().BeFalse();
+            result.Should().BeNull();
         }
     }
 
