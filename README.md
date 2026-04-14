@@ -94,7 +94,7 @@ foreach (var movie in movies)
 
 ### Managed transaction functions
 
-For multi-query transactions, or when you need explicit control over read/write routing, use `ExecuteReadAsync` or `ExecuteWriteAsync` on a session. The driver automatically retries the work on transient failures.
+For multi-query transactions, use `ExecuteReadAsync` or `ExecuteWriteAsync` on a session. The driver automatically retries the work on transient failures.
 
 ```csharp
 await using var session = driver.AsyncSession(o => o.WithDatabase("neo4j"));
