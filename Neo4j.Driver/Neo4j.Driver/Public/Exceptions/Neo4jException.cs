@@ -21,6 +21,14 @@ using Neo4j.Driver.Internal.Messaging;
 namespace Neo4j.Driver;
 
 /// <summary>The base class for all Neo4j exceptions.</summary>
+/// <remarks>
+/// <para>
+/// GQL errors may include a cause chain. When present, the GQL cause is exposed as
+/// <see cref="Exception.InnerException"/>, which may itself be a <see cref="Neo4jException"/>
+/// with its own cause. The full chain can be walked using the standard .NET
+/// <see cref="Exception.InnerException"/> property.
+/// </para>
+/// </remarks>
 [DataContract]
 public class Neo4jException : Exception
 {
