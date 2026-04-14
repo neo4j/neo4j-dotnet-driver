@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -91,9 +92,31 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         return _clusterConnectionPool.UpdateAsync(added, removed);
     }
 
-    public Task<IConnection> CreateClusterConnectionAsync(Uri uri, SessionConfig sessionConfig)
+    public async Task<IConnection> CreateClusterConnectionAsync(Uri uri, SessionConfig sessionConfig)
     {
-        return CreateClusterConnectionAsync(uri, AccessMode.Write, null, sessionConfig, Bookmarks.Empty);
+        ServiceUnavailableException cause;
+        try
+        {
+            var conn = await _clusterConnectionPool
+                .AcquireAsync(uri, AccessMode.Write, null, sessionConfig, Bookmarks.Empty, false)
+                .ConfigureAwait(false);
+
+            if (conn != null)
+            {
+                return new ClusterConnection(conn, uri, this);
+            }
+
+            cause = new ServiceUnavailableException(
+                $"Server {uri} is not available in the cluster connection pool.");
+        }
+        catch (ServiceUnavailableException e)
+        {
+            cause = e;
+        }
+
+        await OnConnectionErrorAsync(uri, null, cause).ConfigureAwait(false);
+        ExceptionDispatchInfo.Throw(cause);
+        return null; // unreachable
     }
 
     public async Task<IConnection> AcquireAsync(
