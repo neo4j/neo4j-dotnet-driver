@@ -118,6 +118,45 @@ public class Neo4jException : Exception
     /// </summary>
     public Dictionary<string, object> GqlDiagnosticRecord { get; }
 
+    /// <summary>
+    /// Returns whether this exception, or any <see cref="Neo4jException"/> in its GQL cause chain,
+    /// has the specified GQL status code.
+    /// </summary>
+    /// <param name="gqlStatus">The GQL status code to search for.</param>
+    /// <returns>
+    /// <c>true</c> if a matching <see cref="Neo4jException"/> is found in the cause chain;
+    /// otherwise <c>false</c>.
+    /// </returns>
+    public bool ContainsGqlStatus(string gqlStatus)
+    {
+        return FindByGqlStatus(gqlStatus) is not null;
+    }
+
+    /// <summary>
+    /// Returns the first <see cref="Neo4jException"/> in the GQL cause chain — starting with this
+    /// exception — whose <see cref="GqlStatus"/> matches the specified value, or <c>null</c> if
+    /// no match is found.
+    /// </summary>
+    /// <param name="gqlStatus">The GQL status code to search for.</param>
+    /// <returns>
+    /// The first matching <see cref="Neo4jException"/>, or <c>null</c> if none is found.
+    /// </returns>
+    public Neo4jException FindByGqlStatus(string gqlStatus)
+    {
+        var current = this;
+        while (current is not null)
+        {
+            if (current.GqlStatus == gqlStatus)
+            {
+                return current;
+            }
+
+            current = current.InnerException as Neo4jException;
+        }
+
+        return null;
+    }
+
     internal static Neo4jException Create(FailureMessage failureMessage)
     {
         Exception innerException = null;
