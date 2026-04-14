@@ -23,9 +23,14 @@ namespace Neo4j.Driver;
 /// via the <see cref="IAsyncSession"/> interface and the ExecutableQuery method.
 /// </summary>
 /// <remarks>
-/// While the driver object is thread-safe, disposing is not.
-/// Make sure you are not using the driver object or any resources spawned from it(such as sessions or transactions)
-/// when it is disposed.
+/// <para>The driver object is thread-safe and can be shared across threads.</para>
+/// <para>
+/// When the driver is disposed — for example at the end of a <c>using</c> block — all connections
+/// to the database are closed. Ensure that all sessions, transactions, and other resources obtained
+/// from the driver have been closed <em>before</em> disposal. Using the driver or any of its
+/// resources concurrently with disposal results in unspecified behavior, which may include
+/// deadlocks, data races, or errors.
+/// </para>
 /// </remarks>
 public interface IDriver : IDisposable, IAsyncDisposable
 {
