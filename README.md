@@ -2,186 +2,175 @@
 
 This repository contains the official [Neo4j](https://neo4j.com/) driver for .NET.
 
-### [API Docs](https://neo4j.com/docs/api/dotnet-driver/current/) | [Driver Manual](https://neo4j.com/docs/dotnet-manual/current/) | [Example Web App](https://github.com/neo4j-examples/movies-dotnetcore-bolt) | [Change Log](https://github.com/neo4j/neo4j-dotnet-driver/wiki/5.X-Change-Log)
+### [API Docs](https://neo4j.com/docs/api/dotnet-driver/current/) | [Driver Manual](https://neo4j.com/docs/dotnet-manual/current/) | [Change Log](https://github.com/neo4j/neo4j-dotnet-driver/wiki/6.X-Change-Log)
 
-This document covers the usage of the driver; for contribution guidance, see [Contributing](./CONTRIBUTING.md).
+For contribution guidance, see [Contributing](./CONTRIBUTING.md).
 
 ## Installation
 
-Neo4j publishes its .NET libraries to NuGet with the following targets:
-
-- [.NET Standard 2.0](https://learn.microsoft.com/en-us/dotnet/api/?view=netstandard-2.0), for more
-  info: https://learn.microsoft.com/en-us/dotnet/standard/net-standard?tabs=net-standard-2-0
-- [.NET 6.0](https://learn.microsoft.com/en-us/dotnet/api/?view=net-6.0)
-- [.NET 8.0](https://learn.microsoft.com/en-us/dotnet/api/?view=net-8.0) as of 5.17
-
-To add the latest [NuGet package](https://www.nuget.org/packages/Neo4j.Driver):
-
-```posh
-> dotnet add package Neo4j.Driver
+```
+dotnet add package Neo4j.Driver
 ```
 
-### Versions
+The package targets `.NET 8`, `.NET 9`, and `.NET 10`.
 
-Starting with 5.0, the Neo4j drivers moved to a monthly release cadence. A new minor version is released on the last
-Thursday of each month to maintain versioning consistency with the core product (Neo4j DBMS), which also has moved to a
-monthly cadence.
+`Neo4j.Driver` is strong-named by default. Unlike previous major versions, there is no separate `Neo4j.Driver.Signed` package.
 
-As a policy, Neo4j will not release patch versions except on rare occasions. Bug fixes and updates will go into the
-latest minor version; users should upgrade to a later version to patch bug fixes. Driver upgrades within a major version
-will never contain breaking API changes, excluding the `Neo4j.Driver.Preview` namespace reserved for the preview of
-features.
+### Additional packages
 
-See also: https://neo4j.com/developer/kb/neo4j-supported-versions/
+[Neo4j.Driver.Reactive](https://www.nuget.org/packages/Neo4j.Driver.Reactive/) provides reactive (`IObservable`-based) APIs built on top of the core driver:
 
-### Synchronous and Reactive driver extensions
-
-* [Neo4j.Driver.Simple](https://www.nuget.org/packages/Neo4j.Driver.Simple/) exposes synchronous APIs on the driver's
-  IDriver interface.
-* [Neo4j.Driver.Reactive](https://www.nuget.org/packages/Neo4j.Driver.Reactive/) exposes reactive APIs on the driver's
-  IDriver interface.
-
-### Strong-named
-
-A [strong-named](https://learn.microsoft.com/en-us/dotnet/standard/assembly/strong-named) version of each driver package
-is available on NuGet [Neo4j.Driver.Signed](https://www.nuget.org/packages/Neo4j.Driver.Signed). The strong-named
-packages contain the same version of
-their respective packages with strong-name compliance. _Consider using the strong-named version only if your project is
-strong-named or requires strong-named dependencies._
-
-To add the strong-named version of the driver to your project using the NuGet Package Manager:
-
-```posh
-> Install-Package Neo4j.Driver.Signed
+```
+dotnet add package Neo4j.Driver.Reactive
 ```
 
-## Getting started
+### Versioning
 
-### Connecting to a Neo4j database:
+Driver upgrades within a major version will not contain breaking API changes, with the exception of the `Neo4j.Driver.Preview` namespace, which is reserved for feature previews.
+
+## Getting Started
+
+### URI schemes
+
+Use `bolt://` for a direct connection to a single server, or `neo4j://` for a routing connection (required for clusters and recommended for [Neo4j Aura](https://neo4j.com/cloud/platform/aura-graph-database/)). Append `+s` to require TLS (e.g. `neo4j+s://`), or `+ssc` to allow self-signed certificates.
+
+### Creating a driver
 
 ```csharp
 using Neo4j.Driver;
 
-await using var driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("neo4j", "password"));
+await using var driver = GraphDatabase.Driver(
+    "neo4j+s://<dbid>.databases.neo4j.io",
+    AuthTokens.Basic("neo4j", "<password>"));
 ```
 
-There are a few points to highlight when adding the driver to your project:
+`IDriver` maintains a connection pool internally. Create a single instance per application and share it across threads — `IDriver` is thread-safe. Sessions and transactions are not thread-safe and should not be shared across threads.
 
-* Each `IDriver` instance maintains a pool of connections inside; as a result, use a single driver instance per
-  application.
-* Sessions and transactions do not open new connections if a free one is in the driver's connection pool; this makes
-  both resources cheap to create and close.
-* The driver is thread-safe and made to be used across an application. Sessions and transactions are not thread-safe;
-  using a session or transaction concurrently will result in undefined behavior.
-
-### Verifying connectivity:
+### Verifying connectivity
 
 ```csharp
 await driver.VerifyConnectivityAsync();
 ```
 
-To ensure the credentials and URLs specified when creating the driver, you can call `VerifyConnectivityAsync` on the
-driver instance. If either configuration is wrong, the Task will result in an exception.
+Throws an exception if the server is unreachable or the credentials are invalid.
 
-### Executing a single query transaction:
+### Always specify a database
 
 ```csharp
-await driver.ExecutableQuery("CREATE (:Node{id: 0})")
-    .WithConfig(new QueryConfig(database:"neo4j"))
+var config = new QueryConfig(database: "neo4j");
+```
+
+Specifying the database avoids a server round-trip to determine the home database. Omitting it is only appropriate when working against a single-database deployment where the database name is genuinely unknown.
+
+## Querying
+
+### ExecutableQuery — single-query transactions
+
+`ExecutableQuery` is the most concise API for running a single query in its own transaction. It handles retries and result materialisation automatically.
+
+`ExecuteAsync` returns an `EagerResult<IReadOnlyList<IRecord>>` containing all records (`Result`), the returned column names (`Keys`), and a query summary (`Summary`). It can be destructured directly:
+
+```csharp
+var (records, summary, keys) = await driver
+    .ExecutableQuery("MATCH (n:Movie) RETURN n.title, n.released")
+    .WithConfig(new QueryConfig(database: "neo4j"))
     .ExecuteAsync();
 ```
 
-As of version 5.10, The .NET driver includes a fluent querying API on the driver's IDriver interface. The fluent API is
-the most concise API for executing single query transactions. It avoids the boilerplate that comes with handling complex
-problems, such as results that exceed memory or multi-query transactions.
-
-### Remember to specify a database.
+To map results directly to a type, chain `AsObjectsAsync<T>()`:
 
 ```csharp
-    .WithConfig(new QueryConfig(database:"neo4j"))
+record Movie(string title, int released);
+
+var movies = await driver
+    .ExecutableQuery("MATCH (n:Movie) RETURN n.title, n.released")
+    .WithConfig(new QueryConfig(database: "neo4j"))
+    .ExecuteAsync()
+    .AsObjectsAsync<Movie>();
+
+foreach (var movie in movies)
+    Console.WriteLine(movie);
 ```
 
-Always specify the database when you know which database the transaction should execute against. By setting the database
-parameter, the driver avoids a roundtrip and concurrency machinery associated with negotiating a home database.
+### Managed transaction functions
 
-### Getting Results
+For multi-query transactions, use `ExecuteReadAsync` or `ExecuteWriteAsync` on a session. The driver automatically retries the work on transient failures.
 
 ```csharp
-var response = await driver.ExecutableQuery("MATCH (n:Node) RETURN n.id as id")
-    .WithConfig(dbConfig)
-    .ExecuteAsync();
+await using var session = driver.AsyncSession(o => o.WithDatabase("neo4j"));
+
+// Read transaction
+var names = await session.ExecuteReadAsync(async tx =>
+{
+    var cursor = await tx.RunAsync("MATCH (p:Person) RETURN p.name AS name");
+    return await cursor.ToListAsync(r => r["name"].As<string>());
+});
+
+// Write transaction
+await session.ExecuteWriteAsync(tx =>
+    tx.RunAsync("CREATE (:Person {name: $name})", new { name = "Alice" }));
 ```
 
-The response from the fluent APIs is
-an [EagerResult](https://neo4j.com/docs/api/dotnet-driver/current/api/Neo4j.Driver.EagerResult-1.html)<
-IReadOnlyList<[IRecord](https://neo4j.com/docs/api/dotnet-driver/current/api/Neo4j.Driver.IRecord.html)>> unless we use
-other APIs; more on that later.
-EagerResult comprises of the following:
+### Manual transactions
 
-- All records materialized(`Result`).
-- keys returned from the query(`Keys`).
-- a [query summary](https://neo4j.com/docs/api/dotnet-driver/current/api/Neo4j.Driver.IResultSummary.html)(`Summary`).
-
-#### Decomposing EagerResult
+Use `BeginTransactionAsync` when you need to co-ordinate a transaction with external work, such as committing only after a side-effect succeeds.
 
 ```csharp
-var (result, _, _) = await driver.ExecutableQuery(query)
-    .WithConfig(dbConfig)
-    .ExecuteAsync();
-foreach (var record in result)
-    Console.WriteLine($"node: {record["id"]}")
-```
-
-EagerResult allows you to discard unneeded values with decomposition for an expressive API.
-
-#### Mapping
-
-```csharp
-var (result, _, _) = await driver.ExecutableQuery(query)
-    .WithConfig(dbConfig)
-    .WithMap(record => new EntityDTO { id = record["id"].As<long>() })
-    .ExecuteAsync();
+await using var session = driver.AsyncSession(o => o.WithDatabase("neo4j"));
+await using var tx = await session.BeginTransactionAsync();
+try
+{
+    await tx.RunAsync("CREATE (:Person {name: $name})", new { name = "Bob" });
+    await tx.CommitAsync();
+}
+catch
+{
+    await tx.RollbackAsync();
+    throw;
+}
 ```
 
 ## Types
 
-Values in a record are currently exposed as of `object` type.
-The underlying types of these values are determined by their Cypher types.
-
-The mapping between driver types and Cypher types are listed in the table bellow:
-
-|  Cypher Type | Driver Type                 
-|-------------:|:----------------------------|
-|       *null* | null                        |
-|         List | IList< object >             |
-|          Map | IDictionary<string, object> |
-|      Boolean | boolean                     |
-|      Integer | long                        |
-|        Float | float                       |
-|       String | string                      |
-|    ByteArray | byte[]                      |
-|        Point | Point                       |
-|         Node | INode                       |
-| Relationship | IRelationship               |
-|         Path | IPath                       |
-
-To convert from `object` to the driver type, a helper method `ValueExtensions#As<T>` can be used:
+Values in a record are exposed as `object`. Use the `As<T>()` extension method to convert to the expected type:
 
 ```csharp
-IRecord record = await result.SingleAsync();
 string name = record["name"].As<string>();
+long count = record["count"].As<long>();
 ```
 
-#### Temporal Types - Date and Time
+### Cypher to .NET type mapping
 
-The mapping among the Cypher temporal types, driver types, and convertible CLR temporal types - DateTime, TimeSpan and
-DateTimeOffset - (via `IConvertible` interface) are as follows:
+| Cypher Type | .NET Driver Type |
+|---:|:---|
+| *null* | `null` |
+| List | `IList<object>` |
+| Map | `IDictionary<string, object>` |
+| Boolean | `bool` |
+| Integer | `long` |
+| Float | `double` |
+| String | `string` |
+| ByteArray | `byte[]` |
+| Point | `Point` |
+| Node | `INode` |
+| Relationship | `IRelationship` |
+| Path | `IPath` |
 
-|  Cypher Type  |  Driver Type  |    Convertible CLR Type    |
-|:-------------:|:-------------:|:--------------------------:|
-|     Date      |   LocalDate   | DateTime, DateOnly(.NET6+) |
-|     Time      |  OffsetTime   |      TimeOnly(.NET6+)      |
-|   LocalTime   |   LocalTime   |     TimeSpan, DateTime     |
-|   DateTime    | ZonedDateTime |       DateTimeOffset       |
-| LocalDateTime | LocalDateTime |          DateTime          |
-|   Duration    |   Duration    |            ---             |
+### Temporal types
+
+| Cypher Type | Driver Type | Convertible CLR Types |
+|:---:|:---:|:---:|
+| Date | `LocalDate` | `DateTime`, `DateOnly` (.NET 6+) |
+| Time | `OffsetTime` | `TimeOnly` (.NET 6+) |
+| LocalTime | `LocalTime` | `TimeSpan`, `DateTime` |
+| DateTime | `ZonedDateTime` | `DateTimeOffset` |
+| LocalDateTime | `LocalDateTime` | `DateTime` |
+| Duration | `Duration` | — |
+
+## Support
+
+- **Documentation**: [neo4j.com/docs/dotnet-manual](https://neo4j.com/docs/dotnet-manual/current/)
+- **Community forum**: [community.neo4j.com](https://community.neo4j.com/)
+- **Stack Overflow**: [stackoverflow.com/questions/tagged/neo4j](https://stackoverflow.com/questions/tagged/neo4j)
+- **Bug reports / feature requests**: [GitHub Issues](https://github.com/neo4j/neo4j-dotnet-driver/issues)
+- **Enterprise support**: [support.neo4j.com](https://support.neo4j.com/)
