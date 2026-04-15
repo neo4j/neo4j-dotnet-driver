@@ -42,6 +42,7 @@ internal sealed class SocketConnection : IConnection
     private readonly IResponsePipeline _responsePipeline;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
     private readonly ServerInfo _serverInfo;
+    private readonly IDictionary<string, string> _routingContext;
 
     private string _id;
 
@@ -60,6 +61,7 @@ internal sealed class SocketConnection : IConnection
         Context = context;
         AuthToken = authToken;
         _serverInfo = new ServerInfo(uri);
+        _routingContext = BuildRoutingContext(context.RoutingContext, _serverInfo.Address);
 
         _responsePipeline = new ResponsePipeline(_neo4JLogger);
         AuthTokenManager = context.AuthTokenManager;
@@ -86,6 +88,7 @@ internal sealed class SocketConnection : IConnection
         _responsePipeline = responsePipeline ?? new ResponsePipeline(neo4JLogger);
         _protocolFactory = protocolFactory ?? BoltProtocolFactory.Default;
         Context = context;
+        _routingContext = context != null ? BuildRoutingContext(context.RoutingContext, _serverInfo.Address) : null;
     }
 
     internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
@@ -95,7 +98,7 @@ internal sealed class SocketConnection : IConnection
 
     public string Database { get; private set; }
 
-    public IDictionary<string, string> RoutingContext => Context.RoutingContext;
+    public IDictionary<string, string> RoutingContext => _routingContext;
     public BoltProtocolVersion Version => _client.Version;
 
     /// <summary>Internal Set used for tests.</summary>
@@ -532,6 +535,20 @@ internal sealed class SocketConnection : IConnection
     private static string FormatPrefix(string id)
     {
         return $"[{id}]";
+    }
+
+    private static IDictionary<string, string> BuildRoutingContext(
+        IDictionary<string, string> contextRoutingContext,
+        string address)
+    {
+        if (contextRoutingContext == null)
+            return null;
+
+        var result = new Dictionary<string, string>(contextRoutingContext)
+        {
+            ["address"] = address
+        };
+        return result;
     }
 }
 
