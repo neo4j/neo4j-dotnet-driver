@@ -30,7 +30,7 @@ public interface IAsyncQueryRunner : IAsyncDisposable, IDisposable
     /// </summary>
     /// <param name="query">A Cypher query.</param>
     /// <returns>A task of a stream of result values and associated metadata.</returns>
-    /// <exception cref="TransactionClosedException">>Thrown when used in a transaction that has previously been closed.</exception>
+    /// <exception cref="TransactionClosedException">Thrown when used in a transaction that has previously been closed.</exception>
     Task<IResultCursor> RunAsync(string query);
 
     /// <summary>Asynchronously execute a query and return a task of result stream.</summary>
@@ -42,7 +42,7 @@ public interface IAsyncQueryRunner : IAsyncDisposable, IDisposable
     /// <see cref="Mapping.CypherParameterMappingAttribute"/>, and global name translation.
     /// </param>
     /// <returns>A task of a stream of result values and associated metadata.</returns>
-    /// <exception cref="TransactionClosedException">>Thrown when used in a transaction that has previously been closed.</exception>
+    /// <exception cref="TransactionClosedException">Thrown when used in a transaction that has previously been closed.</exception>
     Task<IResultCursor> RunAsync(string query, object parameters);
 
     /// <summary>
@@ -53,12 +53,12 @@ public interface IAsyncQueryRunner : IAsyncDisposable, IDisposable
     /// <param name="query">A Cypher query.</param>
     /// <param name="parameters">Input parameters for the query.</param>
     /// <returns>A task of a stream of result values and associated metadata.</returns>
-    /// <exception cref="TransactionClosedException">>Thrown when used in a transaction that has previously been closed.</exception>
+    /// <exception cref="TransactionClosedException">Thrown when used in a transaction that has previously been closed.</exception>
     Task<IResultCursor> RunAsync(string query, IDictionary<string, object> parameters);
 
     /// <summary>Asynchronously execute a query and return a task of result stream.</summary>
     /// <param name="query">A Cypher query, <see cref="Query"/>.</param>
     /// <returns>A task of a stream of result values and associated metadata.</returns>
-    /// <exception cref="TransactionClosedException">>Thrown when used in a transaction that has previously been closed.</exception>
+    /// <exception cref="TransactionClosedException">Thrown when used in a transaction that has previously been closed.</exception>
     Task<IResultCursor> RunAsync(Query query);
 }
