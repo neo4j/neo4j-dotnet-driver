@@ -17,7 +17,7 @@ namespace Neo4j.Driver;
 
 /// <summary>
 /// Controls which server certificates the driver will accept when establishing a TLS connection.
-/// Used with <see cref="ConfigBuilder.WithCertificateTrustRule"/>.
+/// Used with <see cref="ConfigBuilder.WithCertificateTrustRule(CertificateTrustRule, System.Collections.Generic.IReadOnlyList{System.Security.Cryptography.X509Certificates.X509Certificate2})"/>.
 /// </summary>
 public enum CertificateTrustRule
 {
