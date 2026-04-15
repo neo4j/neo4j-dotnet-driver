@@ -45,13 +45,28 @@ public sealed class ConfigBuilder
         return _config;
     }
 
-    /// <summary>Sets the <see cref="Config"/> to use TLS if <paramref name="level"/> is <c>Encrypted</c>.</summary>
+    /// <summary>
+    /// Overrides the TLS encryption setting inferred from the URI scheme.
+    /// </summary>
     /// <param name="level">
-    /// <see cref="EncryptionLevel.Encrypted"/> enables TLS for the connection,
-    /// <see cref="EncryptionLevel.None"/> otherwise. See <see cref="EncryptionLevel"/> for more info
+    /// <see cref="EncryptionLevel.Encrypted"/> requires TLS for all connections;
+    /// <see cref="EncryptionLevel.None"/> disables TLS.
     /// </param>
-    /// .
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <remarks>
+    /// <para>
+    /// There are three mutually exclusive ways to configure TLS behaviour:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>Use a <c>+s</c> URI suffix (e.g. <c>bolt+s://</c>, <c>neo4j+s://</c>) — TLS is required and the server certificate must be trusted by the system CA store.</description></item>
+    /// <item><description>Use a <c>+ssc</c> URI suffix (e.g. <c>bolt+ssc://</c>, <c>neo4j+ssc://</c>) — TLS is required and any certificate is accepted (including self-signed).</description></item>
+    /// <item><description>Use a plain <c>bolt://</c> or <c>neo4j://</c> URI and call <see cref="WithEncryptionLevel"/> to control TLS, optionally paired with <see cref="WithTrustManager"/> or <see cref="WithCertificateTrustRule(CertificateTrustRule, System.Collections.Generic.IReadOnlyList{System.Security.Cryptography.X509Certificates.X509Certificate2})"/> to configure certificate validation.</description></item>
+    /// </list>
+    /// <para>
+    /// These approaches are mutually exclusive. Calling this method has no effect when a <c>+s</c> or
+    /// <c>+ssc</c> URI scheme is used, as those schemes already imply a specific TLS and trust policy.
+    /// </para>
+    /// </remarks>
     public ConfigBuilder WithEncryptionLevel(EncryptionLevel level)
     {
         _config.NullableEncryptionLevel = level;
@@ -59,12 +74,27 @@ public sealed class ConfigBuilder
     }
 
     /// <summary>
-    /// Sets the <see cref="TrustManager"/> to use while establishing trust via TLS. The <paramref name="manager"/>
-    /// will not take effect if <see cref="Config.EncryptionLevel"/> decides to use no TLS encryption on the connections.
+    /// Sets a custom <see cref="TrustManager"/> for validating server TLS certificates.
+    /// Has no effect if TLS is not enabled (i.e. <see cref="Config.EncryptionLevel"/> is
+    /// <see cref="EncryptionLevel.None"/> and the URI scheme does not require encryption).
     /// </summary>
-    /// <param name="manager">A <see cref="TrustManager"/> instance.</param>
+    /// <param name="manager">
+    /// A <see cref="TrustManager"/> instance. Use the factory methods on <see cref="TrustManager"/>
+    /// (such as <see cref="TrustManager.CreateChainTrust"/> or <see cref="TrustManager.CreateCertTrust"/>)
+    /// to create an appropriate instance, or subclass <see cref="TrustManager"/> for fully custom behaviour.
+    /// </param>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
-    /// <remarks>We recommend using WithCertificateTrustPaths or WithCertificates</remarks>
+    /// <remarks>
+    /// <para>
+    /// For most use cases, prefer <see cref="WithCertificateTrustRule(CertificateTrustRule, System.Collections.Generic.IReadOnlyList{System.Security.Cryptography.X509Certificates.X509Certificate2})"/>,
+    /// which provides a simpler API for the common trust scenarios.
+    /// </para>
+    /// <para>
+    /// This method only applies when using a plain <c>bolt://</c> or <c>neo4j://</c> URI with TLS enabled
+    /// via <see cref="WithEncryptionLevel"/>. When using a <c>+s</c> or <c>+ssc</c> URI scheme, the trust
+    /// policy is already determined by the scheme and this setting is ignored.
+    /// </para>
+    /// </remarks>
     public ConfigBuilder WithTrustManager(TrustManager manager)
     {
         _config.TrustManager = manager;
@@ -312,21 +342,29 @@ public sealed class ConfigBuilder
     }
 
     /// <summary>
-    /// Sets the rule for which Certificate Authority(CA) certificates to use when building trust with a server
-    /// certificate.
+    /// Sets the rule used to validate the server's TLS certificate.
     /// </summary>
-    /// <param name="certificateTrustRule">The rule for validating server certificates when using encryption.</param>
+    /// <param name="certificateTrustRule">The validation rule. See <see cref="CertificateTrustRule"/> for options.</param>
     /// <param name="trustedCaCertificates">
-    /// Optional list of certificates to use to validate a server certificate. should only
-    /// be set when <paramref name="certificateTrustRule"/> is <c>CertificateTrustRule.TrustList</c>
+    /// The CA certificates to trust. Required when <paramref name="certificateTrustRule"/> is
+    /// <see cref="CertificateTrustRule.TrustList"/>; must be <c>null</c> for all other rules.
     /// </param>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     /// <remarks>
-    /// Used in conjunction with <see cref="WithEncryptionLevel"/>. Not to be used when using a non-basic Uri
-    /// Scheme(+s, +ssc) on <see cref="GraphDatabase"/>
+    /// <para>
+    /// There are three mutually exclusive ways to configure TLS behaviour — see
+    /// <see cref="WithEncryptionLevel"/> for a full description. This method configures how the driver
+    /// validates the server certificate and is only meaningful when using the third option: a plain
+    /// <c>bolt://</c> or <c>neo4j://</c> URI with TLS enabled via <see cref="WithEncryptionLevel"/>.
+    /// </para>
+    /// <para>
+    /// When using a <c>+s</c> URI scheme, the driver always validates against the system CA store.
+    /// When using a <c>+ssc</c> URI scheme, the driver accepts any certificate. In both cases this
+    /// setting is ignored.
+    /// </para>
     /// </remarks>
-    /// <exception cref="ArgumentException">Thrown when mismatch between certificateTrustRule and trustedCaCertificates.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when certificateTrustRule is not an expected enum.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="trustedCaCertificates"/> is inconsistent with <paramref name="certificateTrustRule"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="certificateTrustRule"/> is not a recognised value.</exception>
     public ConfigBuilder WithCertificateTrustRule(
         CertificateTrustRule certificateTrustRule,
         IReadOnlyList<X509Certificate2> trustedCaCertificates = null)
@@ -353,24 +391,23 @@ public sealed class ConfigBuilder
     }
 
     /// <summary>
-    /// Sets the rule for which Certificate Authority(CA) certificates to use when building trust with a server
-    /// certificate.
+    /// Sets the rule used to validate the server's TLS certificate, with trusted CA certificates loaded from files.
     /// </summary>
-    /// <param name="certificateTrustRule">The rule for validating server certificates when using encryption.</param>
+    /// <param name="certificateTrustRule">The validation rule. See <see cref="CertificateTrustRule"/> for options.</param>
     /// <param name="trustedCaCertificateFileNames">
-    /// Optional list of paths to certificates to use to validate a server
-    /// certificate. should only be set when using <code>CertificateTrustRule.TrustList</code>
+    /// Paths to PEM or DER-encoded CA certificate files to trust. Required when
+    /// <paramref name="certificateTrustRule"/> is <see cref="CertificateTrustRule.TrustList"/>; must be
+    /// <c>null</c> for all other rules.
     /// </param>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     /// <remarks>
-    /// Used in conjunction with <see cref="WithEncryptionLevel"/>. Not to be used when using a non-basic Uri
-    /// Scheme(+s, +ssc) on <see cref="GraphDatabase"/>
+    /// Convenience wrapper around
+    /// <see cref="WithCertificateTrustRule(CertificateTrustRule, System.Collections.Generic.IReadOnlyList{System.Security.Cryptography.X509Certificates.X509Certificate2})"/>
+    /// that loads certificates from disk. See that overload for full remarks, including the mutually
+    /// exclusive relationship with <c>+s</c> and <c>+ssc</c> URI schemes.
     /// </remarks>
-    /// <exception cref="ArgumentException">
-    /// Thrown when mismatch between certificateTrustRule and
-    /// trustedCaCertificateFileNames.
-    /// </exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when certificateTrustRule is not an expected enum.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="trustedCaCertificateFileNames"/> is inconsistent with <paramref name="certificateTrustRule"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="certificateTrustRule"/> is not a recognised value.</exception>
     public ConfigBuilder WithCertificateTrustRule(
         CertificateTrustRule certificateTrustRule,
         IReadOnlyList<string> trustedCaCertificateFileNames = null)
