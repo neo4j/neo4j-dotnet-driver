@@ -25,21 +25,18 @@ namespace Neo4j.Driver.Internal;
 internal sealed class Driver : IInternalDriver
 {
     private readonly DefaultBookmarkManager _bookmarkManager;
-    private readonly IConnectionProvider _connectionProvider;
-    private readonly IAsyncRetryLogic _retryLogic;
+    private readonly IProtocolAdapter _server;
 
     private int _closedMarker;
 
     internal Driver(
         Uri uri,
-        IConnectionProvider connectionProvider,
-        IAsyncRetryLogic retryLogic,
+        IProtocolAdapter server,
         DriverContext driverContext)
     {
         Uri = uri;
         Context = driverContext;
-        _retryLogic = retryLogic;
-        _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
+        _server = server ?? throw new ArgumentNullException(nameof(server));
         _bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
     }
 
@@ -75,14 +72,7 @@ internal sealed class Driver : IInternalDriver
         var sessionConfig = ConfigBuilders.BuildSessionConfig(action);
         sessionConfig.DriverContext = Context;
 
-        var session = new AsyncSession(
-            _connectionProvider,
-            Config.Neo4JLogger,
-            _retryLogic,
-            Config.FetchSize,
-            sessionConfig,
-            reactive,
-            !Config.TelemetryDisabled);
+        var session = _server.CreateSession(sessionConfig, reactive, !Config.TelemetryDisabled);
 
         if (IsClosed)
         {
@@ -104,20 +94,20 @@ internal sealed class Driver : IInternalDriver
     public Task CloseAsync()
     {
         return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0
-            ? _connectionProvider.DisposeAsync().AsTask()
+            ? _server.DisposeAsync().AsTask()
             : Task.CompletedTask;
     }
 
     public Task<IServerInfo> GetServerInfoAsync()
     {
-        return _connectionProvider.VerifyConnectivityAndGetInfoAsync();
+        return _server.VerifyConnectivityAndGetInfoAsync();
     }
 
     public async Task<bool> TryVerifyConnectivityAsync()
     {
         try
         {
-            await _connectionProvider.VerifyConnectivityAndGetInfoAsync().ConfigureAwait(false);
+            await _server.VerifyConnectivityAndGetInfoAsync().ConfigureAwait(false);
             return true;
         }
         catch (Exception)
@@ -133,12 +123,12 @@ internal sealed class Driver : IInternalDriver
 
     public Task<bool> SupportsMultiDbAsync()
     {
-        return _connectionProvider.SupportsMultiDbAsync();
+        return _server.SupportsMultiDbAsync();
     }
 
     public Task<bool> SupportsSessionAuthAsync()
     {
-        return _connectionProvider.SupportsReAuthAsync();
+        return _server.SupportsReAuthAsync();
     }
 
     public void Dispose()
@@ -149,7 +139,7 @@ internal sealed class Driver : IInternalDriver
     public ValueTask DisposeAsync()
     {
         return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0
-            ? _connectionProvider.DisposeAsync()
+            ? _server.DisposeAsync()
             : new ValueTask(Task.CompletedTask);
     }
 
@@ -196,7 +186,7 @@ internal sealed class Driver : IInternalDriver
     //Non public facing api. Used for testing with testkit only
     public IRoutingTable GetRoutingTable(string database)
     {
-        return _connectionProvider.GetRoutingTable(database);
+        return _server.GetRoutingTable(database);
     }
 
     private void Close()

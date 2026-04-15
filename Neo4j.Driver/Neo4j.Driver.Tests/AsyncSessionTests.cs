@@ -409,11 +409,15 @@ public class AsyncSessionTests
 
         private static Driver.Internal.Driver NewDriver()
         {
+            var context = TestDriverContext.MockContext;
+            var server = new BoltProtocolAdapter(
+                new TestConnectionProvider(Mock.Of<IConnection>()),
+                context);
+
             var driver = new Driver.Internal.Driver(
                 new Uri("neo4j://myTest.org"),
-                new TestConnectionProvider(Mock.Of<IConnection>()),
-                null,
-                TestDriverContext.MockContext);
+                server,
+                context);
 
             return driver;
         }
