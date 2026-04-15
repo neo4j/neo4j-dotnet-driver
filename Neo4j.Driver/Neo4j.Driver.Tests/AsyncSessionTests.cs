@@ -110,7 +110,7 @@ public class AsyncSessionTests
         {
             // https://github.com/neo4j/neo4j-dotnet-driver/issues/855
             var mockConn = new Mock<IConnection>();
-            var session = NewSession(mockConn.Object);
+            IAsyncSession session = NewSession(mockConn.Object);
 
             await session.RunAsync(
                 "CREATE (a:Person {name: $name})",

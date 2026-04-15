@@ -35,7 +35,12 @@ public interface IAsyncQueryRunner : IAsyncDisposable, IDisposable
 
     /// <summary>Asynchronously execute a query and return a task of result stream.</summary>
     /// <param name="query">A Cypher query.</param>
-    /// <param name="parameters">A parameter dictionary which is made of prop.Name=prop.Value pairs would be created.</param>
+    /// <param name="parameters">
+    /// The query parameters. See <see cref="Query(string, object)"/> for a full description of how
+    /// objects are converted to Cypher parameter maps, including support for anonymous types, POCOs,
+    /// dictionaries, nested objects, property renaming with
+    /// <see cref="Mapping.CypherParameterMappingAttribute"/>, and global name translation.
+    /// </param>
     /// <returns>A task of a stream of result values and associated metadata.</returns>
     /// <exception cref="TransactionClosedException">>Thrown when used in a transaction that has previously been closed.</exception>
     Task<IResultCursor> RunAsync(string query, object parameters);
