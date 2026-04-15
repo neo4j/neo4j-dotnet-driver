@@ -542,12 +542,15 @@ internal sealed class SocketConnection : IConnection
         string address)
     {
         if (contextRoutingContext == null)
+        {
             return null;
+        }
 
         var result = new Dictionary<string, string>(contextRoutingContext)
         {
             ["address"] = address
         };
+
         return result;
     }
 }
