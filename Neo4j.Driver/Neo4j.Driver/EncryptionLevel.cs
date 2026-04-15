@@ -18,17 +18,31 @@
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// Control the level of encryption to require.
+    /// Controls whether the driver uses TLS encryption for connections.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For most use cases, encryption is configured through the URI scheme rather than this enum.
+    /// Use <c>bolt+s://</c> or <c>neo4j+s://</c> to require TLS, or <c>bolt+ssc://</c> /
+    /// <c>neo4j+ssc://</c> to require TLS while accepting self-signed server certificates.
+    /// </para>
+    /// <para>
+    /// Use <see cref="EncryptionLevel"/> with <see cref="ConfigBuilder.WithEncryptionLevel"/> only
+    /// when connecting via a plain <c>bolt://</c> or <c>neo4j://</c> URI and you need to override
+    /// the default (unencrypted) behaviour.
+    /// </para>
+    /// </remarks>
     public enum EncryptionLevel
     {
         /// <summary>
-        /// No encryption at all.
+        /// Connections are made without TLS. This is the default when using a plain
+        /// <c>bolt://</c> or <c>neo4j://</c> URI.
         /// </summary>
         None,
 
         /// <summary>
-        /// Always encrypted.
+        /// Connections must use TLS. Equivalent to using a <c>+s</c> URI scheme suffix
+        /// (e.g. <c>bolt+s://</c> or <c>neo4j+s://</c>).
         /// </summary>
         Encrypted
     }
