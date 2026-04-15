@@ -127,6 +127,11 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         return RunAsync(new Query(query), action);
     }
 
+    public Task<IResultCursor> RunAsync(string query, object parameters, Action<TransactionConfigBuilder> action)
+    {
+        return RunAsync(new Query(query, parameters), action);
+    }
+
     public Task<IResultCursor> RunAsync(
         string query,
         IDictionary<string, object> parameters,
