@@ -23,9 +23,17 @@ namespace Neo4j.Driver;
 /// via the <see cref="IAsyncSession"/> method.
 /// </summary>
 /// <remarks>
-/// The Driver maintains a connection pool buffering connections created by the user. The size of the buffer can
+/// <para>The Driver maintains a connection pool buffering connections created by the user. The size of the buffer can
 /// be configured by the <see cref="Neo4j.Driver.Config.MaxConnectionPoolSize"/> property on the
-/// <see cref="Neo4j.Driver.Config"/> when creating the Driver.
+/// <see cref="Neo4j.Driver.Config"/> when creating the Driver.</para>
+/// <para>The driver object is thread-safe and can be shared across threads.</para>
+/// <para>
+/// When the driver is disposed — for example at the end of a <c>using</c> block — all connections
+/// to the database are closed. Ensure that all sessions, transactions, and other resources obtained
+/// from the driver have been closed <em>before</em> disposal. Using the driver or any of its
+/// resources concurrently with disposal results in unspecified behavior, which may include
+/// deadlocks, data races, or errors.
+/// </para>
 /// </remarks>
 public interface IDriver : IDisposable, IAsyncDisposable
 {
