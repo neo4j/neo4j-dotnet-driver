@@ -41,6 +41,17 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         Uri parsedUri,
         IPooledConnectionFactory connectionFactory,
         DriverContext driverContext)
+        : this(
+            new UriAddressProvider(parsedUri, driverContext.Config.Resolver),
+            connectionFactory,
+            driverContext)
+    {
+    }
+
+    public LoadBalancer(
+        IInitialServerAddressProvider initialAddressProvider,
+        IPooledConnectionFactory connectionFactory,
+        DriverContext driverContext)
     {
         DriverContext = driverContext;
 
@@ -50,7 +61,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             DriverContext);
 
         _neo4JLogger = driverContext.Neo4JLogger;
-        _initialServerAddressProvider = new InitialServerAddressProvider(parsedUri, driverContext.Config.Resolver);
+        _initialServerAddressProvider = initialAddressProvider;
         _routingTableManager = new RoutingTableManager(
             _initialServerAddressProvider,
             this,

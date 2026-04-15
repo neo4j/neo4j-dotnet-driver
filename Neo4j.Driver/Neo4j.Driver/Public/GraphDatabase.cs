@@ -15,8 +15,10 @@
 
 using System;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
+using Neo4j.Driver.Preview;
 
 namespace Neo4j.Driver;
 
@@ -249,20 +251,71 @@ public static class GraphDatabase
         return CreateDriver(connectionFactory, context);
     }
 
+    internal static IDriver CreateMultiAddressDriver(
+        MultiAddress multiAddress,
+        IAuthTokenManager authTokenManager,
+        Action<ConfigBuilder> action)
+    {
+        if (multiAddress is null)
+        {
+            throw new ArgumentNullException(nameof(multiAddress));
+        }
+
+        authTokenManager = authTokenManager ?? throw new ArgumentNullException(nameof(authTokenManager));
+
+        var canonicalUri = multiAddress.ToCanonicalUri();
+        var parsedUri = Neo4jUri.ParseBoltUri(canonicalUri, Neo4jUri.DefaultBoltPort);
+
+        if (!Neo4jUri.IsRoutingUri(parsedUri) && multiAddress.Addresses.Count > 1)
+        {
+            throw new ArgumentException(
+                "A direct (bolt) scheme requires exactly one address. " +
+                "Use a routing scheme (neo4j, neo4j+s, neo4j+ssc) to provide multiple addresses.",
+                nameof(multiAddress));
+        }
+
+        if (!Neo4jUri.IsRoutingUri(parsedUri) && !string.IsNullOrEmpty(multiAddress.Query))
+        {
+            throw new ArgumentException(
+                "A routing context (Query) is not supported with direct (bolt) schemes.",
+                nameof(multiAddress));
+        }
+
+        var builder = Config.Builder;
+        action?.Invoke(builder);
+        var config = builder.Build();
+
+        var context = new DriverContext(canonicalUri, authTokenManager, config);
+        var connectionFactory = new PooledConnectionFactory(context);
+
+        return CreateDriver(connectionFactory, context, new MultiAddressProvider(multiAddress));
+    }
+
     internal static IDriver CreateDriver(
         IPooledConnectionFactory connectionFactory,
         DriverContext context)
     {
+        return CreateDriver(connectionFactory, context, addressProvider: null);
+    }
+
+    internal static IDriver CreateDriver(
+        IPooledConnectionFactory connectionFactory,
+        DriverContext context,
+        IInitialServerAddressProvider addressProvider)
+    {
         var parsedUri = Neo4jUri.ParseBoltUri(context.InitialUri, Neo4jUri.DefaultBoltPort);
-        IConnectionProvider connectionProvider = Neo4jUri.IsRoutingUri(parsedUri)
-            ? new LoadBalancer(
-                parsedUri,
-                connectionFactory,
-                context)
-            : new ConnectionPool(
-                parsedUri,
-                connectionFactory,
-                context);
+
+        IConnectionProvider connectionProvider;
+        if (Neo4jUri.IsRoutingUri(parsedUri))
+        {
+            connectionProvider = addressProvider != null
+                ? new LoadBalancer(addressProvider, connectionFactory, context)
+                : new LoadBalancer(parsedUri, connectionFactory, context);
+        }
+        else
+        {
+            connectionProvider = new ConnectionPool(parsedUri, connectionFactory, context);
+        }
 
         var server = new BoltProtocolAdapter(connectionProvider, context);
         return new Internal.Driver(parsedUri, server, context);

@@ -51,7 +51,7 @@ public static class RoutingTableManagerTests
     {
         if (addressProvider == null)
         {
-            addressProvider = new InitialServerAddressProvider(InitialUri, new PassThroughServerAddressResolver());
+            addressProvider = new UriAddressProvider(InitialUri, new PassThroughServerAddressResolver());
         }
 
         if (discovery == null)
