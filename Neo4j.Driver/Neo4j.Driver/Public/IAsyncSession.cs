@@ -169,6 +169,29 @@ public interface IAsyncSession : IAsyncQueryRunner
     /// Asynchronously run a query within an AutoCommit transaction. Uses the specific <see cref="TransactionConfig"/>
     /// and returns a task of result stream. This method accepts a String representing a Cypher query which will be
     /// compiled into a query object that can be used to efficiently execute this query multiple times. This method
+    /// optionally accepts a set of parameters which will be injected into the query object by Neo4j.
+    /// </summary>
+    /// <param name="query">A Cypher query.</param>
+    /// <param name="parameters">
+    /// The query parameters. See <see cref="Query(string, object)"/> for a full description of how
+    /// objects are converted to Cypher parameter maps, including support for anonymous types, POCOs,
+    /// dictionaries, nested objects, property renaming with
+    /// <see cref="Mapping.CypherParameterMappingAttribute"/>, and global name translation.
+    /// </param>
+    /// <param name="action">
+    /// Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new
+    /// transaction.
+    /// </param>
+    /// <returns>A task of a stream of result values and associated metadata.</returns>
+    Task<IResultCursor> RunAsync(string query, object parameters, Action<TransactionConfigBuilder> action = null)
+    {
+        return RunAsync(new Query(query, parameters), action);
+    }
+
+    /// <summary>
+    /// Asynchronously run a query within an AutoCommit transaction. Uses the specific <see cref="TransactionConfig"/>
+    /// and returns a task of result stream. This method accepts a String representing a Cypher query which will be
+    /// compiled into a query object that can be used to efficiently execute this query multiple times. This method
     /// optionally accepts a set of parameters which will be injected into the query object query by Neo4j.
     /// </summary>
     /// <param name="query">A Cypher query.</param>

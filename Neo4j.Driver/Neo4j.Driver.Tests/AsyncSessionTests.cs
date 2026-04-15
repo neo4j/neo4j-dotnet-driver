@@ -104,6 +104,30 @@ public class AsyncSessionTests
                     It.IsAny<IHomeDbCache>()),
                 Times.Once);
         }
+
+        [Fact]
+        public async Task ShouldAcceptAnonymousObjectParametersWithTransactionConfig()
+        {
+            // https://github.com/neo4j/neo4j-dotnet-driver/issues/855
+            var mockConn = new Mock<IConnection>();
+            IAsyncSession session = NewSession(mockConn.Object);
+
+            await session.RunAsync(
+                "CREATE (a:Person {name: $name})",
+                new { name = "John" },
+                conf => conf.WithTimeout(TimeSpan.FromSeconds(5)));
+
+            mockConn.Verify(
+                x => x.RunInAutoCommitTransactionAsync(
+                    It.Is<AutoCommitParams>(p =>
+                        p.Query.Text == "CREATE (a:Person {name: $name})" &&
+                        p.Query.Parameters.ContainsKey("name") &&
+                        (string)p.Query.Parameters["name"] == "John" &&
+                        p.Config.Timeout == TimeSpan.FromSeconds(5)),
+                    It.IsAny<INotificationsConfig>(),
+                    It.IsAny<IHomeDbCache>()),
+                Times.Once);
+        }
     }
 
     public class BeginTransactionAsyncMethod
