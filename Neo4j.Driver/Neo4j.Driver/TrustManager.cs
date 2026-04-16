@@ -95,6 +95,10 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="verifyHostname">Whether to verify that the server hostname matches the certificate's subject.</param>
         /// <returns>An instance of <see cref="TrustManager"/>.</returns>
+        /// <remarks>
+        /// Certificate revocation checks are disabled by default. Use
+        /// <see cref="CreateChainTrust(bool, X509RevocationMode, X509RevocationFlag, bool)"/> to enable revocation checking.
+        /// </remarks>
         public static TrustManager CreateChainTrust(bool verifyHostname) => CreateChainTrust(verifyHostname,
             X509RevocationMode.NoCheck, X509RevocationFlag.ExcludeRoot, false);
 
