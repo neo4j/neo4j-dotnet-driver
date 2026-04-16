@@ -40,7 +40,7 @@ public sealed class TransactionIT : DirectDriverTestBase
 
         var exc = await Record.ExceptionAsync(
             () =>
-                session.ExecuteWriteAsync<IResultSummary>(
+                session.ExecuteWriteAsync(
                     _ =>
                         throw new SessionExpiredException($"Failed at {timer.Elapsed}")));
 

@@ -138,7 +138,7 @@ public abstract class TransactionTests
 
                     await using var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
 
-                    await session.ExecuteWriteAsync(async txc => await (await txc.RunAsync("CREATE (n {name: 'Bob'})")).ConsumeAsync());
+                    await session.ExecuteWriteAsync(txc => txc.RunAsync("CREATE (n {name: 'Bob'})"));
                 });
 
             exc.Should()

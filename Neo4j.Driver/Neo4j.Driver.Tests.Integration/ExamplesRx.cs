@@ -219,6 +219,6 @@ public abstract class BaseRxExample : AbstractRxTest, IDisposable
     protected async Task WriteAsync(string query, object parameters)
     {
         await using var session = Driver.AsyncSession();
-        await session.ExecuteWriteAsync(async tx => await (await tx.RunAsync(query, parameters)).ConsumeAsync());
+        await session.ExecuteWriteAsync(async tx => await tx.RunAsync(query, parameters));
     }
 }
