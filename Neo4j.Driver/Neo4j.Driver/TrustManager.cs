@@ -57,7 +57,7 @@ namespace Neo4j.Driver
             SslPolicyErrors sslPolicyErrors);
 
         /// <summary>
-        /// Creates a trust manager that accepts any certificate without validation, with hostname verification enabled.
+        /// Creates a trust manager that accepts any certificate without validation besides hostname verification.
         /// </summary>
         /// <returns>An instance of <see cref="TrustManager"/>.</returns>
         /// <remarks>
