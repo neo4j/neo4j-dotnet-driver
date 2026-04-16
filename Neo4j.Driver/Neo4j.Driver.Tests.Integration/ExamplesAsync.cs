@@ -990,7 +990,7 @@ public class ExamplesAsync
         public async Task AddPersonAsync(string name)
         {
             await using var session = Driver.AsyncSession();
-            await session.ExecuteWriteAsync(tx => tx.RunAsync("CREATE (a:Person {name: $name})", new { name }));
+            await session.ExecuteWriteAsync(async tx => await (await tx.RunAsync("CREATE (a:Person {name: $name})", new { name })).ConsumeAsync());
         }
 
         [RequireServerFact]
@@ -1072,13 +1072,13 @@ public abstract class BaseAsyncExample : IDisposable
     protected async Task WriteAsync(string query, object parameters)
     {
         await using var session = Driver.AsyncSession();
-        await session.ExecuteWriteAsync(tx => tx.RunAsync(query, parameters));
+        await session.ExecuteWriteAsync(async tx => await (await tx.RunAsync(query, parameters)).ConsumeAsync());
     }
 
     protected async Task WriteAsync(string query, IDictionary<string, object> parameters = null)
     {
         await using var session = Driver.AsyncSession();
-        await session.ExecuteWriteAsync(async tx => await tx.RunAsync(query, parameters));
+        await session.ExecuteWriteAsync(async tx => await (await tx.RunAsync(query, parameters)).ConsumeAsync());
     }
 
     protected async Task<List<IRecord>> ReadAsync(

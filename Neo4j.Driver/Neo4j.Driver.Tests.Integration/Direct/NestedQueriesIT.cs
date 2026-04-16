@@ -90,9 +90,9 @@ public sealed class NestedQueriesIT : DirectDriverTestBase
                 {
                     var record = cursor1.Current;
                     await session.ExecuteWriteAsync(
-                        async tx => await tx.RunAsync(
+                        async tx => await (await tx.RunAsync(
                             "UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id",
-                            new { x = record["x"].As<int>() }));
+                            new { x = record["x"].As<int>() })).ConsumeAsync());
                 }
             });
 
@@ -166,9 +166,9 @@ public sealed class NestedQueriesIT : DirectDriverTestBase
                 {
                     var record = cursor1.Current;
                     await session.ExecuteWriteAsync(
-                        async tx2 => await tx2.RunAsync(
+                        async tx2 => await (await tx2.RunAsync(
                             "UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id",
-                            new { x = record["x"].As<int>() }));
+                            new { x = record["x"].As<int>() })).ConsumeAsync());
                 }
             });
 
@@ -194,9 +194,9 @@ public sealed class NestedQueriesIT : DirectDriverTestBase
                         {
                             var record = cursor1.Current;
                             await session.ExecuteWriteAsync(
-                                async tx2 => await tx2.RunAsync(
+                                async tx2 => await (await tx2.RunAsync(
                                     "UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id",
-                                    new { x = record["x"].As<int>() }));
+                                    new { x = record["x"].As<int>() })).ConsumeAsync());
                         }
                     }));
 
