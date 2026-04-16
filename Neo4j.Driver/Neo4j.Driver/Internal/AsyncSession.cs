@@ -291,18 +291,6 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         return RunTransactionAsync(AccessMode.Read, work, BuildTransactionConfig(action));
     }
 
-#pragma warning disable CS0618
-    Task<IResultCursor> IAsyncSession.ExecuteReadAsync(
-        Func<IAsyncQueryRunner, Task<IResultCursor>> work,
-        Action<TransactionConfigBuilder> action)
-    {
-        throw new InvalidOperationException(
-            "Do not return IResultCursor from a transaction function. The cursor is backed by the transaction, " +
-            "which is committed and closed before the caller can use it. " +
-            "Consume results inside the delegate instead, e.g. return await cursor.ToListAsync().");
-    }
-#pragma warning restore CS0618
-
     public Task ExecuteWriteAsync(
         Func<IAsyncQueryRunner, Task> work,
         Action<TransactionConfigBuilder> action = null)
@@ -316,18 +304,6 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     {
         return RunTransactionAsync(AccessMode.Write, work, BuildTransactionConfig(action));
     }
-
-#pragma warning disable CS0618
-    Task<IResultCursor> IAsyncSession.ExecuteWriteAsync(
-        Func<IAsyncQueryRunner, Task<IResultCursor>> work,
-        Action<TransactionConfigBuilder> action)
-    {
-        throw new InvalidOperationException(
-            "Do not return IResultCursor from a transaction function. The cursor is backed by the transaction, " +
-            "which is committed and closed before the caller can use it. " +
-            "Consume results inside the delegate instead, e.g. return await cursor.ToListAsync().");
-    }
-#pragma warning restore CS0618
 
     private TransactionConfig BuildTransactionConfig(Action<TransactionConfigBuilder> action)
     {

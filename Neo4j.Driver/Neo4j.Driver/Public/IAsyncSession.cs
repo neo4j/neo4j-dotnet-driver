@@ -119,7 +119,12 @@ public interface IAsyncSession : IAsyncQueryRunner
         error: false)]
     Task<IResultCursor> ExecuteReadAsync(
         Func<IAsyncQueryRunner, Task<IResultCursor>> work,
-        Action<TransactionConfigBuilder> action = null);
+        Action<TransactionConfigBuilder> action = null) =>
+        Task.FromException<IResultCursor>(
+            new NotSupportedException(
+                "Do not return IResultCursor from a transaction function. The cursor is backed by the transaction, " +
+                "which is committed and closed before the caller can use it. " +
+                "Consume results inside the delegate instead, e.g. return await cursor.ToListAsync()."));
 
     /// <summary>Asynchronously execute given unit of work as a transaction with a specific <see cref="TransactionConfig"/>.</summary>
     /// <param name="work">The <see cref="Func{IAsyncQueryRunner, Task}"/> to be applied to a new read transaction.</param>
@@ -152,7 +157,12 @@ public interface IAsyncSession : IAsyncQueryRunner
         error: false)]
     Task<IResultCursor> ExecuteWriteAsync(
         Func<IAsyncQueryRunner, Task<IResultCursor>> work,
-        Action<TransactionConfigBuilder> action = null);
+        Action<TransactionConfigBuilder> action = null) =>
+        Task.FromException<IResultCursor>(
+            new NotSupportedException(
+                "Do not return IResultCursor from a transaction function. The cursor is backed by the transaction, " +
+                "which is committed and closed before the caller can use it. " +
+                "Consume results inside the delegate instead, e.g. return await cursor.ToListAsync()."));
 
     /// <summary>Asynchronously execute given unit of work as a transaction with a specific <see cref="TransactionConfig"/>.</summary>
     /// <param name="work">The <see cref="Func{IAsyncQueryRunner, Task}"/> to be applied to a new write transaction.</param>
