@@ -116,7 +116,7 @@ public interface IAsyncSession : IAsyncQueryRunner
         "Do not return IResultCursor from a transaction function. The cursor is backed by the transaction, " +
         "which is committed and closed before the caller can use it. " +
         "Consume results inside the delegate instead, e.g. return await cursor.ToListAsync().",
-        error: true)]
+        error: false)]
     Task<IResultCursor> ExecuteReadAsync(
         Func<IAsyncQueryRunner, Task<IResultCursor>> work,
         Action<TransactionConfigBuilder> action = null);
@@ -149,7 +149,7 @@ public interface IAsyncSession : IAsyncQueryRunner
         "Do not return IResultCursor from a transaction function. The cursor is backed by the transaction, " +
         "which is committed and closed before the caller can use it. " +
         "Consume results inside the delegate instead, e.g. return await cursor.ToListAsync().",
-        error: true)]
+        error: false)]
     Task<IResultCursor> ExecuteWriteAsync(
         Func<IAsyncQueryRunner, Task<IResultCursor>> work,
         Action<TransactionConfigBuilder> action = null);

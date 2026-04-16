@@ -64,7 +64,7 @@ public class ReturnCursorCompileTests
     }
 
     [Fact]
-    public void ReturningCursorFromTransactionFunction_DoesNotCompile()
+    public void ReturningCursorFromTransactionFunction_ProducesWarning()
     {
         var source = """
             using System.Threading.Tasks;
@@ -82,8 +82,8 @@ public class ReturnCursorCompileTests
 
         var diagnostics = Compile(source).GetDiagnostics();
         diagnostics.Should().Contain(
-            d => d.Severity == DiagnosticSeverity.Error,
-            because: "returning IResultCursor from a transaction function should be a compile error");
+            d => d.Severity == DiagnosticSeverity.Warning && d.Id == "CS0618",
+            because: "returning IResultCursor from a transaction function should produce an obsolete warning");
     }
 
     [Fact]
