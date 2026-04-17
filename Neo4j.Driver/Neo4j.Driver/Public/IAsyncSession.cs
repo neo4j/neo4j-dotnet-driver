@@ -111,6 +111,17 @@ public interface IAsyncSession : IAsyncQueryRunner
         Func<IAsyncQueryRunner, Task<TResult>> work,
         Action<TransactionConfigBuilder> action = null);
 
+    /// <inheritdoc cref="ExecuteReadAsync{TResult}(Func{IAsyncQueryRunner,Task{TResult}},Action{TransactionConfigBuilder})"/>
+    [Obsolete(
+        "Do not return IResultCursor from a transaction function. The cursor is backed by the transaction, " +
+        "which is committed and closed before the caller can use it. " +
+        "Consume results inside the delegate instead, e.g. return await cursor.ToListAsync().",
+        error: false)]
+    Task<IResultCursor> ExecuteReadAsync(
+        Func<IAsyncQueryRunner, Task<IResultCursor>> work,
+        Action<TransactionConfigBuilder> action = null) =>
+        ExecuteReadAsync<IResultCursor>(work, action);
+
     /// <summary>Asynchronously execute given unit of work as a transaction with a specific <see cref="TransactionConfig"/>.</summary>
     /// <param name="work">The <see cref="Func{IAsyncQueryRunner, Task}"/> to be applied to a new read transaction.</param>
     /// <param name="action">
@@ -133,6 +144,17 @@ public interface IAsyncSession : IAsyncQueryRunner
     Task<TResult> ExecuteWriteAsync<TResult>(
         Func<IAsyncQueryRunner, Task<TResult>> work,
         Action<TransactionConfigBuilder> action = null);
+
+    /// <inheritdoc cref="ExecuteWriteAsync{TResult}(Func{IAsyncQueryRunner,Task{TResult}},Action{TransactionConfigBuilder})"/>
+    [Obsolete(
+        "Do not return IResultCursor from a transaction function. The cursor is backed by the transaction, " +
+        "which is committed and closed before the caller can use it. " +
+        "Consume results inside the delegate instead, e.g. return await cursor.ToListAsync().",
+        error: false)]
+    Task<IResultCursor> ExecuteWriteAsync(
+        Func<IAsyncQueryRunner, Task<IResultCursor>> work,
+        Action<TransactionConfigBuilder> action = null) =>
+        ExecuteWriteAsync<IResultCursor>(work, action);
 
     /// <summary>Asynchronously execute given unit of work as a transaction with a specific <see cref="TransactionConfig"/>.</summary>
     /// <param name="work">The <see cref="Func{IAsyncQueryRunner, Task}"/> to be applied to a new write transaction.</param>
