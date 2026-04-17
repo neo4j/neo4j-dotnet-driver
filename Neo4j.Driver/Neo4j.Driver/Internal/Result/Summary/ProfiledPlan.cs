@@ -32,25 +32,19 @@ internal class ProfiledPlan : IProfiledPlan
         long pageCacheMisses,
         double pageCacheHitRatio,
         long time,
-        bool foundStats,
-        bool foundDbHits,
-        bool foundRecords,
-        bool foundTime)
+        bool foundStats)
     {
         OperatorType = operatorType;
         Arguments = arguments;
         Identifiers = identifiers;
         Children = children;
         DbHits = dbHits;
-        HasDbHits = foundDbHits;
         Records = records;
-        HasRecords = foundRecords;
         PageCacheHits = pageCacheHits;
         PageCacheMisses = pageCacheMisses;
         PageCacheHitRatio = pageCacheHitRatio;
         HasPageCacheStats = foundStats;
         Time = time;
-        HasTime = foundTime;
     }
 
     public string OperatorType { get; }
@@ -64,15 +58,12 @@ internal class ProfiledPlan : IProfiledPlan
 
     public IList<IProfiledPlan> Children { get; }
 
-    public bool HasDbHits { get; }
     public long DbHits { get; }
 
-    public bool HasRecords { get; }
     public long Records { get; }
     public long PageCacheHits { get; }
     public long PageCacheMisses { get; }
     public double PageCacheHitRatio { get; }
-    public bool HasTime { get; }
     public long Time { get; }
 
     public override string ToString()

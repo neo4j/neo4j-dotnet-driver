@@ -61,12 +61,12 @@ internal class ProfiledPlanCollector : IMetadataCollector<IProfiledPlan>
 
         var args = profileDictionary.GetValue("args", new Dictionary<string, object>());
         var identifiers = profileDictionary.GetValue("identifiers", new List<object>()).Cast<string>();
-        var foundDbHits = profileDictionary.TryGetValue<long>("dbHits", 0, out var dbHits);
-        var foundRows = profileDictionary.TryGetValue<long>("rows", 0, out var rows);
+        var dbHits = profileDictionary.GetValue<long>("dbHits", 0);
+        var rows = profileDictionary.GetValue<long>("rows", 0);
         var foundPage = profileDictionary.TryGetValue<long>("pageCacheHits", 0, out var pageCacheHits);
         var foundMisses = profileDictionary.TryGetValue("pageCacheMisses", 0L, out var pageCacheMisses);
         var foundHitRatio = profileDictionary.TryGetValue("pageCacheHitRatio", 0.0, out var pageCacheHitRatio);
-        var foundTime = profileDictionary.TryGetValue<long>("time", 0, out var time);
+        var time = profileDictionary.GetValue<long>("time", 0);
 
         var children = profileDictionary.GetValue("children", new List<object>());
 
@@ -89,10 +89,7 @@ internal class ProfiledPlanCollector : IMetadataCollector<IProfiledPlan>
             pageCacheMisses,
             pageCacheHitRatio,
             time,
-            foundStats,
-            foundDbHits,
-            foundRows,
-            foundTime);
+            foundStats);
     }
 }
 #pragma warning restore CS0618 // Type or member is obsolete

@@ -198,7 +198,6 @@ public sealed class ResultIT : DirectDriverTestBase
             var profile = summary.QueryProfile;
             profile.DbHits.Should().Be(0L);
             profile.Rows.Should().Be(1L);
-            profile.Rows.Should().Be(1L);
             profile.PageCacheHits.Should().BeNull();
             profile.PageCacheMisses.Should().BeNull();
             profile.PageCacheHitRatio.Should().BeNull();

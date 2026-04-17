@@ -55,9 +55,6 @@ public class ProfiledPlanCollectorTests
         0,
         0,
         0,
-        false,
-        true,
-        true,
         false);
 
     [Fact]
@@ -208,9 +205,6 @@ public class ProfiledPlanCollectorTests
                     0,
                     0,
                     0,
-                    false,
-                    true,
-                    true,
                     false));
     }
 
@@ -250,9 +244,6 @@ public class ProfiledPlanCollectorTests
                     2,
                     3,
                     4,
-                    true,
-                    true,
-                    true,
                     true));
     }
 
@@ -295,9 +286,6 @@ public class ProfiledPlanCollectorTests
                     0,
                     0,
                     0,
-                    false,
-                    true,
-                    true,
                     false));
     }
 
@@ -344,9 +332,6 @@ public class ProfiledPlanCollectorTests
                     0,
                     0.0,
                     0,
-                    true,
-                    true,
-                    true,
                     true));
     }
 
@@ -413,9 +398,6 @@ public class ProfiledPlanCollectorTests
                             0,
                             0,
                             0,
-                            false,
-                            true,
-                            true,
                             false)
                     },
                     5,
@@ -424,9 +406,6 @@ public class ProfiledPlanCollectorTests
                     0,
                     0,
                     0,
-                    false,
-                    true,
-                    true,
                     false));
     }
 
@@ -517,9 +496,6 @@ public class ProfiledPlanCollectorTests
                                     0,
                                     0,
                                     0,
-                                    false,
-                                    true,
-                                    true,
                                     false)
                             },
                             15,
@@ -528,9 +504,6 @@ public class ProfiledPlanCollectorTests
                             0,
                             0,
                             0,
-                            false,
-                            true,
-                            true,
                             false)
                     },
                     5,
@@ -539,9 +512,6 @@ public class ProfiledPlanCollectorTests
                     0,
                     0,
                     0,
-                    false,
-                    true,
-                    true,
                     false));
     }
 
