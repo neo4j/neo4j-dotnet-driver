@@ -109,5 +109,8 @@ public class ReturnCursorCompileTests
         diagnostics.Should().NotContain(
             d => d.Severity == DiagnosticSeverity.Error,
             because: "consuming results inside the delegate is valid usage");
+        diagnostics.Should().NotContain(
+            d => d.Severity == DiagnosticSeverity.Warning && d.Id == "CS0618",
+            because: "consuming results inside the delegate is valid usage and should not produce the obsolete warning");
     }
 }
