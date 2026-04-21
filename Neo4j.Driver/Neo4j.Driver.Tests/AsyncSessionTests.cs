@@ -980,5 +980,56 @@ public class AsyncSessionTests
             var exception = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
             exception.Should().BeNull("the null-connection guard must prevent NullReferenceException");
         }
+
+        // ── Retry transparency ───────────────────────────────────────────
+
+        [Fact]
+        public async Task RetryShouldBeInvisibleToTheCaller()
+        {
+            var serverError = new ClientException("Neo.ClientError.Statement.SyntaxError", "bad query");
+
+            // Scenario A: no retry occurred (non-idempotent error on first RUN).
+            var directCursor = MockCursor(serverError);
+            var directConn = new Mock<IConnection>();
+            directConn.Setup(x => x.RunInAutoCommitTransactionAsync(
+                    It.IsAny<AutoCommitParams>(),
+                    It.IsAny<INotificationsConfig>(),
+                    It.IsAny<IHomeDbCache>()))
+                .ReturnsAsync(directCursor.Object);
+
+            var directSession = NewSessionWith(new SequentialConnectionProvider(directConn.Object));
+            var directExc = await Record.ExceptionAsync(() => directSession.RunAsync("BAD"));
+            // RunAsync itself should not throw.
+            directExc.Should().BeNull();
+
+            // Scenario B: an idempotent retry happened, but the retry produced
+            // the same non-idempotent error.
+            var firstCursor = MockCursor(IdempotentFailure());
+            var retryCursor = MockCursor(serverError);
+
+            var firstConn = new Mock<IConnection>();
+            firstConn.Setup(x => x.RunInAutoCommitTransactionAsync(
+                    It.IsAny<AutoCommitParams>(),
+                    It.IsAny<INotificationsConfig>(),
+                    It.IsAny<IHomeDbCache>()))
+                .ReturnsAsync(firstCursor.Object);
+
+            firstConn.Setup(x => x.CloseAsync()).Returns(Task.CompletedTask);
+
+            var retryConn = new Mock<IConnection>();
+            retryConn.Setup(x => x.RunInAutoCommitTransactionAsync(
+                    It.IsAny<AutoCommitParams>(),
+                    It.IsAny<INotificationsConfig>(),
+                    It.IsAny<IHomeDbCache>()))
+                .ReturnsAsync(retryCursor.Object);
+
+            var retrySession = NewSessionWith(
+                new SequentialConnectionProvider(firstConn.Object, retryConn.Object));
+
+            var retryExc = await Record.ExceptionAsync(() => retrySession.RunAsync("BAD"));
+            // RunAsync itself should not throw here either — identical to scenario A.
+            retryExc.Should().BeNull(
+                "the caller should not be able to tell that an internal retry happened");
+        }
     }
 }
