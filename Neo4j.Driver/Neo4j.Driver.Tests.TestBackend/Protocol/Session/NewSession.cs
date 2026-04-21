@@ -121,6 +121,11 @@ internal class NewSession : ProtocolObject
                 configBuilder.WithNotifications(sev, cats);
             }
         }
+
+        if (data.disableAutoCommitRetries.HasValue)
+        {
+            configBuilder.WithDisableAutoCommitRetries(data.disableAutoCommitRetries.Value);
+        }
     }
 
     public override async Task Process()
@@ -168,5 +173,6 @@ internal class NewSession : ProtocolObject
 
         public string notificationsMinSeverity { get; set; }
         public string[] notificationsDisabledCategories { get; set; }
+        public bool? disableAutoCommitRetries { get; set; }
     }
 }

@@ -73,6 +73,7 @@ internal static class SupportedFeatures
             "Feature:Bolt:6.0",
             "Feature:Bolt:Patch:UTC",
             "Feature:Bolt:HandshakeManifestV1",
+            "Feature:IdempotentRetries",
             "Feature:Impersonation",
             //"Feature:TLS:1.1",
             "Feature:TLS:1.2",
