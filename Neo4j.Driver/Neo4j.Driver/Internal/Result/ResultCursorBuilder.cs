@@ -43,6 +43,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
     private Dictionary<string, int> _invariantFieldLookup;
 
     private IResponsePipelineError _pendingError;
+    private bool _pipelineFailedBeforeRunResponse;
     private long _queryId;
     private bool _runResponseReceived;
 
@@ -106,7 +107,8 @@ internal class ResultCursorBuilder : IResultCursorBuilder
             await AdvanceAsync().ConfigureAwait(false);
         }
 
-        return _pendingError?.Exception;
+        // A pre-RUN failure (e.g. TELEMETRY) must not trigger a retry. 
+        return _pipelineFailedBeforeRunResponse ? null : _pendingError?.Exception;
     }
 
     public async ValueTask<IRecord> NextRecordAsync()
@@ -248,6 +250,8 @@ internal class ResultCursorBuilder : IResultCursorBuilder
             }
             catch (Exception exc)
             {
+                _pipelineFailedBeforeRunResponse = !_runResponseReceived;
+
                 _pendingError = new ResponsePipelineError(exc);
 
                 // Ensure that current state is updated and is recognized as Completed

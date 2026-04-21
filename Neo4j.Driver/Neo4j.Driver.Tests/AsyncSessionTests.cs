@@ -773,6 +773,36 @@ public class AsyncSessionTests
         // ── Non-retryable errors: return cursor, error surfaces lazily ────
 
         [Fact]
+        public async Task ShouldNotRetryWhenGetRunCompletionErrorReturnsNull()
+        {
+            // GetRunCompletionErrorAsync returning null means the failure came from a
+            // pre-RUN message (e.g. TELEMETRY). Even if the underlying error would be
+            // idempotent, the session must NOT retry — the cursor is returned and the
+            // error surfaces lazily when the user consumes it.
+            var cursor = MockCursor(null); // GetRunCompletionErrorAsync returns null
+
+            var conn = new Mock<IConnection>();
+            conn.Setup(x => x.RunInAutoCommitTransactionAsync(
+                    It.IsAny<AutoCommitParams>(),
+                    It.IsAny<INotificationsConfig>(),
+                    It.IsAny<IHomeDbCache>()))
+                .ReturnsAsync(cursor.Object);
+
+            var session = NewSessionWith(new SequentialConnectionProvider(conn.Object));
+            var result = await session.RunAsync("RETURN 1");
+
+            result.Should().BeSameAs(cursor.Object);
+            conn.Verify(
+                x => x.RunInAutoCommitTransactionAsync(
+                    It.IsAny<AutoCommitParams>(),
+                    It.IsAny<INotificationsConfig>(),
+                    It.IsAny<IHomeDbCache>()),
+                Times.Once,
+                "null from GetRunCompletionErrorAsync must not trigger a retry, " +
+                "even if the underlying failure would be idempotent");
+        }
+
+        [Fact]
         public async Task ShouldNotRetryOnNonIdempotentTransientError()
         {
             var nonIdempotentError = new TransientException("Neo.TransientError.General.OutOfMemoryError", "OOM");

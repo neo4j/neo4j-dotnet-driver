@@ -352,15 +352,38 @@ public class ResultCursorBuilderTests
             "Neo.TransientError.General.MemoryPoolOutOfMemoryError",
             "Out of memory");
 
-        var builder = new ResultCursorBuilder(
+        ResultCursorBuilder builder = null;
+        builder = new ResultCursorBuilder(
             CreateSummaryBuilder(),
-            () => throw runFailure,
+            () => { builder!.RunCompleted(0, null, null); throw runFailure; },
             null, null, null, 1000, false,
             new Mock<IInternalAsyncTransaction>().Object);
 
         var error = await builder.GetRunCompletionErrorAsync();
 
         error.Should().BeSameAs(runFailure);
+    }
+
+    [Fact]
+    public async Task GetRunCompletionErrorAsync_ShouldReturnNullWhenPipelineErrorOccursBeforeRun()
+    {
+        // When a pre-RUN message (e.g. TELEMETRY) fails, the pipeline throws before the RUN
+        // response handler ever fires. The error must not be surfaced as a retryable run error.
+        var telemetryFailure = new ClientException(
+            "Neo.ClientError.MadeUp.Idempotent",
+            "idempotent error on telemetry");
+
+        var builder = new ResultCursorBuilder(
+            CreateSummaryBuilder(),
+            () => throw telemetryFailure,
+            null, null, null, 1000, false,
+            new Mock<IInternalAsyncTransaction>().Object);
+
+        var error = await builder.GetRunCompletionErrorAsync();
+        builder.RunCompleted(0, null, null); // simulate drain calling RunCompleted after the fact
+
+        error.Should().BeNull(
+            "a pre-RUN pipeline failure must not be treated as a retryable run error");
     }
 
     [Fact]
@@ -412,9 +435,10 @@ public class ResultCursorBuilderTests
             "Neo.TransientError.General.MemoryPoolOutOfMemoryError",
             "Out of memory");
 
-        var builder = new ResultCursorBuilder(
+        ResultCursorBuilder builder = null;
+        builder = new ResultCursorBuilder(
             CreateSummaryBuilder(),
-            () => throw runFailure,
+            () => { builder!.RunCompleted(0, null, null); throw runFailure; },
             null, null, null, 1000, false,
             new Mock<IInternalAsyncTransaction>().Object);
 
