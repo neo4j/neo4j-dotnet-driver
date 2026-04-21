@@ -739,7 +739,7 @@ public class AsyncSessionTests
         // ── Retry also fails: propagate ───────────────────────────────────
 
         [Fact]
-        public async Task ShouldPropagateExceptionWhenRetryAlsoFails()
+        public async Task ShouldReturnRetryCursorWhenRetryAlsoFails()
         {
             var firstCursor = MockCursor(IdempotentFailure("first"));
             var retryError = IdempotentFailure("second");
@@ -764,9 +764,10 @@ public class AsyncSessionTests
                 .ReturnsAsync(retryCursor.Object);
 
             var session = NewSessionWith(new SequentialConnectionProvider(firstConn.Object, secondConn.Object));
-            var exc = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
+            var cursor = await session.RunAsync("RETURN 1");
 
-            exc.Should().BeSameAs(retryError);
+            cursor.Should().BeSameAs(retryCursor.Object,
+                "retry failure should surface lazily, same as a non-retried failure");
         }
 
         // ── Non-retryable errors: return cursor, error surfaces lazily ────

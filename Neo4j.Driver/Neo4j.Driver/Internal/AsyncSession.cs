@@ -249,15 +249,6 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                             .RunInAutoCommitTransactionAsync(
                                 autoCommitParams, _notificationsConfig, _driverContext?.HomeDbCache)
                             .ConfigureAwait(false);
-
-                        if (cursor is IInternalResultCursor retryIrc)
-                        {
-                            var retryError = await retryIrc.GetRunCompletionErrorAsync().ConfigureAwait(false);
-                            if (retryError != null)
-                            {
-                                throw retryError;
-                            }
-                        }
                     }
                 }
 
