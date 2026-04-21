@@ -42,6 +42,7 @@ internal sealed class SocketConnection : IConnection
     private readonly IResponsePipeline _responsePipeline;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
     private readonly ServerInfo _serverInfo;
+    private readonly IDictionary<string, string> _routingContext;
 
     private string _id;
 
@@ -64,6 +65,22 @@ internal sealed class SocketConnection : IConnection
         _responsePipeline = new ResponsePipeline(_neo4JLogger);
         AuthTokenManager = context.AuthTokenManager;
         _protocolFactory = BoltProtocolFactory.Default;
+
+        // Override the routing context address to reflect the address the driver
+        // actually connected to (the resolved address). Standalone servers echo this
+        // address back in routing tables; using the resolved address ensures they
+        // return an address the driver can reach directly (fixes DRIVERS-199).
+        if (context.RoutingContext != null)
+        {
+            var authority = uri.IsDefaultPort
+                ? $"{uri.Host}:{Neo4jUri.DefaultBoltPort}"
+                : $"{uri.Host}:{uri.Port}";
+
+            _routingContext = new Dictionary<string, string>(context.RoutingContext)
+            {
+                ["address"] = authority
+            };
+        }
     }
 
     // for test only
@@ -95,7 +112,8 @@ internal sealed class SocketConnection : IConnection
 
     public string Database { get; private set; }
 
-    public IDictionary<string, string> RoutingContext => Context.RoutingContext;
+    public IDictionary<string, string> RoutingContext => _routingContext ?? Context.RoutingContext;
+
     public BoltProtocolVersion Version => _client.Version;
 
     /// <summary>Internal Set used for tests.</summary>
