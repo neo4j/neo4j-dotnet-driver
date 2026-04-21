@@ -13,9 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Threading.Tasks;
+
 namespace Neo4j.Driver.Internal;
 
 internal interface IInternalResultCursor : IResultCursor
 {
     void Cancel();
+
+    /// <summary>
+    /// Reads exactly enough of the response pipeline to determine whether the RUN succeeded.
+    /// Returns the captured error (or null) without consuming it, so it remains available
+    /// for lazy surfacing via iteration.
+    /// </summary>
+    Task<Exception> GetRunCompletionErrorAsync();
 }

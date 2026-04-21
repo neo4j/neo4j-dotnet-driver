@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -324,6 +325,106 @@ public class ResultCursorBuilderTests
 
             return Task.CompletedTask;
         };
+    }
+
+    // ── GetRunCompletionErrorAsync tests ──────────────────────────────
+
+    [Fact]
+    public async Task GetRunCompletionErrorAsync_ShouldReturnNullOnSuccess()
+    {
+        var actions = new Queue<Action>();
+        var builder = new ResultCursorBuilder(
+            CreateSummaryBuilder(),
+            CreateTaskQueue(actions),
+            null, null, null, 1000, false,
+            new Mock<IInternalAsyncTransaction>().Object);
+
+        actions.Enqueue(() => builder.RunCompleted(0, new[] { "n" }, null));
+
+        var error = await builder.GetRunCompletionErrorAsync();
+        error.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetRunCompletionErrorAsync_ShouldReturnErrorWhenRunFails()
+    {
+        var runFailure = new TransientException(
+            "Neo.TransientError.General.MemoryPoolOutOfMemoryError",
+            "Out of memory");
+
+        var builder = new ResultCursorBuilder(
+            CreateSummaryBuilder(),
+            () => throw runFailure,
+            null, null, null, 1000, false,
+            new Mock<IInternalAsyncTransaction>().Object);
+
+        var error = await builder.GetRunCompletionErrorAsync();
+
+        error.Should().BeSameAs(runFailure);
+    }
+
+    [Fact]
+    public async Task GetRunCompletionErrorAsync_ShouldReturnNullWhenOnlyPullFails()
+    {
+        var pullFailed = false;
+        var actions = new Queue<Action>();
+        var builder = new ResultCursorBuilder(
+            CreateSummaryBuilder(),
+            CreateTaskQueue(actions),
+            null, null, null, 1000, false,
+            new Mock<IInternalAsyncTransaction>().Object);
+
+        actions.Enqueue(() => builder.RunCompleted(0, new[] { "n" }, null));
+        actions.Enqueue(() =>
+        {
+            pullFailed = true;
+            throw new IOException("connection reset during PULL");
+        });
+
+        var error = await builder.GetRunCompletionErrorAsync();
+
+        error.Should().BeNull("only RUN errors should be reported, not PULL errors");
+        pullFailed.Should().BeFalse("GetRunCompletionErrorAsync should not advance into PULL territory");
+    }
+
+    [Fact]
+    public async Task GetRunCompletionErrorAsync_ShouldReturnNullWhenRunSucceedsWithNoFields()
+    {
+        var actions = new Queue<Action>();
+        var builder = new ResultCursorBuilder(
+            CreateSummaryBuilder(),
+            CreateTaskQueue(actions),
+            null, null, null, 1000, false,
+            new Mock<IInternalAsyncTransaction>().Object);
+
+        actions.Enqueue(() => builder.RunCompleted(0, null, null));
+
+        var error = await builder.GetRunCompletionErrorAsync();
+
+        error.Should().BeNull(
+            "a RUN SUCCESS with no fields (as bolt stubs send) should not be treated as an error");
+    }
+
+    [Fact]
+    public async Task GetRunCompletionErrorAsync_ShouldNotConsumeOneShotThrow()
+    {
+        var runFailure = new TransientException(
+            "Neo.TransientError.General.MemoryPoolOutOfMemoryError",
+            "Out of memory");
+
+        var builder = new ResultCursorBuilder(
+            CreateSummaryBuilder(),
+            () => throw runFailure,
+            null, null, null, 1000, false,
+            new Mock<IInternalAsyncTransaction>().Object);
+
+        var error = await builder.GetRunCompletionErrorAsync();
+        error.Should().BeSameAs(runFailure);
+
+        var cursor = builder.CreateCursor();
+        var lazyError = await Record.ExceptionAsync(async () => await cursor.FetchAsync());
+        lazyError.Should().BeSameAs(runFailure,
+            "the error must still be available for lazy consumers after GetRunCompletionErrorAsync inspected it");
     }
 
     public class Reactive

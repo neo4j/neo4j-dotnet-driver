@@ -35,6 +35,17 @@ internal static class ErrorExtensions
         return error is Neo4jException { IsRetriable: true };
     }
 
+    /// <summary>
+    /// Returns true if the server marked the failure as idempotent — i.e. guaranteed that no state
+    /// change occurred, so the request can be safely retried (e.g. admission control rejection).
+    /// </summary>
+    public static bool IsIdempotentFailure(this Exception error)
+    {
+        return error is Neo4jException { GqlDiagnosticRecord: { } dr }
+            && dr.TryGetValue("_idempotent", out var v)
+            && v is true;
+    }
+
     public static bool IsRecoverableError(this Exception error)
     {
         return error is ClientException or TransientException;

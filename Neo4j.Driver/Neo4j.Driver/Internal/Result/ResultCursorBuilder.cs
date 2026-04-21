@@ -44,6 +44,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
 
     private IResponsePipelineError _pendingError;
     private long _queryId;
+    private bool _runResponseReceived;
 
     private volatile int _state;
 
@@ -90,6 +91,22 @@ internal class ResultCursorBuilder : IResultCursorBuilder
         }
 
         return _fieldLookup?.Keys.ToArray() ?? Array.Empty<string>();
+    }
+
+    /// <summary>
+    /// Reads exactly enough of the pipeline to know whether the RUN succeeded, then returns
+    /// the captured error (or null). Never calls <see cref="IResponsePipelineError.EnsureThrown"/>,
+    /// so the one-shot throw flag stays unset and lazy error surfacing via
+    /// <see cref="NextRecordAsync"/> / <see cref="ConsumeAsync"/> is preserved.
+    /// </summary>
+    public async Task<Exception> GetRunCompletionErrorAsync()
+    {
+        while (!_runResponseReceived && CurrentState < State.Completed)
+        {
+            await AdvanceAsync().ConfigureAwait(false);
+        }
+
+        return _pendingError?.Exception;
     }
 
     public async ValueTask<IRecord> NextRecordAsync()
@@ -148,6 +165,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
     public void RunCompleted(long queryId, string[] fields, IResponsePipelineError error)
     {
         _queryId = queryId;
+        _runResponseReceived = true;
 
         if (fields is not null)
         {
