@@ -21,17 +21,17 @@ using Neo4j.Driver.Tests.TestBackend.Protocol.SupportFunctions;
 
 namespace Neo4j.Driver.Tests.TestBackend.Resolvers;
 
-internal class ListAddressResolver : IServerAddressResolver
+internal class TestAddressResolver : IServerAddressResolver
 {
     private readonly ServerAddress[] servers;
 
-    public ListAddressResolver(Controller control, string uri)
+    public TestAddressResolver(Controller control, string uri)
     {
         Control = control;
         Uri = new Uri(uri);
     }
 
-    public ListAddressResolver(params ServerAddress[] servers)
+    public TestAddressResolver(params ServerAddress[] servers)
     {
         this.servers = servers;
     }
