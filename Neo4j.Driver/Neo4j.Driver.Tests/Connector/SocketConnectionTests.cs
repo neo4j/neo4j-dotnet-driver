@@ -415,5 +415,20 @@ public class SocketConnectionTests
                 "[::1]:7687",
                 because: "IPv6 bracket notation must be preserved to produce a valid address");
         }
+
+        [Fact]
+        public void ShouldPreserveOriginalAddressWhenConnectingToClusterMember()
+        {
+            var driverUri = new Uri("neo4j://127.0.0.1:9000");
+            var clusterMemberUri = new Uri("neo4j://127.0.0.1:9001");
+            var context = new DriverContext(driverUri, AuthTokenManagers.None, new Config());
+
+            var conn = new SocketConnection(clusterMemberUri, context, AuthTokens.None);
+
+            conn.RoutingContext["address"].Should().Be(
+                "127.0.0.1:9000",
+                because: "routing context address must stay as the original configured router, " +
+                          "not change to the address of each discovered cluster member");
+        }
     }
 }
