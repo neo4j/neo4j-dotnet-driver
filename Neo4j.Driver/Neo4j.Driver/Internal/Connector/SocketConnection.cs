@@ -66,20 +66,19 @@ internal sealed class SocketConnection : IConnection
         AuthTokenManager = context.AuthTokenManager;
         _protocolFactory = BoltProtocolFactory.Default;
 
-        // Override the routing context address to reflect the address the driver
-        // actually connected to (the resolved address). Standalone servers echo this
-        // address back in routing tables; using the resolved address ensures they
-        // return an address the driver can reach directly (fixes DRIVERS-199).
         if (context.RoutingContext != null)
         {
-            var authority = uri.IsDefaultPort
-                ? $"{uri.Host}:{Neo4jUri.DefaultBoltPort}"
-                : $"{uri.Host}:{uri.Port}";
-
-            _routingContext = new Dictionary<string, string>(context.RoutingContext)
+            if (!uri.Host.Equals(HostFromRoutingAddress(), StringComparison.OrdinalIgnoreCase))
             {
-                ["address"] = authority
-            };
+                var authority = uri.IsDefaultPort
+                    ? $"{uri.Host}:{Neo4jUri.DefaultBoltPort}"
+                    : $"{uri.Host}:{uri.Port}";
+
+                _routingContext = new Dictionary<string, string>(context.RoutingContext)
+                {
+                    ["address"] = authority
+                };
+            }
         }
     }
 
@@ -495,6 +494,17 @@ internal sealed class SocketConnection : IConnection
     public Task RollbackTransactionAsync()
     {
         return BoltProtocol.RollbackTransactionAsync(this);
+    }
+
+    private string HostFromRoutingAddress()
+    {
+        var address = Context.RoutingContext.GetValueOrDefault("address", string.Empty);
+
+        if (!address.Contains(':'))
+            return address;
+
+        var host = address[..address.LastIndexOf(':')];
+        return host.Trim('[', ']');
     }
 
     private ValueTask HandleAuthErrorAsync(IResponsePipeline responsePipeline)
