@@ -82,8 +82,13 @@ public sealed class ListAddressResolver : IServerAddressResolver, IEnumerable<Se
     /// </exception>
     public void Add(string hostAndPort)
     {
+        if (string.IsNullOrEmpty(hostAndPort))
+            throw new ArgumentException("Value must not be null or empty.", nameof(hostAndPort));
+
         var lastColon = hostAndPort.LastIndexOf(':');
-        if (lastColon < 0 || !int.TryParse(hostAndPort.AsSpan(lastColon + 1), out var port))
+        if (lastColon <= 0
+            || !int.TryParse(hostAndPort.AsSpan(lastColon + 1), out var port)
+            || port is < 1 or > 65535)
         {
             throw new FormatException(
                 $"Expected a string in the form \"host:port\" but got \"{hostAndPort}\".");
