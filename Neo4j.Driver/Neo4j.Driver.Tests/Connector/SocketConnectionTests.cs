@@ -401,5 +401,19 @@ public class SocketConnectionTests
             conn.RoutingContext["policy"].Should().Be("my_policy");
             conn.RoutingContext["region"].Should().Be("eu");
         }
+
+        [Fact]
+        public void ShouldPreserveIpv6BracketsInRoutingContextAddress()
+        {
+            var driverUri = new Uri("neo4j://example.com:9999");
+            var connectionUri = new Uri("neo4j://[::1]:7687");
+            var context = new DriverContext(driverUri, AuthTokenManagers.None, new Config());
+
+            var conn = new SocketConnection(connectionUri, context, AuthTokens.None);
+
+            conn.RoutingContext["address"].Should().Be(
+                "[::1]:7687",
+                because: "IPv6 bracket notation must be preserved to produce a valid address");
+        }
     }
 }
