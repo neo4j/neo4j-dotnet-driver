@@ -50,6 +50,53 @@ internal interface IRecordObjectMapping : IMappingRegistry
 internal delegate object MapDelegate(IRecord record);
 
 /// <summary>Controls global record mapping configuration.</summary>
+/// <remarks>
+/// <para>
+/// The object mapping system converts <see cref="IRecord"/> query results into C# objects. The simplest usage
+/// requires no configuration at all: call <see cref="RecordExtensions.AsObject{T}"/> on any record, or chain
+/// <see cref="ExecutableQueryMappingExtensions.AsObjectsAsync{T}"/> onto an
+/// <see cref="IDriver.ExecutableQuery(string)"/> call, and the default mapper will do the rest.
+/// </para>
+/// <para>
+/// The default mapper automatically selects a constructor (preferring the one with fewest parameters, or the one
+/// marked <see cref="MappingConstructorAttribute"/>), then populates any remaining writable properties.
+/// Property and parameter names are matched <b>case-sensitively</b> against record field names. Decorate members with
+/// attributes in the <c>Neo4j.Driver.Mapping</c> namespace to customise field names, optionality, and default
+/// values without writing any mapping code.
+/// </para>
+/// <para>
+/// When your database uses a different naming convention from your C# code (for example camelCase fields vs.
+/// PascalCase properties), call <see cref="TranslateIdentifiers(bool)"/> once at startup to configure automatic
+/// name translation.
+/// </para>
+/// <para>
+/// For types that need more control than attributes provide, use one of the global registration methods:
+/// </para>
+/// <list type="bullet">
+/// <item><description>
+/// <see cref="RegisterProvider(IMappingProvider)"/> — register a class that uses the fluent
+/// <see cref="IMappingBuilder{TObject}"/> API to define per-type mappings.
+/// </description></item>
+/// <item><description>
+/// <see cref="Register{T}(IRecordMapper{T})"/> — register a hand-written <see cref="IRecordMapper{T}"/>
+/// implementation for complete control over a single type.
+/// </description></item>
+/// <item><description>
+/// <see cref="RegisterTypeConverter{TFrom,TTo}"/> — register a conversion function used when a field value's
+/// runtime type does not match a target property type.
+/// </description></item>
+/// </list>
+/// <para>
+/// All configuration is global and takes effect immediately. This class is thread-safe for concurrent reads after
+/// initial configuration, but registration methods should be called during application startup, not from concurrent
+/// code.
+/// </para>
+/// <para>
+/// See the conceptual guides
+/// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+/// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+/// </para>
+/// </remarks>
 public class RecordObjectMapping : IRecordObjectMapping
 {
     private readonly ConcurrentDictionary<Type, MethodInfo> _mapMethods = new();
@@ -130,11 +177,14 @@ public class RecordObjectMapping : IRecordObjectMapping
     }
 
     /// <summary>
-    /// Uses the supplied <see cref="IConventionTranslator"/> to translate identifiers from the  naming
-    /// convention used in the code to the naming convention used in the database.
+    /// Uses the supplied <see cref="IConventionTranslator"/> to translate each C# identifier to the matching
+    /// database field name.
     /// </summary>
-    /// <param name="conventionTranslator"></param>
-    /// <param name="translateCypherParameters"></param>
+    /// <param name="conventionTranslator">The translator implementation.</param>
+    /// <param name="translateCypherParameters">
+    /// When <c>true</c>, also translates C# property names to database field names when objects are used as
+    /// Cypher query parameters. Defaults to <c>false</c>.
+    /// </param>
     void IRecordObjectMapping.TranslateIdentifiers(
         IConventionTranslator conventionTranslator,
         bool translateCypherParameters)
@@ -200,6 +250,31 @@ public class RecordObjectMapping : IRecordObjectMapping
     /// By default, it uses the <see cref="IdentifierCaseConvention.CSharpIdentifier"/> for parsing object identifiers
     /// and the <see cref="FieldCaseConvention.CamelCase"/> for formatting record fields.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Call this method once at application startup if your database uses camelCase field names and your C# types
+    /// use either camelCase or PascalCase property names (the most common scenario). After calling this method,
+    /// a property named <c>FirstName</c> will automatically look up the record field <c>firstName</c>, and so on.
+    /// </para>
+    /// <para>
+    /// For other combinations of naming conventions, use one of the overloads that accept
+    /// <see cref="ConventionTranslation.IdentifierCaseConvention"/> and/or
+    /// <see cref="ConventionTranslation.FieldCaseConvention"/> to specify both ends of the translation.
+    /// </para>
+    /// <para>
+    /// When <paramref name="translateCypherParameters"/> is <c>true</c>, the same translation is applied in the
+    /// reverse direction when a C# object is passed as a query parameter — property names are translated to the
+    /// database naming convention so parameter names stay consistent with field names.
+    /// </para>
+    /// <para>
+    /// Properties or parameters decorated with <see cref="MappingSourceAttribute"/> bypass translation
+    /// entirely, because their path is treated as an explicit database field name.
+    /// </para>
+    /// </remarks>
+    /// <param name="translateCypherParameters">
+    /// When <c>true</c>, also translates C# property names to database-style names when objects are used as
+    /// Cypher query parameters. Defaults to <c>false</c>.
+    /// </param>
     public static void TranslateIdentifiers(bool translateCypherParameters = false)
     {
         var translator = new ConventionTranslator<IEnumerable<string>>(
@@ -259,6 +334,13 @@ public class RecordObjectMapping : IRecordObjectMapping
     }
 
     /// <summary>Maps a record to an object of the given type according to the global mapping configuration.</summary>
+    /// <remarks>
+    /// <para>
+    /// See
+    /// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+    /// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+    /// </para>
+    /// </remarks>
     /// <param name="record">The record to be mapped.</param>
     /// <typeparam name="T">The type of object to be mapped.</typeparam>
     /// <returns>The mapped object.</returns>
@@ -272,6 +354,11 @@ public class RecordObjectMapping : IRecordObjectMapping
     /// Registers a mapping provider. This will call <see cref="IMappingProvider.CreateMappers"/> on the provider,
     /// allowing it to register any mappers it wishes.
     /// </summary>
+    /// <remarks>
+    /// Use this overload when your <see cref="IMappingProvider"/> implementation has a public parameterless
+    /// constructor. For providers that require construction arguments, use
+    /// <see cref="RegisterProvider(IMappingProvider)"/> instead.
+    /// </remarks>
     /// <typeparam name="T">The type of the mapping provider.</typeparam>
     public static void RegisterProvider<T>() where T : IMappingProvider, new()
     {
@@ -282,7 +369,13 @@ public class RecordObjectMapping : IRecordObjectMapping
     /// Registers a mapping provider. This will call <see cref="IMappingProvider.CreateMappers"/> on the provider,
     /// allowing it to register any mappers it wishes.
     /// </summary>
-    /// <param name="provider"></param>
+    /// <remarks>
+    /// A mapping provider is the recommended way to register multiple type mappings at once using the fluent
+    /// <see cref="IMappingBuilder{TObject}"/> API. Implement <see cref="IMappingProvider"/> and call
+    /// <see cref="IMappingRegistry.RegisterMapping{T}"/> for each type you want to map inside
+    /// <see cref="IMappingProvider.CreateMappers"/>, then pass the provider to this method at startup.
+    /// </remarks>
+    /// <param name="provider">The provider instance whose mappers will be registered.</param>
     public static void RegisterProvider(IMappingProvider provider)
     {
         provider.CreateMappers(Instance);
@@ -306,6 +399,13 @@ public class RecordObjectMapping : IRecordObjectMapping
     }
 
     /// <summary>Maps a record to an object of the given type according to the global mapping configuration.</summary>
+    /// <remarks>
+    /// <para>
+    /// See
+    /// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+    /// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+    /// </para>
+    /// </remarks>
     /// <param name="record">The record to be mapped.</param>
     /// <param name="type">The type of object to be mapped.</param>
     /// <returns>The mapped object.</returns>
@@ -315,13 +415,28 @@ public class RecordObjectMapping : IRecordObjectMapping
     }
 
     /// <summary>Maps a record to a new object of the same type as the provided blueprint object.</summary>
+    /// <remarks>
+    /// This overload exists to support anonymous types, whose names cannot be written as a generic type argument.
+    /// Pass an instance of the anonymous type as <paramref name="blueprint"/> and the type is inferred
+    /// automatically. The property values of the blueprint are ignored; only its type is used.
+    /// <code language="csharp">
+    /// var blueprint = new { name = default(string), age = default(int) };
+    /// var result = RecordObjectMapping.MapFromBlueprint(record, blueprint);
+    /// Console.WriteLine(result.name);
+    /// </code>
+    /// <para>
+    /// See
+    /// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+    /// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+    /// </para>
+    /// </remarks>
     /// <param name="record">The record to be mapped.</param>
     /// <param name="blueprint">
-    /// An object of the type to be mapped, used to determine the type of the object to be created. Any
-    /// values in the properties of the blueprint object will be discarded.
+    /// An object whose runtime type determines the type of the object to be created. The existing
+    /// property values of this object are discarded; only its type is used for mapping.
     /// </param>
-    /// <typeparam name="T">The type of object that will be mapped.</typeparam>
-    /// <returns>The mapped object.</returns>
+    /// <typeparam name="T">The type of object that will be mapped. Inferred from <paramref name="blueprint"/>.</typeparam>
+    /// <returns>A new mapped object of type <typeparamref name="T"/>.</returns>
     public static T MapFromBlueprint<T>(IRecord record, T blueprint)
     {
         return ((IRecordObjectMapping)Instance).MapFromBlueprint(record, blueprint);

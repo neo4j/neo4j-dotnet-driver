@@ -17,7 +17,20 @@ using System;
 
 namespace Neo4j.Driver.Mapping;
 
-/// <summary>Indicates that the constructor should be used when mapping a record to an object.</summary>
+/// <summary>
+/// Marks the constructor that the default mapper should use when creating an instance of the decorated type.
+/// </summary>
+/// <remarks>
+/// <para>
+/// By default, the mapper selects the constructor with the fewest parameters. Apply this attribute to a
+/// different constructor when you want to use one with more parameters, or when your type has multiple
+/// constructors and the selection would otherwise be ambiguous.
+/// </para>
+/// <para>
+/// For C# <c>record</c> types the primary constructor is used automatically; this attribute is typically
+/// not needed for records.
+/// </para>
+/// </remarks>
 [AttributeUsage(AttributeTargets.Constructor)]
 public class MappingConstructorAttribute : Attribute
 {

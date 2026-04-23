@@ -15,10 +15,41 @@
 
 namespace Neo4j.Driver.Mapping;
 
-/// <summary>Interface to be implemented by a class that provides mappers to the mapping system.</summary>
+/// <summary>
+/// Implement this interface to register one or more type mappings using the fluent
+/// <see cref="IMappingBuilder{TObject}"/> API.
+/// </summary>
+/// <remarks>
+/// <para>
+/// A mapping provider is the recommended pattern for configuring multiple types at startup. Implement
+/// <see cref="CreateMappers"/> and call <see cref="IMappingRegistry.RegisterMapping{T}"/> for each type you
+/// want to customise. Then register the provider once at startup:
+/// </para>
+/// <code language="csharp">
+/// public class MyMappingProvider : IMappingProvider
+/// {
+///     public void CreateMappers(IMappingRegistry registry)
+///     {
+///         registry.RegisterMapping&lt;Person&gt;(b => b
+///             .UseDefaultMapping()
+///             .Map(p => p.Labels, "person", MappingSource.NodeLabel));
+///
+///         registry.RegisterMapping&lt;Address&gt;(b => b
+///             .Map(a => a.Street, "street")
+///             .Map(a => a.City, "city"));
+///     }
+/// }
+///
+/// // At startup:
+/// RecordObjectMapping.RegisterProvider&lt;MyMappingProvider&gt;();
+/// </code>
+/// </remarks>
 public interface IMappingProvider
 {
-    /// <summary>This method is called on mapping providers to allow them to register their mappers with the mapping system.</summary>
-    /// <param name="registry">The registry in which mappers should be registered.</param>
+    /// <summary>
+    /// Called once when the provider is registered. Use the supplied <paramref name="registry"/> to register
+    /// mappings for all types this provider is responsible for.
+    /// </summary>
+    /// <param name="registry">The registry to register mappings with.</param>
     void CreateMappers(IMappingRegistry registry);
 }

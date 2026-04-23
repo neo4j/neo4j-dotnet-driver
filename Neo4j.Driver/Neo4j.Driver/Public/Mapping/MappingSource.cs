@@ -15,22 +15,54 @@
 
 namespace Neo4j.Driver.Mapping;
 
-/// <summary>Represents a mapping from an entity itself rather than any of its properties.</summary>
+/// <summary>
+/// Controls what aspect of a graph entity is read when mapping a record field to a C# property.
+/// </summary>
+/// <remarks>
+/// <para>
+/// By default the mapper reads a named property from the entity (<see cref="Property"/>). Use
+/// <see cref="NodeLabel"/> or <see cref="RelationshipType"/> when you need to capture graph-structural
+/// information — such as the label of a node or the type of a relationship — rather than a stored property value.
+/// </para>
+/// <para>
+/// Specify the mapping source via <see cref="MappingSourceAttribute"/> on a property or parameter,
+/// or via the <c>mappingSource</c> parameter of
+/// <see cref="IMappingBuilder{TObject}.Map{TProperty}(System.Linq.Expressions.Expression{System.Func{TObject,TProperty}},string,MappingSource,System.Func{object,TProperty},bool)"/>.
+/// </para>
+/// </remarks>
 public enum MappingSource
 {
-    /// <summary>The value of the specified property will be used as the value.</summary>
+    /// <summary>The value of the named property on the entity will be read.</summary>
     Property,
 
     /// <summary>
-    /// If the value of the specified property is a relationship, then the relationship type will be used as the
-    /// value. Otherwise, the property will be ignored.
+    /// Reads the type string of an <see cref="IRelationship"/> field.
     /// </summary>
+    /// <remarks>
+    /// The field in the record must be an <see cref="IRelationship"/>. The relationship's type string is then
+    /// assigned to the target property. If the field is not a relationship the property is ignored.
+    /// </remarks>
     RelationshipType,
 
     /// <summary>
-    /// If the value of the specified property is a node, then the labels will be used as the value. If the
-    /// destination property is a string, then the labels will be joined with a comma. If the destination property is a list,
-    /// then the labels will be added to the list. Otherwise, the property will be ignored.
+    /// Reads the labels of an <see cref="INode"/> field.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The field in the record must be an <see cref="INode"/>. The node's labels are then assigned to the target
+    /// property using one of these rules:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>
+    /// If the target property is a <c>string</c>, the labels are joined with a comma separator
+    /// (e.g. <c>"Person,Employee"</c>).
+    /// </description></item>
+    /// <item><description>
+    /// If the target property is a collection type such as <c>List&lt;string&gt;</c> or
+    /// <c>IEnumerable&lt;string&gt;</c>, each label is added as a separate element.
+    /// </description></item>
+    /// </list>
+    /// <para>If the field is not a node the property is ignored.</para>
+    /// </remarks>
     NodeLabel
 }

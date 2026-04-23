@@ -18,18 +18,26 @@ using Neo4j.Driver.Internal.Mapping;
 namespace Neo4j.Driver.Mapping;
 
 /// <summary>
-/// Defines an interface that provides metadata for object mapping used in the Neo4j driver.
-/// This interface allows access to the <see cref="MappingBinding"/> object, which encapsulates
-/// details about the mapping configuration for an object. This interface is intended to be
-/// implemented by attributes decorating a property or parameter.
+/// Implemented by attributes that customise how the default mapper reads a property or parameter.
 /// </summary>
+/// <remarks>
+/// <para>
+/// The built-in mapping attributes (<see cref="MappingSourceAttribute"/>, <see cref="MappingOptionalAttribute"/>,
+/// <see cref="MappingDefaultValueAttribute"/>, etc.) all implement this interface.
+/// </para>
+/// <para>
+/// You can implement this interface on your own attribute classes to create reusable, composable mapping
+/// customisations. When the default mapper processes a property or parameter, it calls <see cref="Mutate"/>
+/// on every <see cref="IMappingBindingMutator"/> attribute it finds, in undefined order, giving each one
+/// the opportunity to modify the <see cref="MappingBinding"/>.
+/// </para>
+/// </remarks>
 public interface IMappingBindingMutator
 {
     /// <summary>
-    /// Modifies the provided <see cref="MappingBinding"/> instance to update or transform
-    /// its metadata configuration. This method is  used to define or adjust how
-    /// object mapping is performed in the context of the Neo4j driver.
+    /// Called by the default mapper to allow this mutator to update the mapping configuration for a property
+    /// or parameter.
     /// </summary>
-    /// <param name="binding">The <see cref="MappingBinding"/> instance to be mutated.</param>
+    /// <param name="binding">The binding to mutate. Modify its properties to change mapping behaviour.</param>
     void Mutate(MappingBinding binding);
 }

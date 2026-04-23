@@ -19,14 +19,31 @@ using Neo4j.Driver.Internal.Mapping;
 namespace Neo4j.Driver.Mapping;
 
 /// <summary>
-/// This attribute is used to specify the name of the parameter to be used when mapping a property to a Cypher parameter.
+/// Overrides the Cypher parameter name used when the containing object is passed as a query parameter.
 /// </summary>
+/// <remarks>
+/// <para>
+/// When a C# object is passed as a parameter to a Cypher query, property names are used as the parameter
+/// key names by default. Apply this attribute to use a different key for a specific property.
+/// </para>
+/// <para>
+/// This attribute controls the <em>object-to-parameter</em> direction (C# → Cypher). It is unrelated to the
+/// <em>record-to-object</em> direction. To control how a record field is mapped to a property during result
+/// reading, use <see cref="MappingSourceAttribute"/> instead.
+/// </para>
+/// <para>
+/// If <see cref="RecordObjectMapping.TranslateIdentifiers(bool)"/> has been called with
+/// <c>translateCypherParameters: true</c>, names are translated automatically and this attribute is
+/// only needed to override specific properties that should not follow the global convention.
+/// </para>
+/// </remarks>
 [AttributeUsage(AttributeTargets.Property)]
 public class CypherParameterMappingAttribute : MappingBindingsAttribute
 {
     /// <summary>
-    /// This attribute is used to specify the name of the parameter to be used when mapping a property to a Cypher parameter.
+    /// Initializes the attribute with the Cypher parameter key name to use for this property.
     /// </summary>
+    /// <param name="cypherParameterName">The Cypher parameter key name to use for this property.</param>
     public CypherParameterMappingAttribute(string cypherParameterName) 
     {
         CypherParameterName = cypherParameterName;
