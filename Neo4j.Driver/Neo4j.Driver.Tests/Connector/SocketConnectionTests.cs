@@ -367,4 +367,68 @@ public class SocketConnectionTests
             };
         }
     }
+
+    // Regression tests for DRIVERS-199: custom resolver port ignored.
+    // When a user resolver maps the driver URI to a different host/port, SocketConnection
+    // must advertise the actual connection address in the routing context. Standalone servers
+    // echo that address back in routing tables; if the original (unresolved) URI is used
+    // instead, the driver receives an unreachable address and fails to connect.
+    public class RoutingContextMethod
+    {
+        [Fact]
+        public void ShouldUseConnectionUriAddressInRoutingContext()
+        {
+            var driverUri = new Uri("neo4j://example.com:9999");
+            var connectionUri = new Uri("neo4j://localhost:7687");
+            var context = new DriverContext(driverUri, AuthTokenManagers.None, new Config());
+
+            var conn = new SocketConnection(connectionUri, context, AuthTokens.None);
+
+            conn.RoutingContext["address"].Should().Be(
+                "localhost:7687",
+                because: "the routing context address must reflect the resolved connection URI, not the original driver URI");
+        }
+
+        [Fact]
+        public void ShouldPreserveOtherRoutingContextEntries()
+        {
+            var driverUri = new Uri("neo4j://example.com:9999?policy=my_policy&region=eu");
+            var connectionUri = new Uri("neo4j://localhost:7687");
+            var context = new DriverContext(driverUri, AuthTokenManagers.None, new Config());
+
+            var conn = new SocketConnection(connectionUri, context, AuthTokens.None);
+
+            conn.RoutingContext["policy"].Should().Be("my_policy");
+            conn.RoutingContext["region"].Should().Be("eu");
+        }
+
+        [Fact]
+        public void ShouldPreserveIpv6BracketsInRoutingContextAddress()
+        {
+            var driverUri = new Uri("neo4j://example.com:9999");
+            var connectionUri = new Uri("neo4j://[::1]:7687");
+            var context = new DriverContext(driverUri, AuthTokenManagers.None, new Config());
+
+            var conn = new SocketConnection(connectionUri, context, AuthTokens.None);
+
+            conn.RoutingContext["address"].Should().Be(
+                "[::1]:7687",
+                because: "IPv6 bracket notation must be preserved to produce a valid address");
+        }
+
+        [Fact]
+        public void ShouldPreserveOriginalAddressWhenConnectingToClusterMember()
+        {
+            var driverUri = new Uri("neo4j://127.0.0.1:9000");
+            var clusterMemberUri = new Uri("neo4j://127.0.0.1:9001");
+            var context = new DriverContext(driverUri, AuthTokenManagers.None, new Config());
+
+            var conn = new SocketConnection(clusterMemberUri, context, AuthTokens.None);
+
+            conn.RoutingContext["address"].Should().Be(
+                "127.0.0.1:9000",
+                because: "routing context address must stay as the original configured router, " +
+                          "not change to the address of each discovered cluster member");
+        }
+    }
 }
