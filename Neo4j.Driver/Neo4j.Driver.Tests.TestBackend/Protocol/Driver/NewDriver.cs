@@ -76,7 +76,7 @@ internal class NewDriver : ProtocolObject
 
         if (data.resolverRegistered)
         {
-            configBuilder.WithResolver(new ListAddressResolver(Control, data.uri));
+            configBuilder.WithResolver(new TestAddressResolver(Control, data.uri));
         }
 
         if (data.connectionTimeoutMs > 0)
