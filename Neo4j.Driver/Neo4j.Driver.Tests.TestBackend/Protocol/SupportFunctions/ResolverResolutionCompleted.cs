@@ -25,7 +25,7 @@ internal class ResolverResolutionCompleted : ProtocolObject
     public ResolverResolutionCompletedType data { get; set; } = new();
 
     [JsonIgnore]
-    public ListAddressResolver Resolver { get; private set; }
+    public TestAddressResolver Resolver { get; private set; }
 
     public override async Task Process()
     {
