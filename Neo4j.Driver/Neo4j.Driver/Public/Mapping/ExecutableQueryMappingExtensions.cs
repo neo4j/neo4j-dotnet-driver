@@ -21,9 +21,30 @@ using Neo4j.Driver.Internal;
 namespace Neo4j.Driver.Mapping;
 
 /// <summary>
-/// Contains extensions for using the global mapping system with the driver's
-/// <see cref="ExecutableQuery{TIn,TOut}"/> methods.
+/// Contains extensions for mapping results from the <see cref="IDriver.ExecutableQuery(string)"/> API to
+/// C# objects.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Chain these methods at the end of an <see cref="IDriver.ExecutableQuery(string)"/> call to map the
+/// results to a typed list without manually iterating records:
+/// </para>
+/// <code language="csharp">
+/// var people = await driver
+///     .ExecutableQuery("MATCH (p:Person) RETURN p.name AS Name, p.age AS Age")
+///     .ExecuteAsync()
+///     .AsObjectsAsync&lt;Person&gt;();
+/// </code>
+/// <para>
+/// For session/transaction cursors (<c>IAsyncEnumerable&lt;IRecord&gt;</c>), use
+/// <see cref="AsyncEnumerableExtensions"/> instead.
+/// </para>
+/// <para>
+/// See
+/// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+/// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+/// </para>
+/// </remarks>
 public static class ExecutableQueryMappingExtensions
 {
     /// <summary>
@@ -31,6 +52,13 @@ public static class ExecutableQueryMappingExtensions
     /// part of the query execution.
     /// </summary>
     /// <seealso cref="RecordObjectMapping.Map{T}"/>
+    /// <remarks>
+    /// <para>
+    /// See
+    /// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+    /// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+    /// </para>
+    /// </remarks>
     /// <param name="recordsTask">The task that will return the records.</param>
     /// <typeparam name="T">The type to map to.</typeparam>
     /// <returns>A task that will return the mapped objects.</returns>
@@ -46,6 +74,13 @@ public static class ExecutableQueryMappingExtensions
     /// part of the query execution.
     /// </summary>
     /// <seealso cref="RecordObjectMapping.Map{T}"/>
+    /// <remarks>
+    /// <para>
+    /// See
+    /// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+    /// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+    /// </para>
+    /// </remarks>
     /// <param name="recordsTask">The task that will return the records.</param>
     /// <param name="blueprint">The blueprint to use for mapping.</param>
     /// <typeparam name="T">The type to map to.</typeparam>

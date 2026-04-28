@@ -19,36 +19,56 @@ using Neo4j.Driver.Internal.Mapping;
 namespace Neo4j.Driver.Mapping;
 
 /// <summary>
-/// Instructs the default mapper to use a different field than the property name when mapping a value to the
-/// marked property. This attribute does not affect custom-defined mappers. A path may consist of the name of the field to
-/// be mapped, or a dot-separated path to a nested field.
+/// Instructs the default mapper to use a different record field name (or dot-separated path) when mapping a value
+/// to the marked property or parameter. This attribute does not affect custom-defined mappers.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Use this attribute when the record field name does not match the C# property or parameter name, or when
+/// global identifier translation via <see cref="RecordObjectMapping.TranslateIdentifiers(bool)"/> is active
+/// but you need to bypass it for a specific member.
+/// </para>
+/// <para>
+/// A <b>simple path</b> is a single record key: <c>[MappingSource("first_name")]</c>.
+/// </para>
+/// <para>
+/// A <b>dot-separated path</b> lets you read a property from a nested entity or dictionary column:
+/// <c>[MappingSource("person.name")]</c> reads the <c>name</c> property from the record field <c>person</c>,
+/// where <c>person</c> is a node, relationship, or dictionary. All segments are matched case-sensitively.
+/// </para>
+/// <para>
+/// When a <see cref="MappingSource"/> other than <see cref="MappingSource.Property"/> is required (for example
+/// to read a node's labels), use the two-argument constructor.
+/// </para>
+/// </remarks>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public class MappingSourceAttribute : MappingBindingsAttribute
 {
     /// <summary>
-    /// Instructs the default mapper to use a different field than the property name when mapping a value to the
-    /// marked property.
+    /// Instructs the default mapper to use the specified field name or dot-separated path when mapping to the
+    /// marked property or parameter.
     /// </summary>
     /// <param name="path">
-    /// Identifier for the value in the field in the record. If the path is a dot-separated path, then the
-    /// first part of the path is the key for the entity (or dictionary) field in the record, and the last part is the key
-    /// within that entity or dictionary.
+    /// The record field key to read from. May be a dot-separated path of the form <c>field.nestedKey</c>,
+    /// where <c>field</c> resolves to a node, relationship, or dictionary column in the record and
+    /// <c>nestedKey</c> is a property within that entity. All segments are matched case-sensitively.
     /// </param>
     public MappingSourceAttribute(string path)
     {
         Path = path;
     }
     /// <summary>
-    /// Instructs the default mapper to use a different field than the property name when mapping a value to the
-    /// marked property.
+    /// Instructs the default mapper to use the specified record field and mapping source when mapping to the
+    /// marked property or parameter.
     /// </summary>
     /// <param name="key">
-    /// Identifier for the value in the field in the record. If the path is a dot-separated path, then the
-    /// first part of the path is the key for the entity (or dictionary) field in the record, and the last part is the key
-    /// within that entity or dictionary.
+    /// The record field key to read from. May be a dot-separated path of the form <c>field.nestedKey</c>.
+    /// All segments are matched case-sensitively.
     /// </param>
-    /// <param name="mappingSource">The source of the value to be mapped.</param>
+    /// <param name="mappingSource">
+    /// The aspect of the entity to read. Use <see cref="MappingSource.NodeLabel"/> to read a node's labels,
+    /// or <see cref="MappingSource.RelationshipType"/> to read a relationship's type string.
+    /// </param>
     public MappingSourceAttribute(string key, MappingSource mappingSource) 
     {
         Path = key;

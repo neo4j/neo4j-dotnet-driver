@@ -19,11 +19,20 @@ using Neo4j.Driver.Internal.Mapping;
 namespace Neo4j.Driver.Mapping;
 
 /// <summary>
-/// If a property is decorated with this attribute, it will be considered optional. The mapper will not throw an
-/// exception if it cannot find the named value in the record; instead, it will use the default value provided. This
-/// attribute will have no effect when using custom-defined mappers.
+/// Marks a property or constructor parameter as optional and specifies a fallback value to use when the
+/// corresponding record field is absent. The mapper will not throw an exception if the field is missing.
+/// This attribute has no effect when using custom-defined mappers.
 /// </summary>
-/// <param name="defaultValue">The default value to use if the property is not present in the record.</param>
+/// <remarks>
+/// <para>
+/// This attribute extends <see cref="MappingOptionalAttribute"/>, so applying it makes the member optional
+/// implicitly — there is no need to also apply <see cref="MappingOptionalAttribute"/>.
+/// </para>
+/// <para>
+/// The <paramref name="defaultValue"/> must be assignable to the property or parameter type at runtime.
+/// </para>
+/// </remarks>
+/// <param name="defaultValue">The value to use when the record field is absent.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public class MappingDefaultValueAttribute(object defaultValue) : MappingOptionalAttribute
 {

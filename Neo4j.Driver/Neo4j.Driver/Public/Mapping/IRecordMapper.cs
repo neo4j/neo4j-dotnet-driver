@@ -15,7 +15,23 @@
 
 namespace Neo4j.Driver.Mapping;
 
-/// <summary>Interface to be implemented by a class that maps records to objects of type <typeparamref name="T"/>.</summary>
+/// <summary>
+/// Implement this interface to provide a fully custom mapping from an <see cref="IRecord"/> to an object of
+/// type <typeparamref name="T"/>.
+/// </summary>
+/// <remarks>
+/// <para>
+/// This is the most flexible mapping option: your implementation has complete control over how the record
+/// is read and how the object is constructed. Register your implementation with
+/// <see cref="RecordObjectMapping.Register{T}(IRecordMapper{T})"/>.
+/// </para>
+/// <para>
+/// For most scenarios, the default mapper (with optional attributes) or the fluent
+/// <see cref="IMappingBuilder{TObject}"/> API via <see cref="IMappingProvider"/> are simpler alternatives.
+/// Prefer this interface when the mapping logic is complex, stateful, or needs to share logic across multiple
+/// record types.
+/// </para>
+/// </remarks>
 /// <typeparam name="T">The type of object to which records will be mapped.</typeparam>
 public interface IRecordMapper<out T>
 {

@@ -18,6 +18,17 @@ using System;
 namespace Neo4j.Driver.Mapping;
 
 /// <summary>The exception that is thrown when the mapping of a record to a target type failed.</summary>
+/// <remarks>
+/// <para>
+/// Common causes include a required record field being absent (use <see cref="MappingOptionalAttribute"/>
+/// or <see cref="MappingDefaultValueAttribute"/> to make the field optional), a type conversion
+/// failure when the field value cannot be converted to the target property type, or a constructor throwing
+/// during instantiation.
+/// </para>
+/// <para>
+/// Inspect <see cref="Exception.InnerException"/> for the underlying cause.
+/// </para>
+/// </remarks>
 public class MappingFailedException : Neo4jException
 {
     /// <summary>

@@ -18,10 +18,24 @@ using System;
 namespace Neo4j.Driver.Mapping;
 
 /// <summary>Contains extensions for accessing values simply from records and entities.</summary>
+/// <remarks>
+/// <para>
+/// See
+/// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+/// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+/// </para>
+/// </remarks>
 public static class RecordExtensions
 {
     /// <summary>Converts the record to an object of the given type according to the global mapping configuration.</summary>
     /// <seealso cref="RecordObjectMapping.Map{T}"/>
+    /// <remarks>
+    /// <para>
+    /// See
+    /// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+    /// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+    /// </para>
+    /// </remarks>
     /// <param name="record">The record to convert.</param>
     /// <typeparam name="T">The type to map to.</typeparam>
     /// <returns>The mapped object.</returns>
@@ -32,6 +46,13 @@ public static class RecordExtensions
 
     /// <summary>Converts the record to an object of the given type according to the global mapping configuration.</summary>
     /// <seealso cref="RecordObjectMapping.Map"/>
+    /// <remarks>
+    /// <para>
+    /// See
+    /// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+    /// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+    /// </para>
+    /// </remarks>
     /// <param name="record">The record to convert.</param>
     /// <param name="objectType">The type to map to.</param>
     /// <returns>The mapped object.</returns>
@@ -44,6 +65,13 @@ public static class RecordExtensions
     /// Converts the record to an object of the same type as the given blueprint according to the global mapping
     /// configuration.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// See
+    /// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+    /// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+    /// </para>
+    /// </remarks>
     /// <param name="record">The record to convert.</param>
     /// <param name="blueprint">
     /// An object to be used as a blueprint for the mapping. This could be an object of an anonymous

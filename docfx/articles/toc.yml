@@ -1,0 +1,6 @@
+- name: Object Mapping
+  items:
+    - name: Mapping query results to objects
+      href: mapping-overview.md
+    - name: Configuring the mapping system
+      href: mapping-configuration.md

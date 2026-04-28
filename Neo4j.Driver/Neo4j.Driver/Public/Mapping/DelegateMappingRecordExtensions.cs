@@ -19,6 +19,31 @@ using Neo4j.Driver.Internal.Mapping;
 namespace Neo4j.Driver.Mapping;
 
 /// <summary>Contains extensions for mapping records to objects using delegates.</summary>
+/// <remarks>
+/// <para>
+/// These extensions provide a concise, ad-hoc way to map a record without any global registration.
+/// Pass a lambda or method whose parameter names match the record field keys. The driver looks up each
+/// parameter name in the record, converts the value to the declared parameter type, and invokes the delegate
+/// to produce the result.
+/// </para>
+/// <para>
+/// Overloads are available for delegates with 1 to 10 typed parameters. Use the overload that matches the
+/// number of fields you need to read.
+/// </para>
+/// <code language="csharp">
+/// // Read two fields from a record without any type registration
+/// var result = record.AsObject((string name, int age) => new { name, age });
+/// </code>
+/// <para>
+/// For mapping across all records in a query, see <see cref="DelegateExecutableQueryMappingExtensions"/>
+/// and <see cref="DelegateAsyncEnumerableExtensions"/>.
+/// </para>
+/// <para>
+/// See
+/// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+/// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+/// </para>
+/// </remarks>
 public static class DelegateMappingRecordExtensions
 {
     /// <summary>Converts the record to an object using the given delegate.</summary>
