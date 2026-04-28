@@ -53,6 +53,7 @@ internal class NewDriverConverter : JsonConverter<NewDriver.NewDriverType>
         newDriverRequest.livenessCheckTimeoutMs = jsonObj["livenessCheckTimeoutMs"]?.Value<int?>();
         newDriverRequest.clientCertificate = jsonObj["clientCertificate"]?.ToObject<ClientCertificate>();
         newDriverRequest.clientCertificateProviderId = jsonObj["clientCertificateProviderId"]?.Value<string>();
+        newDriverRequest.disableAutoCommitRetries = jsonObj["disableAutoCommitRetries"]?.Value<bool?>();
 
         if (jsonObj.TryGetValue("trustedCertificates", out var token))
         {

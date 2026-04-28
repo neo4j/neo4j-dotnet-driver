@@ -142,6 +142,11 @@ internal sealed class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRe
         _resultStream.Cancel();
     }
 
+    public Task<Exception> GetRunCompletionErrorAsync()
+    {
+        return _resultStream.GetRunCompletionErrorAsync();
+    }
+
     public IAsyncEnumerator<IRecord> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
         return new CursorEnumerator(this, cancellationToken);

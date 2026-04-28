@@ -189,6 +189,10 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         bool disposeUnconsumedSessionResult)
     {
         var options = BuildTransactionConfig(action);
+        var disableRetries = SessionConfig.DisableAutoCommitRetries
+            ?? _driverContext?.Config.DisableAutoCommitRetries
+            ?? false;
+
         var result = TryExecuteAsync(
             _neo4JLogger,
             async () =>
@@ -202,27 +206,53 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                     LastBookmarks = await GetBookmarksAsync().ConfigureAwait(false);
                 }
 
-                return await _connection
-                    .RunInAutoCommitTransactionAsync(
-                        new AutoCommitParams
-                        {
-                            Query = query,
-                            Reactive = _reactive,
-                            Database = SessionConfig.Database ?? _database,
-                            Bookmarks = LastBookmarks,
-                            Config = options,
-                            SessionConfig = SessionConfig,
-                            FetchSize = _fetchSize,
-                            BookmarksTracker = this,
-                            ResultResourceHandler = this,
-                            TransactionInfo = new TransactionInfo(
-                                QueryApiType.AutoCommit,
-                                TelemetryEnabled,
-                                false)
-                        },
-                        _notificationsConfig,
-                        _driverContext?.HomeDbCache)
+                var txInfo = new TransactionInfo(QueryApiType.AutoCommit, TelemetryEnabled, false);
+                var autoCommitParams = new AutoCommitParams
+                {
+                    Query = query,
+                    Reactive = _reactive,
+                    Database = SessionConfig.Database ?? _database,
+                    Bookmarks = LastBookmarks,
+                    Config = options,
+                    SessionConfig = SessionConfig,
+                    FetchSize = _fetchSize,
+                    BookmarksTracker = this,
+                    ResultResourceHandler = this,
+                    TransactionInfo = txInfo
+                };
+
+                var cursor = await _connection
+                    .RunInAutoCommitTransactionAsync(autoCommitParams, _notificationsConfig, _driverContext?.HomeDbCache)
                     .ConfigureAwait(false);
+
+                if (disableRetries)
+                {
+                    return cursor;
+                }
+
+                if (cursor is IInternalResultCursor irc)
+                {
+                    var runError = await irc.GetRunCompletionErrorAsync().ConfigureAwait(false);
+                    if (runError?.IsIdempotentFailure() == true)
+                    {
+                        if (_connection != null)
+                        {
+                            await _connection.CloseAsync().ConfigureAwait(false);
+                        }
+
+                        _connection = null;
+                        await AcquireConnectionAndDbNameAsync(_defaultMode).ConfigureAwait(false);
+
+                        autoCommitParams = autoCommitParams with { Bookmarks = LastBookmarks };
+
+                        cursor = await _connection!
+                            .RunInAutoCommitTransactionAsync(
+                                autoCommitParams, _notificationsConfig, _driverContext?.HomeDbCache)
+                            .ConfigureAwait(false);
+                    }
+                }
+
+                return cursor;
             });
 
         _result = result;

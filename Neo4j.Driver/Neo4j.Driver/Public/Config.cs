@@ -241,6 +241,14 @@ public class Config
     /// </summary>
     public IClientCertificateProvider ClientCertificateProvider { get; internal set; }
 
+    /// <summary>
+    /// When <c>false</c> (the default), the driver automatically retries <c>session.Run</c> once when
+    /// the server rejects the query with an idempotent failure (no state change occurred). Set to
+    /// <c>true</c> to disable this behavior. Can be overridden per-session via
+    /// <see cref="SessionConfig.DisableAutoCommitRetries"/>.
+    /// </summary>
+    public bool DisableAutoCommitRetries { get; internal set; }
+
     /// <summary>The TLS version to use when establishing a connection.</summary>
     public SslProtocols TlsVersion { get; internal set; } = SslProtocols.Tls12;
 

@@ -182,6 +182,11 @@ internal class NewDriver : ProtocolObject
                 TimeSpan.FromMilliseconds(data.livenessCheckTimeoutMs.Value));
         }
 
+        if (data.disableAutoCommitRetries.HasValue)
+        {
+            configBuilder.WithDisableAutoCommitRetries(data.disableAutoCommitRetries.Value);
+        }
+
         var logger = new SimpleNeo4JLogger();
         configBuilder.WithLogger(logger);
     }
@@ -228,5 +233,6 @@ internal class NewDriver : ProtocolObject
         public string notificationsMinSeverity { get; set; }
         public string[] notificationsDisabledCategories { get; set; }
         public int? livenessCheckTimeoutMs { get; set; }
+        public bool? disableAutoCommitRetries { get; set; }
     }
 }

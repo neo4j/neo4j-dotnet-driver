@@ -575,6 +575,19 @@ public sealed class ConfigBuilder
         return this;
     }
 
+    /// <summary>
+    /// When set to <c>true</c>, disables the automatic one-shot retry of <c>session.Run</c> for
+    /// idempotent failures. Can be overridden per-session.
+    /// </summary>
+    /// <param name="disable">Pass <c>true</c> to disable auto-commit retries.</param>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <seealso cref="SessionConfigBuilder.WithDisableAutoCommitRetries"/>
+    public ConfigBuilder WithDisableAutoCommitRetries(bool disable)
+    {
+        _config.DisableAutoCommitRetries = disable;
+        return this;
+    }
+
     /// <summary>Sets the custom <see cref="NegotiateTlsDelegate"/> to call when establishing a TLS connection.</summary>
     /// <param name="negotiateTls">The <see cref="NegotiateTlsDelegate"/> to use.</param>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
