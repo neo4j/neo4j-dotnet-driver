@@ -1,0 +1,126 @@
+// Copyright (c) "Neo4j"
+// Neo4j Sweden AB [https://neo4j.com]
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#nullable enable
+
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Neo4j.Driver.Internal.QueryApi;
+
+internal class RunInTransactionHandler : IRunInTransactionHandler
+{
+    private readonly IQueryApiUrlBuilder _urlBuilder;
+    private readonly IQueryApiHttpClient _httpClient;
+    private readonly IQueryApiErrorChecker _errorChecker;
+    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly IAuthApplicator _authApplicator;
+    private readonly IClusterAffinityApplicator _clusterAffinityApplicator;
+
+    public RunInTransactionHandler(
+        IQueryApiUrlBuilder urlBuilder,
+        IQueryApiHttpClient httpClient,
+        IQueryApiErrorChecker errorChecker,
+        JsonSerializerOptions jsonOptions,
+        IAuthApplicator authApplicator,
+        IClusterAffinityApplicator clusterAffinityApplicator)
+    {
+        _urlBuilder = urlBuilder;
+        _httpClient = httpClient;
+        _errorChecker = errorChecker;
+        _jsonOptions = jsonOptions;
+        _authApplicator = authApplicator;
+        _clusterAffinityApplicator = clusterAffinityApplicator;
+    }
+
+    public async Task<QueryApiResponse> RunInTransactionAsync(
+        string database,
+        QueryApiTransactionContext txContext,
+        Query query,
+        IAuthToken auth,
+        CancellationToken cancellationToken = default)
+    {
+        using var request = BuildRequest(database, txContext, query, auth);
+        using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
+
+        var body = await JsonSerializer
+            .DeserializeAsync<ResponseBody>(
+                await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false),
+                _jsonOptions,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (body?.Errors is { Length: > 0 } errors)
+            _errorChecker.ThrowIfAnyError(errors[0].Code, errors[0].Message);
+
+        return new QueryApiResponse
+        {
+            Fields = body?.Data?.Fields ?? [],
+            Rows = body?.Data?.Values ?? [],
+            Bookmarks = body?.Bookmarks ?? [],
+        };
+    }
+
+    private HttpRequestMessage BuildRequest(
+        string database, QueryApiTransactionContext txContext, Query query, IAuthToken auth)
+    {
+        var body = new RequestBody
+        {
+            Statement = query.Text,
+            Parameters = query.Parameters.Count > 0 ? query.Parameters : null,
+        };
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            _urlBuilder.Build($"db/{database}/query/v2/tx/{txContext.TxId}"));
+
+        _authApplicator.Apply(request, auth);
+        _clusterAffinityApplicator.Apply(request, txContext);
+        request.Content = new StringContent(
+            JsonSerializer.Serialize(body, _jsonOptions), Encoding.UTF8, "application/json");
+
+        return request;
+    }
+
+    private class RequestBody
+    {
+        public string? Statement { get; init; }
+        public IDictionary<string, object>? Parameters { get; init; }
+    }
+
+    private class ResponseBody
+    {
+        public DataBody? Data { get; init; }
+        public string[]? Bookmarks { get; init; }
+        public ErrorBody[]? Errors { get; init; }
+    }
+
+    private class DataBody
+    {
+        public string[] Fields { get; init; } = [];
+        public JsonElement[][]? Values { get; init; }
+    }
+
+    private class ErrorBody
+    {
+        public string Code { get; init; } = string.Empty;
+        public string Message { get; init; } = string.Empty;
+    }
+}
