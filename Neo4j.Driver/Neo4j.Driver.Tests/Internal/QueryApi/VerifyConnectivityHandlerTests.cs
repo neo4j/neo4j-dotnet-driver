@@ -21,6 +21,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
 using static Neo4j.Driver.Tests.Internal.QueryApi.QueryApiTestHelpers;
@@ -36,14 +37,13 @@ public class VerifyConnectivityHandlerTests
 {
     private static readonly IAuthToken AnyAuth = AuthTokens.Basic("user", "pass");
 
-    private static VerifyConnectivityHandler HandlerWith(FakeQueryApiHttpClient httpClient)
+    private static AutoMocker CreateMocker(FakeQueryApiHttpClient httpClient)
     {
-        return new VerifyConnectivityHandler(
-            UrlBuilder,
-            httpClient,
-            Mock.Of<IQueryApiErrorChecker>(),
-            QueryApiJsonOptions.Default,
-            Mock.Of<IAuthApplicator>());
+        var mocker = new AutoMocker();
+        mocker.Use<IQueryApiHttpClient>(httpClient);
+        mocker.Use<IQueryApiUrlBuilder>(UrlBuilder);
+        mocker.Use<IJsonOptionsProvider>(QueryApiJsonOptionsProvider.Default);
+        return mocker;
     }
 
     [Fact]
@@ -51,8 +51,9 @@ public class VerifyConnectivityHandlerTests
     {
         // Connectivity check always targets the system database with a trivial query
         var httpClient = new FakeQueryApiHttpClient(Accepted());
+        var handler = CreateMocker(httpClient).CreateInstance<VerifyConnectivityHandler>();
 
-        await HandlerWith(httpClient).VerifyConnectivityAsync(AnyAuth);
+        await handler.VerifyConnectivityAsync(AnyAuth);
 
         httpClient.LastRequest!.Method.Should().Be(HttpMethod.Post);
         httpClient.LastRequest.RequestUri!.PathAndQuery.Should().Be("/db/system/query/v2");
@@ -64,9 +65,9 @@ public class VerifyConnectivityHandlerTests
     [Fact]
     public async Task ReturnsServerInfo_WithHostAndPort_FromBaseUri()
     {
-        var httpClient = new FakeQueryApiHttpClient(Accepted());
+        var handler = CreateMocker(new FakeQueryApiHttpClient(Accepted())).CreateInstance<VerifyConnectivityHandler>();
 
-        var serverInfo = await HandlerWith(httpClient).VerifyConnectivityAsync(AnyAuth);
+        var serverInfo = await handler.VerifyConnectivityAsync(AnyAuth);
 
         serverInfo.Address.Should().Be("localhost:7474");
     }
@@ -76,9 +77,9 @@ public class VerifyConnectivityHandlerTests
     {
         var response = Accepted();
         response.Headers.Server.Add(new ProductInfoHeaderValue("Neo4j", "5.18.0"));
-        var httpClient = new FakeQueryApiHttpClient(response);
+        var handler = CreateMocker(new FakeQueryApiHttpClient(response)).CreateInstance<VerifyConnectivityHandler>();
 
-        var serverInfo = await HandlerWith(httpClient).VerifyConnectivityAsync(AnyAuth);
+        var serverInfo = await handler.VerifyConnectivityAsync(AnyAuth);
 
         serverInfo.Agent.Should().Contain("Neo4j/5.18.0");
     }
@@ -86,9 +87,9 @@ public class VerifyConnectivityHandlerTests
     [Fact]
     public async Task ReturnsServerInfo_WithEmptyAgent_WhenNoServerHeader()
     {
-        var httpClient = new FakeQueryApiHttpClient(Accepted());
+        var handler = CreateMocker(new FakeQueryApiHttpClient(Accepted())).CreateInstance<VerifyConnectivityHandler>();
 
-        var serverInfo = await HandlerWith(httpClient).VerifyConnectivityAsync(AnyAuth);
+        var serverInfo = await handler.VerifyConnectivityAsync(AnyAuth);
 
         serverInfo.Agent.Should().BeEmpty();
     }
@@ -96,33 +97,22 @@ public class VerifyConnectivityHandlerTests
     [Fact]
     public async Task CallsAuthApplicator_WithProvidedToken()
     {
-        var mockAuth = new Mock<IAuthApplicator>();
         var token = AuthTokens.Basic("neo4j", "password");
-        var handler = new VerifyConnectivityHandler(
-            UrlBuilder,
-            new FakeQueryApiHttpClient(Accepted()),
-            Mock.Of<IQueryApiErrorChecker>(),
-            QueryApiJsonOptions.Default,
-            mockAuth.Object);
+        var mocker = CreateMocker(new FakeQueryApiHttpClient(Accepted()));
 
-        await handler.VerifyConnectivityAsync(token);
+        await mocker.CreateInstance<VerifyConnectivityHandler>().VerifyConnectivityAsync(token);
 
-        mockAuth.Verify(x => x.Apply(It.IsAny<HttpRequestMessage>(), token), Times.Once);
+        mocker.GetMock<IAuthApplicator>().Verify(x => x.Apply(It.IsAny<HttpRequestMessage>(), token), Times.Once);
     }
 
     [Fact]
     public async Task CallsErrorChecker_OnResponse()
     {
-        var mockChecker = new Mock<IQueryApiErrorChecker>();
-        var handler = new VerifyConnectivityHandler(
-            UrlBuilder,
-            new FakeQueryApiHttpClient(Accepted()),
-            mockChecker.Object,
-            QueryApiJsonOptions.Default,
-            Mock.Of<IAuthApplicator>());
+        var mocker = CreateMocker(new FakeQueryApiHttpClient(Accepted()));
 
-        await handler.VerifyConnectivityAsync(AnyAuth);
+        await mocker.CreateInstance<VerifyConnectivityHandler>().VerifyConnectivityAsync(AnyAuth);
 
-        mockChecker.Verify(x => x.EnsureSuccessAsync(It.IsAny<HttpResponseMessage>(), default), Times.Once);
+        mocker.GetMock<IQueryApiErrorChecker>()
+            .Verify(x => x.EnsureSuccessAsync(It.IsAny<HttpResponseMessage>(), default), Times.Once);
     }
 }

@@ -22,6 +22,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
 using static Neo4j.Driver.Tests.Internal.QueryApi.QueryApiTestHelpers;
@@ -39,17 +40,13 @@ public class RunInTransactionHandlerTests
     private static readonly QueryApiTransactionContext TxWithAffinity = new("tx-99", "shard-7");
     private static readonly QueryApiTransactionContext TxWithoutAffinity = new("tx-99", null);
 
-    private static RunInTransactionHandler HandlerWith(
-        FakeQueryApiHttpClient httpClient,
-        IClusterAffinityApplicator? affinityApplicator = null)
+    private static AutoMocker CreateMocker(FakeQueryApiHttpClient httpClient)
     {
-        return new RunInTransactionHandler(
-            UrlBuilder,
-            httpClient,
-            Mock.Of<IQueryApiErrorChecker>(),
-            QueryApiJsonOptions.Default,
-            Mock.Of<IAuthApplicator>(),
-            affinityApplicator ?? Mock.Of<IClusterAffinityApplicator>());
+        var mocker = new AutoMocker();
+        mocker.Use<IQueryApiHttpClient>(httpClient);
+        mocker.Use<IQueryApiUrlBuilder>(UrlBuilder);
+        mocker.Use<IJsonOptionsProvider>(QueryApiJsonOptionsProvider.Default);
+        return mocker;
     }
 
     [Fact]
@@ -57,9 +54,9 @@ public class RunInTransactionHandlerTests
     {
         // POST /db/{database}/query/v2/tx/{txId}
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
+        var handler = CreateMocker(httpClient).CreateInstance<RunInTransactionHandler>();
 
-        await HandlerWith(httpClient)
-            .RunInTransactionAsync("movies", TxWithoutAffinity, new Query("RETURN 1"), AnyAuth);
+        await handler.RunInTransactionAsync("movies", TxWithoutAffinity, new Query("RETURN 1"), AnyAuth);
 
         httpClient.LastRequest!.Method.Should().Be(HttpMethod.Post);
         httpClient.LastRequest.RequestUri!.PathAndQuery.Should().Be("/db/movies/query/v2/tx/tx-99");
@@ -69,9 +66,9 @@ public class RunInTransactionHandlerTests
     public async Task RequestBody_ContainsStatement()
     {
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
+        var handler = CreateMocker(httpClient).CreateInstance<RunInTransactionHandler>();
 
-        await HandlerWith(httpClient)
-            .RunInTransactionAsync("neo4j", TxWithoutAffinity, new Query("MATCH (n) RETURN n"), AnyAuth);
+        await handler.RunInTransactionAsync("neo4j", TxWithoutAffinity, new Query("MATCH (n) RETURN n"), AnyAuth);
 
         var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
         body.GetProperty("statement").GetString().Should().Be("MATCH (n) RETURN n");
@@ -82,8 +79,9 @@ public class RunInTransactionHandlerTests
     {
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
         var query = new Query("MATCH (n {id: $id}) RETURN n", new Dictionary<string, object> { ["id"] = 7 });
+        var handler = CreateMocker(httpClient).CreateInstance<RunInTransactionHandler>();
 
-        await HandlerWith(httpClient).RunInTransactionAsync("neo4j", TxWithoutAffinity, query, AnyAuth);
+        await handler.RunInTransactionAsync("neo4j", TxWithoutAffinity, query, AnyAuth);
 
         var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
         body.GetProperty("parameters").GetProperty("id").GetInt32().Should().Be(7);
@@ -93,13 +91,13 @@ public class RunInTransactionHandlerTests
     public async Task ForwardsClusterAffinityHeader_ToAffinityApplicator()
     {
         // Spec: the cluster affinity received on BEGIN must be forwarded on all subsequent requests
-        var mockAffinity = new Mock<IClusterAffinityApplicator>();
-        var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
+        var mocker = CreateMocker(new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse())));
 
-        await HandlerWith(httpClient, mockAffinity.Object)
+        await mocker.CreateInstance<RunInTransactionHandler>()
             .RunInTransactionAsync("neo4j", TxWithAffinity, new Query("RETURN 1"), AnyAuth);
 
-        mockAffinity.Verify(x => x.Apply(It.IsAny<HttpRequestMessage>(), TxWithAffinity), Times.Once);
+        mocker.GetMock<IClusterAffinityApplicator>()
+            .Verify(x => x.Apply(It.IsAny<HttpRequestMessage>(), TxWithAffinity), Times.Once);
     }
 
     [Fact]
@@ -116,9 +114,9 @@ public class RunInTransactionHandlerTests
                     },
                     bookmarks = new[] { "neo4j:bookmark:v1:tx200" }
                 }));
+        var handler = CreateMocker(httpClient).CreateInstance<RunInTransactionHandler>();
 
-        var result = await HandlerWith(httpClient)
-            .RunInTransactionAsync("neo4j", TxWithoutAffinity, new Query("RETURN 42 AS x"), AnyAuth);
+        var result = await handler.RunInTransactionAsync("neo4j", TxWithoutAffinity, new Query("RETURN 42 AS x"), AnyAuth);
 
         result.Fields.Should().Equal("x");
         result.Rows.Should().HaveCount(1);

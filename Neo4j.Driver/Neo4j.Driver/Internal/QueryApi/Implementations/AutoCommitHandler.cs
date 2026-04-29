@@ -29,20 +29,20 @@ internal class AutoCommitHandler : IAutoCommitHandler
     private readonly IQueryApiUrlBuilder _urlBuilder;
     private readonly IQueryApiHttpClient _httpClient;
     private readonly IQueryApiErrorChecker _errorChecker;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly IJsonOptionsProvider _jsonOptionsProvider;
     private readonly IAuthApplicator _authApplicator;
 
     public AutoCommitHandler(
         IQueryApiUrlBuilder urlBuilder,
         IQueryApiHttpClient httpClient,
         IQueryApiErrorChecker errorChecker,
-        JsonSerializerOptions jsonOptions,
+        IJsonOptionsProvider jsonOptionsProvider,
         IAuthApplicator authApplicator)
     {
         _urlBuilder = urlBuilder;
         _httpClient = httpClient;
         _errorChecker = errorChecker;
-        _jsonOptions = jsonOptions;
+        _jsonOptionsProvider = jsonOptionsProvider;
         _authApplicator = authApplicator;
     }
 
@@ -60,7 +60,7 @@ internal class AutoCommitHandler : IAutoCommitHandler
         var body = await JsonSerializer
             .DeserializeAsync<ResponseBody>(
                 await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false),
-                _jsonOptions,
+                _jsonOptionsProvider.Options,
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -94,7 +94,7 @@ internal class AutoCommitHandler : IAutoCommitHandler
 
         _authApplicator.Apply(request, auth);
         request.Content = new StringContent(
-            JsonSerializer.Serialize(body, _jsonOptions), Encoding.UTF8, "application/json");
+            JsonSerializer.Serialize(body, _jsonOptionsProvider.Options), Encoding.UTF8, "application/json");
 
         return request;
     }

@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// </summary>
 public class QueryApiErrorCheckerTests
 {
-    private static QueryApiErrorChecker Checker => new(QueryApiJsonOptions.Default);
+    private static QueryApiErrorChecker Checker => new(QueryApiJsonOptionsProvider.Default);
 
     private static HttpResponseMessage JsonResponse(HttpStatusCode status, object body)
     {

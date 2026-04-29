@@ -41,18 +41,18 @@ internal sealed class QueryApiTransport : IQueryApiTransport
     {
         var urlBuilder = new QueryApiUrlBuilder(baseUri);
         var httpClient = new QueryApiHttpClient(handlerFactory);
-        jsonOptions ??= QueryApiJsonOptions.Default;
-        var errorChecker = new QueryApiErrorChecker(jsonOptions);
+        var jsonOptionsProvider = new QueryApiJsonOptionsProvider(jsonOptions ?? QueryApiJsonOptions.Default);
+        var errorChecker = new QueryApiErrorChecker(jsonOptionsProvider);
         var authApplicator = new QueryApiAuthApplicator();
         var clusterAffinityApplicator = new QueryApiClusterAffinityApplicator();
 
         _httpClient = httpClient;
-        _autoCommit = new AutoCommitHandler(urlBuilder, httpClient, errorChecker, jsonOptions, authApplicator);
-        _beginTransaction = new BeginTransactionHandler(urlBuilder, httpClient, errorChecker, jsonOptions, authApplicator, clusterAffinityApplicator);
-        _runInTransaction = new RunInTransactionHandler(urlBuilder, httpClient, errorChecker, jsonOptions, authApplicator, clusterAffinityApplicator);
-        _commitTransaction = new CommitTransactionHandler(urlBuilder, httpClient, errorChecker, jsonOptions, authApplicator, clusterAffinityApplicator);
+        _autoCommit = new AutoCommitHandler(urlBuilder, httpClient, errorChecker, jsonOptionsProvider, authApplicator);
+        _beginTransaction = new BeginTransactionHandler(urlBuilder, httpClient, errorChecker, jsonOptionsProvider, authApplicator, clusterAffinityApplicator);
+        _runInTransaction = new RunInTransactionHandler(urlBuilder, httpClient, errorChecker, jsonOptionsProvider, authApplicator, clusterAffinityApplicator);
+        _commitTransaction = new CommitTransactionHandler(urlBuilder, httpClient, errorChecker, jsonOptionsProvider, authApplicator, clusterAffinityApplicator);
         _rollbackTransaction = new RollbackTransactionHandler(urlBuilder, httpClient, errorChecker, authApplicator, clusterAffinityApplicator);
-        _verifyConnectivity = new VerifyConnectivityHandler(urlBuilder, httpClient, errorChecker, jsonOptions, authApplicator);
+        _verifyConnectivity = new VerifyConnectivityHandler(urlBuilder, httpClient, errorChecker, jsonOptionsProvider, authApplicator);
     }
 
     internal QueryApiTransport(

@@ -28,20 +28,20 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
     private readonly IQueryApiUrlBuilder _urlBuilder;
     private readonly IQueryApiHttpClient _httpClient;
     private readonly IQueryApiErrorChecker _errorChecker;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly IJsonOptionsProvider _jsonOptionsProvider;
     private readonly IAuthApplicator _authApplicator;
 
     public VerifyConnectivityHandler(
         IQueryApiUrlBuilder urlBuilder,
         IQueryApiHttpClient httpClient,
         IQueryApiErrorChecker errorChecker,
-        JsonSerializerOptions jsonOptions,
+        IJsonOptionsProvider jsonOptionsProvider,
         IAuthApplicator authApplicator)
     {
         _urlBuilder = urlBuilder;
         _httpClient = httpClient;
         _errorChecker = errorChecker;
-        _jsonOptions = jsonOptions;
+        _jsonOptionsProvider = jsonOptionsProvider;
         _authApplicator = authApplicator;
     }
 
@@ -69,7 +69,7 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
 
         _authApplicator.Apply(request, auth);
         request.Content = new StringContent(
-            JsonSerializer.Serialize(body, _jsonOptions), Encoding.UTF8, "application/json");
+            JsonSerializer.Serialize(body, _jsonOptionsProvider.Options), Encoding.UTF8, "application/json");
 
         return request;
     }

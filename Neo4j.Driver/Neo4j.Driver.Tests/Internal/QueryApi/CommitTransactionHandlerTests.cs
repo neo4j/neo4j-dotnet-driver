@@ -19,6 +19,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
 using static Neo4j.Driver.Tests.Internal.QueryApi.QueryApiTestHelpers;
@@ -35,17 +36,13 @@ public class CommitTransactionHandlerTests
     private static readonly QueryApiTransactionContext TxWithAffinity = new("tx-55", "shard-3");
     private static readonly QueryApiTransactionContext TxWithoutAffinity = new("tx-55", null);
 
-    private static CommitTransactionHandler HandlerWith(
-        FakeQueryApiHttpClient httpClient,
-        IClusterAffinityApplicator? affinityApplicator = null)
+    private static AutoMocker CreateMocker(FakeQueryApiHttpClient httpClient)
     {
-        return new CommitTransactionHandler(
-            UrlBuilder,
-            httpClient,
-            Mock.Of<IQueryApiErrorChecker>(),
-            QueryApiJsonOptions.Default,
-            Mock.Of<IAuthApplicator>(),
-            affinityApplicator ?? Mock.Of<IClusterAffinityApplicator>());
+        var mocker = new AutoMocker();
+        mocker.Use<IQueryApiHttpClient>(httpClient);
+        mocker.Use<IQueryApiUrlBuilder>(UrlBuilder);
+        mocker.Use<IJsonOptionsProvider>(QueryApiJsonOptionsProvider.Default);
+        return mocker;
     }
 
     [Fact]
@@ -53,8 +50,9 @@ public class CommitTransactionHandlerTests
     {
         // POST /db/{database}/query/v2/tx/{txId}/commit
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(new {}));
+        var handler = CreateMocker(httpClient).CreateInstance<CommitTransactionHandler>();
 
-        await HandlerWith(httpClient).CommitTransactionAsync("movies", TxWithoutAffinity, AnyAuth);
+        await handler.CommitTransactionAsync("movies", TxWithoutAffinity, AnyAuth);
 
         httpClient.LastRequest!.Method.Should().Be(HttpMethod.Post);
         httpClient.LastRequest.RequestUri!.PathAndQuery.Should().Be("/db/movies/query/v2/tx/tx-55/commit");
@@ -70,8 +68,9 @@ public class CommitTransactionHandlerTests
                 {
                     bookmarks = new[] { "neo4j:bookmark:v1:tx300", "neo4j:bookmark:v1:tx301" }
                 }));
+        var handler = CreateMocker(httpClient).CreateInstance<CommitTransactionHandler>();
 
-        var bookmarks = await HandlerWith(httpClient).CommitTransactionAsync("neo4j", TxWithoutAffinity, AnyAuth);
+        var bookmarks = await handler.CommitTransactionAsync("neo4j", TxWithoutAffinity, AnyAuth);
 
         bookmarks.Should().Equal("neo4j:bookmark:v1:tx300", "neo4j:bookmark:v1:tx301");
     }
@@ -80,8 +79,9 @@ public class CommitTransactionHandlerTests
     public async Task ReturnsEmptyBookmarks_WhenResponseBodyIsEmpty()
     {
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(new {}));
+        var handler = CreateMocker(httpClient).CreateInstance<CommitTransactionHandler>();
 
-        var bookmarks = await HandlerWith(httpClient).CommitTransactionAsync("neo4j", TxWithoutAffinity, AnyAuth);
+        var bookmarks = await handler.CommitTransactionAsync("neo4j", TxWithoutAffinity, AnyAuth);
 
         bookmarks.Should().BeEmpty();
     }
@@ -90,11 +90,12 @@ public class CommitTransactionHandlerTests
     public async Task ForwardsClusterAffinityHeader_ToAffinityApplicator()
     {
         // Spec: cluster affinity must be forwarded on COMMIT as well
-        var mockAffinity = new Mock<IClusterAffinityApplicator>();
-        var httpClient = new FakeQueryApiHttpClient(AcceptedWith(new {}));
+        var mocker = CreateMocker(new FakeQueryApiHttpClient(AcceptedWith(new {})));
 
-        await HandlerWith(httpClient, mockAffinity.Object).CommitTransactionAsync("neo4j", TxWithAffinity, AnyAuth);
+        await mocker.CreateInstance<CommitTransactionHandler>()
+            .CommitTransactionAsync("neo4j", TxWithAffinity, AnyAuth);
 
-        mockAffinity.Verify(x => x.Apply(It.IsAny<HttpRequestMessage>(), TxWithAffinity), Times.Once);
+        mocker.GetMock<IClusterAffinityApplicator>()
+            .Verify(x => x.Apply(It.IsAny<HttpRequestMessage>(), TxWithAffinity), Times.Once);
     }
 }

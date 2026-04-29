@@ -19,6 +19,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
 using static Neo4j.Driver.Tests.Internal.QueryApi.QueryApiTestHelpers;
@@ -35,16 +36,12 @@ public class RollbackTransactionHandlerTests
     private static readonly QueryApiTransactionContext TxWithAffinity = new("tx-77", "shard-5");
     private static readonly QueryApiTransactionContext TxWithoutAffinity = new("tx-77", null);
 
-    private static RollbackTransactionHandler HandlerWith(
-        FakeQueryApiHttpClient httpClient,
-        IClusterAffinityApplicator? affinityApplicator = null)
+    private static AutoMocker CreateMocker(FakeQueryApiHttpClient httpClient)
     {
-        return new RollbackTransactionHandler(
-            UrlBuilder,
-            httpClient,
-            Mock.Of<IQueryApiErrorChecker>(),
-            Mock.Of<IAuthApplicator>(),
-            affinityApplicator ?? Mock.Of<IClusterAffinityApplicator>());
+        var mocker = new AutoMocker();
+        mocker.Use<IQueryApiHttpClient>(httpClient);
+        mocker.Use<IQueryApiUrlBuilder>(UrlBuilder);
+        return mocker;
     }
 
     [Fact]
@@ -52,8 +49,9 @@ public class RollbackTransactionHandlerTests
     {
         // DELETE /db/{database}/query/v2/tx/{txId}
         var httpClient = new FakeQueryApiHttpClient(Accepted());
+        var handler = CreateMocker(httpClient).CreateInstance<RollbackTransactionHandler>();
 
-        await HandlerWith(httpClient).RollbackTransactionAsync("movies", TxWithoutAffinity, AnyAuth);
+        await handler.RollbackTransactionAsync("movies", TxWithoutAffinity, AnyAuth);
 
         httpClient.LastRequest!.Method.Should().Be(HttpMethod.Delete);
         httpClient.LastRequest.RequestUri!.PathAndQuery.Should().Be("/db/movies/query/v2/tx/tx-77");
@@ -63,27 +61,24 @@ public class RollbackTransactionHandlerTests
     public async Task ForwardsClusterAffinityHeader_ToAffinityApplicator()
     {
         // Spec: cluster affinity must be forwarded on ROLLBACK as well
-        var mockAffinity = new Mock<IClusterAffinityApplicator>();
-        var httpClient = new FakeQueryApiHttpClient(Accepted());
+        var mocker = CreateMocker(new FakeQueryApiHttpClient(Accepted()));
 
-        await HandlerWith(httpClient, mockAffinity.Object).RollbackTransactionAsync("neo4j", TxWithAffinity, AnyAuth);
+        await mocker.CreateInstance<RollbackTransactionHandler>()
+            .RollbackTransactionAsync("neo4j", TxWithAffinity, AnyAuth);
 
-        mockAffinity.Verify(x => x.Apply(It.IsAny<HttpRequestMessage>(), TxWithAffinity), Times.Once);
+        mocker.GetMock<IClusterAffinityApplicator>()
+            .Verify(x => x.Apply(It.IsAny<HttpRequestMessage>(), TxWithAffinity), Times.Once);
     }
 
     [Fact]
     public async Task CallsErrorChecker_OnResponse()
     {
-        var mockChecker = new Mock<IQueryApiErrorChecker>();
-        var handler = new RollbackTransactionHandler(
-            UrlBuilder,
-            new FakeQueryApiHttpClient(Accepted()),
-            mockChecker.Object,
-            Mock.Of<IAuthApplicator>(),
-            Mock.Of<IClusterAffinityApplicator>());
+        var mocker = CreateMocker(new FakeQueryApiHttpClient(Accepted()));
 
-        await handler.RollbackTransactionAsync("neo4j", TxWithoutAffinity, AnyAuth);
+        await mocker.CreateInstance<RollbackTransactionHandler>()
+            .RollbackTransactionAsync("neo4j", TxWithoutAffinity, AnyAuth);
 
-        mockChecker.Verify(x => x.EnsureSuccessAsync(It.IsAny<HttpResponseMessage>(), default), Times.Once);
+        mocker.GetMock<IQueryApiErrorChecker>()
+            .Verify(x => x.EnsureSuccessAsync(It.IsAny<HttpResponseMessage>(), default), Times.Once);
     }
 }

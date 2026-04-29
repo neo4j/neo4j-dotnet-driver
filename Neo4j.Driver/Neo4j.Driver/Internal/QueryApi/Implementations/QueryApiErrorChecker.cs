@@ -25,11 +25,11 @@ namespace Neo4j.Driver.Internal.QueryApi;
 
 internal class QueryApiErrorChecker : IQueryApiErrorChecker
 {
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly IJsonOptionsProvider _jsonOptionsProvider;
 
-    public QueryApiErrorChecker(JsonSerializerOptions jsonOptions)
+    public QueryApiErrorChecker(IJsonOptionsProvider jsonOptionsProvider)
     {
-        _jsonOptions = jsonOptions;
+        _jsonOptionsProvider = jsonOptionsProvider;
     }
 
     public async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken cancellationToken = default)
@@ -42,7 +42,7 @@ internal class QueryApiErrorChecker : IQueryApiErrorChecker
                 parsed = await JsonSerializer
                     .DeserializeAsync<ErrorResponseBody>(
                         await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false),
-                        _jsonOptions,
+                        _jsonOptionsProvider.Options,
                         cancellationToken)
                     .ConfigureAwait(false);
             }

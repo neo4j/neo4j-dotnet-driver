@@ -22,6 +22,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
 using static Neo4j.Driver.Tests.Internal.QueryApi.QueryApiTestHelpers;
@@ -37,17 +38,13 @@ public class BeginTransactionHandlerTests
 {
     private static readonly IAuthToken AnyAuth = AuthTokens.Basic("user", "pass");
 
-    private static BeginTransactionHandler HandlerWith(
-        FakeQueryApiHttpClient httpClient,
-        IClusterAffinityApplicator? affinityApplicator = null)
+    private static AutoMocker CreateMocker(FakeQueryApiHttpClient httpClient)
     {
-        return new BeginTransactionHandler(
-            UrlBuilder,
-            httpClient,
-            Mock.Of<IQueryApiErrorChecker>(),
-            QueryApiJsonOptions.Default,
-            Mock.Of<IAuthApplicator>(),
-            affinityApplicator ?? Mock.Of<IClusterAffinityApplicator>());
+        var mocker = new AutoMocker();
+        mocker.Use<IQueryApiHttpClient>(httpClient);
+        mocker.Use<IQueryApiUrlBuilder>(UrlBuilder);
+        mocker.Use<IJsonOptionsProvider>(QueryApiJsonOptionsProvider.Default);
+        return mocker;
     }
 
     [Fact]
@@ -55,8 +52,9 @@ public class BeginTransactionHandlerTests
     {
         // POST /db/{database}/query/v2/tx
         var httpClient = new FakeQueryApiHttpClient(BeginResponseWith("tx-1"));
+        var handler = CreateMocker(httpClient).CreateInstance<BeginTransactionHandler>();
 
-        await HandlerWith(httpClient).BeginTransactionAsync("movies", [], AnyAuth);
+        await handler.BeginTransactionAsync("movies", [], AnyAuth);
 
         httpClient.LastRequest!.Method.Should().Be(HttpMethod.Post);
         httpClient.LastRequest.RequestUri!.PathAndQuery.Should().Be("/db/movies/query/v2/tx");
@@ -66,11 +64,9 @@ public class BeginTransactionHandlerTests
     public async Task ReturnsTransactionId_FromResponseBody()
     {
         // Spec: response body contains transaction.id — the handle for subsequent requests
-        var httpClient = new FakeQueryApiHttpClient(BeginResponseWith("tx-abc-123"));
-        var mockAffinity = new Mock<IClusterAffinityApplicator>();
-        mockAffinity.Setup(x => x.Extract(It.IsAny<HttpResponseMessage>())).Returns((string?)null);
+        var mocker = CreateMocker(new FakeQueryApiHttpClient(BeginResponseWith("tx-abc-123")));
 
-        var context = await HandlerWith(httpClient, mockAffinity.Object)
+        var context = await mocker.CreateInstance<BeginTransactionHandler>()
             .BeginTransactionAsync("neo4j", [], AnyAuth);
 
         context.TxId.Should().Be("tx-abc-123");
@@ -80,11 +76,12 @@ public class BeginTransactionHandlerTests
     public async Task ReturnsClusterAffinity_WhenResponseCarriesAffinityHeader()
     {
         // Spec: Aura instances return neo4j-cluster-affinity on BEGIN — it must be echoed back
-        var httpClient = new FakeQueryApiHttpClient(BeginResponseWith("tx-1"));
-        var mockAffinity = new Mock<IClusterAffinityApplicator>();
-        mockAffinity.Setup(x => x.Extract(It.IsAny<HttpResponseMessage>())).Returns("shard-99");
+        var mocker = CreateMocker(new FakeQueryApiHttpClient(BeginResponseWith("tx-1")));
+        mocker.GetMock<IClusterAffinityApplicator>()
+            .Setup(x => x.Extract(It.IsAny<HttpResponseMessage>()))
+            .Returns("shard-99");
 
-        var context = await HandlerWith(httpClient, mockAffinity.Object)
+        var context = await mocker.CreateInstance<BeginTransactionHandler>()
             .BeginTransactionAsync("neo4j", [], AnyAuth);
 
         context.ClusterAffinity.Should().Be("shard-99");
@@ -93,11 +90,12 @@ public class BeginTransactionHandlerTests
     [Fact]
     public async Task ReturnsNullClusterAffinity_WhenResponseHasNoAffinityHeader()
     {
-        var httpClient = new FakeQueryApiHttpClient(BeginResponseWith("tx-1"));
-        var mockAffinity = new Mock<IClusterAffinityApplicator>();
-        mockAffinity.Setup(x => x.Extract(It.IsAny<HttpResponseMessage>())).Returns((string?)null);
+        var mocker = CreateMocker(new FakeQueryApiHttpClient(BeginResponseWith("tx-1")));
+        mocker.GetMock<IClusterAffinityApplicator>()
+            .Setup(x => x.Extract(It.IsAny<HttpResponseMessage>()))
+            .Returns((string?)null);
 
-        var context = await HandlerWith(httpClient, mockAffinity.Object)
+        var context = await mocker.CreateInstance<BeginTransactionHandler>()
             .BeginTransactionAsync("neo4j", [], AnyAuth);
 
         context.ClusterAffinity.Should().BeNull();
@@ -109,8 +107,9 @@ public class BeginTransactionHandlerTests
         // Spec: bookmarks enable causal consistency at transaction start
         var httpClient = new FakeQueryApiHttpClient(BeginResponseWith("tx-1"));
         var bookmarks = new List<string> { "neo4j:bookmark:v1:tx50" };
+        var handler = CreateMocker(httpClient).CreateInstance<BeginTransactionHandler>();
 
-        await HandlerWith(httpClient).BeginTransactionAsync("neo4j", bookmarks, AnyAuth);
+        await handler.BeginTransactionAsync("neo4j", bookmarks, AnyAuth);
 
         var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
         body.GetProperty("bookmarks")[0].GetString().Should().Be("neo4j:bookmark:v1:tx50");
@@ -120,8 +119,9 @@ public class BeginTransactionHandlerTests
     public async Task RequestBody_OmitsBookmarks_WhenListIsEmpty()
     {
         var httpClient = new FakeQueryApiHttpClient(BeginResponseWith("tx-1"));
+        var handler = CreateMocker(httpClient).CreateInstance<BeginTransactionHandler>();
 
-        await HandlerWith(httpClient).BeginTransactionAsync("neo4j", [], AnyAuth);
+        await handler.BeginTransactionAsync("neo4j", [], AnyAuth);
 
         var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
         body.TryGetProperty("bookmarks", out var _).Should().BeFalse();
@@ -131,9 +131,10 @@ public class BeginTransactionHandlerTests
     public async Task Throws_WhenResponseDoesNotContainTransactionId()
     {
         // A missing transaction ID means something went wrong server-side
-        var httpClient = new FakeQueryApiHttpClient(AcceptedWith(new { transaction = new {} }));
+        var mocker = CreateMocker(new FakeQueryApiHttpClient(AcceptedWith(new { transaction = new {} })));
 
-        var act = () => HandlerWith(httpClient).BeginTransactionAsync("neo4j", [], AnyAuth);
+        var act = () => mocker.CreateInstance<BeginTransactionHandler>()
+            .BeginTransactionAsync("neo4j", [], AnyAuth);
 
         await act.Should()
             .ThrowAsync<InvalidOperationException>()
