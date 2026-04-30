@@ -23,24 +23,18 @@ namespace Neo4j.Driver.Internal.QueryApi;
 
 internal class RollbackTransactionHandler : IRollbackTransactionHandler
 {
-    private readonly IQueryApiUrlBuilder _urlBuilder;
-    private readonly IQueryApiHttpClient _httpClient;
     private readonly IQueryApiErrorChecker _errorChecker;
-    private readonly IAuthApplicator _authApplicator;
-    private readonly IClusterAffinityApplicator _clusterAffinityApplicator;
+    private readonly IQueryApiHttpClient _httpClient;
+    private readonly IQueryApiRequestBuilder _requestBuilder;
 
     public RollbackTransactionHandler(
-        IQueryApiUrlBuilder urlBuilder,
+        IQueryApiRequestBuilder requestBuilder,
         IQueryApiHttpClient httpClient,
-        IQueryApiErrorChecker errorChecker,
-        IAuthApplicator authApplicator,
-        IClusterAffinityApplicator clusterAffinityApplicator)
+        IQueryApiErrorChecker errorChecker)
     {
-        _urlBuilder = urlBuilder;
+        _requestBuilder = requestBuilder;
         _httpClient = httpClient;
         _errorChecker = errorChecker;
-        _authApplicator = authApplicator;
-        _clusterAffinityApplicator = clusterAffinityApplicator;
     }
 
     public async Task RollbackTransactionAsync(
@@ -56,13 +50,6 @@ internal class RollbackTransactionHandler : IRollbackTransactionHandler
 
     private HttpRequestMessage BuildRequest(string database, QueryApiTransactionContext txContext, IAuthToken auth)
     {
-        var request = new HttpRequestMessage(
-            HttpMethod.Delete,
-            _urlBuilder.Build($"db/{database}/query/v2/tx/{txContext.TxId}"));
-
-        _authApplicator.Apply(request, auth);
-        _clusterAffinityApplicator.Apply(request, txContext);
-
-        return request;
+        return _requestBuilder.Delete($"db/{database}/query/v2/tx/{txContext.TxId}", auth, txContext);
     }
 }

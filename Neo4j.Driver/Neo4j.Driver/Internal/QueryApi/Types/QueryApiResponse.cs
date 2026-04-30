@@ -22,9 +22,8 @@ namespace Neo4j.Driver.Internal.QueryApi;
 /// <summary>
 /// The parsed result of a Query API statement execution.
 /// <para>
-/// <see cref="Rows"/> uses <see cref="JsonElement"/> to defer Neo4j-type conversion
-/// to the cursor layer. Elements are safe to hold indefinitely — they are backed by
-/// memory owned by the deserialized object graph, not by a live stream.
+/// <see cref="Rows"/> uses <see cref="JsonElement"/> to defer Neo4j-type conversion to the cursor layer. Elements
+/// are safe to hold indefinitely — they are backed by memory owned by the deserialized object graph, not by a live stream.
 /// </para>
 /// </summary>
 internal class QueryApiResponse

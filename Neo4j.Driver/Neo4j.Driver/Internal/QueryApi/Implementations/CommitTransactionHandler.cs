@@ -23,27 +23,21 @@ namespace Neo4j.Driver.Internal.QueryApi;
 
 internal class CommitTransactionHandler : ICommitTransactionHandler
 {
-    private readonly IQueryApiUrlBuilder _urlBuilder;
-    private readonly IQueryApiHttpClient _httpClient;
     private readonly IQueryApiErrorChecker _errorChecker;
+    private readonly IQueryApiHttpClient _httpClient;
     private readonly IJsonDeserializer _jsonDeserializer;
-    private readonly IAuthApplicator _authApplicator;
-    private readonly IClusterAffinityApplicator _clusterAffinityApplicator;
+    private readonly IQueryApiRequestBuilder _requestBuilder;
 
     public CommitTransactionHandler(
-        IQueryApiUrlBuilder urlBuilder,
+        IQueryApiRequestBuilder requestBuilder,
         IQueryApiHttpClient httpClient,
         IQueryApiErrorChecker errorChecker,
-        IJsonDeserializer jsonDeserializer,
-        IAuthApplicator authApplicator,
-        IClusterAffinityApplicator clusterAffinityApplicator)
+        IJsonDeserializer jsonDeserializer)
     {
-        _urlBuilder = urlBuilder;
+        _requestBuilder = requestBuilder;
         _httpClient = httpClient;
         _errorChecker = errorChecker;
         _jsonDeserializer = jsonDeserializer;
-        _authApplicator = authApplicator;
-        _clusterAffinityApplicator = clusterAffinityApplicator;
     }
 
     public async Task<string[]> CommitTransactionAsync(
@@ -72,14 +66,7 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
 
     private HttpRequestMessage BuildRequest(string database, QueryApiTransactionContext txContext, IAuthToken auth)
     {
-        var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            _urlBuilder.Build($"db/{database}/query/v2/tx/{txContext.TxId}/commit"));
-
-        _authApplicator.Apply(request, auth);
-        _clusterAffinityApplicator.Apply(request, txContext);
-
-        return request;
+        return _requestBuilder.Post($"db/{database}/query/v2/tx/{txContext.TxId}/commit", auth, txContext);
     }
 
     private class ResponseBody
@@ -90,7 +77,7 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
 
     private class ErrorBody
     {
-        public string Code { get; init; } = string.Empty;
-        public string Message { get; init; } = string.Empty;
+        public string Code { get; } = string.Empty;
+        public string Message { get; } = string.Empty;
     }
 }

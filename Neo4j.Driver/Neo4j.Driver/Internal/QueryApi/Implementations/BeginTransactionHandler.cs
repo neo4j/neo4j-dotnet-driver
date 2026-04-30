@@ -25,29 +25,26 @@ namespace Neo4j.Driver.Internal.QueryApi;
 
 internal class BeginTransactionHandler : IBeginTransactionHandler
 {
-    private readonly IQueryApiUrlBuilder _urlBuilder;
-    private readonly IQueryApiHttpClient _httpClient;
+    private readonly IClusterAffinityApplicator _clusterAffinityApplicator;
     private readonly IQueryApiErrorChecker _errorChecker;
+    private readonly IQueryApiHttpClient _httpClient;
     private readonly IJsonDeserializer _jsonDeserializer;
     private readonly IJsonSerializer _jsonSerializer;
-    private readonly IAuthApplicator _authApplicator;
-    private readonly IClusterAffinityApplicator _clusterAffinityApplicator;
+    private readonly IQueryApiRequestBuilder _requestBuilder;
 
     public BeginTransactionHandler(
-        IQueryApiUrlBuilder urlBuilder,
+        IQueryApiRequestBuilder requestBuilder,
         IQueryApiHttpClient httpClient,
         IQueryApiErrorChecker errorChecker,
         IJsonDeserializer jsonDeserializer,
         IJsonSerializer jsonSerializer,
-        IAuthApplicator authApplicator,
         IClusterAffinityApplicator clusterAffinityApplicator)
     {
-        _urlBuilder = urlBuilder;
+        _requestBuilder = requestBuilder;
         _httpClient = httpClient;
         _errorChecker = errorChecker;
         _jsonDeserializer = jsonDeserializer;
         _jsonSerializer = jsonSerializer;
-        _authApplicator = authApplicator;
         _clusterAffinityApplicator = clusterAffinityApplicator;
     }
 
@@ -72,7 +69,7 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
             _errorChecker.ThrowIfAnyError(errors[0].Code, errors[0].Message);
         }
 
-        if (body?.Transaction?.Id is not { } txId)
+        if (body?.Transaction?.Id is not {} txId)
         {
             throw new InvalidOperationException("Server did not return a transaction ID.");
         }
@@ -84,16 +81,11 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
     {
         var body = new RequestBody
         {
-            Bookmarks = bookmarks.Count > 0 ? [.. bookmarks] : null,
+            Bookmarks = bookmarks.Count > 0 ? [.. bookmarks] : null
         };
 
-        var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            _urlBuilder.Build($"db/{database}/query/v2/tx"));
-
-        _authApplicator.Apply(request, auth);
+        var request = _requestBuilder.Post($"db/{database}/query/v2/tx", auth);
         request.Content = _jsonSerializer.Serialize(body);
-
         return request;
     }
 
@@ -115,7 +107,7 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
 
     private class ErrorBody
     {
-        public string Code { get; init; } = string.Empty;
-        public string Message { get; init; } = string.Empty;
+        public string Code { get; } = string.Empty;
+        public string Message { get; } = string.Empty;
     }
 }

@@ -40,7 +40,7 @@ public class CommitTransactionHandlerTests
     {
         var mocker = new AutoMocker();
         mocker.Use<IQueryApiHttpClient>(httpClient);
-        mocker.Use<IQueryApiUrlBuilder>(UrlBuilder);
+        mocker.Use<IQueryApiRequestBuilder>(new QueryApiRequestBuilder(UrlBuilder, new QueryApiAuthApplicator(), new QueryApiClusterAffinityApplicator()));
         mocker.Use<IJsonDeserializer>(new QueryApiJsonSerializer());
         return mocker;
     }
@@ -87,15 +87,14 @@ public class CommitTransactionHandlerTests
     }
 
     [Fact]
-    public async Task ForwardsClusterAffinityHeader_ToAffinityApplicator()
+    public async Task ForwardsClusterAffinityHeader_OnRequest()
     {
         // Spec: cluster affinity must be forwarded on COMMIT as well
-        var mocker = CreateMocker(new FakeQueryApiHttpClient(AcceptedWith(new {})));
+        var httpClient = new FakeQueryApiHttpClient(AcceptedWith(new {}));
+        var handler = CreateMocker(httpClient).CreateInstance<CommitTransactionHandler>();
 
-        await mocker.CreateInstance<CommitTransactionHandler>()
-            .CommitTransactionAsync("neo4j", TxWithAffinity, AnyAuth);
+        await handler.CommitTransactionAsync("neo4j", TxWithAffinity, AnyAuth);
 
-        mocker.GetMock<IClusterAffinityApplicator>()
-            .Verify(x => x.Apply(It.IsAny<HttpRequestMessage>(), TxWithAffinity), Times.Once);
+        httpClient.LastRequest!.Headers.GetValues("neo4j-cluster-affinity").Should().Equal("shard-3");
     }
 }

@@ -17,8 +17,8 @@ namespace Neo4j.Driver.Internal.QueryApi;
 
 internal class QueryApiResultSummaryFactory : IResultSummaryFactory
 {
-    private readonly IServerInfo _serverInfo;
     private readonly string _database;
+    private readonly IServerInfo _serverInfo;
 
     public QueryApiResultSummaryFactory(IServerInfo serverInfo, string database)
     {
@@ -26,6 +26,8 @@ internal class QueryApiResultSummaryFactory : IResultSummaryFactory
         _database = database;
     }
 
-    public IResultSummary Create(Query query) =>
-        new QueryApiResultSummary(query, _serverInfo, _database);
+    public IResultSummary Create(Query query)
+    {
+        return new QueryApiResultSummary(query, _serverInfo, _database);
+    }
 }

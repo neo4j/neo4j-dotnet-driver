@@ -41,7 +41,7 @@ public class VerifyConnectivityHandlerTests
     {
         var mocker = new AutoMocker();
         mocker.Use<IQueryApiHttpClient>(httpClient);
-        mocker.Use<IQueryApiUrlBuilder>(UrlBuilder);
+        mocker.Use<IQueryApiRequestBuilder>(new QueryApiRequestBuilder(UrlBuilder, new QueryApiAuthApplicator(), new QueryApiClusterAffinityApplicator()));
         mocker.Use<IJsonSerializer>(new QueryApiJsonSerializer());
         return mocker;
     }
@@ -95,14 +95,16 @@ public class VerifyConnectivityHandlerTests
     }
 
     [Fact]
-    public async Task CallsAuthApplicator_WithProvidedToken()
+    public async Task SetsAuthorizationHeader_OnRequest()
     {
         var token = AuthTokens.Basic("neo4j", "password");
-        var mocker = CreateMocker(new FakeQueryApiHttpClient(Accepted()));
+        var httpClient = new FakeQueryApiHttpClient(Accepted());
+        var handler = CreateMocker(httpClient).CreateInstance<VerifyConnectivityHandler>();
 
-        await mocker.CreateInstance<VerifyConnectivityHandler>().VerifyConnectivityAsync(token);
+        await handler.VerifyConnectivityAsync(token);
 
-        mocker.GetMock<IAuthApplicator>().Verify(x => x.Apply(It.IsAny<HttpRequestMessage>(), token), Times.Once);
+        httpClient.LastRequest!.Headers.Authorization.Should().NotBeNull();
+        httpClient.LastRequest.Headers.Authorization!.Scheme.Should().Be("Basic");
     }
 
     [Fact]

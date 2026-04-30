@@ -59,7 +59,9 @@ internal class JsonValueConverter : IJsonValueConverter
             foreach (var converter in _typedConverters)
             {
                 if (converter.CanConvert(typeName))
+                {
                     return converter.Convert(jsonElement);
+                }
             }
 
             throw new NotSupportedException($"Unsupported Neo4j type: {typeName}");
@@ -67,7 +69,9 @@ internal class JsonValueConverter : IJsonValueConverter
 
         var dict = new Dictionary<string, object?>();
         foreach (var prop in jsonElement.EnumerateObject())
+        {
             dict[prop.Name] = Convert(prop.Value);
+        }
 
         return dict;
     }

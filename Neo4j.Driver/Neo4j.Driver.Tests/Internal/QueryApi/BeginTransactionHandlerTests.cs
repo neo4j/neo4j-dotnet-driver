@@ -42,7 +42,7 @@ public class BeginTransactionHandlerTests
     {
         var mocker = new AutoMocker();
         mocker.Use<IQueryApiHttpClient>(httpClient);
-        mocker.Use<IQueryApiUrlBuilder>(UrlBuilder);
+        mocker.Use<IQueryApiRequestBuilder>(new QueryApiRequestBuilder(UrlBuilder, new QueryApiAuthApplicator(), new QueryApiClusterAffinityApplicator()));
         var json = new QueryApiJsonSerializer();
         mocker.Use<IJsonDeserializer>(json);
         mocker.Use<IJsonSerializer>(json);

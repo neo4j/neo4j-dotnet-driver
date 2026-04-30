@@ -28,5 +28,8 @@ internal class QueryApiUrlBuilder : IQueryApiUrlBuilder
         _base = baseUri.AbsoluteUri.TrimEnd('/');
     }
 
-    public Uri Build(string path) => new($"{_base}/{path.TrimStart('/')}");
+    public Uri Build(string path)
+    {
+        return new Uri($"{_base}/{path.TrimStart('/')}");
+    }
 }

@@ -25,27 +25,24 @@ namespace Neo4j.Driver.Internal.QueryApi;
 
 internal class AutoCommitHandler : IAutoCommitHandler
 {
-    private readonly IQueryApiUrlBuilder _urlBuilder;
-    private readonly IQueryApiHttpClient _httpClient;
     private readonly IQueryApiErrorChecker _errorChecker;
+    private readonly IQueryApiHttpClient _httpClient;
     private readonly IJsonDeserializer _jsonDeserializer;
     private readonly IJsonSerializer _jsonSerializer;
-    private readonly IAuthApplicator _authApplicator;
+    private readonly IQueryApiRequestBuilder _requestBuilder;
 
     public AutoCommitHandler(
-        IQueryApiUrlBuilder urlBuilder,
+        IQueryApiRequestBuilder requestBuilder,
         IQueryApiHttpClient httpClient,
         IQueryApiErrorChecker errorChecker,
         IJsonDeserializer jsonDeserializer,
-        IJsonSerializer jsonSerializer,
-        IAuthApplicator authApplicator)
+        IJsonSerializer jsonSerializer)
     {
-        _urlBuilder = urlBuilder;
+        _requestBuilder = requestBuilder;
         _httpClient = httpClient;
         _errorChecker = errorChecker;
         _jsonDeserializer = jsonDeserializer;
         _jsonSerializer = jsonSerializer;
-        _authApplicator = authApplicator;
     }
 
     public async Task<QueryApiResponse> AutoCommitAsync(
@@ -74,12 +71,15 @@ internal class AutoCommitHandler : IAutoCommitHandler
         {
             Fields = body?.Data?.Fields ?? [],
             Rows = body?.Data?.Values ?? [],
-            Bookmarks = body?.Bookmarks ?? [],
+            Bookmarks = body?.Bookmarks ?? []
         };
     }
 
     private HttpRequestMessage BuildRequest(
-        string database, Query query, IReadOnlyList<string> bookmarks, IAuthToken auth)
+        string database,
+        Query query,
+        IReadOnlyList<string> bookmarks,
+        IAuthToken auth)
     {
         // TODO: parameters are serialised using each value's runtime type. This works for .NET
         // primitives but not for Neo4j-specific types (LocalDate, Duration, Point, INode, etc.).
@@ -88,16 +88,11 @@ internal class AutoCommitHandler : IAutoCommitHandler
         {
             Statement = query.Text,
             Parameters = query.Parameters.Count > 0 ? query.Parameters : null,
-            Bookmarks = bookmarks.Count > 0 ? [.. bookmarks] : null,
+            Bookmarks = bookmarks.Count > 0 ? [.. bookmarks] : null
         };
 
-        var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            _urlBuilder.Build($"db/{database}/query/v2"));
-
-        _authApplicator.Apply(request, auth);
+        var request = _requestBuilder.Post($"db/{database}/query/v2", auth);
         request.Content = _jsonSerializer.Serialize(body);
-
         return request;
     }
 
@@ -117,13 +112,13 @@ internal class AutoCommitHandler : IAutoCommitHandler
 
     private class DataBody
     {
-        public string[] Fields { get; init; } = [];
+        public string[] Fields { get; } = [];
         public JsonElement[][]? Values { get; init; }
     }
 
     private class ErrorBody
     {
-        public string Code { get; init; } = string.Empty;
-        public string Message { get; init; } = string.Empty;
+        public string Code { get; } = string.Empty;
+        public string Message { get; } = string.Empty;
     }
 }

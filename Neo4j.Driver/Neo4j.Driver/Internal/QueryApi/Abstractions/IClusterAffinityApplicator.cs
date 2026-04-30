@@ -20,20 +20,20 @@ using System.Net.Http;
 namespace Neo4j.Driver.Internal.QueryApi;
 
 /// <summary>
-/// Applies the <c>neo4j-cluster-affinity</c> header to outgoing requests, and extracts
-/// it from incoming responses, keeping the header name in one place.
+/// Applies the <c>neo4j-cluster-affinity</c> header to outgoing requests, and extracts it from incoming
+/// responses, keeping the header name in one place.
 /// </summary>
 internal interface IClusterAffinityApplicator
 {
     /// <summary>
-    /// Adds the cluster-affinity header to <paramref name="request"/> when
-    /// <paramref name="context"/> carries an affinity value.
+    /// Adds the cluster-affinity header to <paramref name="request"/> when <paramref name="context"/> carries an
+    /// affinity value.
     /// </summary>
     void Apply(HttpRequestMessage request, QueryApiTransactionContext context);
 
     /// <summary>
-    /// Reads the cluster-affinity header value from <paramref name="response"/>,
-    /// or returns <c>null</c> if the header is absent.
+    /// Reads the cluster-affinity header value from <paramref name="response"/>, or returns <c>null</c> if the header
+    /// is absent.
     /// </summary>
     string? Extract(HttpResponseMessage response);
 }

@@ -19,9 +19,7 @@ using System;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-/// <summary>
-/// Builds absolute Query API endpoint URIs from relative paths.
-/// </summary>
+/// <summary>Builds absolute Query API endpoint URIs from relative paths.</summary>
 internal interface IQueryApiUrlBuilder
 {
     Uri Build(string path);

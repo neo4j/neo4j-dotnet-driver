@@ -23,24 +23,21 @@ namespace Neo4j.Driver.Internal.QueryApi;
 
 internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
 {
-    private readonly IQueryApiUrlBuilder _urlBuilder;
-    private readonly IQueryApiHttpClient _httpClient;
     private readonly IQueryApiErrorChecker _errorChecker;
+    private readonly IQueryApiHttpClient _httpClient;
     private readonly IJsonSerializer _jsonSerializer;
-    private readonly IAuthApplicator _authApplicator;
+    private readonly IQueryApiRequestBuilder _requestBuilder;
 
     public VerifyConnectivityHandler(
-        IQueryApiUrlBuilder urlBuilder,
+        IQueryApiRequestBuilder requestBuilder,
         IQueryApiHttpClient httpClient,
         IQueryApiErrorChecker errorChecker,
-        IJsonSerializer jsonSerializer,
-        IAuthApplicator authApplicator)
+        IJsonSerializer jsonSerializer)
     {
-        _urlBuilder = urlBuilder;
+        _requestBuilder = requestBuilder;
         _httpClient = httpClient;
         _errorChecker = errorChecker;
         _jsonSerializer = jsonSerializer;
-        _authApplicator = authApplicator;
     }
 
     public async Task<IServerInfo> VerifyConnectivityAsync(
@@ -51,8 +48,8 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
 
-        var url = _urlBuilder.Build(string.Empty);
-        var address = $"{url.Host}:{url.Port}";
+        var baseUri = _requestBuilder.BaseUri;
+        var address = $"{baseUri.Host}:{baseUri.Port}";
         var agent = response.Headers.Server?.ToString() ?? string.Empty;
         return new ServerInfo(address, "QueryApi/2.0", agent);
     }
@@ -60,14 +57,8 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
     private HttpRequestMessage BuildRequest(IAuthToken auth)
     {
         var body = new RequestBody { Statement = "RETURN 1" };
-
-        var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            _urlBuilder.Build("db/system/query/v2"));
-
-        _authApplicator.Apply(request, auth);
+        var request = _requestBuilder.Post("db/system/query/v2", auth);
         request.Content = _jsonSerializer.Serialize(body);
-
         return request;
     }
 

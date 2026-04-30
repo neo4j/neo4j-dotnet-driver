@@ -21,20 +21,18 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-/// <summary>
-/// Validates HTTP-level and application-level errors from the Query API.
-/// </summary>
+/// <summary>Validates HTTP-level and application-level errors from the Query API.</summary>
 internal interface IQueryApiErrorChecker
 {
     /// <summary>
-    /// Throws if the response status is not <c>202 Accepted</c>.
-    /// Parses the response body on <c>401</c> to surface the specific error code.
+    /// Throws if the response status is not <c>202 Accepted</c>. Parses the response body on <c>401</c> to surface
+    /// the specific error code.
     /// </summary>
     Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Throws the appropriate <see cref="Neo4jException"/> for the given error code and message
-    /// found in the response body's <c>errors</c> array.
+    /// Throws the appropriate <see cref="Neo4jException"/> for the given error code and message found in the response
+    /// body's <c>errors</c> array.
     /// </summary>
     void ThrowIfAnyError(string code, string message);
 }

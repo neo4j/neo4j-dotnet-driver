@@ -19,6 +19,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
@@ -50,21 +51,21 @@ internal class QueryApiErrorChecker : IQueryApiErrorChecker
             }
 
             var first = parsed?.Errors is { Length: > 0 } e ? e[0] : null;
-            throw ErrorExtensions.ParseServerException(new Messaging.FailureMessage(
-                first?.Code ?? "Neo.ClientError.Security.Unauthorized",
-                first?.Message ?? response.ReasonPhrase ?? "Unauthorized"));
+            throw ErrorExtensions.ParseServerException(
+                new FailureMessage(
+                    first?.Code ?? "Neo.ClientError.Security.Unauthorized",
+                    first?.Message ?? response.ReasonPhrase ?? "Unauthorized"));
         }
 
         if (response.StatusCode != HttpStatusCode.Accepted)
         {
-            throw new ServiceUnavailableException(
-                $"Unexpected HTTP {(int)response.StatusCode} from the Query API.");
+            throw new ServiceUnavailableException($"Unexpected HTTP {(int)response.StatusCode} from the Query API.");
         }
     }
 
     public void ThrowIfAnyError(string code, string message)
     {
-        throw ErrorExtensions.ParseServerException(new Messaging.FailureMessage(code, message));
+        throw ErrorExtensions.ParseServerException(new FailureMessage(code, message));
     }
 
     private class ErrorResponseBody
@@ -74,7 +75,7 @@ internal class QueryApiErrorChecker : IQueryApiErrorChecker
 
     private class ErrorBody
     {
-        public string Code { get; init; } = string.Empty;
-        public string Message { get; init; } = string.Empty;
+        public string Code { get; } = string.Empty;
+        public string Message { get; } = string.Empty;
     }
 }

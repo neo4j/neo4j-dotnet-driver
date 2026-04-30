@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -13,12 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Text.Json;
+#nullable enable
 
-namespace Neo4j.Driver.Internal.QueryApi.Abstractions.JsonConverters;
+using System;
+using System.Net.Http;
 
-internal interface ITypedJsonElementConverter
+namespace Neo4j.Driver.Internal.QueryApi;
+
+internal interface IQueryApiRequestBuilder
 {
-    bool CanConvert(string typeName);
-    object Convert(JsonElement jsonElement);
+    Uri BaseUri { get; }
+    HttpRequestMessage Post(string path, IAuthToken auth, QueryApiTransactionContext? txContext = null);
+    HttpRequestMessage Delete(string path, IAuthToken auth, QueryApiTransactionContext? txContext = null);
 }

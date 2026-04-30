@@ -42,7 +42,7 @@ public class AutoCommitHandlerTests
     {
         var mocker = new AutoMocker();
         mocker.Use<IQueryApiHttpClient>(httpClient);
-        mocker.Use<IQueryApiUrlBuilder>(UrlBuilder);
+        mocker.Use<IQueryApiRequestBuilder>(new QueryApiRequestBuilder(UrlBuilder, new QueryApiAuthApplicator(), new QueryApiClusterAffinityApplicator()));
         var json = new QueryApiJsonSerializer();
         mocker.Use<IJsonDeserializer>(json);
         mocker.Use<IJsonSerializer>(json);
@@ -176,14 +176,16 @@ public class AutoCommitHandlerTests
     }
 
     [Fact]
-    public async Task CallsAuthApplicator_WithProvidedToken()
+    public async Task SetsAuthorizationHeader_OnRequest()
     {
         var token = AuthTokens.Basic("alice", "secret");
-        var mocker = CreateMocker(new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse())));
+        var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
+        var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
 
-        await mocker.CreateInstance<AutoCommitHandler>().AutoCommitAsync("neo4j", new Query("RETURN 1"), [], token);
+        await handler.AutoCommitAsync("neo4j", new Query("RETURN 1"), [], token);
 
-        mocker.GetMock<IAuthApplicator>().Verify(x => x.Apply(It.IsAny<HttpRequestMessage>(), token), Times.Once);
+        httpClient.LastRequest!.Headers.Authorization.Should().NotBeNull();
+        httpClient.LastRequest.Headers.Authorization!.Scheme.Should().Be("Basic");
     }
 
     [Fact]

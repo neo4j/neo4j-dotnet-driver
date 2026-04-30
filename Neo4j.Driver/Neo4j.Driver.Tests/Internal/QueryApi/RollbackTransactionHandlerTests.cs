@@ -40,7 +40,7 @@ public class RollbackTransactionHandlerTests
     {
         var mocker = new AutoMocker();
         mocker.Use<IQueryApiHttpClient>(httpClient);
-        mocker.Use<IQueryApiUrlBuilder>(UrlBuilder);
+        mocker.Use<IQueryApiRequestBuilder>(new QueryApiRequestBuilder(UrlBuilder, new QueryApiAuthApplicator(), new QueryApiClusterAffinityApplicator()));
         return mocker;
     }
 
@@ -58,16 +58,15 @@ public class RollbackTransactionHandlerTests
     }
 
     [Fact]
-    public async Task ForwardsClusterAffinityHeader_ToAffinityApplicator()
+    public async Task ForwardsClusterAffinityHeader_OnRequest()
     {
         // Spec: cluster affinity must be forwarded on ROLLBACK as well
-        var mocker = CreateMocker(new FakeQueryApiHttpClient(Accepted()));
+        var httpClient = new FakeQueryApiHttpClient(Accepted());
+        var handler = CreateMocker(httpClient).CreateInstance<RollbackTransactionHandler>();
 
-        await mocker.CreateInstance<RollbackTransactionHandler>()
-            .RollbackTransactionAsync("neo4j", TxWithAffinity, AnyAuth);
+        await handler.RollbackTransactionAsync("neo4j", TxWithAffinity, AnyAuth);
 
-        mocker.GetMock<IClusterAffinityApplicator>()
-            .Verify(x => x.Apply(It.IsAny<HttpRequestMessage>(), TxWithAffinity), Times.Once);
+        httpClient.LastRequest!.Headers.GetValues("neo4j-cluster-affinity").Should().Equal("shard-5");
     }
 
     [Fact]

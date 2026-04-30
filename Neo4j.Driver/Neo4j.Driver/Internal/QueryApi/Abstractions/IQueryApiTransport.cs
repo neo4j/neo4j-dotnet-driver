@@ -58,9 +58,8 @@ internal interface IQueryApiTransport : IAsyncDisposable
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Verifies the server is reachable and returns basic server information.
-    /// Currently uses the <c>system</c> database with <c>RETURN 1</c> — the precise
-    /// semantics of a connectivity check over the Query API are an open question.
+    /// Verifies the server is reachable and returns basic server information. Currently uses the <c>system</c>
+    /// database with <c>RETURN 1</c> — the precise semantics of a connectivity check over the Query API are an open question.
     /// </summary>
     Task<IServerInfo> VerifyConnectivityAsync(
         IAuthToken auth,

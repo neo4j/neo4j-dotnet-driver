@@ -38,18 +38,15 @@ internal class QueryApiAuthApplicator : IAuthApplicator
                 "Basic",
                 Convert.ToBase64String(
                     Encoding.UTF8.GetBytes(
-                        $"{authToken.Principal}:{authToken.Content.GetValueOrDefault(AuthToken.CredentialsKey)}"))
-            ),
+                        $"{authToken.Principal}:{authToken.Content.GetValueOrDefault(AuthToken.CredentialsKey)}"))),
 
             "bearer" => new AuthenticationHeaderValue(
                 "Bearer",
-                authToken.Content.GetValueOrDefault(AuthToken.CredentialsKey) as string
-            ),
+                authToken.Content.GetValueOrDefault(AuthToken.CredentialsKey) as string),
 
             "none" => null,
 
-            _ => throw new NotSupportedException(
-                $"Auth scheme '{authToken.Scheme}' is not supported by the Query API.")
+            _ => throw new NotSupportedException($"Auth scheme '{authToken.Scheme}' is not supported by the Query API.")
         };
     }
 }

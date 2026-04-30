@@ -25,8 +25,8 @@ namespace Neo4j.Driver.Internal.QueryApi;
 
 internal class QueryApiResultCursorBuilder : IQueryApiResultCursorBuilder
 {
-    private readonly IResultSummaryFactory _summaryFactory;
     private readonly IJsonValueConverter _jsonValueConverter;
+    private readonly IResultSummaryFactory _summaryFactory;
 
     public QueryApiResultCursorBuilder(
         IResultSummaryFactory summaryFactory,

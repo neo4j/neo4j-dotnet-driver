@@ -25,9 +25,9 @@ namespace Neo4j.Driver.Internal.QueryApi;
 
 internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
 {
-    private readonly IReadOnlyList<IRecord> _records;
     private readonly string[] _keys;
     private readonly Query _query;
+    private readonly IReadOnlyList<IRecord> _records;
     private readonly IResultSummaryFactory _summaryFactory;
 
     private int _currentIndex = -1;
@@ -45,24 +45,7 @@ internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
         _summaryFactory = summaryFactory;
     }
 
-    IRecord IResultCursor.Current
-    {
-        get
-        {
-            AssertNotConsumed();
-            return _currentIndex >= 0
-                ? _records[_currentIndex]
-                : throw new InvalidOperationException("Tried to access Current without calling FetchAsync.");
-        }
-    }
-
     IRecord IAsyncEnumerator<IRecord>.Current => _records[_currentIndex];
-
-    public bool IsOpen => !_isConsumed;
-
-    public Task<string[]> KeysAsync() => Task.FromResult(_keys);
-
-    public Task<bool> FetchAsync() => MoveNextAsync().AsTask();
 
     public ValueTask<bool> MoveNextAsync()
     {
@@ -75,6 +58,34 @@ internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
 
         _currentIndex = nextIndex;
         return new ValueTask<bool>(true);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        return default;
+    }
+
+    IRecord IResultCursor.Current
+    {
+        get
+        {
+            AssertNotConsumed();
+            return _currentIndex >= 0
+                ? _records[_currentIndex]
+                : throw new InvalidOperationException("Tried to access Current without calling FetchAsync.");
+        }
+    }
+
+    public bool IsOpen => !_isConsumed;
+
+    public Task<string[]> KeysAsync()
+    {
+        return Task.FromResult(_keys);
+    }
+
+    public Task<bool> FetchAsync()
+    {
+        return MoveNextAsync().AsTask();
     }
 
     Task<IRecord> IResultCursor.PeekAsync()
@@ -96,8 +107,6 @@ internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
     {
         return new CursorEnumerator(this, cancellationToken);
     }
-
-    public ValueTask DisposeAsync() => default;
 
     private void AssertNotConsumed()
     {

@@ -18,7 +18,7 @@
 namespace Neo4j.Driver.Internal.QueryApi;
 
 /// <summary>
-/// Carries the server-side transaction ID and the optional cluster-affinity header
-/// value that Aura instances require on all subsequent requests within a transaction.
+/// Carries the server-side transaction ID and the optional cluster-affinity header value that Aura instances
+/// require on all subsequent requests within a transaction.
 /// </summary>
 internal record QueryApiTransactionContext(string TxId, string? ClusterAffinity);

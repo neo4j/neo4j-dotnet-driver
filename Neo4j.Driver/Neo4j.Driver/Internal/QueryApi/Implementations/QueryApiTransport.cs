@@ -25,12 +25,12 @@ namespace Neo4j.Driver.Internal.QueryApi;
 
 internal sealed class QueryApiTransport : IQueryApiTransport
 {
-    private readonly IQueryApiHttpClient _httpClient;
     private readonly IAutoCommitHandler _autoCommit;
     private readonly IBeginTransactionHandler _beginTransaction;
-    private readonly IRunInTransactionHandler _runInTransaction;
     private readonly ICommitTransactionHandler _commitTransaction;
+    private readonly IQueryApiHttpClient _httpClient;
     private readonly IRollbackTransactionHandler _rollbackTransaction;
+    private readonly IRunInTransactionHandler _runInTransaction;
     private readonly IVerifyConnectivityHandler _verifyConnectivity;
 
     public QueryApiTransport(Uri baseUri, Func<HttpMessageHandler>? handlerFactory = null)
@@ -41,14 +41,22 @@ internal sealed class QueryApiTransport : IQueryApiTransport
         var errorChecker = new QueryApiErrorChecker(json);
         var authApplicator = new QueryApiAuthApplicator();
         var clusterAffinityApplicator = new QueryApiClusterAffinityApplicator();
+        var requestBuilder = new QueryApiRequestBuilder(urlBuilder, authApplicator, clusterAffinityApplicator);
 
         _httpClient = httpClient;
-        _autoCommit = new AutoCommitHandler(urlBuilder, httpClient, errorChecker, json, json, authApplicator);
-        _beginTransaction = new BeginTransactionHandler(urlBuilder, httpClient, errorChecker, json, json, authApplicator, clusterAffinityApplicator);
-        _runInTransaction = new RunInTransactionHandler(urlBuilder, httpClient, errorChecker, json, json, authApplicator, clusterAffinityApplicator);
-        _commitTransaction = new CommitTransactionHandler(urlBuilder, httpClient, errorChecker, json, authApplicator, clusterAffinityApplicator);
-        _rollbackTransaction = new RollbackTransactionHandler(urlBuilder, httpClient, errorChecker, authApplicator, clusterAffinityApplicator);
-        _verifyConnectivity = new VerifyConnectivityHandler(urlBuilder, httpClient, errorChecker, json, authApplicator);
+        _autoCommit = new AutoCommitHandler(requestBuilder, httpClient, errorChecker, json, json);
+        _beginTransaction = new BeginTransactionHandler(
+            requestBuilder,
+            httpClient,
+            errorChecker,
+            json,
+            json,
+            clusterAffinityApplicator);
+
+        _runInTransaction = new RunInTransactionHandler(requestBuilder, httpClient, errorChecker, json, json);
+        _commitTransaction = new CommitTransactionHandler(requestBuilder, httpClient, errorChecker, json);
+        _rollbackTransaction = new RollbackTransactionHandler(requestBuilder, httpClient, errorChecker);
+        _verifyConnectivity = new VerifyConnectivityHandler(requestBuilder, httpClient, errorChecker, json);
     }
 
     internal QueryApiTransport(

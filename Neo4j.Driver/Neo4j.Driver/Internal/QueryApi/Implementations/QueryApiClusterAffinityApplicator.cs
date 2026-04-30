@@ -31,8 +31,10 @@ internal class QueryApiClusterAffinityApplicator : IClusterAffinityApplicator
         }
     }
 
-    public string? Extract(HttpResponseMessage response) =>
-        response.Headers.TryGetValues(HeaderName, out var vals)
+    public string? Extract(HttpResponseMessage response)
+    {
+        return response.Headers.TryGetValues(HeaderName, out var vals)
             ? string.Join(",", vals)
             : null;
+    }
 }
