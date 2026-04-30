@@ -46,11 +46,8 @@ public class QueryApiResultCursorTests
             Rows = rows.Select(row => row.Select(v => JsonSerializer.SerializeToElement(v)).ToArray()).ToArray()
         };
 
-        return new QueryApiResultCursor(
-            response,
-            query ?? AnyQuery,
-            serverInfo ?? AnyServer,
-            database ?? AnyDatabase);
+        var factory = new QueryApiResultSummaryFactory(serverInfo ?? AnyServer, database ?? AnyDatabase);
+        return new QueryApiResultCursor(response, query ?? AnyQuery, factory);
     }
 
     [Fact]

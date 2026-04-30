@@ -31,8 +31,7 @@ internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
     private readonly List<IRecord> _records;
     private readonly string[] _keys;
     private readonly Query _query;
-    private readonly IServerInfo _serverInfo;
-    private readonly string _database;
+    private readonly IResultSummaryFactory _summaryFactory;
 
     private int _currentIndex = -1;
     private bool _isConsumed;
@@ -40,12 +39,10 @@ internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
     public QueryApiResultCursor(
         QueryApiResponse response,
         Query query,
-        IServerInfo serverInfo,
-        string database)
+        IResultSummaryFactory summaryFactory)
     {
         _query = query;
-        _serverInfo = serverInfo;
-        _database = database;
+        _summaryFactory = summaryFactory;
         _keys = response.Fields;
 
         var lookup = new Dictionary<string, int>(response.Fields.Length, StringComparer.Ordinal);
@@ -110,7 +107,7 @@ internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
     public Task<IResultSummary> ConsumeAsync()
     {
         _isConsumed = true;
-        return Task.FromResult<IResultSummary>(new ResultSummary(_query, _serverInfo, _database));
+        return Task.FromResult(_summaryFactory.Create(_query));
     }
 
     public IAsyncEnumerator<IRecord> GetAsyncEnumerator(CancellationToken cancellationToken = default)
@@ -161,32 +158,4 @@ internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
         }
     }
 
-    private sealed class ResultSummary : IResultSummary
-    {
-        public ResultSummary(Query query, IServerInfo serverInfo, string database)
-        {
-            Query = query;
-            Server = serverInfo;
-            Database = new DatabaseInfo(database);
-            Counters = new Counters();
-        }
-
-        public Query Query { get; }
-        public ICounters Counters { get; }
-        public QueryType QueryType => QueryType.Unknown;
-        public bool HasPlan => false;
-        public bool HasProfile => false;
-        public IPlan? Plan => null;
-        public IProfiledPlan? Profile => null;
-
-#pragma warning disable CS0618
-        public IList<INotification>? Notifications => null;
-#pragma warning restore CS0618
-
-        public IList<IGqlStatusObject>? GqlStatusObjects => null;
-        public TimeSpan ResultAvailableAfter => TimeSpan.FromMilliseconds(-1);
-        public TimeSpan ResultConsumedAfter => TimeSpan.FromMilliseconds(-1);
-        public IServerInfo Server { get; }
-        public IDatabaseInfo Database { get; }
-    }
 }
