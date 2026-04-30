@@ -15,12 +15,14 @@
 
 #nullable enable
 
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.QueryApi;
+using Neo4j.Driver.Internal.QueryApi.Implementations.JsonConverters;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
@@ -30,7 +32,8 @@ public class QueryApiResultCursorBuilderTests
     private static readonly Query AnyQuery = new("RETURN 1");
 
     private static readonly IQueryApiResultCursorBuilder Builder = new QueryApiResultCursorBuilder(
-        new QueryApiResultSummaryFactory(new Mock<IServerInfo>().Object, "neo4j"));
+        new QueryApiResultSummaryFactory(new Mock<IServerInfo>().Object, "neo4j"),
+        new JsonValueConverter([]));
 
     /// <summary>
     /// Builds a response with a single row and single column, then fetches that record.
@@ -160,10 +163,10 @@ public class QueryApiResultCursorBuilderTests
     }
 
     [Fact]
-    public async Task UnsupportedTypedValue_ReturnsStringPlaceholder()
+    public async Task UnsupportedTypedValue_Throws()
     {
         var typedValue = new Dictionary<string, object> { ["$type"] = "Node", ["_value"] = new { } };
-        var record = await FetchSingle(typedValue);
-        record["v"].Should().Be("Unsupported type: Node");
+        await Builder.Invoking(_ => FetchSingle(typedValue)).Should().ThrowAsync<NotSupportedException>()
+            .WithMessage("*Node*");
     }
 }

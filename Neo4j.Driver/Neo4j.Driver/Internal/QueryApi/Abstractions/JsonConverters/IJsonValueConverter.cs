@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -13,11 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#nullable enable
+
 using System.Text.Json;
 
 namespace Neo4j.Driver.Internal.QueryApi.Abstractions.JsonConverters;
 
-internal interface IJsonObjectConverter
+internal interface IJsonValueConverter
 {
-    object Convert(JsonElement jsonElement);
+    object? Convert(JsonElement jsonElement);
 }

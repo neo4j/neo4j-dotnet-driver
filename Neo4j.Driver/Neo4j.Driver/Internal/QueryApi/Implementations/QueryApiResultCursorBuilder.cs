@@ -17,11 +17,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text.Json;
 using Neo4j.Driver.Internal.QueryApi.Abstractions.JsonConverters;
-using Neo4j.Driver.Internal.QueryApi.Implementations.JsonConverters;
 using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal.QueryApi;
@@ -29,14 +26,14 @@ namespace Neo4j.Driver.Internal.QueryApi;
 internal class QueryApiResultCursorBuilder : IQueryApiResultCursorBuilder
 {
     private readonly IResultSummaryFactory _summaryFactory;
-    private readonly IJsonObjectConverter _jsonObjectConverter;
+    private readonly IJsonValueConverter _jsonValueConverter;
 
     public QueryApiResultCursorBuilder(
         IResultSummaryFactory summaryFactory,
-        IJsonObjectConverter jsonObjectConverter)
+        IJsonValueConverter jsonValueConverter)
     {
         _summaryFactory = summaryFactory;
-        _jsonObjectConverter = jsonObjectConverter;
+        _jsonValueConverter = jsonValueConverter;
     }
 
     public IResultCursor Build(QueryApiResponse response, Query query)
@@ -53,10 +50,9 @@ internal class QueryApiResultCursorBuilder : IQueryApiResultCursorBuilder
             .Select(IRecord (row) => new Record(
                 lookup,
                 invariantLookup,
-                row.Select(_jsonObjectConverter.Convert).ToArray()!))
+                row.Select(_jsonValueConverter.Convert).ToArray()!))
             .ToList();
 
         return new QueryApiResultCursor(records, response.Fields, query, _summaryFactory);
     }
-
 }
