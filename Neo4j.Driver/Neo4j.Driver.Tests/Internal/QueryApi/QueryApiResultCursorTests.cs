@@ -30,14 +30,15 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 public class QueryApiResultCursorTests
 {
     private static readonly Query AnyQuery = new("RETURN 1");
+
     private static readonly IResultSummaryFactory AnyFactory =
         new QueryApiResultSummaryFactory(new Mock<IServerInfo>().Object, "neo4j");
 
     // --- Helpers ---
 
     /// <summary>
-    /// Builds a cursor from plain CLR values. Each inner array is one row; its
-    /// elements map positionally to <paramref name="keys"/>.
+    /// Builds a cursor from plain CLR values. Each inner array is one row; its elements map positionally to
+    /// <paramref name="keys"/>.
     /// </summary>
     private static IResultCursor MakeCursor(
         string[] keys,
@@ -48,6 +49,7 @@ public class QueryApiResultCursorTests
         var lookup = keys
             .Select((k, i) => (k, i))
             .ToDictionary(x => x.k, x => x.i, StringComparer.Ordinal);
+
         var invariantLookup = keys
             .Select((k, i) => (k, i))
             .ToDictionary(x => x.k, x => x.i, StringComparer.OrdinalIgnoreCase);
@@ -202,7 +204,7 @@ public class QueryApiResultCursorTests
     public async Task ConsumeAsync_SummaryContainsQuery()
     {
         var query = new Query("RETURN 42");
-        var cursor = MakeCursor([], [], query: query);
+        var cursor = MakeCursor([], [], query);
         var summary = await cursor.ConsumeAsync();
         summary.Query.Should().Be(query);
     }
@@ -235,7 +237,9 @@ public class QueryApiResultCursorTests
 
         var values = new List<long>();
         await foreach (var record in cursor)
+        {
             values.Add((long)record["n"]);
+        }
 
         values.Should().Equal(1L, 2L, 3L);
     }

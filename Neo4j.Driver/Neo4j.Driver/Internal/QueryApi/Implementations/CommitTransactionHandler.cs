@@ -44,10 +44,9 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
     }
 
     public async Task<string[]> CommitTransactionAsync(
-        IAuthToken auth,
         CancellationToken cancellationToken = default)
     {
-        using var request = BuildRequest(auth);
+        using var request = await _requestBuilder.PostAsync($"query/v2/tx/{_txContext.TxId}/commit", cancellationToken).ConfigureAwait(false);
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
 
@@ -63,11 +62,6 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
         }
 
         return body?.Bookmarks ?? [];
-    }
-
-    private HttpRequestMessage BuildRequest(IAuthToken auth)
-    {
-        return _requestBuilder.Post($"query/v2/tx/{_txContext.TxId}/commit", auth);
     }
 
     private class ResponseBody

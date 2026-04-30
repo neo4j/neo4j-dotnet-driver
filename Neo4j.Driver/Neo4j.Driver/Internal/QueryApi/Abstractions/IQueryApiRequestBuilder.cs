@@ -16,15 +16,18 @@
 #nullable enable
 
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
 /// <summary>
-/// Builds HTTP requests for the Query API, prepending <c>db/{database}/</c> to all paths using the
-/// <see cref="SessionContext"/> supplied at construction time.
+/// Builds authenticated HTTP requests for the Query API, prepending <c>db/{database}/</c> to all
+/// paths and applying auth and cluster-affinity headers using session context injected at construction.
 /// </summary>
 internal interface IQueryApiRequestBuilder
 {
-    HttpRequestMessage Post(string path, IAuthToken auth);
-    HttpRequestMessage Delete(string path, IAuthToken auth);
+    Task<HttpRequestMessage> PostAsync(string path, CancellationToken cancellationToken = default);
+    Task<HttpRequestMessage> DeleteAsync(string path, CancellationToken cancellationToken = default);
 }

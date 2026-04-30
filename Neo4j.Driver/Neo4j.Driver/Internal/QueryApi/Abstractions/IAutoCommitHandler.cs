@@ -26,6 +26,5 @@ internal interface IAutoCommitHandler
     Task<QueryApiResponse> AutoCommitAsync(
         Query query,
         IReadOnlyList<string> bookmarks,
-        IAuthToken auth,
         CancellationToken cancellationToken = default);
 }

@@ -35,9 +35,7 @@ public class QueryApiResultCursorBuilderTests
         new QueryApiResultSummaryFactory(new Mock<IServerInfo>().Object, "neo4j"),
         new JsonValueConverter([]));
 
-    /// <summary>
-    /// Builds a response with a single row and single column, then fetches that record.
-    /// </summary>
+    /// <summary>Builds a response with a single row and single column, then fetches that record.</summary>
     private static async Task<IRecord> FetchSingle(object? value)
     {
         var element = JsonSerializer.SerializeToElement(value);
@@ -165,8 +163,10 @@ public class QueryApiResultCursorBuilderTests
     [Fact]
     public async Task UnsupportedTypedValue_Throws()
     {
-        var typedValue = new Dictionary<string, object> { ["$type"] = "Node", ["_value"] = new { } };
-        await Builder.Invoking(_ => FetchSingle(typedValue)).Should().ThrowAsync<NotSupportedException>()
+        var typedValue = new Dictionary<string, object> { ["$type"] = "Node", ["_value"] = new {} };
+        await Builder.Invoking(_ => FetchSingle(typedValue))
+            .Should()
+            .ThrowAsync<NotSupportedException>()
             .WithMessage("*Node*");
     }
 }

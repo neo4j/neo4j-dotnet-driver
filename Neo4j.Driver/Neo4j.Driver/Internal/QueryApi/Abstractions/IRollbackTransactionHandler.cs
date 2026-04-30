@@ -23,6 +23,5 @@ namespace Neo4j.Driver.Internal.QueryApi;
 internal interface IRollbackTransactionHandler
 {
     Task RollbackTransactionAsync(
-        IAuthToken auth,
         CancellationToken cancellationToken = default);
 }

@@ -50,10 +50,9 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
 
     public async Task<QueryApiTransactionContext> BeginTransactionAsync(
         IReadOnlyList<string> bookmarks,
-        IAuthToken auth,
         CancellationToken cancellationToken = default)
     {
-        using var request = BuildRequest(bookmarks, auth);
+        using var request = await BuildRequestAsync(bookmarks, cancellationToken).ConfigureAwait(false);
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
 
@@ -76,14 +75,14 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
         return new QueryApiTransactionContext(txId, _clusterAffinityApplicator.Extract(response));
     }
 
-    private HttpRequestMessage BuildRequest(IReadOnlyList<string> bookmarks, IAuthToken auth)
+    private async Task<HttpRequestMessage> BuildRequestAsync(IReadOnlyList<string> bookmarks, CancellationToken cancellationToken)
     {
         var body = new RequestBody
         {
             Bookmarks = bookmarks.Count > 0 ? [.. bookmarks] : null
         };
 
-        var request = _requestBuilder.Post("query/v2/tx", auth);
+        var request = await _requestBuilder.PostAsync("query/v2/tx", cancellationToken).ConfigureAwait(false);
         request.Content = _jsonSerializer.Serialize(body);
         return request;
     }
@@ -106,7 +105,7 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
 
     private class ErrorBody
     {
-        public string Code { get; } = string.Empty;
-        public string Message { get; } = string.Empty;
+        public string Code { get; init; } = string.Empty;
+        public string Message { get; init; } = string.Empty;
     }
 }

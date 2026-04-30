@@ -16,6 +16,9 @@
 #nullable enable
 
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
@@ -23,13 +26,13 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
 {
     private readonly IAuthApplicator _authApplicator;
     private readonly IClusterAffinityApplicator _clusterAffinityApplicator;
-    private readonly SessionContext _sessionContext;
+    private readonly ISessionContext _sessionContext;
     private readonly QueryApiTransactionContext? _txContext;
     private readonly IQueryApiUrlBuilder _urlBuilder;
 
     public QueryApiRequestBuilder(
         IQueryApiUrlBuilder urlBuilder,
-        SessionContext sessionContext,
+        ISessionContext sessionContext,
         IAuthApplicator authApplicator,
         IClusterAffinityApplicator clusterAffinityApplicator,
         QueryApiTransactionContext? txContext = null)
@@ -41,19 +44,16 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
         _txContext = txContext;
     }
 
-    public HttpRequestMessage Post(string path, IAuthToken auth)
-    {
-        return Build(HttpMethod.Post, path, auth);
-    }
+    public Task<HttpRequestMessage> PostAsync(string path, CancellationToken cancellationToken = default)
+        => BuildAsync(HttpMethod.Post, path, cancellationToken);
 
-    public HttpRequestMessage Delete(string path, IAuthToken auth)
-    {
-        return Build(HttpMethod.Delete, path, auth);
-    }
+    public Task<HttpRequestMessage> DeleteAsync(string path, CancellationToken cancellationToken = default)
+        => BuildAsync(HttpMethod.Delete, path, cancellationToken);
 
-    private HttpRequestMessage Build(HttpMethod method, string path, IAuthToken auth)
+    private async Task<HttpRequestMessage> BuildAsync(HttpMethod method, string path, CancellationToken cancellationToken)
     {
         var request = new HttpRequestMessage(method, _urlBuilder.Build($"db/{_sessionContext.Database}/{path}"));
+        var auth = await _sessionContext.GetAuthTokenAsync(cancellationToken).ConfigureAwait(false);
         _authApplicator.Apply(request, auth);
         if (_txContext is not null)
         {

@@ -50,10 +50,9 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
 
     public async Task<QueryApiResponse> RunInTransactionAsync(
         Query query,
-        IAuthToken auth,
         CancellationToken cancellationToken = default)
     {
-        using var request = BuildRequest(query, auth);
+        using var request = await BuildRequestAsync(query, cancellationToken).ConfigureAwait(false);
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
 
@@ -76,7 +75,7 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
         };
     }
 
-    private HttpRequestMessage BuildRequest(Query query, IAuthToken auth)
+    private async Task<HttpRequestMessage> BuildRequestAsync(Query query, CancellationToken cancellationToken)
     {
         var body = new RequestBody
         {
@@ -84,7 +83,7 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
             Parameters = query.Parameters.Count > 0 ? query.Parameters : null
         };
 
-        var request = _requestBuilder.Post($"query/v2/tx/{_txContext.TxId}", auth);
+        var request = await _requestBuilder.PostAsync($"query/v2/tx/{_txContext.TxId}", cancellationToken).ConfigureAwait(false);
         request.Content = _jsonSerializer.Serialize(body);
         return request;
     }

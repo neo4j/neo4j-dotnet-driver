@@ -24,6 +24,5 @@ internal interface IRunInTransactionHandler
 {
     Task<QueryApiResponse> RunInTransactionAsync(
         Query query,
-        IAuthToken auth,
         CancellationToken cancellationToken = default);
 }

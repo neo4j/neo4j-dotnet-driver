@@ -25,6 +25,5 @@ internal interface IBeginTransactionHandler
 {
     Task<QueryApiTransactionContext> BeginTransactionAsync(
         IReadOnlyList<string> bookmarks,
-        IAuthToken auth,
         CancellationToken cancellationToken = default);
 }

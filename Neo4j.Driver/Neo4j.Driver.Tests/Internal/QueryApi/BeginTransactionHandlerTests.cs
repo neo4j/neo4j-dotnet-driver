@@ -41,9 +41,20 @@ public class BeginTransactionHandlerTests
 
     private static AutoMocker CreateMocker(FakeQueryApiHttpClient httpClient, string database = "neo4j")
     {
+        var sessionContext = new SessionContext(
+            database,
+            _ => ValueTask.FromResult(AnyAuth),
+            (_, _, _) => ValueTask.FromResult(false));
+
         var mocker = new AutoMocker();
         mocker.Use<IQueryApiHttpClient>(httpClient);
-        mocker.Use<IQueryApiRequestBuilder>(new QueryApiRequestBuilder(UrlBuilder, new SessionContext(database), new QueryApiAuthApplicator(), new QueryApiClusterAffinityApplicator()));
+        mocker.Use<IQueryApiRequestBuilder>(
+            new QueryApiRequestBuilder(
+                UrlBuilder,
+                sessionContext,
+                new QueryApiAuthApplicator(),
+                new QueryApiClusterAffinityApplicator()));
+
         var json = new QueryApiJsonSerializer();
         mocker.Use<IJsonDeserializer>(json);
         mocker.Use<IJsonSerializer>(json);
@@ -55,9 +66,9 @@ public class BeginTransactionHandlerTests
     {
         // POST /db/{database}/query/v2/tx
         var httpClient = new FakeQueryApiHttpClient(BeginResponseWith("tx-1"));
-        var handler = CreateMocker(httpClient, database: "movies").CreateInstance<BeginTransactionHandler>();
+        var handler = CreateMocker(httpClient, "movies").CreateInstance<BeginTransactionHandler>();
 
-        await handler.BeginTransactionAsync([], AnyAuth);
+        await handler.BeginTransactionAsync([]);
 
         httpClient.LastRequest!.Method.Should().Be(HttpMethod.Post);
         httpClient.LastRequest.RequestUri!.PathAndQuery.Should().Be("/db/movies/query/v2/tx");
@@ -70,7 +81,7 @@ public class BeginTransactionHandlerTests
         var mocker = CreateMocker(new FakeQueryApiHttpClient(BeginResponseWith("tx-abc-123")));
 
         var context = await mocker.CreateInstance<BeginTransactionHandler>()
-            .BeginTransactionAsync([], AnyAuth);
+            .BeginTransactionAsync([]);
 
         context.TxId.Should().Be("tx-abc-123");
     }
@@ -85,7 +96,7 @@ public class BeginTransactionHandlerTests
             .Returns("shard-99");
 
         var context = await mocker.CreateInstance<BeginTransactionHandler>()
-            .BeginTransactionAsync([], AnyAuth);
+            .BeginTransactionAsync([]);
 
         context.ClusterAffinity.Should().Be("shard-99");
     }
@@ -99,7 +110,7 @@ public class BeginTransactionHandlerTests
             .Returns((string?)null);
 
         var context = await mocker.CreateInstance<BeginTransactionHandler>()
-            .BeginTransactionAsync([], AnyAuth);
+            .BeginTransactionAsync([]);
 
         context.ClusterAffinity.Should().BeNull();
     }
@@ -112,7 +123,7 @@ public class BeginTransactionHandlerTests
         var bookmarks = new List<string> { "neo4j:bookmark:v1:tx50" };
         var handler = CreateMocker(httpClient).CreateInstance<BeginTransactionHandler>();
 
-        await handler.BeginTransactionAsync(bookmarks, AnyAuth);
+        await handler.BeginTransactionAsync(bookmarks);
 
         var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
         body.GetProperty("bookmarks")[0].GetString().Should().Be("neo4j:bookmark:v1:tx50");
@@ -124,7 +135,7 @@ public class BeginTransactionHandlerTests
         var httpClient = new FakeQueryApiHttpClient(BeginResponseWith("tx-1"));
         var handler = CreateMocker(httpClient).CreateInstance<BeginTransactionHandler>();
 
-        await handler.BeginTransactionAsync([], AnyAuth);
+        await handler.BeginTransactionAsync([]);
 
         var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
         body.TryGetProperty("bookmarks", out var _).Should().BeFalse();
@@ -137,7 +148,7 @@ public class BeginTransactionHandlerTests
         var mocker = CreateMocker(new FakeQueryApiHttpClient(AcceptedWith(new { transaction = new {} })));
 
         var act = () => mocker.CreateInstance<BeginTransactionHandler>()
-            .BeginTransactionAsync([], AnyAuth);
+            .BeginTransactionAsync([]);
 
         await act.Should()
             .ThrowAsync<InvalidOperationException>()

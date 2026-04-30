@@ -41,9 +41,20 @@ public class AutoCommitHandlerTests
 
     private static AutoMocker CreateMocker(FakeQueryApiHttpClient httpClient, string database = "neo4j")
     {
+        var sessionContext = new SessionContext(
+            database,
+            _ => ValueTask.FromResult(AnyAuth),
+            (_, _, _) => ValueTask.FromResult(false));
+
         var mocker = new AutoMocker();
         mocker.Use<IQueryApiHttpClient>(httpClient);
-        mocker.Use<IQueryApiRequestBuilder>(new QueryApiRequestBuilder(UrlBuilder, new SessionContext(database), new QueryApiAuthApplicator(), new QueryApiClusterAffinityApplicator()));
+        mocker.Use<IQueryApiRequestBuilder>(
+            new QueryApiRequestBuilder(
+                UrlBuilder,
+                sessionContext,
+                new QueryApiAuthApplicator(),
+                new QueryApiClusterAffinityApplicator()));
+
         var json = new QueryApiJsonSerializer();
         mocker.Use<IJsonDeserializer>(json);
         mocker.Use<IJsonSerializer>(json);
@@ -60,9 +71,10 @@ public class AutoCommitHandlerTests
                 {
                     data = new { fields = Array.Empty<string>(), values = Array.Empty<object[]>() }
                 }));
-        var handler = CreateMocker(httpClient, database: "movies").CreateInstance<AutoCommitHandler>();
 
-        await handler.AutoCommitAsync(new Query("RETURN 1"), [], AnyAuth);
+        var handler = CreateMocker(httpClient, "movies").CreateInstance<AutoCommitHandler>();
+
+        await handler.AutoCommitAsync(new Query("RETURN 1"), []);
 
         httpClient.LastRequest!.Method.Should().Be(HttpMethod.Post);
         httpClient.LastRequest.RequestUri!.PathAndQuery.Should().Be("/db/movies/query/v2");
@@ -75,7 +87,7 @@ public class AutoCommitHandlerTests
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
         var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
 
-        await handler.AutoCommitAsync(new Query("MATCH (n) RETURN n"), [], AnyAuth);
+        await handler.AutoCommitAsync(new Query("MATCH (n) RETURN n"), []);
 
         var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
         body.GetProperty("statement").GetString().Should().Be("MATCH (n) RETURN n");
@@ -89,7 +101,7 @@ public class AutoCommitHandlerTests
         var query = new Query("MATCH (n) WHERE n.id = $id RETURN n", new Dictionary<string, object> { ["id"] = 42 });
         var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
 
-        await handler.AutoCommitAsync(query, [], AnyAuth);
+        await handler.AutoCommitAsync(query, []);
 
         var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
         body.GetProperty("parameters").GetProperty("id").GetInt32().Should().Be(42);
@@ -102,7 +114,7 @@ public class AutoCommitHandlerTests
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
         var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
 
-        await handler.AutoCommitAsync(new Query("RETURN 1"), [], AnyAuth);
+        await handler.AutoCommitAsync(new Query("RETURN 1"), []);
 
         var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
         body.TryGetProperty("parameters", out var _).Should().BeFalse();
@@ -116,7 +128,7 @@ public class AutoCommitHandlerTests
         var bookmarks = new List<string> { "neo4j:bookmark:v1:tx100", "neo4j:bookmark:v1:tx101" };
         var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
 
-        await handler.AutoCommitAsync(new Query("RETURN 1"), bookmarks, AnyAuth);
+        await handler.AutoCommitAsync(new Query("RETURN 1"), bookmarks);
 
         var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
         var parsedBookmarks = body.GetProperty("bookmarks")
@@ -133,7 +145,7 @@ public class AutoCommitHandlerTests
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
         var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
 
-        await handler.AutoCommitAsync(new Query("RETURN 1"), [], AnyAuth);
+        await handler.AutoCommitAsync(new Query("RETURN 1"), []);
 
         var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
         body.TryGetProperty("bookmarks", out var _).Should().BeFalse();
@@ -150,7 +162,7 @@ public class AutoCommitHandlerTests
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(new { data, bookmarks }));
         var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
 
-        var result = await handler.AutoCommitAsync(new Query("MATCH (n) RETURN n.name, n.age"), [], AnyAuth);
+        var result = await handler.AutoCommitAsync(new Query("MATCH (n) RETURN n.name, n.age"), []);
 
         result.Fields.Should().Equal("name", "age");
         result.Rows.Should().HaveCount(2);
@@ -163,7 +175,7 @@ public class AutoCommitHandlerTests
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(new {}));
         var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
 
-        var result = await handler.AutoCommitAsync(new Query("RETURN 1"), [], AnyAuth);
+        var result = await handler.AutoCommitAsync(new Query("RETURN 1"), []);
 
         result.Fields.Should().BeEmpty();
         result.Rows.Should().BeEmpty();
@@ -173,11 +185,11 @@ public class AutoCommitHandlerTests
     [Fact]
     public async Task SetsAuthorizationHeader_OnRequest()
     {
-        var token = AuthTokens.Basic("alice", "secret");
+        // Auth comes from the session context injected at construction — verify the header is applied
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
         var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
 
-        await handler.AutoCommitAsync(new Query("RETURN 1"), [], token);
+        await handler.AutoCommitAsync(new Query("RETURN 1"), []);
 
         httpClient.LastRequest!.Headers.Authorization.Should().NotBeNull();
         httpClient.LastRequest.Headers.Authorization!.Scheme.Should().Be("Basic");
@@ -188,7 +200,7 @@ public class AutoCommitHandlerTests
     {
         var mocker = CreateMocker(new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse())));
 
-        await mocker.CreateInstance<AutoCommitHandler>().AutoCommitAsync(new Query("RETURN 1"), [], AnyAuth);
+        await mocker.CreateInstance<AutoCommitHandler>().AutoCommitAsync(new Query("RETURN 1"), []);
 
         mocker.GetMock<IQueryApiErrorChecker>()
             .Verify(x => x.EnsureSuccessAsync(It.IsAny<HttpResponseMessage>(), default), Times.Once);
@@ -203,13 +215,14 @@ public class AutoCommitHandlerTests
             {
                 errors = new[] { new { code = "Neo.ClientError.Statement.SyntaxError", message = "Invalid Cypher" } }
             });
+
         var mocker = CreateMocker(new FakeQueryApiHttpClient(response));
         mocker.GetMock<IQueryApiErrorChecker>()
             .Setup(x => x.ThrowIfAnyError(It.IsAny<string>(), It.IsAny<string>()))
             .Throws(new ClientException("SyntaxError", "Invalid Cypher"));
 
         var act = () => mocker.CreateInstance<AutoCommitHandler>()
-            .AutoCommitAsync(new Query("RETUN 1"), [], AnyAuth);
+            .AutoCommitAsync(new Query("RETUN 1"), []);
 
         await act.Should().ThrowAsync<ClientException>();
     }

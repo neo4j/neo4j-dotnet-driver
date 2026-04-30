@@ -1,12 +1,12 @@
 // Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
-//
+// 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,9 +27,9 @@ using static Neo4j.Driver.Tests.Internal.QueryApi.QueryApiTestHelpers;
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 /// <summary>
-/// Connectivity verification hits the Neo4j discovery endpoint (<c>GET /</c>) and confirms that
-/// the server advertises both the Query API endpoint and a server version. No dummy query is run.
-/// Decision ref: https://neo4j.com/docs/http-api/current/discovery/
+/// Connectivity verification hits the Neo4j discovery endpoint (<c>GET /</c>) and confirms that the server
+/// advertises both the Query API endpoint and a server version. No dummy query is run. Decision ref:
+/// https://neo4j.com/docs/http-api/current/discovery/
 /// </summary>
 public class VerifyConnectivityHandlerTests
 {
@@ -44,8 +44,10 @@ public class VerifyConnectivityHandlerTests
 
     private static HttpResponseMessage DiscoveryResponse(
         string? queryEndpoint = "http://localhost:7474/query/v2",
-        string? neo4jVersion = "5.18.0") =>
-        OkWith(new { query = queryEndpoint, neo4jVersion });
+        string? neo4jVersion = "5.18.0")
+    {
+        return OkWith(new { query = queryEndpoint, neo4jVersion });
+    }
 
     [Fact]
     public async Task SendsGet_ToDiscoveryEndpoint()
@@ -99,12 +101,13 @@ public class VerifyConnectivityHandlerTests
     public async Task ThrowsServiceUnavailableException_WhenQueryApiEndpointAbsentFromDiscovery()
     {
         // Server is running but does not support the Query API (e.g. Neo4j 4.x)
-        var httpClient = new FakeQueryApiHttpClient(DiscoveryResponse(queryEndpoint: null));
+        var httpClient = new FakeQueryApiHttpClient(DiscoveryResponse(null));
         var handler = CreateMocker(httpClient).CreateInstance<VerifyConnectivityHandler>();
 
         var act = () => handler.VerifyConnectivityAsync();
 
-        await act.Should().ThrowAsync<ServiceUnavailableException>()
+        await act.Should()
+            .ThrowAsync<ServiceUnavailableException>()
             .WithMessage("*Query API endpoint*");
     }
 
@@ -116,7 +119,8 @@ public class VerifyConnectivityHandlerTests
 
         var act = () => handler.VerifyConnectivityAsync();
 
-        await act.Should().ThrowAsync<ServiceUnavailableException>()
+        await act.Should()
+            .ThrowAsync<ServiceUnavailableException>()
             .WithMessage("*server version*");
     }
 
@@ -128,7 +132,8 @@ public class VerifyConnectivityHandlerTests
 
         var act = () => handler.VerifyConnectivityAsync();
 
-        await act.Should().ThrowAsync<ServiceUnavailableException>()
+        await act.Should()
+            .ThrowAsync<ServiceUnavailableException>()
             .WithMessage("*404*");
     }
 }

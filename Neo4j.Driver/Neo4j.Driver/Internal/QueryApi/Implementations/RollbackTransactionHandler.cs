@@ -41,16 +41,10 @@ internal class RollbackTransactionHandler : IRollbackTransactionHandler
     }
 
     public async Task RollbackTransactionAsync(
-        IAuthToken auth,
         CancellationToken cancellationToken = default)
     {
-        using var request = BuildRequest(auth);
+        using var request = await _requestBuilder.DeleteAsync($"query/v2/tx/{_txContext.TxId}", cancellationToken).ConfigureAwait(false);
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
-    }
-
-    private HttpRequestMessage BuildRequest(IAuthToken auth)
-    {
-        return _requestBuilder.Delete($"query/v2/tx/{_txContext.TxId}", auth);
     }
 }

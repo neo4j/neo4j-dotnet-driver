@@ -15,11 +15,50 @@
 
 #nullable enable
 
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace Neo4j.Driver.Internal;
 
 /// <summary>
-/// Carries session-scoped configuration. Registered at session scope in the resolver so
+/// Carries session-scoped state and services. Registered at session scope in the resolver so
 /// that handlers receive it via constructor injection rather than per-call parameters.
 /// General-purpose — not protocol-specific — so the same type works for Query API and Bolt.
 /// </summary>
-internal record SessionContext(string Database);
+internal class SessionContext : ISessionContext
+{
+    private readonly Func<CancellationToken, ValueTask<IAuthToken>> _getAuthToken;
+    private readonly Func<IAuthToken, SecurityException, CancellationToken, ValueTask<bool>> _handleSecurityException;
+
+    /// <param name="database">The target database for this session.</param>
+    /// <param name="getAuthToken">
+    /// Delegate to retrieve a valid token. Pass <c>authTokenManager.GetTokenAsync</c> for the
+    /// default case, or <c>_ => ValueTask.FromResult(overrideToken)</c> for a per-session override.
+    /// </param>
+    /// <param name="handleSecurityException">
+    /// Delegate to notify the auth provider of a security failure. Pass
+    /// <c>authTokenManager.HandleSecurityExceptionAsync</c> for the default case, or
+    /// <c>(_, _, _) => ValueTask.FromResult(false)</c> for a static override (no refresh possible).
+    /// </param>
+    public SessionContext(
+        string database,
+        Func<CancellationToken, ValueTask<IAuthToken>> getAuthToken,
+        Func<IAuthToken, SecurityException, CancellationToken, ValueTask<bool>> handleSecurityException)
+    {
+        Database = database;
+        _getAuthToken = getAuthToken;
+        _handleSecurityException = handleSecurityException;
+    }
+
+    public string Database { get; }
+
+    public ValueTask<IAuthToken> GetAuthTokenAsync(CancellationToken cancellationToken = default)
+        => _getAuthToken(cancellationToken);
+
+    public ValueTask<bool> HandleSecurityExceptionAsync(
+        IAuthToken token,
+        SecurityException exception,
+        CancellationToken cancellationToken = default)
+        => _handleSecurityException(token, exception, cancellationToken);
+}

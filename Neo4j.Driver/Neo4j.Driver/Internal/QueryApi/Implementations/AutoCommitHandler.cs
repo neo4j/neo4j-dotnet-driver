@@ -48,10 +48,9 @@ internal class AutoCommitHandler : IAutoCommitHandler
     public async Task<QueryApiResponse> AutoCommitAsync(
         Query query,
         IReadOnlyList<string> bookmarks,
-        IAuthToken auth,
         CancellationToken cancellationToken = default)
     {
-        using var request = BuildRequest(query, bookmarks, auth);
+        using var request = await BuildRequestAsync(query, bookmarks, cancellationToken).ConfigureAwait(false);
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
 
@@ -74,10 +73,10 @@ internal class AutoCommitHandler : IAutoCommitHandler
         };
     }
 
-    private HttpRequestMessage BuildRequest(
+    private async Task<HttpRequestMessage> BuildRequestAsync(
         Query query,
         IReadOnlyList<string> bookmarks,
-        IAuthToken auth)
+        CancellationToken cancellationToken)
     {
         // TODO: parameters are serialised using each value's runtime type. This works for .NET
         // primitives but not for Neo4j-specific types (LocalDate, Duration, Point, INode, etc.).
@@ -89,7 +88,7 @@ internal class AutoCommitHandler : IAutoCommitHandler
             Bookmarks = bookmarks.Count > 0 ? [.. bookmarks] : null
         };
 
-        var request = _requestBuilder.Post("query/v2", auth);
+        var request = await _requestBuilder.PostAsync("query/v2", cancellationToken).ConfigureAwait(false);
         request.Content = _jsonSerializer.Serialize(body);
         return request;
     }
