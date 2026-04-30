@@ -69,7 +69,9 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
             .ConfigureAwait(false);
 
         if (body?.Errors is { Length: > 0 } errors)
+        {
             _errorChecker.ThrowIfAnyError(errors[0].Code, errors[0].Message);
+        }
 
         return new QueryApiResponse
         {

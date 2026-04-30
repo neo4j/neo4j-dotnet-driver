@@ -68,10 +68,14 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
             .ConfigureAwait(false);
 
         if (body?.Errors is { Length: > 0 } errors)
+        {
             _errorChecker.ThrowIfAnyError(errors[0].Code, errors[0].Message);
+        }
 
         if (body?.Transaction?.Id is not { } txId)
+        {
             throw new InvalidOperationException("Server did not return a transaction ID.");
+        }
 
         return new QueryApiTransactionContext(txId, _clusterAffinityApplicator.Extract(response));
     }
