@@ -45,10 +45,14 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
     }
 
     public Task<HttpRequestMessage> PostAsync(string path, CancellationToken cancellationToken = default)
-        => BuildAsync(HttpMethod.Post, path, cancellationToken);
+    {
+        return BuildAsync(HttpMethod.Post, path, cancellationToken);
+    }
 
     public Task<HttpRequestMessage> DeleteAsync(string path, CancellationToken cancellationToken = default)
-        => BuildAsync(HttpMethod.Delete, path, cancellationToken);
+    {
+        return BuildAsync(HttpMethod.Delete, path, cancellationToken);
+    }
 
     private async Task<HttpRequestMessage> BuildAsync(HttpMethod method, string path, CancellationToken cancellationToken)
     {

@@ -54,11 +54,15 @@ internal class SessionContext : ISessionContext
     public string Database { get; }
 
     public ValueTask<IAuthToken> GetAuthTokenAsync(CancellationToken cancellationToken = default)
-        => _getAuthToken(cancellationToken);
+    {
+        return _getAuthToken(cancellationToken);
+    }
 
     public ValueTask<bool> HandleSecurityExceptionAsync(
         IAuthToken token,
         SecurityException exception,
         CancellationToken cancellationToken = default)
-        => _handleSecurityException(token, exception, cancellationToken);
+    {
+        return _handleSecurityException(token, exception, cancellationToken);
+    }
 }
