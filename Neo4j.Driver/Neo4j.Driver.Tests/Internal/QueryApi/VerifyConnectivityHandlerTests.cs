@@ -42,7 +42,7 @@ public class VerifyConnectivityHandlerTests
         var mocker = new AutoMocker();
         mocker.Use<IQueryApiHttpClient>(httpClient);
         mocker.Use<IQueryApiUrlBuilder>(UrlBuilder);
-        mocker.Use<IJsonOptionsProvider>(QueryApiJsonOptionsProvider.Default);
+        mocker.Use<IJsonSerializer>(new QueryApiJsonSerializer());
         return mocker;
     }
 

@@ -15,11 +15,11 @@
 
 #nullable enable
 
-using System.Text.Json;
+using System.Net.Http;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-internal interface IJsonOptionsProvider
+internal interface IJsonSerializer
 {
-    JsonSerializerOptions Options { get; }
+    StringContent Serialize<T>(T value);
 }

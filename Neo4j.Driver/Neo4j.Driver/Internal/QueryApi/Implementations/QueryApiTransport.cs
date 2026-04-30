@@ -18,7 +18,6 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -34,25 +33,22 @@ internal sealed class QueryApiTransport : IQueryApiTransport
     private readonly IRollbackTransactionHandler _rollbackTransaction;
     private readonly IVerifyConnectivityHandler _verifyConnectivity;
 
-    public QueryApiTransport(
-        Uri baseUri,
-        Func<HttpMessageHandler>? handlerFactory = null,
-        JsonSerializerOptions? jsonOptions = null)
+    public QueryApiTransport(Uri baseUri, Func<HttpMessageHandler>? handlerFactory = null)
     {
         var urlBuilder = new QueryApiUrlBuilder(baseUri);
         var httpClient = new QueryApiHttpClient(handlerFactory);
-        var jsonOptionsProvider = new QueryApiJsonOptionsProvider(jsonOptions ?? QueryApiJsonOptions.Default);
-        var errorChecker = new QueryApiErrorChecker(jsonOptionsProvider);
+        var json = new QueryApiJsonSerializer();
+        var errorChecker = new QueryApiErrorChecker(json);
         var authApplicator = new QueryApiAuthApplicator();
         var clusterAffinityApplicator = new QueryApiClusterAffinityApplicator();
 
         _httpClient = httpClient;
-        _autoCommit = new AutoCommitHandler(urlBuilder, httpClient, errorChecker, jsonOptionsProvider, authApplicator);
-        _beginTransaction = new BeginTransactionHandler(urlBuilder, httpClient, errorChecker, jsonOptionsProvider, authApplicator, clusterAffinityApplicator);
-        _runInTransaction = new RunInTransactionHandler(urlBuilder, httpClient, errorChecker, jsonOptionsProvider, authApplicator, clusterAffinityApplicator);
-        _commitTransaction = new CommitTransactionHandler(urlBuilder, httpClient, errorChecker, jsonOptionsProvider, authApplicator, clusterAffinityApplicator);
+        _autoCommit = new AutoCommitHandler(urlBuilder, httpClient, errorChecker, json, json, authApplicator);
+        _beginTransaction = new BeginTransactionHandler(urlBuilder, httpClient, errorChecker, json, json, authApplicator, clusterAffinityApplicator);
+        _runInTransaction = new RunInTransactionHandler(urlBuilder, httpClient, errorChecker, json, json, authApplicator, clusterAffinityApplicator);
+        _commitTransaction = new CommitTransactionHandler(urlBuilder, httpClient, errorChecker, json, authApplicator, clusterAffinityApplicator);
         _rollbackTransaction = new RollbackTransactionHandler(urlBuilder, httpClient, errorChecker, authApplicator, clusterAffinityApplicator);
-        _verifyConnectivity = new VerifyConnectivityHandler(urlBuilder, httpClient, errorChecker, jsonOptionsProvider, authApplicator);
+        _verifyConnectivity = new VerifyConnectivityHandler(urlBuilder, httpClient, errorChecker, json, authApplicator);
     }
 
     internal QueryApiTransport(

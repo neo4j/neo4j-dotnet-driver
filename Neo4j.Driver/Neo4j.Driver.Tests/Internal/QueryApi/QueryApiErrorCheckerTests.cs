@@ -18,7 +18,6 @@
 using System.Net;
 using System.Net.Http;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal.QueryApi;
@@ -33,17 +32,11 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// </summary>
 public class QueryApiErrorCheckerTests
 {
-    private static QueryApiErrorChecker Checker => new(QueryApiJsonOptionsProvider.Default);
+    private static QueryApiErrorChecker Checker => new(new QueryApiJsonSerializer());
 
     private static HttpResponseMessage JsonResponse(HttpStatusCode status, object body)
     {
-        return new HttpResponseMessage(status)
-        {
-            Content = new StringContent(
-                JsonSerializer.Serialize(body, QueryApiJsonOptions.Default),
-                Encoding.UTF8,
-                "application/json")
-        };
+        return new HttpResponseMessage(status) { Content = new QueryApiJsonSerializer().Serialize(body) };
     }
 
     public class EnsureSuccessAsync

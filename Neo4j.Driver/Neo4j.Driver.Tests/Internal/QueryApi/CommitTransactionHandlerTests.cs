@@ -41,7 +41,7 @@ public class CommitTransactionHandlerTests
         var mocker = new AutoMocker();
         mocker.Use<IQueryApiHttpClient>(httpClient);
         mocker.Use<IQueryApiUrlBuilder>(UrlBuilder);
-        mocker.Use<IJsonOptionsProvider>(QueryApiJsonOptionsProvider.Default);
+        mocker.Use<IJsonDeserializer>(new QueryApiJsonSerializer());
         return mocker;
     }
 

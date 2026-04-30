@@ -16,7 +16,6 @@
 #nullable enable
 
 using System.Net.Http;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -27,7 +26,7 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
     private readonly IQueryApiUrlBuilder _urlBuilder;
     private readonly IQueryApiHttpClient _httpClient;
     private readonly IQueryApiErrorChecker _errorChecker;
-    private readonly IJsonOptionsProvider _jsonOptionsProvider;
+    private readonly IJsonDeserializer _jsonDeserializer;
     private readonly IAuthApplicator _authApplicator;
     private readonly IClusterAffinityApplicator _clusterAffinityApplicator;
 
@@ -35,14 +34,14 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
         IQueryApiUrlBuilder urlBuilder,
         IQueryApiHttpClient httpClient,
         IQueryApiErrorChecker errorChecker,
-        IJsonOptionsProvider jsonOptionsProvider,
+        IJsonDeserializer jsonDeserializer,
         IAuthApplicator authApplicator,
         IClusterAffinityApplicator clusterAffinityApplicator)
     {
         _urlBuilder = urlBuilder;
         _httpClient = httpClient;
         _errorChecker = errorChecker;
-        _jsonOptionsProvider = jsonOptionsProvider;
+        _jsonDeserializer = jsonDeserializer;
         _authApplicator = authApplicator;
         _clusterAffinityApplicator = clusterAffinityApplicator;
     }
@@ -57,10 +56,9 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
 
-        var body = await JsonSerializer
+        var body = await _jsonDeserializer
             .DeserializeAsync<ResponseBody>(
                 await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false),
-                _jsonOptionsProvider.Options,
                 cancellationToken)
             .ConfigureAwait(false);
 

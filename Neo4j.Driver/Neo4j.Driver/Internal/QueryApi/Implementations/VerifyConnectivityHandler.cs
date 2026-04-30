@@ -16,8 +16,6 @@
 #nullable enable
 
 using System.Net.Http;
-using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -28,20 +26,20 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
     private readonly IQueryApiUrlBuilder _urlBuilder;
     private readonly IQueryApiHttpClient _httpClient;
     private readonly IQueryApiErrorChecker _errorChecker;
-    private readonly IJsonOptionsProvider _jsonOptionsProvider;
+    private readonly IJsonSerializer _jsonSerializer;
     private readonly IAuthApplicator _authApplicator;
 
     public VerifyConnectivityHandler(
         IQueryApiUrlBuilder urlBuilder,
         IQueryApiHttpClient httpClient,
         IQueryApiErrorChecker errorChecker,
-        IJsonOptionsProvider jsonOptionsProvider,
+        IJsonSerializer jsonSerializer,
         IAuthApplicator authApplicator)
     {
         _urlBuilder = urlBuilder;
         _httpClient = httpClient;
         _errorChecker = errorChecker;
-        _jsonOptionsProvider = jsonOptionsProvider;
+        _jsonSerializer = jsonSerializer;
         _authApplicator = authApplicator;
     }
 
@@ -68,8 +66,7 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
             _urlBuilder.Build("db/system/query/v2"));
 
         _authApplicator.Apply(request, auth);
-        request.Content = new StringContent(
-            JsonSerializer.Serialize(body, _jsonOptionsProvider.Options), Encoding.UTF8, "application/json");
+        request.Content = _jsonSerializer.Serialize(body);
 
         return request;
     }

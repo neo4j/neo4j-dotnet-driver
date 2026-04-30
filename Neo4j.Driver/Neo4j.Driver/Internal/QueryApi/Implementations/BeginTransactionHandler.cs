@@ -18,8 +18,6 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -30,7 +28,8 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
     private readonly IQueryApiUrlBuilder _urlBuilder;
     private readonly IQueryApiHttpClient _httpClient;
     private readonly IQueryApiErrorChecker _errorChecker;
-    private readonly IJsonOptionsProvider _jsonOptionsProvider;
+    private readonly IJsonDeserializer _jsonDeserializer;
+    private readonly IJsonSerializer _jsonSerializer;
     private readonly IAuthApplicator _authApplicator;
     private readonly IClusterAffinityApplicator _clusterAffinityApplicator;
 
@@ -38,14 +37,16 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
         IQueryApiUrlBuilder urlBuilder,
         IQueryApiHttpClient httpClient,
         IQueryApiErrorChecker errorChecker,
-        IJsonOptionsProvider jsonOptionsProvider,
+        IJsonDeserializer jsonDeserializer,
+        IJsonSerializer jsonSerializer,
         IAuthApplicator authApplicator,
         IClusterAffinityApplicator clusterAffinityApplicator)
     {
         _urlBuilder = urlBuilder;
         _httpClient = httpClient;
         _errorChecker = errorChecker;
-        _jsonOptionsProvider = jsonOptionsProvider;
+        _jsonDeserializer = jsonDeserializer;
+        _jsonSerializer = jsonSerializer;
         _authApplicator = authApplicator;
         _clusterAffinityApplicator = clusterAffinityApplicator;
     }
@@ -60,10 +61,9 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
 
-        var body = await JsonSerializer
+        var body = await _jsonDeserializer
             .DeserializeAsync<ResponseBody>(
                 await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false),
-                _jsonOptionsProvider.Options,
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -88,8 +88,7 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
             _urlBuilder.Build($"db/{database}/query/v2/tx"));
 
         _authApplicator.Apply(request, auth);
-        request.Content = new StringContent(
-            JsonSerializer.Serialize(body, _jsonOptionsProvider.Options), Encoding.UTF8, "application/json");
+        request.Content = _jsonSerializer.Serialize(body);
 
         return request;
     }

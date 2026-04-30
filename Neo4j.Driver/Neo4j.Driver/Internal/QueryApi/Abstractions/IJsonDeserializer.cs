@@ -15,16 +15,13 @@
 
 #nullable enable
 
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-internal static class QueryApiJsonOptions
+internal interface IJsonDeserializer
 {
-    public static readonly JsonSerializerOptions Default = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
+    ValueTask<T?> DeserializeAsync<T>(Stream utf8Json, CancellationToken cancellationToken = default);
 }

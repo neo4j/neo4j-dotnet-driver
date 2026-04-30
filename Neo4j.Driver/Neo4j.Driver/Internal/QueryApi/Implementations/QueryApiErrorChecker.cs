@@ -17,7 +17,6 @@
 
 using System.Net;
 using System.Net.Http;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,11 +24,11 @@ namespace Neo4j.Driver.Internal.QueryApi;
 
 internal class QueryApiErrorChecker : IQueryApiErrorChecker
 {
-    private readonly IJsonOptionsProvider _jsonOptionsProvider;
+    private readonly IJsonDeserializer _jsonDeserializer;
 
-    public QueryApiErrorChecker(IJsonOptionsProvider jsonOptionsProvider)
+    public QueryApiErrorChecker(IJsonDeserializer jsonDeserializer)
     {
-        _jsonOptionsProvider = jsonOptionsProvider;
+        _jsonDeserializer = jsonDeserializer;
     }
 
     public async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken cancellationToken = default)
@@ -39,10 +38,9 @@ internal class QueryApiErrorChecker : IQueryApiErrorChecker
             ErrorResponseBody? parsed = null;
             try
             {
-                parsed = await JsonSerializer
+                parsed = await _jsonDeserializer
                     .DeserializeAsync<ErrorResponseBody>(
                         await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false),
-                        _jsonOptionsProvider.Options,
                         cancellationToken)
                     .ConfigureAwait(false);
             }

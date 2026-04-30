@@ -18,8 +18,6 @@
 using System;
 using System.Net;
 using System.Net.Http;
-using System.Text;
-using System.Text.Json;
 using Neo4j.Driver.Internal.QueryApi;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
@@ -30,16 +28,12 @@ internal static class QueryApiTestHelpers
     internal static readonly Uri BaseUri = new("https://localhost:7474");
     internal static QueryApiUrlBuilder UrlBuilder => new(BaseUri);
 
+    private static readonly QueryApiJsonSerializer JsonSerializer = new();
+
     /// <summary>Builds a 202 Accepted response with a JSON body serialized using the production options.</summary>
     internal static HttpResponseMessage AcceptedWith(object body)
     {
-        return new HttpResponseMessage(HttpStatusCode.Accepted)
-        {
-            Content = new StringContent(
-                JsonSerializer.Serialize(body, QueryApiJsonOptions.Default),
-                Encoding.UTF8,
-                "application/json")
-        };
+        return new HttpResponseMessage(HttpStatusCode.Accepted) { Content = JsonSerializer.Serialize(body) };
     }
 
     internal static HttpResponseMessage Accepted()
@@ -53,12 +47,7 @@ internal static class QueryApiTestHelpers
     {
         return new HttpResponseMessage(HttpStatusCode.Unauthorized)
         {
-            Content = new StringContent(
-                JsonSerializer.Serialize(
-                    new { errors = new[] { new { code, message } } },
-                    QueryApiJsonOptions.Default),
-                Encoding.UTF8,
-                "application/json")
+            Content = JsonSerializer.Serialize(new { errors = new[] { new { code, message } } })
         };
     }
 }
