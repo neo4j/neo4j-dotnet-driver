@@ -17,9 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Result;
@@ -28,7 +25,7 @@ namespace Neo4j.Driver.Internal.QueryApi;
 
 internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
 {
-    private readonly List<IRecord> _records;
+    private readonly IReadOnlyList<IRecord> _records;
     private readonly string[] _keys;
     private readonly Query _query;
     private readonly IResultSummaryFactory _summaryFactory;
@@ -37,25 +34,15 @@ internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
     private bool _isConsumed;
 
     public QueryApiResultCursor(
-        QueryApiResponse response,
+        IReadOnlyList<IRecord> records,
+        string[] keys,
         Query query,
         IResultSummaryFactory summaryFactory)
     {
+        _records = records;
+        _keys = keys;
         _query = query;
         _summaryFactory = summaryFactory;
-        _keys = response.Fields;
-
-        var lookup = new Dictionary<string, int>(response.Fields.Length, StringComparer.Ordinal);
-        var invariantLookup = new Dictionary<string, int>(response.Fields.Length, StringComparer.OrdinalIgnoreCase);
-        for (var i = 0; i < response.Fields.Length; i++)
-        {
-            lookup[response.Fields[i]] = i;
-            invariantLookup[response.Fields[i]] = i;
-        }
-
-        _records = response.Rows
-            .Select(IRecord (row) => new Record(lookup, invariantLookup, row.Select(ConvertElement).ToArray()!))
-            .ToList();
     }
 
     IRecord IResultCursor.Current
@@ -63,8 +50,8 @@ internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
         get
         {
             AssertNotConsumed();
-            return _currentIndex >= 0 
-                ? _records[_currentIndex] 
+            return _currentIndex >= 0
+                ? _records[_currentIndex]
                 : throw new InvalidOperationException("Tried to access Current without calling FetchAsync.");
         }
     }
@@ -75,10 +62,7 @@ internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
 
     public Task<string[]> KeysAsync() => Task.FromResult(_keys);
 
-    public Task<bool> FetchAsync()
-    {
-        return MoveNextAsync().AsTask();
-    }
+    public Task<bool> FetchAsync() => MoveNextAsync().AsTask();
 
     public ValueTask<bool> MoveNextAsync()
     {
@@ -91,16 +75,14 @@ internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
 
         _currentIndex = nextIndex;
         return new ValueTask<bool>(true);
-
     }
 
     Task<IRecord> IResultCursor.PeekAsync()
     {
         AssertNotConsumed();
-
         var nextIndex = _currentIndex + 1;
-        return nextIndex < _records.Count 
-            ? Task.FromResult(_records[nextIndex]) 
+        return nextIndex < _records.Count
+            ? Task.FromResult(_records[nextIndex])
             : Task.FromResult<IRecord>(null!);
     }
 
@@ -117,39 +99,6 @@ internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
 
     public ValueTask DisposeAsync() => default;
 
-    private static object? ConvertElement(JsonElement element)
-    {
-        return element.ValueKind switch
-        {
-            JsonValueKind.Null or JsonValueKind.Undefined => null,
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            JsonValueKind.String => element.GetString(),
-            JsonValueKind.Number => element.TryGetInt64(out var l) ? (object)l : element.GetDouble(),
-            JsonValueKind.Array => element.EnumerateArray().Select(ConvertElement).ToList(),
-            JsonValueKind.Object => ConvertObject(element),
-            _ => throw new ArgumentOutOfRangeException(nameof(element), element.ValueKind, "Unexpected JSON value kind.")
-        };
-    }
-
-    private static object? ConvertObject(JsonElement element)
-    {
-        if (element.TryGetProperty("$type", out var typeElement))
-        {
-            var typeName = typeElement.GetString() ?? "unknown";
-            Trace.TraceWarning($"[QueryApiResultCursor] Unsupported Neo4j typed value: {typeName}");
-            return $"Unsupported type: {typeName}";
-        }
-
-        var dict = new Dictionary<string, object?>();
-        foreach (var prop in element.EnumerateObject())
-        {
-            dict[prop.Name] = ConvertElement(prop.Value);
-        }
-
-        return dict;
-    }
-
     private void AssertNotConsumed()
     {
         if (_isConsumed)
@@ -157,5 +106,4 @@ internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
             throw ErrorExtensions.NewResultConsumedException();
         }
     }
-
 }

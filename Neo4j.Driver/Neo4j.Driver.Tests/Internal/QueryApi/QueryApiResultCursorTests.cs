@@ -18,37 +18,48 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
+using DriverRecord = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 public class QueryApiResultCursorTests
 {
     private static readonly Query AnyQuery = new("RETURN 1");
-    private static readonly IServerInfo AnyServer = new Mock<IServerInfo>().Object;
-    private const string AnyDatabase = "neo4j";
+    private static readonly IResultSummaryFactory AnyFactory =
+        new QueryApiResultSummaryFactory(new Mock<IServerInfo>().Object, "neo4j");
 
+    // --- Helpers ---
+
+    /// <summary>
+    /// Builds a cursor from plain CLR values. Each inner array is one row; its
+    /// elements map positionally to <paramref name="keys"/>.
+    /// </summary>
     private static IResultCursor MakeCursor(
-        string[] fields,
+        string[] keys,
         object?[][] rows,
         Query? query = null,
-        IServerInfo? serverInfo = null,
-        string? database = null)
+        IResultSummaryFactory? summaryFactory = null)
     {
-        var response = new QueryApiResponse
-        {
-            Fields = fields,
-            Rows = rows.Select(row => row.Select(v => JsonSerializer.SerializeToElement(v)).ToArray()).ToArray()
-        };
+        var lookup = keys
+            .Select((k, i) => (k, i))
+            .ToDictionary(x => x.k, x => x.i, StringComparer.Ordinal);
+        var invariantLookup = keys
+            .Select((k, i) => (k, i))
+            .ToDictionary(x => x.k, x => x.i, StringComparer.OrdinalIgnoreCase);
 
-        var factory = new QueryApiResultSummaryFactory(serverInfo ?? AnyServer, database ?? AnyDatabase);
-        return new QueryApiResultCursor(response, query ?? AnyQuery, factory);
+        var records = rows
+            .Select(row => (IRecord)new DriverRecord(lookup, invariantLookup, row!))
+            .ToList();
+
+        return new QueryApiResultCursor(records, keys, query ?? AnyQuery, summaryFactory ?? AnyFactory);
     }
+
+    // --- Iteration ---
 
     [Fact]
     public async Task FetchAsync_ReturnsTrueWhileRowsRemain()
@@ -86,6 +97,8 @@ public class QueryApiResultCursorTests
         (await cursor.FetchAsync()).Should().BeFalse();
     }
 
+    // --- Peek ---
+
     [Fact]
     public async Task PeekAsync_ReturnsNextRecordWithoutAdvancing()
     {
@@ -94,7 +107,6 @@ public class QueryApiResultCursorTests
         var peeked = await cursor.PeekAsync();
         peeked!["n"].Should().Be(1L);
 
-        // Position should not have advanced — fetch still returns the peeked row
         await cursor.FetchAsync();
         cursor.Current["n"].Should().Be(1L);
     }
@@ -105,8 +117,7 @@ public class QueryApiResultCursorTests
         var cursor = MakeCursor(["n"], [[1L]]);
         await cursor.FetchAsync();
 
-        var peeked = await cursor.PeekAsync();
-        peeked.Should().BeNull();
+        (await cursor.PeekAsync()).Should().BeNull();
     }
 
     [Fact]
@@ -114,11 +125,8 @@ public class QueryApiResultCursorTests
     {
         var cursor = MakeCursor(["n"], [[42L]]);
 
-        var first = await cursor.PeekAsync();
-        var second = await cursor.PeekAsync();
-
-        first!["n"].Should().Be(42L);
-        second!["n"].Should().Be(42L);
+        (await cursor.PeekAsync())!["n"].Should().Be(42L);
+        (await cursor.PeekAsync())!["n"].Should().Be(42L);
     }
 
     [Fact]
@@ -139,6 +147,8 @@ public class QueryApiResultCursorTests
         (await cursor.FetchAsync()).Should().BeFalse();
     }
 
+    // --- Keys ---
+
     [Fact]
     public async Task KeysAsync_ReturnsFields()
     {
@@ -146,11 +156,12 @@ public class QueryApiResultCursorTests
         (await cursor.KeysAsync()).Should().Equal("name", "age");
     }
 
+    // --- IsOpen / ConsumeAsync ---
+
     [Fact]
     public void IsOpen_TrueInitially()
     {
-        var cursor = MakeCursor([], []);
-        cursor.IsOpen.Should().BeTrue();
+        MakeCursor([], []).IsOpen.Should().BeTrue();
     }
 
     [Fact]
@@ -166,7 +177,6 @@ public class QueryApiResultCursorTests
     {
         var cursor = MakeCursor(["n"], [[1L]]);
         await cursor.ConsumeAsync();
-
         await cursor.Invoking(c => c.FetchAsync()).Should().ThrowAsync<ResultConsumedException>();
     }
 
@@ -175,7 +185,6 @@ public class QueryApiResultCursorTests
     {
         var cursor = MakeCursor(["n"], [[1L]]);
         await cursor.ConsumeAsync();
-
         await cursor.Invoking(c => c.PeekAsync()).Should().ThrowAsync<ResultConsumedException>();
     }
 
@@ -184,27 +193,16 @@ public class QueryApiResultCursorTests
     {
         var cursor = MakeCursor(["n"], [[1L]]);
         await cursor.ConsumeAsync();
-
         cursor.Invoking(c => _ = c.Current).Should().Throw<ResultConsumedException>();
     }
 
-    [Fact]
-    public async Task ConsumeAsync_DiscardsPendingRows()
-    {
-        var cursor = MakeCursor(["n"], [[1L], [2L]]);
-        await cursor.FetchAsync();
-
-        var summary = await cursor.ConsumeAsync();
-        summary.Should().NotBeNull();
-        cursor.IsOpen.Should().BeFalse();
-    }
+    // --- Summary ---
 
     [Fact]
     public async Task ConsumeAsync_SummaryContainsQuery()
     {
         var query = new Query("RETURN 42");
         var cursor = MakeCursor([], [], query: query);
-
         var summary = await cursor.ConsumeAsync();
         summary.Query.Should().Be(query);
     }
@@ -212,7 +210,8 @@ public class QueryApiResultCursorTests
     [Fact]
     public async Task ConsumeAsync_SummaryContainsDatabase()
     {
-        var cursor = MakeCursor([], [], database: "mydb");
+        var factory = new QueryApiResultSummaryFactory(new Mock<IServerInfo>().Object, "mydb");
+        var cursor = MakeCursor([], [], summaryFactory: factory);
         var summary = await cursor.ConsumeAsync();
         summary.Database.Name.Should().Be("mydb");
     }
@@ -221,10 +220,13 @@ public class QueryApiResultCursorTests
     public async Task ConsumeAsync_SummaryContainsServerInfo()
     {
         var serverInfo = new Mock<IServerInfo>().Object;
-        var cursor = MakeCursor([], [], serverInfo: serverInfo);
+        var factory = new QueryApiResultSummaryFactory(serverInfo, "neo4j");
+        var cursor = MakeCursor([], [], summaryFactory: factory);
         var summary = await cursor.ConsumeAsync();
         summary.Server.Should().BeSameAs(serverInfo);
     }
+
+    // --- Async enumerable ---
 
     [Fact]
     public async Task AsyncEnumerable_YieldsAllRows()
@@ -238,81 +240,7 @@ public class QueryApiResultCursorTests
         values.Should().Equal(1L, 2L, 3L);
     }
 
-    [Fact]
-    public async Task Converts_StringValue()
-    {
-        var cursor = MakeCursor(["v"], [["hello"]]);
-        await cursor.FetchAsync();
-        cursor.Current["v"].Should().Be("hello");
-    }
-
-    [Fact]
-    public async Task Converts_LongValue()
-    {
-        var cursor = MakeCursor(["v"], [[long.MaxValue]]);
-        await cursor.FetchAsync();
-        cursor.Current["v"].Should().Be(long.MaxValue);
-    }
-
-    [Fact]
-    public async Task Converts_DoubleValue()
-    {
-        var cursor = MakeCursor(["v"], [[3.14]]);
-        await cursor.FetchAsync();
-        cursor.Current["v"].Should().Be(3.14);
-    }
-
-    [Fact]
-    public async Task Converts_BoolTrue()
-    {
-        var cursor = MakeCursor(["v"], [[true]]);
-        await cursor.FetchAsync();
-        cursor.Current["v"].Should().Be(true);
-    }
-
-    [Fact]
-    public async Task Converts_BoolFalse()
-    {
-        var cursor = MakeCursor(["v"], [[false]]);
-        await cursor.FetchAsync();
-        cursor.Current["v"].Should().Be(false);
-    }
-
-    [Fact]
-    public async Task Converts_NullValue()
-    {
-        var cursor = MakeCursor(["v"], [[null]]);
-        await cursor.FetchAsync();
-        cursor.Current["v"].Should().BeNull();
-    }
-
-    [Fact]
-    public async Task Converts_ArrayValue()
-    {
-        var cursor = MakeCursor(["v"], [[(object)new[] { 1, 2, 3 }]]);
-        await cursor.FetchAsync();
-        cursor.Current["v"].Should().BeEquivalentTo(new List<object?> { 1L, 2L, 3L });
-    }
-
-    [Fact]
-    public async Task Converts_PlainObject_ToDictionary()
-    {
-        var cursor = MakeCursor(["v"], [[(object)new { x = 1, y = 2 }]]);
-        await cursor.FetchAsync();
-        var dict = cursor.Current["v"].Should().BeAssignableTo<Dictionary<string, object?>>().Subject;
-        dict["x"].Should().Be(1L);
-        dict["y"].Should().Be(2L);
-    }
-
-    [Fact]
-    public async Task UnsupportedType_ReturnsStringPlaceholder()
-    {
-        // Simulate a $type-annotated value as the API would return for Neo4j types
-        var typedValue = new Dictionary<string, object> { ["$type"] = "Node", ["_value"] = new { } };
-        var cursor = MakeCursor(["v"], [[(object)typedValue]]);
-        await cursor.FetchAsync();
-        cursor.Current["v"].Should().Be("Unsupported type: Node");
-    }
+    // --- Multi-field / lookup ---
 
     [Fact]
     public async Task Record_SupportsMultipleFields()
