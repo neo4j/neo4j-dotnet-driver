@@ -20,7 +20,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
-using Neo4j.Driver.Internal.QueryApi.JsonConverters;
+using Neo4j.Driver.Internal.QueryApi.Abstractions.JsonConverters;
+using Neo4j.Driver.Internal.QueryApi.Implementations.JsonConverters;
 using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal.QueryApi;
@@ -52,28 +53,10 @@ internal class QueryApiResultCursorBuilder : IQueryApiResultCursorBuilder
             .Select(IRecord (row) => new Record(
                 lookup,
                 invariantLookup,
-                row.Select(ConvertElement).ToArray()!))
+                row.Select(_jsonObjectConverter.Convert).ToArray()!))
             .ToList();
 
         return new QueryApiResultCursor(records, response.Fields, query, _summaryFactory);
-    }
-
-    private object? ConvertElement(JsonElement element)
-    {
-        return element.ValueKind switch
-        {
-            JsonValueKind.Null or JsonValueKind.Undefined => null,
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            JsonValueKind.String => element.GetString(),
-            JsonValueKind.Number => element.TryGetInt64(out var l) ? (object)l : element.GetDouble(),
-            JsonValueKind.Array => element.EnumerateArray().Select(ConvertElement).ToList(),
-            JsonValueKind.Object => _jsonObjectConverter.Convert(element),
-            _ => throw new ArgumentOutOfRangeException(
-                nameof(element),
-                element.ValueKind,
-                "Unexpected JSON value kind.")
-        };
     }
 
 }
