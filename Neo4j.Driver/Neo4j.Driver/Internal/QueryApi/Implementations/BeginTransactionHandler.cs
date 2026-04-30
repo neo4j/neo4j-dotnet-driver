@@ -87,25 +87,13 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
         return request;
     }
 
-    private class RequestBody
-    {
-        public string[]? Bookmarks { get; init; }
-    }
+    internal record RequestBody(string[]? Bookmarks = null);
 
-    private class ResponseBody
+    internal record ResponseBody
     {
         public TransactionInfo? Transaction { get; init; }
-        public ErrorBody[]? Errors { get; init; }
+        public QueryApiErrorBody[]? Errors { get; init; }
     }
 
-    private class TransactionInfo
-    {
-        public string? Id { get; init; }
-    }
-
-    private class ErrorBody
-    {
-        public string Code { get; init; } = string.Empty;
-        public string Message { get; init; } = string.Empty;
-    }
+    internal record TransactionInfo(string? Id = null);
 }

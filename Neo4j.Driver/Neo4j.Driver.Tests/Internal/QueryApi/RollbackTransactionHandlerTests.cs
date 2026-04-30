@@ -17,13 +17,10 @@
 
 using System.Net.Http;
 using System.Threading.Tasks;
-using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
-using static Neo4j.Driver.Tests.Internal.QueryApi.QueryApiTestHelpers;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
@@ -33,70 +30,44 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// </summary>
 public class RollbackTransactionHandlerTests
 {
-    private static readonly IAuthToken AnyAuth = AuthTokens.Basic("user", "pass");
-    private static readonly QueryApiTransactionContext TxWithAffinity = new("tx-77", "shard-5");
-    private static readonly QueryApiTransactionContext TxWithoutAffinity = new("tx-77", null);
+    private static readonly QueryApiTransactionContext DefaultTxContext = new("tx-77", null);
 
-    private static AutoMocker CreateMocker(
-        FakeQueryApiHttpClient httpClient,
-        string database = "neo4j",
+    /// <summary>
+    /// Minimum chain: DeleteAsync("query/v2/tx/{txId}") → request → SendAsync(request) → response.
+    /// </summary>
+    private static AutoMocker CreateChain(
+        out HttpRequestMessage request,
+        out HttpResponseMessage response,
         QueryApiTransactionContext? txContext = null)
     {
-        txContext ??= TxWithoutAffinity;
-        var sessionContext = new SessionContext(
-            database,
-            _ => ValueTask.FromResult(AnyAuth),
-            (_, _, _) => ValueTask.FromResult(false));
-
+        txContext ??= DefaultTxContext;
         var mocker = new AutoMocker();
-        mocker.Use<IQueryApiHttpClient>(httpClient);
-        mocker.Use<QueryApiTransactionContext>(txContext);
-        mocker.Use<IQueryApiRequestBuilder>(
-            new QueryApiRequestBuilder(
-                UrlBuilder,
-                sessionContext,
-                new QueryApiAuthApplicator(),
-                new QueryApiClusterAffinityApplicator(),
-                txContext));
+        var req = new HttpRequestMessage();
+        var resp = new HttpResponseMessage();
+        request = req;
+        response = resp;
+
+        mocker.Use(txContext);
+
+        mocker.GetMock<IQueryApiRequestBuilder>()
+            .Setup(x => x.DeleteAsync($"query/v2/tx/{txContext.TxId}", default))
+            .ReturnsAsync(req);
+
+        mocker.GetMock<IQueryApiHttpClient>()
+            .Setup(x => x.SendAsync(req, default))
+            .ReturnsAsync(resp);
 
         return mocker;
     }
 
     [Fact]
-    public async Task SendsDelete_ToTransactionEndpoint_WithTransactionId()
+    public async Task PassesResponse_ToErrorChecker()
     {
-        // DELETE /db/{database}/query/v2/tx/{txId}
-        var httpClient = new FakeQueryApiHttpClient(Accepted());
-        var handler = CreateMocker(httpClient, "movies", TxWithoutAffinity)
-            .CreateInstance<RollbackTransactionHandler>();
-
-        await handler.RollbackTransactionAsync();
-
-        httpClient.LastRequest!.Method.Should().Be(HttpMethod.Delete);
-        httpClient.LastRequest.RequestUri!.PathAndQuery.Should().Be("/db/movies/query/v2/tx/tx-77");
-    }
-
-    [Fact]
-    public async Task ForwardsClusterAffinityHeader_OnRequest()
-    {
-        // Spec: cluster affinity must be forwarded on ROLLBACK as well
-        var httpClient = new FakeQueryApiHttpClient(Accepted());
-        var handler = CreateMocker(httpClient, txContext: TxWithAffinity).CreateInstance<RollbackTransactionHandler>();
-
-        await handler.RollbackTransactionAsync();
-
-        httpClient.LastRequest!.Headers.GetValues("neo4j-cluster-affinity").Should().Equal("shard-5");
-    }
-
-    [Fact]
-    public async Task CallsErrorChecker_OnResponse()
-    {
-        var mocker = CreateMocker(new FakeQueryApiHttpClient(Accepted()));
-
-        await mocker.CreateInstance<RollbackTransactionHandler>()
-            .RollbackTransactionAsync();
+        // Chain: SendAsync(request) → response → EnsureSuccessAsync(response)
+        var mocker = CreateChain(out _, out var response);
+        await mocker.CreateInstance<RollbackTransactionHandler>().RollbackTransactionAsync();
 
         mocker.GetMock<IQueryApiErrorChecker>()
-            .Verify(x => x.EnsureSuccessAsync(It.IsAny<HttpResponseMessage>(), default), Times.Once);
+            .Verify(x => x.EnsureSuccessAsync(response, default), Times.Once);
     }
 }

@@ -15,14 +15,17 @@
 
 #nullable enable
 
+using System;
+using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
-using static Neo4j.Driver.Tests.Internal.QueryApi.QueryApiTestHelpers;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
@@ -33,66 +36,117 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// </summary>
 public class VerifyConnectivityHandlerTests
 {
-    private static AutoMocker CreateMocker(FakeQueryApiHttpClient httpClient)
+    private static readonly Uri BaseUri = new("https://neo4j.example.com:7474/");
+
+    /// <summary>
+    /// Minimum chain: Build("") → discoveryUri → SendAsync(GET discoveryUri) → response.
+    /// DeserializeAsync defaults to null (safe — handler throws before relying on content for non-2xx).
+    /// </summary>
+    private static AutoMocker CreateChain(
+        out HttpResponseMessage response,
+        HttpStatusCode statusCode = HttpStatusCode.OK)
     {
         var mocker = new AutoMocker();
-        mocker.Use<IQueryApiHttpClient>(httpClient);
-        mocker.Use<IQueryApiUrlBuilder>(new QueryApiUrlBuilder(BaseUri));
-        mocker.Use<IJsonDeserializer>(new QueryApiJsonSerializer());
+        response = new HttpResponseMessage(statusCode) { Content = new ByteArrayContent([]) };
+
+        mocker.GetMock<IQueryApiUrlBuilder>()
+            .Setup(x => x.Build(string.Empty))
+            .Returns(BaseUri);
+
+        // The handler builds its own request internally, so we constrain on GET method rather than instance identity
+        mocker.GetMock<IQueryApiHttpClient>()
+            .Setup(x => x.SendAsync(It.Is<HttpRequestMessage>(r => r.Method == HttpMethod.Get), default))
+            .ReturnsAsync(response);
+
         return mocker;
     }
 
-    private static HttpResponseMessage DiscoveryResponse(
-        string? queryEndpoint = "http://localhost:7474/query/v2",
+    private static VerifyConnectivityHandler.DiscoveryResponse ValidDiscovery(
+        string? query = "http://localhost:7474/query/v2",
         string? neo4jVersion = "5.18.0")
     {
-        return OkWith(new { query = queryEndpoint, neo4jVersion });
+        return new VerifyConnectivityHandler.DiscoveryResponse { Query = query, Neo4jVersion = neo4jVersion };
     }
 
     [Fact]
     public async Task SendsGet_ToDiscoveryEndpoint()
     {
         // Always hits GET / unconditionally — even when the driver is warm
-        var httpClient = new FakeQueryApiHttpClient(DiscoveryResponse());
-        var handler = CreateMocker(httpClient).CreateInstance<VerifyConnectivityHandler>();
+        HttpRequestMessage? capturedRequest = null;
+        var mocker = new AutoMocker();
+        var response = new HttpResponseMessage { Content = new ByteArrayContent([]) };
 
-        await handler.VerifyConnectivityAsync();
+        mocker.GetMock<IQueryApiUrlBuilder>()
+            .Setup(x => x.Build(string.Empty))
+            .Returns(BaseUri);
 
-        httpClient.LastRequest!.Method.Should().Be(HttpMethod.Get);
-        httpClient.LastRequest.RequestUri!.PathAndQuery.Should().Be("/");
+        mocker.GetMock<IQueryApiHttpClient>()
+            .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), default))
+            .Callback<HttpRequestMessage, CancellationToken>((req, _) => capturedRequest = req)
+            .ReturnsAsync(response);
+
+        mocker.GetMock<IJsonDeserializer>()
+            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(It.IsAny<Stream>(), default))
+            .ReturnsAsync(ValidDiscovery());
+
+        await mocker.CreateInstance<VerifyConnectivityHandler>().VerifyConnectivityAsync();
+
+        capturedRequest!.Method.Should().Be(HttpMethod.Get);
+        capturedRequest.RequestUri.Should().Be(BaseUri);
     }
 
     [Fact]
     public async Task DoesNotSendAuthorizationHeader_OnDiscoveryRequest()
     {
-        // Discovery endpoint is unauthenticated
-        var httpClient = new FakeQueryApiHttpClient(DiscoveryResponse());
-        var handler = CreateMocker(httpClient).CreateInstance<VerifyConnectivityHandler>();
+        // Discovery endpoint is unauthenticated — the handler must not add any Authorization header
+        HttpRequestMessage? capturedRequest = null;
+        var mocker = new AutoMocker();
+        var response = new HttpResponseMessage { Content = new ByteArrayContent([]) };
 
-        await handler.VerifyConnectivityAsync();
+        mocker.GetMock<IQueryApiUrlBuilder>()
+            .Setup(x => x.Build(string.Empty))
+            .Returns(BaseUri);
 
-        httpClient.LastRequest!.Headers.Authorization.Should().BeNull();
+        mocker.GetMock<IQueryApiHttpClient>()
+            .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), default))
+            .Callback<HttpRequestMessage, CancellationToken>((req, _) => capturedRequest = req)
+            .ReturnsAsync(response);
+
+        mocker.GetMock<IJsonDeserializer>()
+            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(It.IsAny<Stream>(), default))
+            .ReturnsAsync(ValidDiscovery());
+
+        await mocker.CreateInstance<VerifyConnectivityHandler>().VerifyConnectivityAsync();
+
+        capturedRequest!.Headers.Authorization.Should().BeNull();
     }
 
     [Fact]
     public async Task ReturnsServerInfo_WithHostAndPort_FromBaseUri()
     {
-        var httpClient = new FakeQueryApiHttpClient(DiscoveryResponse());
-        var handler = CreateMocker(httpClient).CreateInstance<VerifyConnectivityHandler>();
+        // Address comes from the IQueryApiUrlBuilder, not the discovery body
+        var mocker = CreateChain(out _);
 
-        var serverInfo = await handler.VerifyConnectivityAsync();
+        mocker.GetMock<IJsonDeserializer>()
+            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(It.IsAny<Stream>(), default))
+            .ReturnsAsync(ValidDiscovery());
 
-        serverInfo.Address.Should().Be("localhost:7474");
+        var serverInfo = await mocker.CreateInstance<VerifyConnectivityHandler>().VerifyConnectivityAsync();
+
+        serverInfo.Address.Should().Be("neo4j.example.com:7474");
     }
 
     [Fact]
     public async Task ReturnsServerInfo_WithVersion_FromDiscoveryBody()
     {
-        // neo4jVersion from discovery response is surfaced as IServerInfo.Agent
-        var httpClient = new FakeQueryApiHttpClient(DiscoveryResponse(neo4jVersion: "5.22.0"));
-        var handler = CreateMocker(httpClient).CreateInstance<VerifyConnectivityHandler>();
+        // neo4jVersion from the discovery response surfaces as IServerInfo.Agent
+        var mocker = CreateChain(out _);
 
-        var serverInfo = await handler.VerifyConnectivityAsync();
+        mocker.GetMock<IJsonDeserializer>()
+            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(It.IsAny<Stream>(), default))
+            .ReturnsAsync(ValidDiscovery(neo4jVersion: "5.22.0"));
+
+        var serverInfo = await mocker.CreateInstance<VerifyConnectivityHandler>().VerifyConnectivityAsync();
 
         serverInfo.Agent.Should().Be("5.22.0");
     }
@@ -101,10 +155,13 @@ public class VerifyConnectivityHandlerTests
     public async Task ThrowsServiceUnavailableException_WhenQueryApiEndpointAbsentFromDiscovery()
     {
         // Server is running but does not support the Query API (e.g. Neo4j 4.x)
-        var httpClient = new FakeQueryApiHttpClient(DiscoveryResponse(null));
-        var handler = CreateMocker(httpClient).CreateInstance<VerifyConnectivityHandler>();
+        var mocker = CreateChain(out _);
 
-        var act = () => handler.VerifyConnectivityAsync();
+        mocker.GetMock<IJsonDeserializer>()
+            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(It.IsAny<Stream>(), default))
+            .ReturnsAsync(ValidDiscovery(query: null));
+
+        var act = () => mocker.CreateInstance<VerifyConnectivityHandler>().VerifyConnectivityAsync();
 
         await act.Should()
             .ThrowAsync<ServiceUnavailableException>()
@@ -114,10 +171,13 @@ public class VerifyConnectivityHandlerTests
     [Fact]
     public async Task ThrowsServiceUnavailableException_WhenServerVersionAbsentFromDiscovery()
     {
-        var httpClient = new FakeQueryApiHttpClient(DiscoveryResponse(neo4jVersion: null));
-        var handler = CreateMocker(httpClient).CreateInstance<VerifyConnectivityHandler>();
+        var mocker = CreateChain(out _);
 
-        var act = () => handler.VerifyConnectivityAsync();
+        mocker.GetMock<IJsonDeserializer>()
+            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(It.IsAny<Stream>(), default))
+            .ReturnsAsync(ValidDiscovery(neo4jVersion: null));
+
+        var act = () => mocker.CreateInstance<VerifyConnectivityHandler>().VerifyConnectivityAsync();
 
         await act.Should()
             .ThrowAsync<ServiceUnavailableException>()
@@ -127,10 +187,9 @@ public class VerifyConnectivityHandlerTests
     [Fact]
     public async Task ThrowsServiceUnavailableException_WhenDiscoveryEndpointReturnsNon2xx()
     {
-        var httpClient = new FakeQueryApiHttpClient(new HttpResponseMessage(HttpStatusCode.NotFound));
-        var handler = CreateMocker(httpClient).CreateInstance<VerifyConnectivityHandler>();
+        var mocker = CreateChain(out _, statusCode: HttpStatusCode.NotFound);
 
-        var act = () => handler.VerifyConnectivityAsync();
+        var act = () => mocker.CreateInstance<VerifyConnectivityHandler>().VerifyConnectivityAsync();
 
         await act.Should()
             .ThrowAsync<ServiceUnavailableException>()

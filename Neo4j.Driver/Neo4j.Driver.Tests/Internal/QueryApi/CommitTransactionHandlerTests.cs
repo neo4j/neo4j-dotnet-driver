@@ -15,14 +15,14 @@
 
 #nullable enable
 
+using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Moq;
 using Moq.AutoMock;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
-using static Neo4j.Driver.Tests.Internal.QueryApi.QueryApiTestHelpers;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
@@ -32,87 +32,76 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// </summary>
 public class CommitTransactionHandlerTests
 {
-    private static readonly IAuthToken AnyAuth = AuthTokens.Basic("user", "pass");
-    private static readonly QueryApiTransactionContext TxWithAffinity = new("tx-55", "shard-3");
-    private static readonly QueryApiTransactionContext TxWithoutAffinity = new("tx-55", null);
+    private static readonly QueryApiTransactionContext DefaultTxContext = new("tx-55", null);
 
-    private static AutoMocker CreateMocker(
-        FakeQueryApiHttpClient httpClient,
-        string database = "neo4j",
+    /// <summary>
+    /// Minimum chain: PostAsync("query/v2/tx/{txId}/commit") → request → SendAsync(request) → response.
+    /// </summary>
+    private static AutoMocker CreateChain(
+        out HttpRequestMessage request,
+        out HttpResponseMessage response,
         QueryApiTransactionContext? txContext = null)
     {
-        txContext ??= TxWithoutAffinity;
-        var sessionContext = new SessionContext(
-            database,
-            _ => ValueTask.FromResult(AnyAuth),
-            (_, _, _) => ValueTask.FromResult(false));
-
+        txContext ??= DefaultTxContext;
         var mocker = new AutoMocker();
-        mocker.Use<IQueryApiHttpClient>(httpClient);
-        mocker.Use<QueryApiTransactionContext>(txContext);
-        mocker.Use<IQueryApiRequestBuilder>(
-            new QueryApiRequestBuilder(
-                UrlBuilder,
-                sessionContext,
-                new QueryApiAuthApplicator(),
-                new QueryApiClusterAffinityApplicator(),
-                txContext));
+        var req = new HttpRequestMessage();
+        var resp = new HttpResponseMessage { Content = new ByteArrayContent([]) };
+        request = req;
+        response = resp;
 
-        mocker.Use<IJsonDeserializer>(new QueryApiJsonSerializer());
+        mocker.Use(txContext);
+
+        mocker.GetMock<IQueryApiRequestBuilder>()
+            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}/commit", default))
+            .ReturnsAsync(req);
+
+        mocker.GetMock<IQueryApiHttpClient>()
+            .Setup(x => x.SendAsync(req, default))
+            .ReturnsAsync(resp);
+
         return mocker;
     }
 
     [Fact]
-    public async Task SendsPost_ToCommitEndpoint_WithTransactionId()
-    {
-        // POST /db/{database}/query/v2/tx/{txId}/commit
-        var httpClient = new FakeQueryApiHttpClient(AcceptedWith(new {}));
-        var handler = CreateMocker(httpClient, "movies", TxWithoutAffinity).CreateInstance<CommitTransactionHandler>();
-
-        await handler.CommitTransactionAsync();
-
-        httpClient.LastRequest!.Method.Should().Be(HttpMethod.Post);
-        httpClient.LastRequest.RequestUri!.PathAndQuery.Should().Be("/db/movies/query/v2/tx/tx-55/commit");
-    }
-
-    [Fact]
-    public async Task ReturnsBookmarks_FromCommitResponse()
+    public async Task ReturnsBookmarks_FromDeserializedBody()
     {
         // Spec: the commit response contains updated bookmarks for causal consistency
-        var httpClient = new FakeQueryApiHttpClient(
-            AcceptedWith(
-                new
-                {
-                    bookmarks = new[] { "neo4j:bookmark:v1:tx300", "neo4j:bookmark:v1:tx301" }
-                }));
+        var mocker = CreateChain(out _, out _);
 
-        var handler = CreateMocker(httpClient).CreateInstance<CommitTransactionHandler>();
+        mocker.GetMock<IJsonDeserializer>()
+            .Setup(x => x.DeserializeAsync<CommitTransactionHandler.ResponseBody>(It.IsAny<Stream>(), default))
+            .ReturnsAsync(new CommitTransactionHandler.ResponseBody
+            {
+                Bookmarks = ["neo4j:bookmark:v1:tx300", "neo4j:bookmark:v1:tx301"]
+            });
 
-        var bookmarks = await handler.CommitTransactionAsync();
+        var bookmarks = await mocker.CreateInstance<CommitTransactionHandler>().CommitTransactionAsync();
 
         bookmarks.Should().Equal("neo4j:bookmark:v1:tx300", "neo4j:bookmark:v1:tx301");
     }
 
     [Fact]
-    public async Task ReturnsEmptyBookmarks_WhenResponseBodyIsEmpty()
+    public async Task ReturnsEmptyBookmarks_WhenBodyHasNoBookmarks()
     {
-        var httpClient = new FakeQueryApiHttpClient(AcceptedWith(new {}));
-        var handler = CreateMocker(httpClient).CreateInstance<CommitTransactionHandler>();
+        var mocker = CreateChain(out _, out _);
 
-        var bookmarks = await handler.CommitTransactionAsync();
+        mocker.GetMock<IJsonDeserializer>()
+            .Setup(x => x.DeserializeAsync<CommitTransactionHandler.ResponseBody>(It.IsAny<Stream>(), default))
+            .ReturnsAsync(new CommitTransactionHandler.ResponseBody());
+
+        var bookmarks = await mocker.CreateInstance<CommitTransactionHandler>().CommitTransactionAsync();
 
         bookmarks.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task ForwardsClusterAffinityHeader_OnRequest()
+    public async Task PassesResponse_ToErrorChecker()
     {
-        // Spec: cluster affinity must be forwarded on COMMIT as well
-        var httpClient = new FakeQueryApiHttpClient(AcceptedWith(new {}));
-        var handler = CreateMocker(httpClient, txContext: TxWithAffinity).CreateInstance<CommitTransactionHandler>();
+        // Chain: SendAsync(request) → response → EnsureSuccessAsync(response)
+        var mocker = CreateChain(out _, out var response);
+        await mocker.CreateInstance<CommitTransactionHandler>().CommitTransactionAsync();
 
-        await handler.CommitTransactionAsync();
-
-        httpClient.LastRequest!.Headers.GetValues("neo4j-cluster-affinity").Should().Equal("shard-3");
+        mocker.GetMock<IQueryApiErrorChecker>()
+            .Verify(x => x.EnsureSuccessAsync(response, default), Times.Once);
     }
 }

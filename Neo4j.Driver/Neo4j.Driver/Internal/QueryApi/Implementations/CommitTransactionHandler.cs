@@ -64,15 +64,9 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
         return body?.Bookmarks ?? [];
     }
 
-    private class ResponseBody
+    internal record ResponseBody
     {
         public string[]? Bookmarks { get; init; }
-        public ErrorBody[]? Errors { get; init; }
-    }
-
-    private class ErrorBody
-    {
-        public string Code { get; } = string.Empty;
-        public string Message { get; } = string.Empty;
+        public QueryApiErrorBody[]? Errors { get; init; }
     }
 }

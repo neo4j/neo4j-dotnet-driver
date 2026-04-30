@@ -17,7 +17,6 @@
 
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -55,7 +54,7 @@ internal class AutoCommitHandler : IAutoCommitHandler
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
 
         var body = await _jsonDeserializer
-            .DeserializeAsync<ResponseBody>(
+            .DeserializeAsync<QueryApiResultBody>(
                 await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false),
                 cancellationToken)
             .ConfigureAwait(false);
@@ -93,29 +92,10 @@ internal class AutoCommitHandler : IAutoCommitHandler
         return request;
     }
 
-    private class RequestBody
+    internal record RequestBody
     {
         public string? Statement { get; init; }
         public IDictionary<string, object>? Parameters { get; init; }
         public string[]? Bookmarks { get; init; }
-    }
-
-    private class ResponseBody
-    {
-        public DataBody? Data { get; init; }
-        public string[]? Bookmarks { get; init; }
-        public ErrorBody[]? Errors { get; init; }
-    }
-
-    private class DataBody
-    {
-        public string[] Fields { get; init; } = [];
-        public JsonElement[][]? Values { get; init; }
-    }
-
-    private class ErrorBody
-    {
-        public string Code { get; init; } = string.Empty;
-        public string Message { get; init; } = string.Empty;
     }
 }

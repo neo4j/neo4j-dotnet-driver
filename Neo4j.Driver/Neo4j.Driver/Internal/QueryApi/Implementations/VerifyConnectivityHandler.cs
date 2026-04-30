@@ -77,7 +77,7 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
         return new ServerInfo($"{baseUri.Host}:{baseUri.Port}", body.Neo4jVersion);
     }
 
-    private class DiscoveryResponse
+    internal class DiscoveryResponse
     {
         /// <summary>The Query API base URL, e.g. <c>http://localhost:7474/query/v2</c>.</summary>
         public string? Query { get; init; }

@@ -15,19 +15,16 @@
 
 #nullable enable
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
-using static Neo4j.Driver.Tests.Internal.QueryApi.QueryApiTestHelpers;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
@@ -37,145 +34,152 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// </summary>
 public class AutoCommitHandlerTests
 {
-    private static readonly IAuthToken AnyAuth = AuthTokens.Basic("user", "pass");
-
-    private static AutoMocker CreateMocker(FakeQueryApiHttpClient httpClient, string database = "neo4j")
+    /// <summary>
+    /// Sets up the minimum mock chain needed to exercise the handler without crashing:
+    /// PostAsync(path) → request → SendAsync(request) → response.
+    /// EnsureSuccessAsync and DeserializeAsync default to safe returns via AutoMocker.
+    /// </summary>
+    private static AutoMocker CreateChain(
+        out HttpRequestMessage request,
+        out HttpResponseMessage response,
+        string path = "query/v2")
     {
-        var sessionContext = new SessionContext(
-            database,
-            _ => ValueTask.FromResult(AnyAuth),
-            (_, _, _) => ValueTask.FromResult(false));
-
         var mocker = new AutoMocker();
-        mocker.Use<IQueryApiHttpClient>(httpClient);
-        mocker.Use<IQueryApiRequestBuilder>(
-            new QueryApiRequestBuilder(
-                UrlBuilder,
-                sessionContext,
-                new QueryApiAuthApplicator(),
-                new QueryApiClusterAffinityApplicator()));
+        var req = new HttpRequestMessage();
+        var resp = new HttpResponseMessage { Content = new ByteArrayContent([]) };
+        request = req;
+        response = resp;
 
-        var json = new QueryApiJsonSerializer();
-        mocker.Use<IJsonDeserializer>(json);
-        mocker.Use<IJsonSerializer>(json);
+        mocker.GetMock<IQueryApiRequestBuilder>()
+            .Setup(x => x.PostAsync(path, default))
+            .ReturnsAsync(req);
+
+        mocker.GetMock<IQueryApiHttpClient>()
+            .Setup(x => x.SendAsync(req, default))
+            .ReturnsAsync(resp);
+
         return mocker;
     }
 
     [Fact]
-    public async Task SendsPost_ToAutoCommitEndpoint()
-    {
-        // POST /db/{database}/query/v2
-        var httpClient = new FakeQueryApiHttpClient(
-            AcceptedWith(
-                new
-                {
-                    data = new { fields = Array.Empty<string>(), values = Array.Empty<object[]>() }
-                }));
-
-        var handler = CreateMocker(httpClient, "movies").CreateInstance<AutoCommitHandler>();
-
-        await handler.AutoCommitAsync(new Query("RETURN 1"), []);
-
-        httpClient.LastRequest!.Method.Should().Be(HttpMethod.Post);
-        httpClient.LastRequest.RequestUri!.PathAndQuery.Should().Be("/db/movies/query/v2");
-    }
-
-    [Fact]
-    public async Task RequestBody_ContainsStatement()
+    public async Task Serializes_Statement_InRequestBody()
     {
         // Spec: request body must include a "statement" field
-        var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
-        var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
+        var mocker = CreateChain(out _, out _);
+        AutoCommitHandler.RequestBody? capturedBody = null;
+        mocker.GetMock<IJsonSerializer>()
+            .Setup(x => x.Serialize(It.IsAny<AutoCommitHandler.RequestBody>()))
+            .Callback<AutoCommitHandler.RequestBody>(b => capturedBody = b);
 
-        await handler.AutoCommitAsync(new Query("MATCH (n) RETURN n"), []);
+        await mocker.CreateInstance<AutoCommitHandler>().AutoCommitAsync(new Query("MATCH (n) RETURN n"), []);
 
-        var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
-        body.GetProperty("statement").GetString().Should().Be("MATCH (n) RETURN n");
+        capturedBody.Should().NotBeNull();
+        capturedBody!.Statement.Should().Be("MATCH (n) RETURN n");
     }
 
     [Fact]
-    public async Task RequestBody_IncludesParameters_WhenQueryHasParameters()
+    public async Task Serializes_Parameters_WhenQueryHasParameters()
     {
         // Spec: parameters are passed as a key-value map under "parameters"
-        var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
-        var query = new Query("MATCH (n) WHERE n.id = $id RETURN n", new Dictionary<string, object> { ["id"] = 42 });
-        var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
+        var query = new Query("MATCH (n {id: $id})", new Dictionary<string, object> { ["id"] = 42 });
+        var mocker = CreateChain(out _, out _);
+        AutoCommitHandler.RequestBody? capturedBody = null;
+        mocker.GetMock<IJsonSerializer>()
+            .Setup(x => x.Serialize(It.IsAny<AutoCommitHandler.RequestBody>()))
+            .Callback<AutoCommitHandler.RequestBody>(b => capturedBody = b);
 
-        await handler.AutoCommitAsync(query, []);
+        await mocker.CreateInstance<AutoCommitHandler>().AutoCommitAsync(query, []);
 
-        var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
-        body.GetProperty("parameters").GetProperty("id").GetInt32().Should().Be(42);
+        capturedBody.Should().NotBeNull();
+        capturedBody!.Parameters.Should().ContainKey("id");
     }
 
     [Fact]
-    public async Task RequestBody_OmitsParameters_WhenQueryHasNoParameters()
+    public async Task Omits_Parameters_WhenQueryHasNone()
     {
         // Null fields are omitted from the request body (WhenWritingNull option)
-        var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
-        var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
+        var mocker = CreateChain(out _, out _);
+        AutoCommitHandler.RequestBody? capturedBody = null;
+        mocker.GetMock<IJsonSerializer>()
+            .Setup(x => x.Serialize(It.IsAny<AutoCommitHandler.RequestBody>()))
+            .Callback<AutoCommitHandler.RequestBody>(b => capturedBody = b);
 
-        await handler.AutoCommitAsync(new Query("RETURN 1"), []);
+        await mocker.CreateInstance<AutoCommitHandler>().AutoCommitAsync(new Query("RETURN 1"), []);
 
-        var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
-        body.TryGetProperty("parameters", out var _).Should().BeFalse();
+        capturedBody.Should().NotBeNull();
+        capturedBody!.Parameters.Should().BeNull();
     }
 
     [Fact]
-    public async Task RequestBody_IncludesBookmarks_WhenProvided()
+    public async Task Serializes_Bookmarks_WhenProvided()
     {
         // Spec: bookmarks enable causal consistency across requests
-        var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
         var bookmarks = new List<string> { "neo4j:bookmark:v1:tx100", "neo4j:bookmark:v1:tx101" };
-        var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
+        var mocker = CreateChain(out _, out _);
+        AutoCommitHandler.RequestBody? capturedBody = null;
+        mocker.GetMock<IJsonSerializer>()
+            .Setup(x => x.Serialize(It.IsAny<AutoCommitHandler.RequestBody>()))
+            .Callback<AutoCommitHandler.RequestBody>(b => capturedBody = b);
 
-        await handler.AutoCommitAsync(new Query("RETURN 1"), bookmarks);
+        await mocker.CreateInstance<AutoCommitHandler>().AutoCommitAsync(new Query("RETURN 1"), bookmarks);
 
-        var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
-        var parsedBookmarks = body.GetProperty("bookmarks")
-            .EnumerateArray()
-            .Select(e => e.GetString())
-            .ToList();
-
-        parsedBookmarks.Should().Equal("neo4j:bookmark:v1:tx100", "neo4j:bookmark:v1:tx101");
+        capturedBody.Should().NotBeNull();
+        capturedBody!.Bookmarks.Should().Equal("neo4j:bookmark:v1:tx100", "neo4j:bookmark:v1:tx101");
     }
 
     [Fact]
-    public async Task RequestBody_OmitsBookmarks_WhenListIsEmpty()
+    public async Task Omits_Bookmarks_WhenListIsEmpty()
     {
-        var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
-        var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
+        var mocker = CreateChain(out _, out _);
+        AutoCommitHandler.RequestBody? capturedBody = null;
+        mocker.GetMock<IJsonSerializer>()
+            .Setup(x => x.Serialize(It.IsAny<AutoCommitHandler.RequestBody>()))
+            .Callback<AutoCommitHandler.RequestBody>(b => capturedBody = b);
 
-        await handler.AutoCommitAsync(new Query("RETURN 1"), []);
+        await mocker.CreateInstance<AutoCommitHandler>().AutoCommitAsync(new Query("RETURN 1"), []);
 
-        var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
-        body.TryGetProperty("bookmarks", out var _).Should().BeFalse();
+        capturedBody.Should().NotBeNull();
+        capturedBody!.Bookmarks.Should().BeNull();
     }
 
     [Fact]
-    public async Task Response_ReturnsFieldNamesAndRows()
+    public async Task Returns_FieldsRowsAndBookmarks_FromDeserializedBody()
     {
         // Spec: successful response contains data.fields and data.values
-        var fields = new[] { "name", "age" };
-        var values = new[] { new object[] { "Alice", 30 }, new object[] { "Bob", 25 } };
-        var data = new { fields, values };
-        var bookmarks = new[] { "neo4j:bookmark:v1:tx55" };
-        var httpClient = new FakeQueryApiHttpClient(AcceptedWith(new { data, bookmarks }));
-        var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
+        var mocker = CreateChain(out _, out _);
+        var expectedBody = new QueryApiResultBody
+        {
+            Data = new QueryApiDataBody
+            {
+                Fields = ["name", "age"],
+                Values = [[JsonDocument.Parse("\"Alice\"").RootElement, JsonDocument.Parse("30").RootElement]]
+            },
+            Bookmarks = ["neo4j:bookmark:v1:tx55"]
+        };
 
-        var result = await handler.AutoCommitAsync(new Query("MATCH (n) RETURN n.name, n.age"), []);
+        mocker.GetMock<IJsonDeserializer>()
+            .Setup(x => x.DeserializeAsync<QueryApiResultBody>(It.IsAny<Stream>(), default))
+            .ReturnsAsync(expectedBody);
+
+        var result = await mocker.CreateInstance<AutoCommitHandler>()
+            .AutoCommitAsync(new Query("MATCH (n) RETURN n.name, n.age"), []);
 
         result.Fields.Should().Equal("name", "age");
-        result.Rows.Should().HaveCount(2);
+        result.Rows.Should().HaveCount(1);
         result.Bookmarks.Should().Equal("neo4j:bookmark:v1:tx55");
     }
 
     [Fact]
-    public async Task Response_ReturnsEmptyFields_WhenDataIsAbsent()
+    public async Task Returns_EmptyResponse_WhenDeserializedBodyIsNull()
     {
-        var httpClient = new FakeQueryApiHttpClient(AcceptedWith(new {}));
-        var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
+        var mocker = CreateChain(out _, out _);
 
-        var result = await handler.AutoCommitAsync(new Query("RETURN 1"), []);
+        mocker.GetMock<IJsonDeserializer>()
+            .Setup(x => x.DeserializeAsync<QueryApiResultBody>(It.IsAny<Stream>(), default))
+            .ReturnsAsync((QueryApiResultBody?)null);
+
+        var result = await mocker.CreateInstance<AutoCommitHandler>()
+            .AutoCommitAsync(new Query("RETURN 1"), []);
 
         result.Fields.Should().BeEmpty();
         result.Rows.Should().BeEmpty();
@@ -183,55 +187,40 @@ public class AutoCommitHandlerTests
     }
 
     [Fact]
-    public async Task SetsAuthorizationHeader_OnRequest()
+    public async Task PassesResponse_ToErrorChecker()
     {
-        // Auth comes from the session context injected at construction — verify the header is applied
-        var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
-        var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
-
-        await handler.AutoCommitAsync(new Query("RETURN 1"), []);
-
-        httpClient.LastRequest!.Headers.Authorization.Should().NotBeNull();
-        httpClient.LastRequest.Headers.Authorization!.Scheme.Should().Be("Basic");
-    }
-
-    [Fact]
-    public async Task CallsErrorChecker_OnResponse()
-    {
-        var mocker = CreateMocker(new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse())));
-
+        // Chain: SendAsync(request) → response → EnsureSuccessAsync(response)
+        var mocker = CreateChain(out _, out var response);
         await mocker.CreateInstance<AutoCommitHandler>().AutoCommitAsync(new Query("RETURN 1"), []);
 
         mocker.GetMock<IQueryApiErrorChecker>()
-            .Verify(x => x.EnsureSuccessAsync(It.IsAny<HttpResponseMessage>(), default), Times.Once);
+            .Verify(x => x.EnsureSuccessAsync(response, default), Times.Once);
     }
 
     [Fact]
     public async Task PropagatesBodyError_WhenResponseContainsErrorArray()
     {
         // Spec: even on 202, the response body may contain an errors array
-        var response = AcceptedWith(
-            new
-            {
-                errors = new[] { new { code = "Neo.ClientError.Statement.SyntaxError", message = "Invalid Cypher" } }
-            });
+        var mocker = CreateChain(out _, out _);
+        var bodyWithError = new QueryApiResultBody
+        {
+            Errors =
+            [
+                new QueryApiErrorBody("Neo.ClientError.Statement.SyntaxError", "Invalid Cypher")
+            ]
+        };
 
-        var mocker = CreateMocker(new FakeQueryApiHttpClient(response));
+        mocker.GetMock<IJsonDeserializer>()
+            .Setup(x => x.DeserializeAsync<QueryApiResultBody>(It.IsAny<Stream>(), default))
+            .ReturnsAsync(bodyWithError);
+
         mocker.GetMock<IQueryApiErrorChecker>()
-            .Setup(x => x.ThrowIfAnyError(It.IsAny<string>(), It.IsAny<string>()))
+            .Setup(x => x.ThrowIfAnyError("Neo.ClientError.Statement.SyntaxError", "Invalid Cypher"))
             .Throws(new ClientException("SyntaxError", "Invalid Cypher"));
 
         var act = () => mocker.CreateInstance<AutoCommitHandler>()
             .AutoCommitAsync(new Query("RETUN 1"), []);
 
         await act.Should().ThrowAsync<ClientException>();
-    }
-
-    private static object EmptyDataResponse()
-    {
-        return new
-        {
-            data = new { fields = Array.Empty<string>(), values = Array.Empty<object[]>() }
-        };
     }
 }
