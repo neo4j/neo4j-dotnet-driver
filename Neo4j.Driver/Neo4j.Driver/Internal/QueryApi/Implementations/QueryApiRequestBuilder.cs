@@ -15,7 +15,6 @@
 
 #nullable enable
 
-using System;
 using System.Net.Http;
 
 namespace Neo4j.Driver.Internal.QueryApi;
@@ -24,19 +23,20 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
 {
     private readonly IAuthApplicator _authApplicator;
     private readonly IClusterAffinityApplicator _clusterAffinityApplicator;
+    private readonly SessionContext _sessionContext;
     private readonly IQueryApiUrlBuilder _urlBuilder;
 
     public QueryApiRequestBuilder(
         IQueryApiUrlBuilder urlBuilder,
+        SessionContext sessionContext,
         IAuthApplicator authApplicator,
         IClusterAffinityApplicator clusterAffinityApplicator)
     {
         _urlBuilder = urlBuilder;
+        _sessionContext = sessionContext;
         _authApplicator = authApplicator;
         _clusterAffinityApplicator = clusterAffinityApplicator;
     }
-
-    public Uri BaseUri => _urlBuilder.Build(string.Empty);
 
     public HttpRequestMessage Post(string path, IAuthToken auth, QueryApiTransactionContext? txContext = null)
     {
@@ -54,7 +54,7 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
         IAuthToken auth,
         QueryApiTransactionContext? txContext)
     {
-        var request = new HttpRequestMessage(method, _urlBuilder.Build(path));
+        var request = new HttpRequestMessage(method, _urlBuilder.Build($"db/{_sessionContext.Database}/{path}"));
         _authApplicator.Apply(request, auth);
         if (txContext is not null)
         {

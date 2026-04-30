@@ -24,6 +24,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
 using static Neo4j.Driver.Tests.Internal.QueryApi.QueryApiTestHelpers;
@@ -38,11 +39,11 @@ public class AutoCommitHandlerTests
 {
     private static readonly IAuthToken AnyAuth = AuthTokens.Basic("user", "pass");
 
-    private static AutoMocker CreateMocker(FakeQueryApiHttpClient httpClient)
+    private static AutoMocker CreateMocker(FakeQueryApiHttpClient httpClient, string database = "neo4j")
     {
         var mocker = new AutoMocker();
         mocker.Use<IQueryApiHttpClient>(httpClient);
-        mocker.Use<IQueryApiRequestBuilder>(new QueryApiRequestBuilder(UrlBuilder, new QueryApiAuthApplicator(), new QueryApiClusterAffinityApplicator()));
+        mocker.Use<IQueryApiRequestBuilder>(new QueryApiRequestBuilder(UrlBuilder, new SessionContext(database), new QueryApiAuthApplicator(), new QueryApiClusterAffinityApplicator()));
         var json = new QueryApiJsonSerializer();
         mocker.Use<IJsonDeserializer>(json);
         mocker.Use<IJsonSerializer>(json);
@@ -59,9 +60,9 @@ public class AutoCommitHandlerTests
                 {
                     data = new { fields = Array.Empty<string>(), values = Array.Empty<object[]>() }
                 }));
-        var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
+        var handler = CreateMocker(httpClient, database: "movies").CreateInstance<AutoCommitHandler>();
 
-        await handler.AutoCommitAsync("movies", new Query("RETURN 1"), [], AnyAuth);
+        await handler.AutoCommitAsync(new Query("RETURN 1"), [], AnyAuth);
 
         httpClient.LastRequest!.Method.Should().Be(HttpMethod.Post);
         httpClient.LastRequest.RequestUri!.PathAndQuery.Should().Be("/db/movies/query/v2");
@@ -74,7 +75,7 @@ public class AutoCommitHandlerTests
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
         var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
 
-        await handler.AutoCommitAsync("neo4j", new Query("MATCH (n) RETURN n"), [], AnyAuth);
+        await handler.AutoCommitAsync(new Query("MATCH (n) RETURN n"), [], AnyAuth);
 
         var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
         body.GetProperty("statement").GetString().Should().Be("MATCH (n) RETURN n");
@@ -88,7 +89,7 @@ public class AutoCommitHandlerTests
         var query = new Query("MATCH (n) WHERE n.id = $id RETURN n", new Dictionary<string, object> { ["id"] = 42 });
         var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
 
-        await handler.AutoCommitAsync("neo4j", query, [], AnyAuth);
+        await handler.AutoCommitAsync(query, [], AnyAuth);
 
         var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
         body.GetProperty("parameters").GetProperty("id").GetInt32().Should().Be(42);
@@ -101,7 +102,7 @@ public class AutoCommitHandlerTests
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
         var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
 
-        await handler.AutoCommitAsync("neo4j", new Query("RETURN 1"), [], AnyAuth);
+        await handler.AutoCommitAsync(new Query("RETURN 1"), [], AnyAuth);
 
         var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
         body.TryGetProperty("parameters", out var _).Should().BeFalse();
@@ -115,7 +116,7 @@ public class AutoCommitHandlerTests
         var bookmarks = new List<string> { "neo4j:bookmark:v1:tx100", "neo4j:bookmark:v1:tx101" };
         var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
 
-        await handler.AutoCommitAsync("neo4j", new Query("RETURN 1"), bookmarks, AnyAuth);
+        await handler.AutoCommitAsync(new Query("RETURN 1"), bookmarks, AnyAuth);
 
         var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
         var parsedBookmarks = body.GetProperty("bookmarks")
@@ -132,7 +133,7 @@ public class AutoCommitHandlerTests
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
         var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
 
-        await handler.AutoCommitAsync("neo4j", new Query("RETURN 1"), [], AnyAuth);
+        await handler.AutoCommitAsync(new Query("RETURN 1"), [], AnyAuth);
 
         var body = JsonDocument.Parse(httpClient.LastRequestBody!).RootElement;
         body.TryGetProperty("bookmarks", out var _).Should().BeFalse();
@@ -155,7 +156,7 @@ public class AutoCommitHandlerTests
                 }));
         var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
 
-        var result = await handler.AutoCommitAsync("neo4j", new Query("MATCH (n) RETURN n.name, n.age"), [], AnyAuth);
+        var result = await handler.AutoCommitAsync(new Query("MATCH (n) RETURN n.name, n.age"), [], AnyAuth);
 
         result.Fields.Should().Equal("name", "age");
         result.Rows.Should().HaveCount(2);
@@ -168,7 +169,7 @@ public class AutoCommitHandlerTests
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(new {}));
         var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
 
-        var result = await handler.AutoCommitAsync("neo4j", new Query("RETURN 1"), [], AnyAuth);
+        var result = await handler.AutoCommitAsync(new Query("RETURN 1"), [], AnyAuth);
 
         result.Fields.Should().BeEmpty();
         result.Rows.Should().BeEmpty();
@@ -182,7 +183,7 @@ public class AutoCommitHandlerTests
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse()));
         var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
 
-        await handler.AutoCommitAsync("neo4j", new Query("RETURN 1"), [], token);
+        await handler.AutoCommitAsync(new Query("RETURN 1"), [], token);
 
         httpClient.LastRequest!.Headers.Authorization.Should().NotBeNull();
         httpClient.LastRequest.Headers.Authorization!.Scheme.Should().Be("Basic");
@@ -193,7 +194,7 @@ public class AutoCommitHandlerTests
     {
         var mocker = CreateMocker(new FakeQueryApiHttpClient(AcceptedWith(EmptyDataResponse())));
 
-        await mocker.CreateInstance<AutoCommitHandler>().AutoCommitAsync("neo4j", new Query("RETURN 1"), [], AnyAuth);
+        await mocker.CreateInstance<AutoCommitHandler>().AutoCommitAsync(new Query("RETURN 1"), [], AnyAuth);
 
         mocker.GetMock<IQueryApiErrorChecker>()
             .Verify(x => x.EnsureSuccessAsync(It.IsAny<HttpResponseMessage>(), default), Times.Once);
@@ -214,7 +215,7 @@ public class AutoCommitHandlerTests
             .Throws(new ClientException("SyntaxError", "Invalid Cypher"));
 
         var act = () => mocker.CreateInstance<AutoCommitHandler>()
-            .AutoCommitAsync("neo4j", new Query("RETUN 1"), [], AnyAuth);
+            .AutoCommitAsync(new Query("RETUN 1"), [], AnyAuth);
 
         await act.Should().ThrowAsync<ClientException>();
     }

@@ -21,59 +21,77 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
+/// <summary>
+/// Verifies connectivity by hitting the Neo4j discovery endpoint (<c>GET /</c>) and confirming that the response
+/// advertises both the Query API endpoint and the server version. Spec: https://neo4j.com/docs/http-api/current/discovery/
+/// Decision: always hit discovery even when driver is warm; do not run a dummy query.
+/// </summary>
 internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
 {
-    private readonly IQueryApiErrorChecker _errorChecker;
     private readonly IQueryApiHttpClient _httpClient;
-    private readonly IJsonSerializer _jsonSerializer;
-    private readonly IQueryApiRequestBuilder _requestBuilder;
+    private readonly IJsonDeserializer _jsonDeserializer;
+    private readonly IQueryApiUrlBuilder _urlBuilder;
 
     public VerifyConnectivityHandler(
-        IQueryApiRequestBuilder requestBuilder,
+        IQueryApiUrlBuilder urlBuilder,
         IQueryApiHttpClient httpClient,
-        IQueryApiErrorChecker errorChecker,
-        IJsonSerializer jsonSerializer)
+        IJsonDeserializer jsonDeserializer)
     {
-        _requestBuilder = requestBuilder;
+        _urlBuilder = urlBuilder;
         _httpClient = httpClient;
-        _errorChecker = errorChecker;
-        _jsonSerializer = jsonSerializer;
+        _jsonDeserializer = jsonDeserializer;
     }
 
-    public async Task<IServerInfo> VerifyConnectivityAsync(
-        IAuthToken auth,
-        CancellationToken cancellationToken = default)
+    public async Task<IServerInfo> VerifyConnectivityAsync(CancellationToken cancellationToken = default)
     {
-        using var request = BuildRequest(auth);
+        // Discovery endpoint is unauthenticated — no Authorization header needed.
+        using var request = new HttpRequestMessage(HttpMethod.Get, _urlBuilder.Build(string.Empty));
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
 
-        var baseUri = _requestBuilder.BaseUri;
-        var address = $"{baseUri.Host}:{baseUri.Port}";
-        var agent = response.Headers.Server?.ToString() ?? string.Empty;
-        return new ServerInfo(address, "QueryApi/2.0", agent);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new ServiceUnavailableException(
+                $"Discovery endpoint returned HTTP {(int)response.StatusCode}. " +
+                "Verify the server is running and the base URI is correct.");
+        }
+
+        var body = await _jsonDeserializer
+            .DeserializeAsync<DiscoveryResponse>(
+                await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (body?.Query is null)
+        {
+            throw new ServiceUnavailableException(
+                "The discovery endpoint did not advertise a Query API endpoint. " +
+                "Ensure the server supports the Query API (Neo4j 5.x+).");
+        }
+
+        if (body.Neo4jVersion is null)
+        {
+            throw new ServiceUnavailableException("The discovery endpoint did not include a server version.");
+        }
+
+        var baseUri = _urlBuilder.Build(string.Empty);
+        return new ServerInfo($"{baseUri.Host}:{baseUri.Port}", body.Neo4jVersion);
     }
 
-    private HttpRequestMessage BuildRequest(IAuthToken auth)
+    private class DiscoveryResponse
     {
-        var body = new RequestBody { Statement = "RETURN 1" };
-        var request = _requestBuilder.Post("db/system/query/v2", auth);
-        request.Content = _jsonSerializer.Serialize(body);
-        return request;
+        /// <summary>The Query API base URL, e.g. <c>http://localhost:7474/query/v2</c>.</summary>
+        public string? Query { get; init; }
+
+        public string? Neo4jVersion { get; init; }
     }
 
-    private class RequestBody
+    private sealed class ServerInfo : IServerInfo
     {
-        public string? Statement { get; init; }
-    }
-
-    private class ServerInfo : IServerInfo
-    {
-        public ServerInfo(string address, string protocolVersion, string agent)
+        public ServerInfo(string address, string agent)
         {
             Address = address;
-            ProtocolVersion = protocolVersion;
             Agent = agent;
+            ProtocolVersion = "QueryApi/2.0";
         }
 
         public string Address { get; }

@@ -41,12 +41,11 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
     }
 
     public async Task<string[]> CommitTransactionAsync(
-        string database,
         QueryApiTransactionContext txContext,
         IAuthToken auth,
         CancellationToken cancellationToken = default)
     {
-        using var request = BuildRequest(database, txContext, auth);
+        using var request = BuildRequest(txContext, auth);
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
 
@@ -64,9 +63,9 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
         return body?.Bookmarks ?? [];
     }
 
-    private HttpRequestMessage BuildRequest(string database, QueryApiTransactionContext txContext, IAuthToken auth)
+    private HttpRequestMessage BuildRequest(QueryApiTransactionContext txContext, IAuthToken auth)
     {
-        return _requestBuilder.Post($"db/{database}/query/v2/tx/{txContext.TxId}/commit", auth, txContext);
+        return _requestBuilder.Post($"query/v2/tx/{txContext.TxId}/commit", auth, txContext);
     }
 
     private class ResponseBody

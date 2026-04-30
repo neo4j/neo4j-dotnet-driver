@@ -23,7 +23,6 @@ namespace Neo4j.Driver.Internal.QueryApi;
 internal interface IRunInTransactionHandler
 {
     Task<QueryApiResponse> RunInTransactionAsync(
-        string database,
         QueryApiTransactionContext txContext,
         Query query,
         IAuthToken auth,

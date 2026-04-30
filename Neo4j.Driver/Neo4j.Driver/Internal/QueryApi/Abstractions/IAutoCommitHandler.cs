@@ -24,7 +24,6 @@ namespace Neo4j.Driver.Internal.QueryApi;
 internal interface IAutoCommitHandler
 {
     Task<QueryApiResponse> AutoCommitAsync(
-        string database,
         Query query,
         IReadOnlyList<string> bookmarks,
         IAuthToken auth,

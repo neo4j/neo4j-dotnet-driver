@@ -46,13 +46,12 @@ internal class AutoCommitHandler : IAutoCommitHandler
     }
 
     public async Task<QueryApiResponse> AutoCommitAsync(
-        string database,
         Query query,
         IReadOnlyList<string> bookmarks,
         IAuthToken auth,
         CancellationToken cancellationToken = default)
     {
-        using var request = BuildRequest(database, query, bookmarks, auth);
+        using var request = BuildRequest(query, bookmarks, auth);
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
 
@@ -76,7 +75,6 @@ internal class AutoCommitHandler : IAutoCommitHandler
     }
 
     private HttpRequestMessage BuildRequest(
-        string database,
         Query query,
         IReadOnlyList<string> bookmarks,
         IAuthToken auth)
@@ -91,7 +89,7 @@ internal class AutoCommitHandler : IAutoCommitHandler
             Bookmarks = bookmarks.Count > 0 ? [.. bookmarks] : null
         };
 
-        var request = _requestBuilder.Post($"db/{database}/query/v2", auth);
+        var request = _requestBuilder.Post("query/v2", auth);
         request.Content = _jsonSerializer.Serialize(body);
         return request;
     }

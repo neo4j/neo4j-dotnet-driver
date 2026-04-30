@@ -23,10 +23,8 @@ namespace Neo4j.Driver.Internal.QueryApi;
 internal interface IVerifyConnectivityHandler
 {
     /// <summary>
-    /// Verifies the server is reachable and returns basic server information. Uses the <c>system</c> database with
-    /// <c>RETURN 1</c> — the precise semantics of a connectivity check over the Query API are an open question.
+    /// Hits the discovery endpoint (<c>GET /</c>) unconditionally, confirms the Query API endpoint and server version
+    /// are advertised, and returns basic server information.
     /// </summary>
-    Task<IServerInfo> VerifyConnectivityAsync(
-        IAuthToken auth,
-        CancellationToken cancellationToken = default);
+    Task<IServerInfo> VerifyConnectivityAsync(CancellationToken cancellationToken = default);
 }

@@ -24,7 +24,6 @@ namespace Neo4j.Driver.Internal.QueryApi;
 internal interface IBeginTransactionHandler
 {
     Task<QueryApiTransactionContext> BeginTransactionAsync(
-        string database,
         IReadOnlyList<string> bookmarks,
         IAuthToken auth,
         CancellationToken cancellationToken = default);

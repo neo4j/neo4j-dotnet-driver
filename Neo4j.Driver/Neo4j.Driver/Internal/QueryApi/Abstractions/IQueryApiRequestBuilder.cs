@@ -15,14 +15,16 @@
 
 #nullable enable
 
-using System;
 using System.Net.Http;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
+/// <summary>
+/// Builds HTTP requests for the Query API, prepending <c>db/{database}/</c> to all paths using the
+/// <see cref="SessionContext"/> supplied at construction time.
+/// </summary>
 internal interface IQueryApiRequestBuilder
 {
-    Uri BaseUri { get; }
     HttpRequestMessage Post(string path, IAuthToken auth, QueryApiTransactionContext? txContext = null);
     HttpRequestMessage Delete(string path, IAuthToken auth, QueryApiTransactionContext? txContext = null);
 }

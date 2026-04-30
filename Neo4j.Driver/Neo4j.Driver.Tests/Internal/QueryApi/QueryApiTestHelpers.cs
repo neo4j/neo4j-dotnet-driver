@@ -41,6 +41,12 @@ internal static class QueryApiTestHelpers
         return new HttpResponseMessage(HttpStatusCode.Accepted);
     }
 
+    /// <summary>Builds a 200 OK response with a JSON body — for discovery endpoint tests.</summary>
+    internal static HttpResponseMessage OkWith(object body)
+    {
+        return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonSerializer.Serialize(body) };
+    }
+
     internal static HttpResponseMessage Unauthorized(
         string code = "Neo.ClientError.Security.Unauthorized",
         string message = "No authentication was supplied.")
