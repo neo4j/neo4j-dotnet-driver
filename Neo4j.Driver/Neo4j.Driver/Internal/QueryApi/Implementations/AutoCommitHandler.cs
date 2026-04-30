@@ -110,13 +110,13 @@ internal class AutoCommitHandler : IAutoCommitHandler
 
     private class DataBody
     {
-        public string[] Fields { get; } = [];
+        public string[] Fields { get; init; } = [];
         public JsonElement[][]? Values { get; init; }
     }
 
     private class ErrorBody
     {
-        public string Code { get; } = string.Empty;
-        public string Message { get; } = string.Empty;
+        public string Code { get; init; } = string.Empty;
+        public string Message { get; init; } = string.Empty;
     }
 }

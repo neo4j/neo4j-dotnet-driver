@@ -75,7 +75,7 @@ internal class QueryApiErrorChecker : IQueryApiErrorChecker
 
     private class ErrorBody
     {
-        public string Code { get; } = string.Empty;
-        public string Message { get; } = string.Empty;
+        public string Code { get; init; } = string.Empty;
+        public string Message { get; init; } = string.Empty;
     }
 }
