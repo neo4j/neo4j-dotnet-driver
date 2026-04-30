@@ -25,6 +25,6 @@ namespace Neo4j.Driver.Internal.QueryApi;
 /// </summary>
 internal interface IQueryApiRequestBuilder
 {
-    HttpRequestMessage Post(string path, IAuthToken auth, QueryApiTransactionContext? txContext = null);
-    HttpRequestMessage Delete(string path, IAuthToken auth, QueryApiTransactionContext? txContext = null);
+    HttpRequestMessage Post(string path, IAuthToken auth);
+    HttpRequestMessage Delete(string path, IAuthToken auth);
 }

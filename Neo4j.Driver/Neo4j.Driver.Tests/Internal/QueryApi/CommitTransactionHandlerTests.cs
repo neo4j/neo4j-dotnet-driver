@@ -37,11 +37,16 @@ public class CommitTransactionHandlerTests
     private static readonly QueryApiTransactionContext TxWithAffinity = new("tx-55", "shard-3");
     private static readonly QueryApiTransactionContext TxWithoutAffinity = new("tx-55", null);
 
-    private static AutoMocker CreateMocker(FakeQueryApiHttpClient httpClient, string database = "neo4j")
+    private static AutoMocker CreateMocker(
+        FakeQueryApiHttpClient httpClient,
+        string database = "neo4j",
+        QueryApiTransactionContext? txContext = null)
     {
+        txContext ??= TxWithoutAffinity;
         var mocker = new AutoMocker();
         mocker.Use<IQueryApiHttpClient>(httpClient);
-        mocker.Use<IQueryApiRequestBuilder>(new QueryApiRequestBuilder(UrlBuilder, new SessionContext(database), new QueryApiAuthApplicator(), new QueryApiClusterAffinityApplicator()));
+        mocker.Use<QueryApiTransactionContext>(txContext);
+        mocker.Use<IQueryApiRequestBuilder>(new QueryApiRequestBuilder(UrlBuilder, new SessionContext(database), new QueryApiAuthApplicator(), new QueryApiClusterAffinityApplicator(), txContext));
         mocker.Use<IJsonDeserializer>(new QueryApiJsonSerializer());
         return mocker;
     }
@@ -51,9 +56,9 @@ public class CommitTransactionHandlerTests
     {
         // POST /db/{database}/query/v2/tx/{txId}/commit
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(new {}));
-        var handler = CreateMocker(httpClient, database: "movies").CreateInstance<CommitTransactionHandler>();
+        var handler = CreateMocker(httpClient, database: "movies", txContext: TxWithoutAffinity).CreateInstance<CommitTransactionHandler>();
 
-        await handler.CommitTransactionAsync(TxWithoutAffinity, AnyAuth);
+        await handler.CommitTransactionAsync(AnyAuth);
 
         httpClient.LastRequest!.Method.Should().Be(HttpMethod.Post);
         httpClient.LastRequest.RequestUri!.PathAndQuery.Should().Be("/db/movies/query/v2/tx/tx-55/commit");
@@ -71,7 +76,7 @@ public class CommitTransactionHandlerTests
                 }));
         var handler = CreateMocker(httpClient).CreateInstance<CommitTransactionHandler>();
 
-        var bookmarks = await handler.CommitTransactionAsync(TxWithoutAffinity, AnyAuth);
+        var bookmarks = await handler.CommitTransactionAsync(AnyAuth);
 
         bookmarks.Should().Equal("neo4j:bookmark:v1:tx300", "neo4j:bookmark:v1:tx301");
     }
@@ -82,7 +87,7 @@ public class CommitTransactionHandlerTests
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(new {}));
         var handler = CreateMocker(httpClient).CreateInstance<CommitTransactionHandler>();
 
-        var bookmarks = await handler.CommitTransactionAsync(TxWithoutAffinity, AnyAuth);
+        var bookmarks = await handler.CommitTransactionAsync(AnyAuth);
 
         bookmarks.Should().BeEmpty();
     }
@@ -92,9 +97,9 @@ public class CommitTransactionHandlerTests
     {
         // Spec: cluster affinity must be forwarded on COMMIT as well
         var httpClient = new FakeQueryApiHttpClient(AcceptedWith(new {}));
-        var handler = CreateMocker(httpClient).CreateInstance<CommitTransactionHandler>();
+        var handler = CreateMocker(httpClient, txContext: TxWithAffinity).CreateInstance<CommitTransactionHandler>();
 
-        await handler.CommitTransactionAsync(TxWithAffinity, AnyAuth);
+        await handler.CommitTransactionAsync(AnyAuth);
 
         httpClient.LastRequest!.Headers.GetValues("neo4j-cluster-affinity").Should().Equal("shard-3");
     }

@@ -27,25 +27,27 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
     private readonly IQueryApiHttpClient _httpClient;
     private readonly IJsonDeserializer _jsonDeserializer;
     private readonly IQueryApiRequestBuilder _requestBuilder;
+    private readonly QueryApiTransactionContext _txContext;
 
     public CommitTransactionHandler(
         IQueryApiRequestBuilder requestBuilder,
         IQueryApiHttpClient httpClient,
         IQueryApiErrorChecker errorChecker,
-        IJsonDeserializer jsonDeserializer)
+        IJsonDeserializer jsonDeserializer,
+        QueryApiTransactionContext txContext)
     {
         _requestBuilder = requestBuilder;
         _httpClient = httpClient;
         _errorChecker = errorChecker;
         _jsonDeserializer = jsonDeserializer;
+        _txContext = txContext;
     }
 
     public async Task<string[]> CommitTransactionAsync(
-        QueryApiTransactionContext txContext,
         IAuthToken auth,
         CancellationToken cancellationToken = default)
     {
-        using var request = BuildRequest(txContext, auth);
+        using var request = BuildRequest(auth);
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
 
@@ -63,9 +65,9 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
         return body?.Bookmarks ?? [];
     }
 
-    private HttpRequestMessage BuildRequest(QueryApiTransactionContext txContext, IAuthToken auth)
+    private HttpRequestMessage BuildRequest(IAuthToken auth)
     {
-        return _requestBuilder.Post($"query/v2/tx/{txContext.TxId}/commit", auth, txContext);
+        return _requestBuilder.Post($"query/v2/tx/{_txContext.TxId}/commit", auth);
     }
 
     private class ResponseBody

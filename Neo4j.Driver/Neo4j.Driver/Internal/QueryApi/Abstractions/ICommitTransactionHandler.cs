@@ -23,7 +23,6 @@ namespace Neo4j.Driver.Internal.QueryApi;
 internal interface ICommitTransactionHandler
 {
     Task<string[]> CommitTransactionAsync(
-        QueryApiTransactionContext txContext,
         IAuthToken auth,
         CancellationToken cancellationToken = default);
 }

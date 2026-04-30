@@ -24,41 +24,40 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
     private readonly IAuthApplicator _authApplicator;
     private readonly IClusterAffinityApplicator _clusterAffinityApplicator;
     private readonly SessionContext _sessionContext;
+    private readonly QueryApiTransactionContext? _txContext;
     private readonly IQueryApiUrlBuilder _urlBuilder;
 
     public QueryApiRequestBuilder(
         IQueryApiUrlBuilder urlBuilder,
         SessionContext sessionContext,
         IAuthApplicator authApplicator,
-        IClusterAffinityApplicator clusterAffinityApplicator)
+        IClusterAffinityApplicator clusterAffinityApplicator,
+        QueryApiTransactionContext? txContext = null)
     {
         _urlBuilder = urlBuilder;
         _sessionContext = sessionContext;
         _authApplicator = authApplicator;
         _clusterAffinityApplicator = clusterAffinityApplicator;
+        _txContext = txContext;
     }
 
-    public HttpRequestMessage Post(string path, IAuthToken auth, QueryApiTransactionContext? txContext = null)
+    public HttpRequestMessage Post(string path, IAuthToken auth)
     {
-        return Build(HttpMethod.Post, path, auth, txContext);
+        return Build(HttpMethod.Post, path, auth);
     }
 
-    public HttpRequestMessage Delete(string path, IAuthToken auth, QueryApiTransactionContext? txContext = null)
+    public HttpRequestMessage Delete(string path, IAuthToken auth)
     {
-        return Build(HttpMethod.Delete, path, auth, txContext);
+        return Build(HttpMethod.Delete, path, auth);
     }
 
-    private HttpRequestMessage Build(
-        HttpMethod method,
-        string path,
-        IAuthToken auth,
-        QueryApiTransactionContext? txContext)
+    private HttpRequestMessage Build(HttpMethod method, string path, IAuthToken auth)
     {
         var request = new HttpRequestMessage(method, _urlBuilder.Build($"db/{_sessionContext.Database}/{path}"));
         _authApplicator.Apply(request, auth);
-        if (txContext is not null)
+        if (_txContext is not null)
         {
-            _clusterAffinityApplicator.Apply(request, txContext);
+            _clusterAffinityApplicator.Apply(request, _txContext);
         }
 
         return request;

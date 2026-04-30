@@ -26,29 +26,31 @@ internal class RollbackTransactionHandler : IRollbackTransactionHandler
     private readonly IQueryApiErrorChecker _errorChecker;
     private readonly IQueryApiHttpClient _httpClient;
     private readonly IQueryApiRequestBuilder _requestBuilder;
+    private readonly QueryApiTransactionContext _txContext;
 
     public RollbackTransactionHandler(
         IQueryApiRequestBuilder requestBuilder,
         IQueryApiHttpClient httpClient,
-        IQueryApiErrorChecker errorChecker)
+        IQueryApiErrorChecker errorChecker,
+        QueryApiTransactionContext txContext)
     {
         _requestBuilder = requestBuilder;
         _httpClient = httpClient;
         _errorChecker = errorChecker;
+        _txContext = txContext;
     }
 
     public async Task RollbackTransactionAsync(
-        QueryApiTransactionContext txContext,
         IAuthToken auth,
         CancellationToken cancellationToken = default)
     {
-        using var request = BuildRequest(txContext, auth);
+        using var request = BuildRequest(auth);
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
     }
 
-    private HttpRequestMessage BuildRequest(QueryApiTransactionContext txContext, IAuthToken auth)
+    private HttpRequestMessage BuildRequest(IAuthToken auth)
     {
-        return _requestBuilder.Delete($"query/v2/tx/{txContext.TxId}", auth, txContext);
+        return _requestBuilder.Delete($"query/v2/tx/{_txContext.TxId}", auth);
     }
 }

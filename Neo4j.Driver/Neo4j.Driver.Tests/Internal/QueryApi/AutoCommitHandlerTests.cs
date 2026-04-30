@@ -143,17 +143,11 @@ public class AutoCommitHandlerTests
     public async Task Response_ReturnsFieldNamesAndRows()
     {
         // Spec: successful response contains data.fields and data.values
-        var httpClient = new FakeQueryApiHttpClient(
-            AcceptedWith(
-                new
-                {
-                    data = new
-                    {
-                        fields = new[] { "name", "age" },
-                        values = new[] { new object[] { "Alice", 30 }, new object[] { "Bob", 25 } }
-                    },
-                    bookmarks = new[] { "neo4j:bookmark:v1:tx55" }
-                }));
+        var fields = new[] { "name", "age" };
+        var values = new[] { new object[] { "Alice", 30 }, new object[] { "Bob", 25 } };
+        var data = new { fields, values };
+        var bookmarks = new[] { "neo4j:bookmark:v1:tx55" };
+        var httpClient = new FakeQueryApiHttpClient(AcceptedWith(new { data, bookmarks }));
         var handler = CreateMocker(httpClient).CreateInstance<AutoCommitHandler>();
 
         var result = await handler.AutoCommitAsync(new Query("MATCH (n) RETURN n.name, n.age"), [], AnyAuth);
