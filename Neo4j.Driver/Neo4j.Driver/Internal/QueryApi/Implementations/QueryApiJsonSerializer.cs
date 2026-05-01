@@ -22,9 +22,12 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.DependencyInjection;
+using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
+[AutoRegister]
 internal class QueryApiJsonSerializer : IJsonDeserializer, IJsonSerializer
 {
     private static readonly JsonSerializerOptions Options = new()

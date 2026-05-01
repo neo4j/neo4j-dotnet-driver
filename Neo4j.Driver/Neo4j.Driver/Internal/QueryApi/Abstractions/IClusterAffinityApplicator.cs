@@ -17,7 +17,7 @@
 
 using System.Net.Http;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 /// <summary>
 /// Applies the <c>neo4j-cluster-affinity</c> header to outgoing requests, and extracts it from incoming

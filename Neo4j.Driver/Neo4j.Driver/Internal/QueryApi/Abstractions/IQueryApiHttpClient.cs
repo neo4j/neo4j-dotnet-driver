@@ -20,7 +20,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 internal interface IQueryApiHttpClient : IAsyncDisposable
 {

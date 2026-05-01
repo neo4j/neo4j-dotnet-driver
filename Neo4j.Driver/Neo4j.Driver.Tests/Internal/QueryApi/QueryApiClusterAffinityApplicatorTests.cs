@@ -20,6 +20,7 @@ using System.Net;
 using System.Net.Http;
 using FluentAssertions;
 using Neo4j.Driver.Internal.QueryApi;
+using Neo4j.Driver.Internal.QueryApi.Implementations;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;

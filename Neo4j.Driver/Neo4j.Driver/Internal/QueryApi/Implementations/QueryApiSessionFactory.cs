@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -13,25 +13,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#nullable enable
+using System;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
-[AutoRegister]
-internal class QueryApiResultSummaryFactory : IResultSummaryFactory
+internal class QueryApiSessionFactory : IQueryApiSessionFactory
 {
-    private readonly string _database;
-    private readonly IServerInfo _serverInfo;
+    private readonly IResolutionScope _resolutionScope;
 
-    public QueryApiResultSummaryFactory(IServerInfo serverInfo, string database)
+    public QueryApiSessionFactory(IResolutionScope resolutionScope)
     {
-        _serverInfo = serverInfo;
-        _database = database;
+        _resolutionScope = resolutionScope;
     }
 
-    public IResultSummary Create(Query query)
+    public IInternalAsyncSession CreateSession(SessionConfig config, bool telemetryEnabled)
     {
-        return new QueryApiResultSummary(query, _serverInfo, _database);
+        var sessionScope = _resolutionScope.CreateChildScope(r => r.RegisterInstance(config));
+        
+        // todo - this needs to resolve a queryapi session
+        return sessionScope.Resolve<IInternalAsyncSession>();
     }
 }

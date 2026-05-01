@@ -17,7 +17,7 @@
 
 using System.Net.Http;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 internal interface IJsonSerializer
 {

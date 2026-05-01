@@ -15,12 +15,14 @@
 
 #nullable enable
 
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.DependencyInjection;
+using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
+[AutoRegister]
 internal class RollbackTransactionHandler : IRollbackTransactionHandler
 {
     private readonly IQueryApiErrorChecker _errorChecker;

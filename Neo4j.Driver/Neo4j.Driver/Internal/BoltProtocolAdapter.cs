@@ -16,6 +16,7 @@
 using System;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Routing;
+using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal;
 
@@ -30,9 +31,14 @@ internal sealed class BoltProtocolAdapter : IProtocolAdapter, IReauthSupported, 
     private readonly DriverContext _context;
     private readonly IAsyncRetryLogic _retryLogic;
 
-    public BoltProtocolAdapter(IConnectionProvider connectionProvider, DriverContext context)
+    public BoltProtocolAdapter(Uri uri, DriverContext context)
     {
-        _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
+        var connectionFactory = new PooledConnectionFactory(context);
+
+        _connectionProvider = Neo4jUri.IsRoutingUri(uri)
+            ? new LoadBalancer(uri, connectionFactory, context)
+            : new ConnectionPool(uri, connectionFactory, context);
+        
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _retryLogic = new AsyncRetryLogic(
             context.Config.MaxTransactionRetryTime,

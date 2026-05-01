@@ -15,7 +15,7 @@
 
 #nullable enable
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 internal interface IQueryApiSessionFactory
 {

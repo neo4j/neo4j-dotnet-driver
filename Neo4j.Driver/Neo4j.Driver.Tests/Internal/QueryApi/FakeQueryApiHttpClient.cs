@@ -18,6 +18,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.QueryApi;
+using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 

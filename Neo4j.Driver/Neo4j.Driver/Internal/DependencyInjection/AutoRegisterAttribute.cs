@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -13,20 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#nullable enable
+using System;
 
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
+namespace Neo4j.Driver.Internal.DependencyInjection;
 
 /// <summary>
-/// Builds authenticated HTTP requests for the Query API, prepending <c>db/{database}/</c> to all
-/// paths and applying auth and cluster-affinity headers using session context injected at construction.
+/// Marks a class to be automatically registered for all interfaces it implements when using
+/// the built-in dependency injection container.
 /// </summary>
-internal interface IQueryApiRequestBuilder
+[AttributeUsage(AttributeTargets.Class)]
+internal class AutoRegisterAttribute : Attribute
 {
-    Task<HttpRequestMessage> PostAsync(string path, CancellationToken cancellationToken = default);
-    Task<HttpRequestMessage> DeleteAsync(string path, CancellationToken cancellationToken = default);
 }

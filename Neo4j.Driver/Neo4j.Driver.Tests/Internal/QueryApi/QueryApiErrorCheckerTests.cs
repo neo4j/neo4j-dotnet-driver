@@ -21,6 +21,7 @@ using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal.QueryApi;
+using Neo4j.Driver.Internal.QueryApi.Implementations;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;

@@ -17,7 +17,7 @@
 
 using System;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 /// <summary>Builds absolute Query API endpoint URIs from relative paths.</summary>
 internal interface IQueryApiUrlBuilder

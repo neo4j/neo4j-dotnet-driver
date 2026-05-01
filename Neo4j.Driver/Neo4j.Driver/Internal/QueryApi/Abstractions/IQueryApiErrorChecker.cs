@@ -19,7 +19,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 /// <summary>Validates HTTP-level and application-level errors from the Query API.</summary>
 internal interface IQueryApiErrorChecker

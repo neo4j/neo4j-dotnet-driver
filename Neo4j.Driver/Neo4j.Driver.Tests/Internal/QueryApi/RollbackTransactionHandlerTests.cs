@@ -20,6 +20,8 @@ using System.Threading.Tasks;
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.Internal.QueryApi;
+using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using Neo4j.Driver.Internal.QueryApi.Implementations;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;

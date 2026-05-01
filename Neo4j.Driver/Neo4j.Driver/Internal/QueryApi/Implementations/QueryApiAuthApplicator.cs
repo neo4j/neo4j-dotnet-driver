@@ -20,9 +20,12 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using Neo4j.Driver.Internal.Auth;
+using Neo4j.Driver.Internal.DependencyInjection;
+using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
+[AutoRegister]
 internal class QueryApiAuthApplicator : IAuthApplicator
 {
     public void Apply(HttpRequestMessage request, IAuthToken auth)

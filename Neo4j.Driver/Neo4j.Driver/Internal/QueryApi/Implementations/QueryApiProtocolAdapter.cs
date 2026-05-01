@@ -17,9 +17,12 @@
 
 using System;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.DependencyInjection;
+using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
+[AutoRegister]
 internal class QueryApiProtocolAdapter : IProtocolAdapter
 {
     private readonly IQueryApiSessionFactory _sessionFactory;
@@ -32,7 +35,8 @@ internal class QueryApiProtocolAdapter : IProtocolAdapter
         _verifyConnectivityHandler = verifyConnectivityHandler ??
             throw new ArgumentNullException(nameof(verifyConnectivityHandler));
 
-        _sessionFactory = sessionFactory ?? throw new ArgumentNullException(nameof(sessionFactory));
+        _sessionFactory = sessionFactory ?? 
+            throw new ArgumentNullException(nameof(sessionFactory));
     }
 
     public IInternalAsyncSession CreateSession(SessionConfig config, bool reactive, bool telemetryEnabled)

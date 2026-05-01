@@ -22,6 +22,8 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.QueryApi;
+using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using Neo4j.Driver.Internal.QueryApi.Implementations;
 using Xunit;
 using DriverRecord = Neo4j.Driver.Internal.Result.Record;
 

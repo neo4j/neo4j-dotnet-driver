@@ -17,7 +17,7 @@
 
 using System.Net.Http;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 /// <summary>Applies the appropriate HTTP <c>Authorization</c> header to a request for a given auth token.</summary>
 internal interface IAuthApplicator

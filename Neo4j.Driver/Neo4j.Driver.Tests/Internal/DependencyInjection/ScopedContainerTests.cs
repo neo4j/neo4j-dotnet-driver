@@ -413,4 +413,259 @@ public class ScopedContainerTests
         {
         }
     }
+
+    // -------------------------------------------------------------------------
+    // Child-scope override flow-through tests
+    //
+    // These test the new behaviour where child-scope registrations are passed as
+    // overrides into the parent's resolution chain, so that a service registered
+    // only in the parent scope can still be fully instantiated using dependencies
+    // that live in the child scope.
+    //
+    // Known bugs at time of writing (do not fix here, just note):
+    //
+    //   BUG-1: Resolve(Type, IServiceResolver? extra = null) at line ~71 calls
+    //          itself recursively — `return Resolve(serviceType, extra)` binds
+    //          back to the same 2-arg overload instead of the 3-arg one.
+    //          All tests that fall through to parent will StackOverflow.
+    //
+    //   BUG-2: The extra-resolver check at line ~83 calls IServiceResolver.Resolve
+    //          which throws InvalidOperationException for unregistered services.
+    //          The `is { }` guard is never reached for a miss; the exception
+    //          propagates instead of falling through to local registrations.
+    //
+    //   BUG-3: CreateInstance at line ~251 calls Resolve(paramType, requestingType)
+    //          without threading extraResolver through, so child-scope overrides
+    //          are invisible for transitive dependencies.
+    // -------------------------------------------------------------------------
+
+    // Test types for override flow-through scenarios
+
+    public interface IOverrideA { }
+    public interface IOverrideB { }
+    public interface IOverrideC { }
+
+    // A depends on B — one level deep
+    private class ServiceA_NeedsB(IOverrideB b) : IOverrideA
+    {
+        public IOverrideB B { get; } = b;
+    }
+
+    // A depends on B and C — two siblings
+    private class ServiceA_NeedsBC(IOverrideB b, IOverrideC c) : IOverrideA
+    {
+        public IOverrideB B { get; } = b;
+        public IOverrideC C { get; } = c;
+    }
+
+    // B depends on C — for transitive chain A→B→C
+    private class ServiceB_NeedsC(IOverrideC c) : IOverrideB
+    {
+        public IOverrideC C { get; } = c;
+    }
+
+    private class ServiceB_NoDeps : IOverrideB { }
+    private class ServiceC_NoDeps : IOverrideC { }
+
+    [Fact]
+    public void ChildScope_CanResolveParentServiceUsingChildInstanceDep()
+    {
+        // Parent knows how to build IOverrideA (needs IOverrideB).
+        // Child supplies IOverrideB.
+        // Resolving IOverrideA from the child should succeed and use the child's IOverrideB.
+        var parent = new ScopedContainer();
+        parent.RegisterType<IOverrideA, ServiceA_NeedsB>();
+
+        var childB = new Mock<IOverrideB>().Object;
+        var child = parent.CreateChildScope(r => r.RegisterInstance(childB));
+
+        var result = child.Resolve<IOverrideA>();
+
+        result.Should().BeOfType<ServiceA_NeedsB>();
+        ((ServiceA_NeedsB)result).B.Should().BeSameAs(childB);
+    }
+
+    [Fact]
+    public void ChildScope_CanResolveParentServiceUsingMultipleChildDeps()
+    {
+        // Parent knows how to build IOverrideA (needs IOverrideB and IOverrideC).
+        // Child supplies both.
+        var parent = new ScopedContainer();
+        parent.RegisterType<IOverrideA, ServiceA_NeedsBC>();
+
+        var childB = new Mock<IOverrideB>().Object;
+        var childC = new Mock<IOverrideC>().Object;
+        var child = parent.CreateChildScope(r =>
+        {
+            r.RegisterInstance(childB);
+            r.RegisterInstance(childC);
+        });
+
+        var result = child.Resolve<IOverrideA>();
+
+        result.Should().BeOfType<ServiceA_NeedsBC>();
+        ((ServiceA_NeedsBC)result).B.Should().BeSameAs(childB);
+        ((ServiceA_NeedsBC)result).C.Should().BeSameAs(childC);
+    }
+
+    [Fact]
+    public void ChildScope_ChildDepOverridesParentDepDuringParentInstantiation()
+    {
+        // Parent has IOverrideA → ServiceA_NeedsB, and IOverrideB → ServiceB_NoDeps.
+        // Child overrides IOverrideB with its own instance.
+        // Resolving IOverrideA from the child should use the child's IOverrideB, not
+        // the parent's ServiceB_NoDeps.
+        var parent = new ScopedContainer();
+        parent.RegisterType<IOverrideA, ServiceA_NeedsB>();
+        parent.RegisterType<IOverrideB, ServiceB_NoDeps>();
+
+        var childB = new Mock<IOverrideB>().Object;
+        var child = parent.CreateChildScope(r => r.RegisterInstance(childB));
+
+        var result = child.Resolve<IOverrideA>();
+
+        result.Should().BeOfType<ServiceA_NeedsB>();
+        ((ServiceA_NeedsB)result).B.Should().BeSameAs(childB);
+    }
+
+    [Fact]
+    public void ChildScope_TransitiveChildDepVisibleThroughParentChain()
+    {
+        // Parent has IOverrideA → ServiceA_NeedsB, IOverrideB → ServiceB_NeedsC.
+        // Child supplies IOverrideC.
+        // Resolving IOverrideA from child: parent creates ServiceA_NeedsB,
+        // which needs IOverrideB; parent creates ServiceB_NeedsC,
+        // which needs IOverrideC — found in child.
+        var parent = new ScopedContainer();
+        parent.RegisterType<IOverrideA, ServiceA_NeedsB>();
+        parent.RegisterType<IOverrideB, ServiceB_NeedsC>();
+
+        var childC = new Mock<IOverrideC>().Object;
+        var child = parent.CreateChildScope(r => r.RegisterInstance(childC));
+
+        var result = child.Resolve<IOverrideA>();
+
+        result.Should().BeOfType<ServiceA_NeedsB>();
+        var innerB = (ServiceB_NeedsC)((ServiceA_NeedsB)result).B;
+        innerB.C.Should().BeSameAs(childC);
+    }
+
+    [Fact]
+    public void ChildScope_ParentDepsNotInChildStillResolveFromParent()
+    {
+        // Child has nothing extra. Parent has everything needed.
+        // Should still work — no overrides required.
+        var parent = new ScopedContainer();
+        parent.RegisterType<IOverrideA, ServiceA_NeedsB>();
+        parent.RegisterType<IOverrideB, ServiceB_NoDeps>();
+
+        var child = parent.CreateChildScope(_ => { });
+
+        var result = child.Resolve<IOverrideA>();
+
+        result.Should().BeOfType<ServiceA_NeedsB>();
+        ((ServiceA_NeedsB)result).B.Should().BeOfType<ServiceB_NoDeps>();
+    }
+
+    [Fact]
+    public void ChildScope_ServiceInChildNotParent_ResolvesDirectlyFromChild()
+    {
+        // Child registers IOverrideA directly — no parent lookup needed.
+        var parent = new ScopedContainer();
+        var childA = new Mock<IOverrideA>().Object;
+        var child = parent.CreateChildScope(r => r.RegisterInstance(childA));
+
+        var result = child.Resolve<IOverrideA>();
+
+        result.Should().BeSameAs(childA);
+    }
+
+    [Fact]
+    public void GrandchildScope_CanResolveParentServiceUsingDepsFromBothIntermediateScopeAndOwnScope()
+    {
+        // Parent knows how to build IOverrideA (needs IB and IC).
+        // Child scope supplies IB.
+        // Grandchild scope supplies IC.
+        // Resolving IOverrideA from the grandchild must use IB from child AND IC from grandchild.
+        // With extraRegistrations ?? _registrations, child's IB is lost when grandchild delegates
+        // upward (grandchild's non-null extraRegistrations replaces child's registrations entirely).
+        var parent = new ScopedContainer();
+        parent.RegisterType<IOverrideA, ServiceA_NeedsBC>();
+
+        var childB = new Mock<IOverrideB>().Object;
+        var child = parent.CreateChildScope(r => r.RegisterInstance(childB));
+
+        var childC = new Mock<IOverrideC>().Object;
+        var grandchild = child.CreateChildScope(r => r.RegisterInstance(childC));
+
+        var result = grandchild.Resolve<IOverrideA>();
+
+        result.Should().BeOfType<ServiceA_NeedsBC>();
+        ((ServiceA_NeedsBC)result).B.Should().BeSameAs(childB);
+        ((ServiceA_NeedsBC)result).C.Should().BeSameAs(childC);
+    }
+
+    [Fact]
+    public void GrandchildScope_OwnRegistrationWinsOverIntermediateScopeForSameInterface()
+    {
+        // Grandchild overrides IB that the child also provides — grandchild should win.
+        var parent = new ScopedContainer();
+        parent.RegisterType<IOverrideA, ServiceA_NeedsB>();
+
+        var childB = new Mock<IOverrideB>().Object;
+        var child = parent.CreateChildScope(r => r.RegisterInstance(childB));
+
+        var grandchildB = new Mock<IOverrideB>().Object;
+        var grandchild = child.CreateChildScope(r => r.RegisterInstance(grandchildB));
+
+        var result = grandchild.Resolve<IOverrideA>();
+
+        result.Should().BeOfType<ServiceA_NeedsB>();
+        ((ServiceA_NeedsB)result).B.Should().BeSameAs(grandchildB);
+    }
+
+    [Fact]
+    public void ChildScope_ResolveEnumerable_UsesChildDepsWhenInstantiatingParentRegistrations()
+    {
+        // Parent has two IOverrideA implementations, both needing IOverrideB.
+        // Child supplies IOverrideB.
+        // Asking child for IEnumerable<IOverrideA> should return both instances,
+        // each constructed with the child's IOverrideB.
+        var parent = new ScopedContainer();
+        parent.RegisterType<IOverrideA, ServiceA_NeedsB>();
+
+        var childB = new Mock<IOverrideB>().Object;
+        var child = parent.CreateChildScope(r => r.RegisterInstance(childB));
+
+        var results = child.Resolve<IEnumerable<IOverrideA>>().ToArray();
+
+        results.Should().HaveCount(1);
+        results[0].Should().BeOfType<ServiceA_NeedsB>();
+        ((ServiceA_NeedsB)results[0]).B.Should().BeSameAs(childB);
+    }
+
+    [Fact]
+    public void ChildScope_ResolveEnumerable_IncludesParentAndChildImplementations()
+    {
+        // Parent has one IOverrideA implementation; child adds another.
+        // Both require IOverrideB which the child supplies.
+        var parent = new ScopedContainer();
+        parent.RegisterType<IOverrideA, ServiceA_NeedsB>();
+
+        var childB = new Mock<IOverrideB>().Object;
+        var child = parent.CreateChildScope(r =>
+        {
+            r.RegisterInstance(childB);
+            r.RegisterType<IOverrideA, ServiceA_NeedsBC>(); // child adds a second impl (also needs IOverrideB)
+            r.RegisterInstance(new Mock<IOverrideC>().Object); // satisfy ServiceA_NeedsBC's IOverrideC dep
+        });
+
+        var results = child.Resolve<IEnumerable<IOverrideA>>().ToArray();
+
+        results.Should().HaveCount(2);
+        results.Should().ContainSingle(x => x is ServiceA_NeedsB);
+        results.Should().ContainSingle(x => x is ServiceA_NeedsBC);
+        results.OfType<ServiceA_NeedsB>().Single().B.Should().BeSameAs(childB);
+        results.OfType<ServiceA_NeedsBC>().Single().B.Should().BeSameAs(childB);
+    }
 }
