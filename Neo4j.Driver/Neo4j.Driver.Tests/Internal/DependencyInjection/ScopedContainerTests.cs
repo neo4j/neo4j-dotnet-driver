@@ -194,7 +194,6 @@ public class ScopedContainerTests
 
         var testService = mocker.Get<ITestService>();
 
-        container.RegisterInstance(mocker.Get<IDependency>());
         container.RegisterInstance(testService);
         container.RegisterType<SiblingA>();
         container.RegisterType<SiblingB>();
