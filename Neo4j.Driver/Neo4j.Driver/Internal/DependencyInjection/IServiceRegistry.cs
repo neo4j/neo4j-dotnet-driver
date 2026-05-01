@@ -17,7 +17,10 @@ using System;
 
 namespace Neo4j.Driver.Internal.DependencyInjection;
 
-internal interface IResolutionScope : IServiceResolver
+internal interface IServiceRegistry
 {
-    IResolutionScope CreateChildScope(Action<IServiceRegistry> registrations);
+    IServiceRegistry RegisterInstance<TService>(TService instance);
+    IServiceRegistry RegisterType<TService, TImplementation>() where TImplementation : TService;
+    IServiceRegistry RegisterType<TService>();
+    IServiceRegistry RegisterPlugin(IResolverOverride resolverOverride);
 }

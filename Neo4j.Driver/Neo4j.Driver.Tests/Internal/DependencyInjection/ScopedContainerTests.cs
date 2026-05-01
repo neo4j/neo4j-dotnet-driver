@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using FluentAssertions;
 using Moq;
@@ -24,42 +25,43 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.DependencyInjection;
 
+[SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+[SuppressMessage("ReSharper", "ClassNeverInstantiated.Local")]
+[SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
+[SuppressMessage("ReSharper", "UnusedParameter.Local")]
+[SuppressMessage("ReSharper", "UnusedMember.Local")]
 public class ScopedContainerTests
 {
     public interface ITestService
     {
-    }
+    } 
 
     public interface IDependency
     {
     }
 
-    public interface IMultiImplementer
+    public interface IMultiImplementer 
     {
     }
 
-    public class TestService : ITestService
+    private class TestService(IDependency dependency) : ITestService
     {
-        public IDependency Dependency { get; }
-        public TestService(IDependency dependency) => Dependency = dependency;
+        public IDependency Dependency { get; } = dependency;
     }
 
-    public class ServiceWithNoDependencies : ITestService
-    {
-        public ServiceWithNoDependencies()
-        {
-        }
-    }
-
-    public class MultiImplementer1 : IMultiImplementer
+    private class ServiceWithNoDependencies : ITestService
     {
     }
 
-    public class MultiImplementer2 : IMultiImplementer
+    private class MultiImplementer1 : IMultiImplementer
     {
     }
 
-    public class ServiceWithMultipleConstructors
+    private class MultiImplementer2 : IMultiImplementer
+    {
+    }
+
+    private class ServiceWithMultipleConstructors
     {
         public int ConstructorCalled { get; }
         public ServiceWithMultipleConstructors() => ConstructorCalled = 0;
@@ -81,7 +83,23 @@ public class ScopedContainerTests
         }
     }
 
-    public class DisposableService : IDisposable
+    public class SiblingA(ITestService testService)
+    {
+        public ITestService InnerTestService { get; } = testService;
+    }
+
+    public class SiblingB(ITestService testService)
+    {
+        public ITestService InnerTestService { get; } = testService;
+    }
+
+    public class SiblingParent(SiblingA a, SiblingB b)
+    {
+        public SiblingA A { get; } = a;
+        public SiblingB B { get; } = b;
+    }
+
+    private class DisposableService : IDisposable
     {
         public bool IsDisposed { get; private set; }
         public void Dispose() => IsDisposed = true;
@@ -166,6 +184,26 @@ public class ScopedContainerTests
         act.Should()
             .Throw<InvalidOperationException>()
             .WithMessage("*Circular dependency*");
+    }
+
+    [Fact]
+    public void Resolve_SucceedsForMultipleDependentsOnSameService()
+    {
+        var container = new ScopedContainer();
+        var mocker = new AutoMocker();
+
+        var testService = mocker.Get<ITestService>();
+
+        container.RegisterInstance(mocker.Get<IDependency>());
+        container.RegisterInstance(testService);
+        container.RegisterType<SiblingA>();
+        container.RegisterType<SiblingB>();
+        container.RegisterType<SiblingParent>();
+
+        var parent = container.Resolve<SiblingParent>();
+        parent.Should().NotBeNull();
+        parent.A.InnerTestService.Should().BeSameAs(testService);
+        parent.B.InnerTestService.Should().BeSameAs(testService);
     }
 
     [Fact]
@@ -256,7 +294,7 @@ public class ScopedContainerTests
         var parentInstance = mocker.Get<ITestService>();
 
         container.RegisterInstance(parentInstance);
-        var scope = container.CreateChildScope();
+        var scope = container.CreateChildScope(_ => {});
 
         var resolved = scope.Resolve<ITestService>();
 
@@ -270,8 +308,7 @@ public class ScopedContainerTests
         var mocker = new AutoMocker();
         var childInstance = mocker.Get<ITestService>();
 
-        var scope = (ScopedContainer)container.CreateChildScope();
-        scope.RegisterInstance(childInstance);
+        var scope = container.CreateChildScope(x => x.RegisterInstance(childInstance));
 
         var act = () => container.Resolve<ITestService>();
 
@@ -287,8 +324,7 @@ public class ScopedContainerTests
         var childInstance = new Mock<ITestService>().Object;
 
         container.RegisterInstance(parentInstance);
-        var scope = (ScopedContainer)container.CreateChildScope();
-        scope.RegisterInstance(childInstance);
+        var scope = (ScopedContainer)container.CreateChildScope(x => x.RegisterInstance(childInstance));
 
         var resolved = scope.Resolve<ITestService>();
 
@@ -301,8 +337,8 @@ public class ScopedContainerTests
         var container = new ScopedContainer();
         container.RegisterType<IMultiImplementer, MultiImplementer1>();
 
-        var scope = (ScopedContainer)container.CreateChildScope();
-        scope.RegisterType<IMultiImplementer, MultiImplementer2>();
+        var scope = (ScopedContainer)container.CreateChildScope(x =>
+            x.RegisterType<IMultiImplementer, MultiImplementer2>());
 
         var resolved = scope.Resolve<IEnumerable<IMultiImplementer>>().ToArray();
 
@@ -354,7 +390,7 @@ public class ScopedContainerTests
         var container = new ScopedContainer();
         container.Dispose();
 
-        var act = () => container.CreateChildScope();
+        var act = () => container.CreateChildScope(_ => {});
 
         act.Should().Throw<ObjectDisposedException>();
     }

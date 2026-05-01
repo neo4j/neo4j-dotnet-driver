@@ -24,7 +24,7 @@ using System.Threading;
 
 namespace Neo4j.Driver.Internal.DependencyInjection;
 
-internal class ScopedContainer : IResolutionScope, IDisposable
+internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 {
     private readonly Dictionary<Type, List<Registration>> _registrations = new();
     private readonly List<IResolverOverride> _overrides = [];
@@ -42,7 +42,7 @@ internal class ScopedContainer : IResolutionScope, IDisposable
         _parent = parent;
     }
 
-    public void RegisterInstance<TService>(TService instance)
+    public IServiceRegistry RegisterInstance<TService>(TService instance)
     {
         if (instance == null)
         {
@@ -57,9 +57,10 @@ internal class ScopedContainer : IResolutionScope, IDisposable
         }
 
         registrations.Add(new Registration(instance));
+        return this;
     }
 
-    public void RegisterType<TService, TImplementation>() where TImplementation : TService
+    public IServiceRegistry RegisterType<TService, TImplementation>() where TImplementation : TService
     {
         var serviceType = typeof(TService);
         if (!_registrations.TryGetValue(serviceType, out var registrations))
@@ -69,9 +70,10 @@ internal class ScopedContainer : IResolutionScope, IDisposable
         }
 
         registrations.Add(new Registration(typeof(TImplementation)));
+        return this;
     }
 
-    public void RegisterType<TService>()
+    public IServiceRegistry RegisterType<TService>()
     {
         var serviceType = typeof(TService);
         if (!_registrations.TryGetValue(serviceType, out var registrations))
@@ -81,11 +83,13 @@ internal class ScopedContainer : IResolutionScope, IDisposable
         }
 
         registrations.Add(new Registration(serviceType));
+        return this;
     }
 
-    public void RegisterPlugin(IResolverOverride resolverOverride)
+    public IServiceRegistry RegisterPlugin(IResolverOverride resolverOverride)
     {
         _overrides.Add(resolverOverride);
+        return this;
     }
 
     public TService Resolve<TService>()
@@ -192,14 +196,13 @@ internal class ScopedContainer : IResolutionScope, IDisposable
         return array;
     }
 
-    public IResolutionScope CreateChildScope()
+    public IResolutionScope CreateChildScope(Action<IServiceRegistry> registrations)
     {
-        if (_disposed)
-        {
-            throw new ObjectDisposedException(nameof(ScopedContainer));
-        }
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        var newScope = new ScopedContainer(this);
+        registrations(newScope);
+        return newScope;
 
-        return new ScopedContainer(this);
     }
 
     public void Dispose()
