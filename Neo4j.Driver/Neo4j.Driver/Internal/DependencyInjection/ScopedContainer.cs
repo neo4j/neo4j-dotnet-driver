@@ -26,10 +26,10 @@ namespace Neo4j.Driver.Internal.DependencyInjection;
 
 internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 {
-    private readonly Dictionary<Type, List<Registration>> _registrations = new();
+    private readonly HashSet<object> _disposables = [];
     private readonly List<IResolverOverride> _overrides = [];
     private readonly IServiceResolver? _parent;
-    private readonly HashSet<object> _disposables = [];
+    private readonly Dictionary<Type, List<Registration>> _registrations = new();
     private readonly ThreadLocal<HashSet<Type>> _resolutionStack = new(() => []);
     private bool _disposed;
 
@@ -42,54 +42,25 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         _parent = parent;
     }
 
-    public IServiceRegistry RegisterInstance<TService>(TService instance)
+    public void Dispose()
     {
-        if (instance == null)
+        if (_disposed)
         {
-            throw new ArgumentException("Instance cannot be null", nameof(instance));
+            return;
         }
 
-        var serviceType = typeof(TService);
-        if (!_registrations.TryGetValue(serviceType, out var registrations))
+        _disposed = true;
+
+        foreach (var disposable in _disposables)
         {
-            registrations = [];
-            _registrations[serviceType] = registrations;
+            if (disposable is IDisposable d)
+            {
+                d.Dispose();
+            }
         }
 
-        registrations.Add(new Registration(instance));
-        return this;
-    }
-
-    public IServiceRegistry RegisterType<TService, TImplementation>() where TImplementation : TService
-    {
-        var serviceType = typeof(TService);
-        if (!_registrations.TryGetValue(serviceType, out var registrations))
-        {
-            registrations = [];
-            _registrations[serviceType] = registrations;
-        }
-
-        registrations.Add(new Registration(typeof(TImplementation)));
-        return this;
-    }
-
-    public IServiceRegistry RegisterType<TService>()
-    {
-        var serviceType = typeof(TService);
-        if (!_registrations.TryGetValue(serviceType, out var registrations))
-        {
-            registrations = [];
-            _registrations[serviceType] = registrations;
-        }
-
-        registrations.Add(new Registration(serviceType));
-        return this;
-    }
-
-    public IServiceRegistry RegisterPlugin(IResolverOverride resolverOverride)
-    {
-        _overrides.Add(resolverOverride);
-        return this;
+        _disposables.Clear();
+        _resolutionStack.Dispose();
     }
 
     public TService Resolve<TService>()
@@ -143,14 +114,72 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             }
 
             // Delegate to parent if available
-            return _parent != null 
-                ? _parent.Resolve(serviceType) 
+            return _parent != null
+                ? _parent.Resolve(serviceType)
                 : throw new InvalidOperationException($"Service of type {serviceType} is not registered.");
         }
         finally
         {
             _resolutionStack.Value?.Remove(serviceType);
         }
+    }
+
+    public IResolutionScope CreateChildScope(Action<IServiceRegistry> registrations)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        var newScope = new ScopedContainer(this);
+        registrations(newScope);
+        return newScope;
+    }
+
+    public IServiceRegistry RegisterInstance<TService>(TService instance)
+    {
+        if (instance == null)
+        {
+            throw new ArgumentException("Instance cannot be null", nameof(instance));
+        }
+
+        var serviceType = typeof(TService);
+        if (!_registrations.TryGetValue(serviceType, out var registrations))
+        {
+            registrations = [];
+            _registrations[serviceType] = registrations;
+        }
+
+        registrations.Add(new Registration(instance));
+        return this;
+    }
+
+    public IServiceRegistry RegisterType<TService, TImplementation>() where TImplementation : TService
+    {
+        var serviceType = typeof(TService);
+        if (!_registrations.TryGetValue(serviceType, out var registrations))
+        {
+            registrations = [];
+            _registrations[serviceType] = registrations;
+        }
+
+        registrations.Add(new Registration(typeof(TImplementation)));
+        return this;
+    }
+
+    public IServiceRegistry RegisterType<TService>()
+    {
+        var serviceType = typeof(TService);
+        if (!_registrations.TryGetValue(serviceType, out var registrations))
+        {
+            registrations = [];
+            _registrations[serviceType] = registrations;
+        }
+
+        registrations.Add(new Registration(serviceType));
+        return this;
+    }
+
+    public IServiceRegistry RegisterPlugin(IResolverOverride resolverOverride)
+    {
+        _overrides.Add(resolverOverride);
+        return this;
     }
 
     private Array ResolveEnumerable(Type elementType)
@@ -181,8 +210,7 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             {
                 foreach (var registration in registrations)
                 {
-                    instances.Add(
-                        registration.Instance ?? CreateInstance(registration.ImplementationType, type));
+                    instances.Add(registration.Instance ?? CreateInstance(registration.ImplementationType, type));
                 }
             }
         }
@@ -196,44 +224,13 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         return array;
     }
 
-    public IResolutionScope CreateChildScope(Action<IServiceRegistry> registrations)
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        var newScope = new ScopedContainer(this);
-        registrations(newScope);
-        return newScope;
-
-    }
-
-    public void Dispose()
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        _disposed = true;
-
-        foreach (var disposable in _disposables)
-        {
-            if (disposable is IDisposable d)
-            {
-                d.Dispose();
-            }
-        }
-
-        _disposables.Clear();
-        _resolutionStack.Dispose();
-    }
-
     private object CreateInstance(Type implementationType, Type requestingType)
     {
         var constructors = implementationType.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
 
         if (constructors.Length == 0)
         {
-            throw new InvalidOperationException(
-                $"Type {implementationType} has no public constructors.");
+            throw new InvalidOperationException($"Type {implementationType} has no public constructors.");
         }
 
         var constructor = constructors.OrderByDescending(c => c.GetParameters().Length).First();
@@ -249,23 +246,19 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 
         if (instance is null)
         {
-            throw new InvalidOperationException(
-                $"Failed to create instance of type {implementationType}.");
+            throw new InvalidOperationException($"Failed to create instance of type {implementationType}.");
         }
 
         if (instance is IDisposable)
         {
             _disposables.Add(instance);
         }
-        
+
         return instance;
     }
 
     private class Registration
     {
-        public object? Instance { get; }
-        public Type ImplementationType { get; }
-
         public Registration(object instance)
         {
             Instance = instance;
@@ -277,5 +270,8 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             Instance = null;
             ImplementationType = implementationType;
         }
+
+        public object? Instance { get; }
+        public Type ImplementationType { get; }
     }
 }
