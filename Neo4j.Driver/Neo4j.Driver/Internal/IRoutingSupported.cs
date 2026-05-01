@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 //
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -13,23 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Routing;
 
 namespace Neo4j.Driver.Internal;
 
 /// <summary>
-/// Abstraction over a Neo4j server (or cluster). Handles server-level concerns
-/// (capabilities, connectivity, routing) and acts as a session factory.
-/// The existing Bolt stack sits behind this interface unchanged.
+/// Implemented by protocol adapters that support routing tables.
 /// </summary>
-internal interface IProtocolAdapter : IAsyncDisposable
+internal interface IRoutingSupported
 {
-    IInternalAsyncSession CreateSession(
-        SessionConfig config,
-        bool reactive,
-        bool telemetryEnabled);
-
-    Task<bool> SupportsMultiDbAsync();
-    Task<IServerInfo> VerifyConnectivityAndGetInfoAsync();
+    IRoutingTable GetRoutingTable(string database);
 }
+

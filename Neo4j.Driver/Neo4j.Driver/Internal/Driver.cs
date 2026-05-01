@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Routing;
@@ -128,7 +129,12 @@ internal sealed class Driver : IInternalDriver
 
     public Task<bool> SupportsSessionAuthAsync()
     {
-        return _server.SupportsReAuthAsync();
+        if (_server is IReauthSupported irs)
+        {
+            return irs.SupportsReAuthAsync();
+        }
+
+        return Task.FromResult(true);
     }
 
     public void Dispose()
@@ -183,10 +189,15 @@ internal sealed class Driver : IInternalDriver
         }
     }
 
-    //Non public facing api. Used for testing with testkit only
+    //Non-public facing api. Used for testing with testkit only
     public IRoutingTable GetRoutingTable(string database)
     {
-        return _server.GetRoutingTable(database);
+        if (_server is IRoutingSupported rs)
+        {
+            return rs.GetRoutingTable(database);
+        }
+
+        return new RoutingTable(database, []);
     }
 
     private void Close()

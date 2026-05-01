@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal;
 /// This is the strangler-fig seam: all driver traffic flows through here,
 /// and the entire internal stack beneath it is unchanged.
 /// </summary>
-internal sealed class BoltProtocolAdapter : IProtocolAdapter
+internal sealed class BoltProtocolAdapter : IProtocolAdapter, IReauthSupported, IRoutingSupported
 {
     private readonly IConnectionProvider _connectionProvider;
     private readonly DriverContext _context;

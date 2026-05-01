@@ -17,7 +17,6 @@
 
 using System;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Routing;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
@@ -45,17 +44,12 @@ internal class QueryApiProtocolAdapter : IProtocolAdapter
 
     public Task<bool> SupportsMultiDbAsync() => Task.FromResult(true);
 
-    public Task<bool> SupportsReAuthAsync() => Task.FromResult(true);
 
     public Task<IServerInfo> VerifyConnectivityAndGetInfoAsync()
     {
         return _verifyConnectivityHandler.VerifyConnectivityAsync();
     }
 
-    public IRoutingTable GetRoutingTable(string database)
-    {
-        throw new NotSupportedException("The Query API does not support routing tables.");
-    }
 
     public ValueTask DisposeAsync()
     {

@@ -88,19 +88,6 @@ public class QueryApiProtocolAdapterTests
         result.Should().BeTrue();
     }
 
-    [Fact]
-    public async Task SupportsReAuthAsync_ReturnsTrue()
-    {
-        var result = await CreateAdapter().SupportsReAuthAsync();
-        result.Should().BeTrue();
-    }
-
-    [Fact]
-    public void GetRoutingTable_ThrowsNotSupported()
-    {
-        var act = () => CreateAdapter().GetRoutingTable("neo4j");
-        act.Should().Throw<NotSupportedException>();
-    }
 
     [Fact]
     public async Task VerifyConnectivityAndGetInfoAsync_CallsHandler()
