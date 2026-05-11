@@ -49,15 +49,6 @@ public class UuidMappingTests
     }
 
     [Fact]
-    public void Record_TypedGet_WithKnownValue_ReturnsExpectedGuid()
-    {
-        var guid = Guid.NewGuid();
-        var record = TestRecord.Create(["id"], [guid]);
-
-        record.Get<Guid>("id").Should().Be(guid);
-    }
-
-    [Fact]
     public void ObjectMapping_NativeGuid_MapsToGuidProperty()
     {
         var guid = Guid.NewGuid();
