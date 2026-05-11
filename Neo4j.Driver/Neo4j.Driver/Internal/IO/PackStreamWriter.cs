@@ -204,6 +204,12 @@ internal sealed class PackStreamWriter
         }
     }
 
+    public void WriteUuid(Guid value)
+    {
+        _stream.WriteByte(PackStream.Uuid);
+        _stream.Write(value.ToByteArray(bigEndian: true));
+    }
+
     public void WriteByteArray(byte[] values)
     {
         if (values == null)

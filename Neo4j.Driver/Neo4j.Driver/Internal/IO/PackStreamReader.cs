@@ -120,6 +120,9 @@ internal sealed class PackStreamReader
 
             case PackStreamType.Struct:
                 return ReadStruct();
+            
+            case PackStreamType.Uuid:
+                return ReadUuid();
 
             default:
                 throw new ArgumentOutOfRangeException(
@@ -140,6 +143,17 @@ internal sealed class PackStreamReader
         }
 
         throw new ProtocolException("Unknown structure type: " + signature);
+    }
+
+    public object ReadUuid()
+    {
+        var markerByte = NextByte();
+        if (markerByte != PackStream.Uuid)
+        {
+            throw new ProtocolException($"Expected a UUID, but got: 0x{markerByte & 0xFF:X2}");
+        }
+
+        return NextUuid();
     }
 
     public object ReadNull()
@@ -281,7 +295,7 @@ internal sealed class PackStreamReader
         }
 
         var heapBuffer = new byte[size];
-        Stream.Read(heapBuffer);
+        Stream.ReadExactly(heapBuffer);
         return heapBuffer;
     }
 
@@ -468,6 +482,9 @@ internal sealed class PackStreamReader
             case PackStream.Int32:
             case PackStream.Int64:
                 return PackStreamType.Integer;
+            
+            case PackStream.Uuid:
+                return PackStreamType.Uuid;
 
             default:
                 throw new ProtocolException($"Unknown type 0x{markerByte:X2}");
@@ -491,41 +508,47 @@ internal sealed class PackStreamReader
 
     internal sbyte NextSByte()
     {
-        Stream.Read(Buffers.ByteArray);
+        Stream.ReadExactly(Buffers.ByteArray);
         return (sbyte)Buffers.ByteArray[0];
     }
 
     public byte NextByte()
     {
-        Stream.Read(Buffers.ByteArray);
+        Stream.ReadExactly(Buffers.ByteArray);
 
         return Buffers.ByteArray[0];
     }
 
     public short NextShort()
     {
-        Stream.Read(Buffers.ShortBuffer);
+        Stream.ReadExactly(Buffers.ShortBuffer);
 
         return PackStreamBitConverter.ToInt16(Buffers.ShortBuffer);
     }
 
     public int NextInt()
     {
-        Stream.Read(Buffers.IntBuffer);
+        Stream.ReadExactly(Buffers.IntBuffer);
 
         return PackStreamBitConverter.ToInt32(Buffers.IntBuffer);
     }
 
     public long NextLong()
     {
-        Stream.Read(Buffers.LongBuffer);
+        Stream.ReadExactly(Buffers.LongBuffer);
 
         return PackStreamBitConverter.ToInt64(Buffers.LongBuffer);
+    }
+    
+    public Guid NextUuid()
+    {
+        Stream.ReadExactly(Buffers.UuidBuffer);
+        return new Guid(Buffers.UuidBuffer, bigEndian: true);
     }
 
     public double NextDouble()
     {
-        Stream.Read(Buffers.LongBuffer);
+        Stream.ReadExactly(Buffers.LongBuffer);
 
         return PackStreamBitConverter.ToDouble(Buffers.LongBuffer);
     }

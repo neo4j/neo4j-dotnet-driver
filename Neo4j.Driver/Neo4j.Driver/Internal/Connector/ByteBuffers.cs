@@ -21,4 +21,5 @@ internal sealed class ByteBuffers
     public byte[] IntBuffer = new byte[4];
     public byte[] LongBuffer = new byte[8];
     public byte[] ShortBuffer = new byte[2];
+    public byte[] UuidBuffer = new byte[16];
 }

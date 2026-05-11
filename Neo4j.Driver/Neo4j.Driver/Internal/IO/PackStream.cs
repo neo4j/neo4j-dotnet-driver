@@ -58,7 +58,7 @@ internal static class PackStream
     public const byte Struct16 = 0xDD;
     public const byte ReservedDe = 0xDE;
     public const byte ReservedDf = 0xDF;
-    public const byte ReservedE0 = 0xE0;
+    public const byte Uuid = 0xE0;
     public const byte ReservedE1 = 0xE1;
     public const byte ReservedE2 = 0xE2;
     public const byte ReservedE3 = 0xE3;
