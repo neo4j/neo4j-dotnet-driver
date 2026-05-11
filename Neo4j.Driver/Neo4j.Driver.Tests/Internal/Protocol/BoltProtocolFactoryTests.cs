@@ -40,6 +40,8 @@ public class BoltProtocolFactoryTests
         [InlineData(5, 1)]
         [InlineData(5, 2)]
         [InlineData(5, 3)]
+        [InlineData(6, 0)]
+        [InlineData(6, 1)]
         public void ShouldCreateBoltProtocol(int major, int minor)
         {
             var boltProtocol = BoltProtocolFactory.Default.ForVersion(new BoltProtocolVersion(major, minor));
