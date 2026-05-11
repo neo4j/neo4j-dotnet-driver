@@ -33,20 +33,32 @@ public interface IRecord : IReadOnlyDictionary<string, object>
 
     /// <summary>Gets the value specified by the given key and converts it to the given type.</summary>
     /// <param name="key">The key.</param>
-    /// <typeparam name="T">The type to convert to.</typeparam>
+    /// <typeparam name="T">
+    /// The type to convert to. Supported types include primitive types, <see cref="System.Guid"/> (for native UUID
+    /// values returned by servers running Bolt 6.1+), graph types such as <see cref="INode"/>, and collection types.
+    /// See <see cref="ValueExtensions.As{T}(object)"/> for the full list.
+    /// </typeparam>
     /// <returns>The converted value.</returns>
     T Get<T>(string key);
 
     /// <summary>Tries to get the value specified by the given key and converts it to the given type.</summary>
     /// <param name="key">The key.</param>
     /// <param name="value">The value, if the key was found.</param>
-    /// <typeparam name="T">The type to convert to.</typeparam>
+    /// <typeparam name="T">
+    /// The type to convert to. Supported types include primitive types, <see cref="System.Guid"/> (for native UUID
+    /// values returned by servers running Bolt 6.1+), graph types such as <see cref="INode"/>, and collection types.
+    /// See <see cref="ValueExtensions.As{T}(object)"/> for the full list.
+    /// </typeparam>
     /// <returns><c>true</c> if the value is found; <c>false</c> otherwise.</returns>
     bool TryGet<T>(string key, out T value);
 
     /// <summary>Gets the value specified by the given key and converts it to the given type. The key is not case sensitive.</summary>
     /// <param name="key">The key.</param>
-    /// <typeparam name="T">The type to convert to.</typeparam>
+    /// <typeparam name="T">
+    /// The type to convert to. Supported types include primitive types, <see cref="System.Guid"/> (for native UUID
+    /// values returned by servers running Bolt 6.1+), graph types such as <see cref="INode"/>, and collection types.
+    /// See <see cref="ValueExtensions.As{T}(object)"/> for the full list.
+    /// </typeparam>
     /// <returns>The converted value.</returns>
     T GetCaseInsensitive<T>(string key);
 
@@ -56,7 +68,11 @@ public interface IRecord : IReadOnlyDictionary<string, object>
     /// </summary>
     /// <param name="key">The key.</param>
     /// <param name="value">The value, if the key was found.</param>
-    /// <typeparam name="T">The type to convert to.</typeparam>
+    /// <typeparam name="T">
+    /// The type to convert to. Supported types include primitive types, <see cref="System.Guid"/> (for native UUID
+    /// values returned by servers running Bolt 6.1+), graph types such as <see cref="INode"/>, and collection types.
+    /// See <see cref="ValueExtensions.As{T}(object)"/> for the full list.
+    /// </typeparam>
     /// <returns><c>true</c> if the value is found; <c>false</c> otherwise.</returns>
     bool TryGetCaseInsensitive<T>(string key, out T value);
 }
