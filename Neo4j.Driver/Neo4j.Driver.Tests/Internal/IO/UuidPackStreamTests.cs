@@ -186,4 +186,75 @@ public class UuidPackStreamTests
 
         reader.ReadUuid().Should().Be(guid);
     }
+
+    private static PackStreamWriterMachine CreateWriterMachineForVersion(BoltProtocolVersion version)
+    {
+        var format = new MessageFormat(version, TestDriverContext.MockContext);
+        return new PackStreamWriterMachine(stream => new PackStreamWriter(format, stream));
+    }
+
+    private static PackStreamReaderMachine CreateReaderMachineForVersion(byte[] bytes, BoltProtocolVersion version)
+    {
+        var format = new MessageFormat(version, TestDriverContext.MockContext);
+        return new PackStreamReaderMachine(
+            bytes,
+            stream => new PackStreamReader(format, stream, new ByteBuffers()));
+    }
+
+    [Theory]
+    [InlineData(6, 0)]
+    [InlineData(5, 8)]
+    [InlineData(5, 0)]
+    [InlineData(4, 4)]
+    public void WriteUuid_ThrowsProtocolException_WhenVersionBelowV6_1(int major, int minor)
+    {
+        var machine = CreateWriterMachineForVersion(new BoltProtocolVersion(major, minor));
+
+        var act = () => machine.Writer.WriteUuid(Guid.NewGuid());
+
+        act.Should().Throw<ProtocolException>()
+            .WithMessage("*UUID*6.1*");
+    }
+
+    [Theory]
+    [InlineData(6, 0)]
+    [InlineData(5, 8)]
+    [InlineData(5, 0)]
+    [InlineData(4, 4)]
+    public void Write_Guid_ThrowsProtocolException_WhenVersionBelowV6_1(int major, int minor)
+    {
+        var machine = CreateWriterMachineForVersion(new BoltProtocolVersion(major, minor));
+
+        var act = () => machine.Writer.Write((object)Guid.NewGuid());
+
+        act.Should().Throw<ProtocolException>()
+            .WithMessage("*UUID*6.1*");
+    }
+
+    [Theory]
+    [InlineData(6, 0)]
+    [InlineData(5, 8)]
+    [InlineData(5, 0)]
+    [InlineData(4, 4)]
+    public void ReadUuid_ThrowsProtocolException_WhenVersionBelowV6_1(int major, int minor)
+    {
+        var wireBytes = new byte[17];
+        wireBytes[0] = PackStream.Uuid;
+        Guid.NewGuid().ToByteArray(bigEndian: true).CopyTo(wireBytes, 1);
+
+        var reader = CreateReaderMachineForVersion(wireBytes, new BoltProtocolVersion(major, minor)).Reader();
+
+        var act = () => reader.ReadUuid();
+
+        act.Should().Throw<ProtocolException>()
+            .WithMessage("*UUID*6.1*");
+    }
+
+    [Fact]
+    public void WriteUuid_DoesNotThrow_AtV6_1()
+    {
+        var machine = CreateWriterMachineForVersion(BoltProtocolVersion.V6_1);
+        var act = () => machine.Writer.WriteUuid(Guid.NewGuid());
+        act.Should().NotThrow();
+    }
 }

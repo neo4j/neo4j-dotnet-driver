@@ -214,4 +214,89 @@ public class UuidQueryParameterTests
 
         act.Should().Throw<ProtocolException>().WithMessage("*6.1*");
     }
+
+    private class NodeParams
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+    }
+
+    [Fact]
+    public void Query_WithPocoContainingGuid_ParametersDictContainsBoxedGuid()
+    {
+        var guid = Guid.NewGuid();
+        var query = new Query("MATCH (n) WHERE n.id = $Id RETURN n", new NodeParams { Id = guid, Name = "Alice" });
+
+        // Default naming convention preserves the C# property name (PascalCase)
+        query.Parameters["Id"].Should().Be(guid);
+        query.Parameters["Id"].Should().BeOfType<Guid>();
+    }
+
+    [Fact]
+    public void PocoWithGuidProperty_OnBolt61_WritesAsUuidMarkerByte()
+    {
+        var guid = Guid.NewGuid();
+        var parameters = new Query("", new NodeParams { Id = guid, Name = "Alice" }).Parameters;
+        var machine = WriterFor(V6_1);
+
+        machine.Writer.Write(parameters);
+
+        var reader = ReaderFor(machine.GetOutput(), V6_1).Reader();
+        var map = reader.ReadMap();
+        map["Id"].Should().BeOfType<Guid>();
+    }
+
+    [Fact]
+    public void PocoWithGuidProperty_OnBolt61_ParametersRoundTrip()
+    {
+        var guid = Guid.NewGuid();
+        var parameters = new Query("", new NodeParams { Id = guid, Name = "Alice" }).Parameters;
+        var machine = WriterFor(V6_1);
+
+        machine.Writer.Write(parameters);
+
+        var reader = ReaderFor(machine.GetOutput(), V6_1).Reader();
+        var map = reader.ReadMap();
+        map["Id"].Should().Be(guid);
+        map["Name"].Should().Be("Alice");
+    }
+
+    [Fact]
+    public void PocoWithGuidProperty_OnBoltBelow61_ThrowsProtocolException()
+    {
+        var guid = Guid.NewGuid();
+        var parameters = new Query("", new NodeParams { Id = guid, Name = "Alice" }).Parameters;
+        var machine = WriterFor(V6_0);
+
+        var act = () => machine.Writer.Write(parameters);
+
+        act.Should().Throw<ProtocolException>().WithMessage("*6.1*");
+    }
+
+    [Fact]
+    public void AnonymousTypeWithGuidProperty_OnBolt61_ParametersRoundTrip()
+    {
+        var guid = Guid.NewGuid();
+        var parameters = new Query("", new { id = guid, name = "Bob" }).Parameters;
+        var machine = WriterFor(V6_1);
+
+        machine.Writer.Write(parameters);
+
+        var reader = ReaderFor(machine.GetOutput(), V6_1).Reader();
+        var map = reader.ReadMap();
+        map["id"].Should().Be(guid);
+        map["name"].Should().Be("Bob");
+    }
+
+    [Fact]
+    public void AnonymousTypeWithGuidProperty_OnBoltBelow61_ThrowsProtocolException()
+    {
+        var guid = Guid.NewGuid();
+        var parameters = new Query("", new { id = guid }).Parameters;
+        var machine = WriterFor(V6_0);
+
+        var act = () => machine.Writer.Write(parameters);
+
+        act.Should().Throw<ProtocolException>().WithMessage("*6.1*");
+    }
 }

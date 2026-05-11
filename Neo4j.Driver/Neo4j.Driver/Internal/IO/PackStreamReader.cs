@@ -147,6 +147,12 @@ internal sealed class PackStreamReader
 
     public object ReadUuid()
     {
+        if (Format.Version < BoltProtocolVersion.V6_1)
+        {
+            throw new ProtocolException(
+                $"Received unexpected UUID type on Bolt {Format.Version}; requires 6.1.");
+        }
+
         var markerByte = NextByte();
         if (markerByte != PackStream.Uuid)
         {
