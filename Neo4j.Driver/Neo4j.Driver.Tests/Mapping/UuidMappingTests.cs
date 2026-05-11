@@ -123,6 +123,56 @@ public class UuidMappingTests
     }
 
     [Fact]
+    public void AsGuid_FromNativeGuid_ReturnsCorrectValue()
+    {
+        var guid = Guid.NewGuid();
+        guid.As<Guid>().Should().Be(guid);
+    }
+
+    [Fact]
+    public void AsGuid_FromString_ParsesSuccessfully()
+    {
+        var guid = Guid.NewGuid();
+        var str = guid.ToString();
+        str.As<Guid>().Should().Be(guid);
+    }
+
+    [Fact]
+    public void AsGuid_FromUpperCaseString_ParsesSuccessfully()
+    {
+        var guid = Guid.Parse("550e8400-e29b-41d4-a716-446655440000");
+        guid.ToString("D").ToUpperInvariant().As<Guid>().Should().Be(guid);
+    }
+
+    [Fact]
+    public void AsGuid_FromRecord_WithStringValue_ReturnsGuid()
+    {
+        var guid = Guid.NewGuid();
+        var record = TestRecord.Create(["id"], [(object)guid.ToString()]);
+        record.Get<Guid>("id").Should().Be(guid);
+    }
+
+    [Fact]
+    public void AsNullableGuid_FromNativeGuid_ReturnsValue()
+    {
+        var guid = Guid.NewGuid();
+        ((object)guid).As<Guid?>().Should().Be(guid);
+    }
+
+    [Fact]
+    public void AsNullableGuid_FromNull_ReturnsNull()
+    {
+        ((object)null).As<Guid?>(null).Should().BeNull();
+    }
+
+    [Fact]
+    public void AsString_FromNativeGuid_ReturnsStandardFormatString()
+    {
+        var guid = Guid.Parse("550e8400-e29b-41d4-a716-446655440000");
+        ((object)guid).As<string>().Should().Be("550e8400-e29b-41d4-a716-446655440000");
+    }
+
+    [Fact]
     public void StringGuidMapping_StillWorksAfterNativeGuidMappingHasBeenUsed()
     {
         var nativeGuid = Guid.NewGuid();
