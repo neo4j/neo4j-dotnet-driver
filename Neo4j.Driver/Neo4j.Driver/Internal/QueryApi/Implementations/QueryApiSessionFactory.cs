@@ -33,7 +33,6 @@ internal class QueryApiSessionFactory : IQueryApiSessionFactory
     {
         var sessionScope = _resolutionScope.CreateChildScope(r => r.RegisterInstance(config));
         
-        // todo - this needs to resolve a queryapi session
         return sessionScope.Resolve<IInternalAsyncSession>();
     }
 }
