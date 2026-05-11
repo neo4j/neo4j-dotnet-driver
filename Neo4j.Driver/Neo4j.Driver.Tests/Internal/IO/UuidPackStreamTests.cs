@@ -14,8 +14,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.IO;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
@@ -27,18 +25,20 @@ namespace Neo4j.Driver.Tests.Internal.IO;
 
 public class UuidPackStreamTests
 {
-    private static readonly MessageFormat EmptyFormat = new(readHandlers: null, writeHandlers: null);
+    private static readonly BoltProtocolVersion V6_1 = new(6, 1);
 
     private static PackStreamWriterMachine CreateWriterMachine()
     {
-        return new PackStreamWriterMachine(stream => new PackStreamWriter(EmptyFormat, stream));
+        var format = new MessageFormat(V6_1, TestDriverContext.MockContext);
+        return new PackStreamWriterMachine(stream => new PackStreamWriter(format, stream));
     }
 
     private static PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
     {
+        var format = new MessageFormat(V6_1, TestDriverContext.MockContext);
         return new PackStreamReaderMachine(
             bytes,
-            stream => new PackStreamReader(EmptyFormat, stream, new ByteBuffers()));
+            stream => new PackStreamReader(format, stream, new ByteBuffers()));
     }
 
     [Fact]

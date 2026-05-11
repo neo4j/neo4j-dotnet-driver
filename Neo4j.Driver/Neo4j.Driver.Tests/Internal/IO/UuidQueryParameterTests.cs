@@ -22,6 +22,8 @@ using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Tests.Internal.IO.Utils;
 using Xunit;
 
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolVersion;
+
 namespace Neo4j.Driver.Tests.Internal.IO;
 
 /// <summary>
@@ -30,12 +32,6 @@ namespace Neo4j.Driver.Tests.Internal.IO;
 /// </summary>
 public class UuidQueryParameterTests
 {
-    // Bolt version constants used in version-gate tests.
-    // V6_1 inline because the constant may not yet exist in BoltProtocolVersion.
-    private static readonly BoltProtocolVersion V6_1 = new(6, 1);
-    private static readonly BoltProtocolVersion V6_0 = new(6, 0);
-    private static readonly BoltProtocolVersion V5_4 = new(5, 4);
-
     private static PackStreamWriterMachine WriterFor(BoltProtocolVersion version)
     {
         var format = new MessageFormat(version, TestDriverContext.MockContext);
@@ -50,31 +46,16 @@ public class UuidQueryParameterTests
             s => new PackStreamReader(format, s, new ByteBuffers()));
     }
 
-    // ── Write(object) dispatch ────────────────────────────────────────────────
-
-    [Fact]
-    public void Write_Guid_ShouldNotThrowProtocolException()
-    {
-        // Currently Write(Guid) falls through to the default case and throws
-        // "Cannot understand value with type System.Guid".
-        var guid = Guid.NewGuid();
-        var machine = WriterFor(V6_1);
-
-        var act = () => machine.Writer.Write(guid);
-
-        act.Should().NotThrow<ProtocolException>();
-    }
-
     [Fact]
     public void Write_Guid_ShouldProduceSameBytesAsWriteUuid()
     {
-        var guid = Guid.Parse("550e8400-e29b-41d4-a716-446655440000");
+        var guid = Guid.NewGuid();
 
         var viaDirect = WriterFor(V6_1);
         viaDirect.Writer.WriteUuid(guid);
 
         var viaDispatch = WriterFor(V6_1);
-        viaDispatch.Writer.Write((object)guid);
+        viaDispatch.Writer.Write(guid);
 
         viaDispatch.GetOutput().Should().Equal(viaDirect.GetOutput());
     }
@@ -85,13 +66,11 @@ public class UuidQueryParameterTests
         var guid = Guid.NewGuid();
         var machine = WriterFor(V6_1);
 
-        machine.Writer.Write((object)guid);
+        machine.Writer.Write(guid);
 
         var reader = ReaderFor(machine.GetOutput(), V6_1).Reader();
         reader.Read().Should().Be(guid);
     }
-
-    // ── Query parameter dictionary ────────────────────────────────────────────
 
     [Fact]
     public void Write_DictionaryContainingGuid_ShouldNotThrow()
@@ -141,8 +120,6 @@ public class UuidQueryParameterTests
         map["name"].Should().Be("Alice");
     }
 
-    // ── List containing Guid ──────────────────────────────────────────────────
-
     [Fact]
     public void Write_ListContainingGuid_ShouldNotThrow()
     {
@@ -151,7 +128,7 @@ public class UuidQueryParameterTests
 
         var act = () => machine.Writer.Write(list);
 
-        act.Should().NotThrow<ProtocolException>();
+        act.Should().NotThrow();
     }
 
     [Fact]
@@ -169,15 +146,13 @@ public class UuidQueryParameterTests
         result.Should().BeEquivalentTo(new[] { guid1, guid2 });
     }
 
-    // ── Nullable Guid ─────────────────────────────────────────────────────────
-
     [Fact]
     public void Write_NullableGuidWithValue_ShouldNotThrow()
     {
         Guid? guid = Guid.NewGuid();
         var machine = WriterFor(V6_1);
 
-        var act = () => machine.Writer.Write((object)guid);
+        var act = () => machine.Writer.Write(guid);
 
         act.Should().NotThrow();
     }
@@ -188,7 +163,7 @@ public class UuidQueryParameterTests
         Guid? guid = Guid.NewGuid();
         var machine = WriterFor(V6_1);
 
-        machine.Writer.Write((object)guid);
+        machine.Writer.Write(guid);
 
         var reader = ReaderFor(machine.GetOutput(), V6_1).Reader();
         reader.Read().Should().Be(guid.Value);
@@ -200,13 +175,12 @@ public class UuidQueryParameterTests
         Guid? guid = null;
         var machine = WriterFor(V6_1);
 
-        machine.Writer.Write((object)guid);
+        // ReSharper disable once ExpressionIsAlwaysNull
+        machine.Writer.Write(guid);
 
         var reader = ReaderFor(machine.GetOutput(), V6_1).Reader();
         reader.PeekNextType().Should().Be(PackStreamType.Null);
     }
-
-    // ── Version gating ────────────────────────────────────────────────────────
 
     [Fact]
     public void Write_Guid_OnBoltBelow6_1_ShouldThrowWithVersionMessage()
@@ -214,10 +188,9 @@ public class UuidQueryParameterTests
         var guid = Guid.NewGuid();
         var machine = WriterFor(V6_0);
 
-        var act = () => machine.Writer.Write((object)guid);
+        var act = () => machine.Writer.Write(guid);
 
-        act.Should().Throw<ProtocolException>()
-            .WithMessage("*6.1*");
+        act.Should().Throw<ProtocolException>().WithMessage("*6.1*");
     }
 
     [Fact]
@@ -226,10 +199,9 @@ public class UuidQueryParameterTests
         var guid = Guid.NewGuid();
         var machine = WriterFor(V5_4);
 
-        var act = () => machine.Writer.Write((object)guid);
+        var act = () => machine.Writer.Write(guid);
 
-        act.Should().Throw<ProtocolException>()
-            .WithMessage("*6.1*");
+        act.Should().Throw<ProtocolException>().WithMessage("*6.1*");
     }
 
     [Fact]
@@ -240,7 +212,6 @@ public class UuidQueryParameterTests
 
         var act = () => machine.Writer.WriteUuid(guid);
 
-        act.Should().Throw<ProtocolException>()
-            .WithMessage("*6.1*");
+        act.Should().Throw<ProtocolException>().WithMessage("*6.1*");
     }
 }
