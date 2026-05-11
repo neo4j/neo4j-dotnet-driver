@@ -59,6 +59,7 @@ internal ref struct SpanPackStreamReader
             PackStreamType.Map => ReadMap(),
             PackStreamType.List => ReadList(),
             PackStreamType.Struct => ReadStruct(),
+            PackStreamType.Uuid => ReadUuid(),
             _ => throw new ArgumentOutOfRangeException(
                 nameof(streamType),
                 streamType,
@@ -95,6 +96,7 @@ internal ref struct SpanPackStreamReader
             PackStream.Map8 or PackStream.Map16 or PackStream.Map32 => PackStreamType.Map,
             PackStream.Struct8 or PackStream.Struct16 => PackStreamType.Struct,
             PackStream.Int8 or PackStream.Int16 or PackStream.Int32 or PackStream.Int64 => PackStreamType.Integer,
+            PackStream.Uuid => PackStreamType.Uuid,
             _ => throw new ProtocolException($"Unknown type 0x{markerByte:X2}")
         };
     }
@@ -432,5 +434,20 @@ internal ref struct SpanPackStreamReader
     public byte PeekByte()
     {
         return _reader[Index];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private Guid ReadUuid()
+    {
+        if (_format.Version < BoltProtocolVersion.V6_1)
+        {
+            throw new ProtocolException(
+                $"Received unexpected UUID type on Bolt {_format.Version}; requires 6.1.");
+        }
+
+        Index++; // consume the 0xE0 marker byte
+        var slice = _reader.Slice(Index, 16);
+        Index += 16;
+        return new Guid(slice, bigEndian: true);
     }
 }
