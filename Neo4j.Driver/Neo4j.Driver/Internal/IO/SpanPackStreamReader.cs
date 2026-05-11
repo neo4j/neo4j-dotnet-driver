@@ -177,7 +177,7 @@ internal ref struct SpanPackStreamReader
             return null;
         }
 
-        throw new ProtocolException($"Expected a null, but got: 0x{marker & 0xFF:X2}");
+        throw new ProtocolException($"Expected a null, but got: 0x{marker:X2}");
     }
 
     public bool ReadBoolean()
@@ -371,7 +371,7 @@ internal ref struct SpanPackStreamReader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int ReadUint8AsInt32()
     {
-        return NextByte() & 0xFF;
+        return NextByte();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -442,10 +442,15 @@ internal ref struct SpanPackStreamReader
         if (_format.Version < BoltProtocolVersion.V6_1)
         {
             throw new ProtocolException(
-                $"Received unexpected UUID type on Bolt {_format.Version}; requires 6.1.");
+                $"UUID type requires Bolt 6.1, but the negotiated version is {_format.Version}.");
         }
 
-        Index++; // consume the 0xE0 marker byte
+        var markerByte = NextByte();
+        if (markerByte != PackStream.Uuid)
+        {
+            throw new ProtocolException($"Expected a UUID, but got: 0x{markerByte:X2}");
+        }
+
         var slice = _reader.Slice(Index, 16);
         Index += 16;
         return new Guid(slice, bigEndian: true);

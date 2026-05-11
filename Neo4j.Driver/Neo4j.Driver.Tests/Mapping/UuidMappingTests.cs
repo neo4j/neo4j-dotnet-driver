@@ -51,7 +51,7 @@ public class UuidMappingTests
     [Fact]
     public void Record_TypedGet_WithKnownValue_ReturnsExpectedGuid()
     {
-        var guid = Guid.Parse("550e8400-e29b-41d4-a716-446655440000");
+        var guid = Guid.NewGuid();
         var record = TestRecord.Create(["id"], [guid]);
 
         record.Get<Guid>("id").Should().Be(guid);
@@ -95,7 +95,7 @@ public class UuidMappingTests
     [Fact]
     public void ObjectMapping_StringGuid_UpperCase_MapsToGuidProperty()
     {
-        var guid = Guid.Parse("550e8400-e29b-41d4-a716-446655440000");
+        var guid = Guid.NewGuid();
         var record = TestRecord.Create(("Id", guid.ToString("D").ToUpperInvariant()), ("Name", "Dave"));
 
         var node = record.AsObject<NodeWithGuid>();
@@ -140,7 +140,7 @@ public class UuidMappingTests
     [Fact]
     public void AsGuid_FromUpperCaseString_ParsesSuccessfully()
     {
-        var guid = Guid.Parse("550e8400-e29b-41d4-a716-446655440000");
+        var guid = Guid.NewGuid();
         guid.ToString("D").ToUpperInvariant().As<Guid>().Should().Be(guid);
     }
 
@@ -148,7 +148,7 @@ public class UuidMappingTests
     public void AsGuid_FromRecord_WithStringValue_ReturnsGuid()
     {
         var guid = Guid.NewGuid();
-        var record = TestRecord.Create(["id"], [(object)guid.ToString()]);
+        var record = TestRecord.Create(["id"], [guid.ToString()]);
         record.Get<Guid>("id").Should().Be(guid);
     }
 
@@ -156,7 +156,7 @@ public class UuidMappingTests
     public void AsNullableGuid_FromNativeGuid_ReturnsValue()
     {
         var guid = Guid.NewGuid();
-        ((object)guid).As<Guid?>().Should().Be(guid);
+        guid.As<Guid?>().Should().Be(guid);
     }
 
     [Fact]
@@ -168,8 +168,8 @@ public class UuidMappingTests
     [Fact]
     public void AsString_FromNativeGuid_ReturnsStandardFormatString()
     {
-        var guid = Guid.Parse("550e8400-e29b-41d4-a716-446655440000");
-        ((object)guid).As<string>().Should().Be("550e8400-e29b-41d4-a716-446655440000");
+        var guid = Guid.Parse("01234567-89ab-cdef-0123-456789abcdef");
+        guid.As<string>().Should().Be("01234567-89ab-cdef-0123-456789abcdef");
     }
 
     [Fact]

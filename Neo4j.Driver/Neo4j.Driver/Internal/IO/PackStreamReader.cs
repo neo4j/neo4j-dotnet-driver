@@ -120,7 +120,7 @@ internal sealed class PackStreamReader
 
             case PackStreamType.Struct:
                 return ReadStruct();
-            
+
             case PackStreamType.Uuid:
                 return ReadUuid();
 
@@ -145,18 +145,18 @@ internal sealed class PackStreamReader
         throw new ProtocolException("Unknown structure type: " + signature);
     }
 
-    public object ReadUuid()
+    public Guid ReadUuid()
     {
         if (Format.Version < BoltProtocolVersion.V6_1)
         {
             throw new ProtocolException(
-                $"Received unexpected UUID type on Bolt {Format.Version}; requires 6.1.");
+                $"UUID type requires Bolt 6.1, but the negotiated version is {Format.Version}.");
         }
 
         var markerByte = NextByte();
         if (markerByte != PackStream.Uuid)
         {
-            throw new ProtocolException($"Expected a UUID, but got: 0x{markerByte & 0xFF:X2}");
+            throw new ProtocolException($"Expected a UUID, but got: 0x{markerByte:X2}");
         }
 
         return NextUuid();
@@ -167,7 +167,7 @@ internal sealed class PackStreamReader
         var markerByte = NextByte();
         if (markerByte != PackStream.Null)
         {
-            throw new ProtocolException($"Expected a null, but got: 0x{markerByte & 0xFF:X2}");
+            throw new ProtocolException($"Expected a null, but got: 0x{markerByte:X2}");
         }
 
         return null;
@@ -185,7 +185,7 @@ internal sealed class PackStreamReader
                 return false;
 
             default:
-                throw new ProtocolException($"Expected a boolean, but got: 0x{markerByte & 0xFF:X2}");
+                throw new ProtocolException($"Expected a boolean, but got: 0x{markerByte:X2}");
         }
     }
 
@@ -289,7 +289,7 @@ internal sealed class PackStreamReader
             }
 
             default:
-                throw new ProtocolException($"Expected binary data, but got: 0x{markerByte & 0xFF:X2}");
+                throw new ProtocolException($"Expected binary data, but got: 0x{markerByte:X2}");
         }
     }
 
@@ -335,7 +335,7 @@ internal sealed class PackStreamReader
             }
 
             default:
-                throw new ProtocolException($"Expected a string, but got: 0x{markerByte & 0xFF:X2}");
+                throw new ProtocolException($"Expected a string, but got: 0x{markerByte:X2}");
         }
     }
 
@@ -389,7 +389,7 @@ internal sealed class PackStreamReader
                 return ReadUint32();
 
             default:
-                throw new ProtocolException($"Expected a list, but got: 0x{markerByte & 0xFF:X2}");
+                throw new ProtocolException($"Expected a list, but got: 0x{markerByte:X2}");
         }
     }
 
@@ -488,7 +488,7 @@ internal sealed class PackStreamReader
             case PackStream.Int32:
             case PackStream.Int64:
                 return PackStreamType.Integer;
-            
+
             case PackStream.Uuid:
                 return PackStreamType.Uuid;
 
@@ -499,7 +499,7 @@ internal sealed class PackStreamReader
 
     private int ReadUint8()
     {
-        return NextByte() & 0xFF;
+        return NextByte();
     }
 
     private int ReadUint16()
@@ -545,7 +545,7 @@ internal sealed class PackStreamReader
 
         return PackStreamBitConverter.ToInt64(Buffers.LongBuffer);
     }
-    
+
     public Guid NextUuid()
     {
         Stream.ReadExactly(Buffers.UuidBuffer);
