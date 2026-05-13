@@ -31,8 +31,7 @@ public class QueryApiTransactionTests
 {
     private readonly AutoMocker _mocker = new();
 
-    private QueryApiTransaction CreateTransaction() =>
-        _mocker.CreateInstance<QueryApiTransaction>();
+    private QueryApiTransaction CreateTransaction() => _mocker.CreateInstance<QueryApiTransaction>();
 
     [Fact]
     public void TransactionConfig_ReturnsDefault()
@@ -136,7 +135,7 @@ public class QueryApiTransactionTests
         await tx.DisposeAsync();
 
         _mocker.GetMock<IRollbackTransactionHandler>()
-            .Verify(h => h.RollbackTransactionAsync(default), Times.Once);
+            .Verify(h => h.RollbackTransactionAsync(CancellationToken.None), Times.Once);
     }
 
     [Fact]
