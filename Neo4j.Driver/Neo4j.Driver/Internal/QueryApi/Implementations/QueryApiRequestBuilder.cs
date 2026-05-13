@@ -16,6 +16,7 @@
 #nullable enable
 
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
@@ -56,9 +57,12 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
         return BuildAsync(HttpMethod.Delete, path, cancellationToken);
     }
 
+    private const string TypedJsonMediaType = "application/vnd.neo4j.query.v1.1";
+
     private async Task<HttpRequestMessage> BuildAsync(HttpMethod method, string path, CancellationToken cancellationToken)
     {
         var request = new HttpRequestMessage(method, _urlBuilder.Build($"db/{_sessionContext.Database}/{path}"));
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(TypedJsonMediaType));
         var auth = await _sessionContext.GetAuthTokenAsync(cancellationToken).ConfigureAwait(false);
         _authApplicator.Apply(request, auth);
         if (_txContext is not null)

@@ -19,10 +19,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions.JsonConverters;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations.JsonConverters;
 
+[AutoRegister]
 internal class JsonValueConverter : IJsonValueConverter
 {
     private readonly IEnumerable<ITypedJsonElementConverter> _typedConverters;
@@ -40,7 +42,7 @@ internal class JsonValueConverter : IJsonValueConverter
             JsonValueKind.True => true,
             JsonValueKind.False => false,
             JsonValueKind.String => jsonElement.GetString(),
-            JsonValueKind.Number => jsonElement.TryGetInt64(out var l) ? (object)l : jsonElement.GetDouble(),
+            JsonValueKind.Number => jsonElement.TryGetInt64(out var l) ? l : jsonElement.GetDouble(),
             JsonValueKind.Array => jsonElement.EnumerateArray().Select(Convert).ToList(),
             JsonValueKind.Object => ConvertObject(jsonElement),
             _ => throw new ArgumentOutOfRangeException(
