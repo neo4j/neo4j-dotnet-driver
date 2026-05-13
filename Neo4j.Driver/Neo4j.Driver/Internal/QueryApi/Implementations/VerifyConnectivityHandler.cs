@@ -58,10 +58,9 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
                 "Verify the server is running and the base URI is correct.");
         }
 
+        var responseContent = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         var body = await _jsonDeserializer
-            .DeserializeAsync<DiscoveryResponse>(
-                await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false),
-                cancellationToken)
+            .DeserializeAsync<DiscoveryResponse>(responseContent, cancellationToken)
             .ConfigureAwait(false);
 
         if (body?.Query is null)

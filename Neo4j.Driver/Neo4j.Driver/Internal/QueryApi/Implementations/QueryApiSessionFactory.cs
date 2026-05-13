@@ -20,6 +20,7 @@ using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
+[AutoRegister]
 internal class QueryApiSessionFactory : IQueryApiSessionFactory
 {
     private readonly IResolutionScope _resolutionScope;

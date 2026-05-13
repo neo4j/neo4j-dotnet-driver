@@ -23,7 +23,7 @@ using Neo4j.Driver.Internal.QueryApi.Abstractions;
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
 [AutoRegister]
-internal class QueryApiProtocolAdapter : IProtocolAdapter
+internal class QueryApiProtocolAdapter : IQueryApiProtocolAdapter
 {
     private readonly IQueryApiSessionFactory _sessionFactory;
     private readonly IVerifyConnectivityHandler _verifyConnectivityHandler;
