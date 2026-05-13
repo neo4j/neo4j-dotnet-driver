@@ -26,13 +26,14 @@ internal class QueryApiUrlBuilder : IQueryApiUrlBuilder
 {
     private readonly string _base;
 
-    public QueryApiUrlBuilder(Uri baseUri)
+    public QueryApiUrlBuilder(DriverContext driverContext)
     {
-        _base = baseUri.AbsoluteUri.TrimEnd('/');
+        _base = driverContext.InitialUri.AbsoluteUri.TrimEnd('/');
     }
 
     public Uri Build(string path)
     {
-        return new Uri($"{_base}/{path.TrimStart('/')}");
+        var subPath = path.TrimStart('/');
+        return new Uri($"{_base}/{subPath}");
     }
 }

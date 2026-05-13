@@ -29,20 +29,10 @@ internal class QueryApiHttpClient : IQueryApiHttpClient
 {
     private readonly HttpClient _client;
 
-    /// <param name="handlerFactory">
-    /// Optional factory for a custom <see cref="HttpMessageHandler"/>. When <c>null</c>, a
-    /// <see cref="SocketsHttpHandler"/> with a two-minute <see cref="SocketsHttpHandler.PooledConnectionLifetime"/> is used,
-    /// giving DNS rotation without requiring a DI container.
-    /// </param>
-    public QueryApiHttpClient(Func<HttpMessageHandler>? handlerFactory = null)
+    public QueryApiHttpClient()
     {
-        var handler = handlerFactory?.Invoke() ??
-            new SocketsHttpHandler
-            {
-                PooledConnectionLifetime = TimeSpan.FromMinutes(2)
-            };
-
-        _client = new HttpClient(handler);
+        _client = new HttpClient(
+            new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(2) });
     }
 
     public Task<HttpResponseMessage> SendAsync(

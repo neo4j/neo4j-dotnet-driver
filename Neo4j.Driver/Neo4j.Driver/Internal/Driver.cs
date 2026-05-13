@@ -45,7 +45,7 @@ internal sealed class Driver : IInternalDriver
     internal DriverContext Context { get; }
 
     private bool IsClosed => _closedMarker > 0;
-    public bool Encrypted => Context.EncryptionManager.UseTls;
+    public bool Encrypted => Context.EncryptionManager?.UseTls ?? false;
     public Config Config => Context.Config;
 
     public IBookmarkManager GetExecutableQueryBookmarkManager()

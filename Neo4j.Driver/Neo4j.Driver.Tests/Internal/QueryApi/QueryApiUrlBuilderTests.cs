@@ -23,15 +23,19 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
-/// <summary>Spec: https://neo4j.com/docs/query-api/current/#_endpoints</summary>
+/// Spec: https://neo4j.com/docs/query-api/current/#_endpoints
 public class QueryApiUrlBuilderTests
 {
+    private static QueryApiUrlBuilder BuilderFor(string uri)
+    {
+        var driverContext = TestDriverContext.With(uri: new Uri(uri));
+        return new QueryApiUrlBuilder(driverContext);
+    }
+
     [Fact]
     public void Build_ProducesCorrectAbsoluteUrl()
     {
-        var builder = new QueryApiUrlBuilder(new Uri("https://mydb.example.com:7474"));
-
-        var url = builder.Build("db/neo4j/query/v2");
+        var url = BuilderFor("https://mydb.example.com:7474").Build("db/neo4j/query/v2");
 
         url.Should().Be(new Uri("https://mydb.example.com:7474/db/neo4j/query/v2"));
     }
@@ -39,9 +43,7 @@ public class QueryApiUrlBuilderTests
     [Fact]
     public void Build_ToleratesTrailingSlashOnBaseUri()
     {
-        var builder = new QueryApiUrlBuilder(new Uri("https://localhost:7474/"));
-
-        var url = builder.Build("db/neo4j/query/v2");
+        var url = BuilderFor("https://localhost:7474/").Build("db/neo4j/query/v2");
 
         url.AbsoluteUri.Should().Be("https://localhost:7474/db/neo4j/query/v2");
     }
@@ -49,9 +51,7 @@ public class QueryApiUrlBuilderTests
     [Fact]
     public void Build_ToleratesLeadingSlashOnPath()
     {
-        var builder = new QueryApiUrlBuilder(new Uri("https://localhost:7474"));
-
-        var url = builder.Build("/db/neo4j/query/v2");
+        var url = BuilderFor("https://localhost:7474").Build("/db/neo4j/query/v2");
 
         url.AbsoluteUri.Should().Be("https://localhost:7474/db/neo4j/query/v2");
     }
@@ -59,9 +59,7 @@ public class QueryApiUrlBuilderTests
     [Fact]
     public void Build_PreservesSchemeHostAndPort()
     {
-        var builder = new QueryApiUrlBuilder(new Uri("https://aura.example.com:443"));
-
-        var url = builder.Build("db/system/query/v2");
+        var url = BuilderFor("https://aura.example.com:443").Build("db/system/query/v2");
 
         url.Scheme.Should().Be("https");
         url.Host.Should().Be("aura.example.com");

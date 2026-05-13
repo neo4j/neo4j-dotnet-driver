@@ -29,7 +29,7 @@ internal static class QueryApiTestHelpers
     internal static readonly Uri BaseUri = new("https://localhost:7474");
 
     private static readonly QueryApiJsonSerializer JsonSerializer = new();
-    internal static QueryApiUrlBuilder UrlBuilder => new(BaseUri);
+    internal static QueryApiUrlBuilder UrlBuilder => new(TestDriverContext.With(uri: BaseUri));
 
     /// <summary>Builds a 202 Accepted response with a JSON body serialized using the production options.</summary>
     internal static HttpResponseMessage AcceptedWith(object body)
