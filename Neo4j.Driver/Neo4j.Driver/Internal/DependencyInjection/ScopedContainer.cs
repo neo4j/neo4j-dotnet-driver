@@ -40,6 +40,7 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
     private ScopedContainer(ScopedContainer? parent)
     {
         _parent = parent;
+        RegisterInstance<IResolutionScope>(this);
     }
 
     public void Dispose()
