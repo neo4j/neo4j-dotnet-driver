@@ -203,7 +203,7 @@ public static class InternalRxSessionTests
             var isOpen = true;
 
             txc = new Mock<IInternalAsyncTransaction>();
-            txc.Setup(x => x.CommitAsync()).ReturnsAsync(Array.Empty<string>()).Callback(() => isOpen = false);
+            txc.Setup(x => x.CommitAsync()).Returns(Task.CompletedTask).Callback(() => isOpen = false);
             txc.Setup(x => x.RollbackAsync()).Returns(Task.CompletedTask).Callback(() => isOpen = false);
             txc.SetupGet(x => x.IsOpen).Returns(() => isOpen);
 

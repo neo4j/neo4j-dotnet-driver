@@ -154,16 +154,17 @@ public class QueryApiTransactionTests
     }
 
     [Fact]
-    public async Task CommitAsync_ReturnsBookmarksFromHandler()
+    public async Task CommitAsync_CallsBookmarkTrackerWithHandlerBookmarks()
     {
         var bookmarks = new[] { "neo4j:bookmark:v1:tx42" };
         _mocker.GetMock<ICommitTransactionHandler>()
             .Setup(h => h.CommitTransactionAsync(default))
             .ReturnsAsync(bookmarks);
 
-        var result = await ((IInternalAsyncTransaction)CreateTransaction()).CommitAsync();
+        await CreateTransaction().CommitAsync();
 
-        result.Should().BeEquivalentTo(bookmarks);
+        _mocker.GetMock<IBookmarkTracker>()
+            .Verify(t => t.UpdateBookmarks(bookmarks), Times.Once);
     }
 
     [Fact]

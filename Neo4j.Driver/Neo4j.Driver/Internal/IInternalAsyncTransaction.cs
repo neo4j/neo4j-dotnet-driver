@@ -14,7 +14,6 @@
 // limitations under the License.
 
 using System;
-using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal;
 
@@ -22,7 +21,4 @@ internal interface IInternalAsyncTransaction : IAsyncTransaction
 {
     bool IsOpen { get; }
     bool IsErrored(out Exception ex);
-    new Task<string[]> CommitAsync();
-    
-    Task IAsyncTransaction.CommitAsync() => CommitAsync();
 }

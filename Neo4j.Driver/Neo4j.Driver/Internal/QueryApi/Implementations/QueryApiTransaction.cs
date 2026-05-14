@@ -26,6 +26,7 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 [AutoRegister]
 internal class QueryApiTransaction : IInternalAsyncTransaction
 {
+    private readonly IBookmarkTracker _bookmarkTracker;
     private readonly ICommitTransactionHandler _commitHandler;
     private readonly IQueryApiResultCursorBuilder _cursorBuilder;
     private readonly IRollbackTransactionHandler _rollbackHandler;
@@ -35,12 +36,14 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
         IRunInTransactionHandler runHandler,
         ICommitTransactionHandler commitHandler,
         IRollbackTransactionHandler rollbackHandler,
-        IQueryApiResultCursorBuilder cursorBuilder)
+        IQueryApiResultCursorBuilder cursorBuilder,
+        IBookmarkTracker bookmarkTracker)
     {
         _runHandler = runHandler;
         _commitHandler = commitHandler;
         _rollbackHandler = rollbackHandler;
         _cursorBuilder = cursorBuilder;
+        _bookmarkTracker = bookmarkTracker;
     }
 
     public TransactionConfig TransactionConfig => TransactionConfig.Default;
@@ -54,11 +57,12 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
         return false;
     }
 
-    public async Task<string[]> CommitAsync()
+    public async Task CommitAsync()
     {
         EnsureOpen();
         IsOpen = false;
-        return await _commitHandler.CommitTransactionAsync().ConfigureAwait(false);
+        var bookmarks = await _commitHandler.CommitTransactionAsync().ConfigureAwait(false);
+        _bookmarkTracker.UpdateBookmarks(bookmarks);
     }
 
     public async Task RollbackAsync()

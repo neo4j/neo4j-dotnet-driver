@@ -156,8 +156,7 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
         try
         {
             var result = await work(tx).ConfigureAwait(false);
-            var bookmarks = await tx.CommitAsync().ConfigureAwait(false);
-            LastBookmarks = Bookmarks.From(bookmarks);
+            await tx.CommitAsync().ConfigureAwait(false);
             return result;
         }
         catch
@@ -177,8 +176,7 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
         try
         {
             await work(tx).ConfigureAwait(false);
-            var bookmarks = await tx.CommitAsync().ConfigureAwait(false);
-            LastBookmarks = Bookmarks.From(bookmarks);
+            await tx.CommitAsync().ConfigureAwait(false);
         }
         catch
         {

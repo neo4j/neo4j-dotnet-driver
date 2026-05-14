@@ -151,33 +151,12 @@ public class QueryApiSessionTests
             Times.Once);
     }
 
-    [Fact]
-    public async Task BeginTransactionAsync_UpdatesLastBookmarksOnCommit()
-    {
-        var bookmarkValues = new[] { "neo4j:bookmark:v1:tx100" };
-        var tx = new Mock<IInternalAsyncTransaction>();
-        tx.Setup(t => t.CommitAsync()).ReturnsAsync(bookmarkValues);
-
-        _mocker.GetMock<IQueryApiTransactionFactory>()
-            .Setup(f => f.BeginTransactionAsync(
-                It.IsAny<AccessMode>(),
-                It.IsAny<Action<TransactionConfigBuilder>>(),
-                It.IsAny<IReadOnlyList<string>>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(tx.Object);
-
-        var session = CreateSession();
-        var returnedTx = await session.BeginTransactionAsync(AccessMode.Write, null!);
-        await returnedTx.CommitAsync();
-
-        session.LastBookmarks.Values.Should().BeEquivalentTo(bookmarkValues);
-    }
 
     [Fact]
     public async Task ExecuteReadAsync_PassesTransactionToWorkAndReturnsResult()
     {
         var tx = new Mock<IInternalAsyncTransaction>();
-        tx.Setup(t => t.CommitAsync()).ReturnsAsync(Array.Empty<string>());
+        tx.Setup(t => t.CommitAsync()).Returns(Task.CompletedTask);
 
         _mocker.GetMock<IQueryApiTransactionFactory>()
             .Setup(f => f.BeginTransactionAsync(
