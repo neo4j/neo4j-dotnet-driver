@@ -108,8 +108,6 @@ internal class QueryApiSession : IInternalAsyncSession
     public Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode, Action<TransactionConfigBuilder> action) =>
         BeginTransactionAsync(mode, action, false);
 
-    // --- ExecuteRead/Write ----------------------------------------------
-
     public Task<TResult> ExecuteReadAsync<TResult>(
         Func<IAsyncQueryRunner, Task<TResult>> work,
         Action<TransactionConfigBuilder>? action = null) =>
@@ -130,8 +128,6 @@ internal class QueryApiSession : IInternalAsyncSession
         Action<TransactionConfigBuilder>? action = null) =>
         RunManagedTransactionAsync(AccessMode.Write, work, action);
 
-    // --- Pipelined ------------------------------------------------------
-
     public Task<EagerResult<T>> PipelinedExecuteReadAsync<T>(
         Func<IAsyncQueryRunner, Task<EagerResult<T>>> func,
         TransactionConfig config) =>
@@ -141,8 +137,6 @@ internal class QueryApiSession : IInternalAsyncSession
         Func<IAsyncQueryRunner, Task<EagerResult<T>>> func,
         TransactionConfig config) =>
         RunManagedTransactionAsync(AccessMode.Write, func, null);
-
-    // --- Internals ------------------------------------------------------
 
     private async Task<TResult> RunManagedTransactionAsync<TResult>(
         AccessMode mode,
@@ -184,8 +178,6 @@ internal class QueryApiSession : IInternalAsyncSession
             throw;
         }
     }
-
-    // --- Lifecycle ------------------------------------------------------
 
     public Task CloseAsync() => Task.CompletedTask;
 
