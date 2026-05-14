@@ -16,6 +16,7 @@
 #nullable enable
 
 using System.IO;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,5 +24,17 @@ namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 internal interface IJsonDeserializer
 {
-    ValueTask<T?> DeserializeAsync<T>(Stream utf8Json, CancellationToken cancellationToken = default);
+    ValueTask<T?> DeserializeAsync<T>(Stream utf8Json, CancellationToken cancellationToken = default) 
+        => DeserializeAsync<T>(utf8Json, null, cancellationToken);
+
+    ValueTask<T?> DeserializeAsync<T>(
+        Stream utf8Json,
+        JsonNamingPolicy? namingPolicy,
+        CancellationToken cancellationToken = default);
+    
+    T MapObject<T>(JsonElement json) => MapObject<T>(json, null);
+    
+    T MapObject<T>(
+        JsonElement json,
+        JsonNamingPolicy? namingPolicy);
 }

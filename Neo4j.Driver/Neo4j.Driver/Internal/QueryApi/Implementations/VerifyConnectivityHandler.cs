@@ -16,6 +16,7 @@
 #nullable enable
 
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -27,7 +28,7 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 /// <summary>
 /// Verifies connectivity by hitting the Neo4j discovery endpoint (<c>GET /</c>) and confirming that the response
 /// advertises both the Query API endpoint and the server version. Spec: https://neo4j.com/docs/http-api/current/discovery/
-/// Decision: always hit discovery even when driver is warm; do not run a dummy query.
+/// Decision: always hit discovery even when the driver is warm; do not run a dummy query.
 /// </summary>
 [AutoRegister]
 internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
@@ -60,7 +61,7 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
 
         var responseContent = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         var body = await _jsonDeserializer
-            .DeserializeAsync<DiscoveryResponse>(responseContent, cancellationToken)
+            .DeserializeAsync<DiscoveryResponse>(responseContent, JsonNamingPolicy.SnakeCaseLower, cancellationToken)
             .ConfigureAwait(false);
 
         if (body?.Query is null)
@@ -81,9 +82,7 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
 
     internal class DiscoveryResponse
     {
-        /// The Query API base URL, e.g. http://localhost:7474/query/v2
         public string? Query { get; init; }
-
         public string? Neo4jVersion { get; init; }
     }
 

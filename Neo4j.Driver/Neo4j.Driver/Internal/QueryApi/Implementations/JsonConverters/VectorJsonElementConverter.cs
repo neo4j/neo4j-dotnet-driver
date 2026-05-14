@@ -19,6 +19,7 @@ using System;
 using System.Linq;
 using System.Text.Json;
 using Neo4j.Driver.Internal.DependencyInjection;
+using Neo4j.Driver.Internal.QueryApi.Abstractions;
 using Neo4j.Driver.Internal.QueryApi.Abstractions.JsonConverters;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations.JsonConverters;
@@ -26,19 +27,30 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations.JsonConverters;
 [AutoRegister]
 internal class VectorJsonElementConverter : ITypedJsonElementConverter
 {
+    private readonly IJsonDeserializer _jsonDeserializer;
+
+    public VectorJsonElementConverter(IJsonDeserializer jsonDeserializer)
+    {
+        _jsonDeserializer = jsonDeserializer;
+    }
+
     public bool CanConvert(string typeName) => typeName == "Vector";
+
+    public class JsonVector
+    {
+        public string? CoordinatesType { get; init; }
+        
+        public string[]? Coordinates { get; init; }
+    }
 
     public object Convert(JsonElement element)
     {
-        var value = element.GetProperty("_value");
-        var coordinatesType = value.GetProperty("coordinatesType").GetString()
-            ?? throw new InvalidOperationException("Vector '_value.coordinatesType' is null.");
+        var vector = _jsonDeserializer.MapObject<JsonVector>(element)
+            ?? throw new InvalidOperationException("Failed to deserialize vector.");
 
-        var coords = value.GetProperty("coordinates")
-            .EnumerateArray()
-            .Select(e => e.GetString()!);
+        var coords = vector.Coordinates!;
 
-        Array values = coordinatesType switch
+        Array values = vector.CoordinatesType switch
         {
             "FLOAT64" => coords.Select(double.Parse).ToArray(),
             "FLOAT32" => coords.Select(float.Parse).ToArray(),
@@ -47,7 +59,7 @@ internal class VectorJsonElementConverter : ITypedJsonElementConverter
             "INT16"   => coords.Select(short.Parse).ToArray(),
             "INT8"    => coords.Select(sbyte.Parse).ToArray(),
             _ => throw new NotSupportedException(
-                $"Unsupported vector coordinatesType: '{coordinatesType}'.")
+                $"Unsupported vector coordinatesType: '{vector.CoordinatesType}'.")
         };
 
         return Vector.CreateDynamic(values);

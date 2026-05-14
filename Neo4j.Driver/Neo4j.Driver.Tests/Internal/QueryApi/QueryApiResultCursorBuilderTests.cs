@@ -99,7 +99,7 @@ public class QueryApiResultCursorBuilderTests
     public async Task Converts_IntegerValue_AsLong()
     {
         var record = await FetchSingle(long.MaxValue);
-        record["v"].Should().Be(long.MaxValue);
+        record["v"].As<long>().Should().Be(long.MaxValue);
     }
 
     [Fact]

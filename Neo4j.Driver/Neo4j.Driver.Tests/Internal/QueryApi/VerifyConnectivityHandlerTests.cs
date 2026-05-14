@@ -19,6 +19,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -88,7 +89,10 @@ public class VerifyConnectivityHandlerTests
             .ReturnsAsync(response);
 
         mocker.GetMock<IJsonDeserializer>()
-            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(It.IsAny<Stream>(), default))
+            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(
+                It.IsAny<Stream>(),
+                It.IsAny<JsonNamingPolicy>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(ValidDiscovery());
 
         await mocker.CreateInstance<VerifyConnectivityHandler>().VerifyConnectivityAsync();
@@ -115,7 +119,10 @@ public class VerifyConnectivityHandlerTests
             .ReturnsAsync(response);
 
         mocker.GetMock<IJsonDeserializer>()
-            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(It.IsAny<Stream>(), default))
+            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(
+                It.IsAny<Stream>(),
+                It.IsAny<JsonNamingPolicy>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(ValidDiscovery());
 
         await mocker.CreateInstance<VerifyConnectivityHandler>().VerifyConnectivityAsync();
@@ -130,7 +137,10 @@ public class VerifyConnectivityHandlerTests
         var mocker = CreateChain(out _);
 
         mocker.GetMock<IJsonDeserializer>()
-            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(It.IsAny<Stream>(), default))
+            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(
+                It.IsAny<Stream>(),
+                It.IsAny<JsonNamingPolicy>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(ValidDiscovery());
 
         var serverInfo = await mocker.CreateInstance<VerifyConnectivityHandler>().VerifyConnectivityAsync();
@@ -145,7 +155,10 @@ public class VerifyConnectivityHandlerTests
         var mocker = CreateChain(out _);
 
         mocker.GetMock<IJsonDeserializer>()
-            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(It.IsAny<Stream>(), default))
+            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(
+                It.IsAny<Stream>(),
+                It.IsAny<JsonNamingPolicy>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(ValidDiscovery(neo4jVersion: "5.22.0"));
 
         var serverInfo = await mocker.CreateInstance<VerifyConnectivityHandler>().VerifyConnectivityAsync();
@@ -176,7 +189,10 @@ public class VerifyConnectivityHandlerTests
         var mocker = CreateChain(out _);
 
         mocker.GetMock<IJsonDeserializer>()
-            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(It.IsAny<Stream>(), default))
+            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(
+                It.IsAny<Stream>(),
+                It.IsAny<JsonNamingPolicy>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(ValidDiscovery(neo4jVersion: null));
 
         var act = () => mocker.CreateInstance<VerifyConnectivityHandler>().VerifyConnectivityAsync();

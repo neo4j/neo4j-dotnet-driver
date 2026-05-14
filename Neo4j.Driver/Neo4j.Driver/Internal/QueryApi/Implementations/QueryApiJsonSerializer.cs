@@ -15,6 +15,8 @@
 
 #nullable enable
 
+using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Http;
 using System.Text;
@@ -30,15 +32,50 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 [AutoRegister]
 internal class QueryApiJsonSerializer : IJsonDeserializer, IJsonSerializer
 {
+    private static readonly JsonNamingPolicy DefaultNamingPolicy = JsonNamingPolicy.CamelCase;
+
+    private static readonly ConcurrentDictionary<JsonNamingPolicy, JsonSerializerOptions> OptionsByNamingPolicy = new()
+    {
+        [DefaultNamingPolicy] = new JsonSerializerOptions()
+        {
+            PropertyNamingPolicy = DefaultNamingPolicy,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        }
+    };
+
     private static readonly JsonSerializerOptions Options = new()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    public ValueTask<T?> DeserializeAsync<T>(Stream utf8Json, CancellationToken cancellationToken = default)
+    public ValueTask<T?> DeserializeAsync<T>(
+        Stream utf8Json,
+        JsonNamingPolicy? namingPolicy,
+        CancellationToken cancellationToken = default)
     {
-        return JsonSerializer.DeserializeAsync<T>(utf8Json, Options, cancellationToken);
+        var options = GetOptions(namingPolicy);
+        return JsonSerializer.DeserializeAsync<T>(utf8Json, options, cancellationToken);
+    }
+
+    public T MapObject<T>(
+        JsonElement json,
+        JsonNamingPolicy? namingPolicy)
+    {
+        var options = GetOptions(namingPolicy);
+        return json.Deserialize<T>(options) 
+         ?? throw new JsonException($"Failed to deserialize JSON element to type '{typeof(T)}'.");
+    }
+
+    private static JsonSerializerOptions GetOptions(JsonNamingPolicy? namingPolicy)
+    {
+        return OptionsByNamingPolicy.GetOrAdd(
+            namingPolicy ?? DefaultNamingPolicy,
+            policy => new JsonSerializerOptions()
+            {
+                PropertyNamingPolicy = policy,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            });
     }
 
     public StringContent Serialize<T>(T value)
