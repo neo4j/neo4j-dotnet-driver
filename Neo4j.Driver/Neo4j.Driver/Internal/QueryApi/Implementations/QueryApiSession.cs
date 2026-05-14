@@ -46,8 +46,6 @@ internal class QueryApiSession : IInternalAsyncSession
 
     public SessionConfig SessionConfig { get; }
 
-    // --- RunAsync -------------------------------------------------------
-
     public async Task<IResultCursor> RunAsync(
         Query query,
         Action<TransactionConfigBuilder> action,
@@ -82,18 +80,20 @@ internal class QueryApiSession : IInternalAsyncSession
     public Task<IResultCursor> RunAsync(string query, IDictionary<string, object> parameters) =>
         RunAsync(new Query(query, parameters));
 
-    // --- BeginTransactionAsync ------------------------------------------
-
     public Task<IAsyncTransaction> BeginTransactionAsync(
         Action<TransactionConfigBuilder> action,
-        bool disposeUnconsumedSessionResult) =>
-        BeginTransactionAsync(AccessMode.Write, action, disposeUnconsumedSessionResult);
+        bool disposeUnconsumedSessionResult)
+    {
+        return BeginTransactionAsync(AccessMode.Write, action, disposeUnconsumedSessionResult);
+    }
 
     public Task<IAsyncTransaction> BeginTransactionAsync(
         AccessMode mode,
         Action<TransactionConfigBuilder> action,
-        bool disposeUnconsumedSessionResult) =>
-        _transactionFactory.BeginTransactionAsync(mode, action, LastBookmarks.Values);
+        bool disposeUnconsumedSessionResult)
+    {
+        return _transactionFactory.BeginTransactionAsync(mode, action, LastBookmarks.Values);
+    }
 
     public Task<IAsyncTransaction> BeginTransactionAsync() =>
         BeginTransactionAsync(null!);
