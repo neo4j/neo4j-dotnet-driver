@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 internal interface IQueryApiTransactionFactory
 {
-    Task<IAsyncTransaction> BeginTransactionAsync(
+    Task<IInternalAsyncTransaction> BeginTransactionAsync(
         AccessMode mode,
         Action<TransactionConfigBuilder>? action,
         IReadOnlyList<string> bookmarks,

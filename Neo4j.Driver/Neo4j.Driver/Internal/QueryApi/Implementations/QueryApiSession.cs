@@ -87,12 +87,13 @@ internal class QueryApiSession : IInternalAsyncSession
         return BeginTransactionAsync(AccessMode.Write, action, disposeUnconsumedSessionResult);
     }
 
-    public Task<IAsyncTransaction> BeginTransactionAsync(
+    public async Task<IAsyncTransaction> BeginTransactionAsync(
         AccessMode mode,
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult)
     {
-        return _transactionFactory.BeginTransactionAsync(mode, action, LastBookmarks.Values);
+        return await _transactionFactory.BeginTransactionAsync(mode, action, LastBookmarks.Values)
+            .ConfigureAwait(false);
     }
 
     public Task<IAsyncTransaction> BeginTransactionAsync() =>
@@ -112,34 +113,77 @@ internal class QueryApiSession : IInternalAsyncSession
     public Task<TResult> ExecuteReadAsync<TResult>(
         Func<IAsyncQueryRunner, Task<TResult>> work,
         Action<TransactionConfigBuilder>? action = null) =>
-        Task.FromResult(default(TResult)!);
+        RunManagedTransactionAsync(AccessMode.Read, work, action);
 
     public Task ExecuteReadAsync(
         Func<IAsyncQueryRunner, Task> work,
         Action<TransactionConfigBuilder>? action = null) =>
-        Task.CompletedTask;
+        RunManagedTransactionAsync(AccessMode.Read, work, action);
 
     public Task<TResult> ExecuteWriteAsync<TResult>(
         Func<IAsyncQueryRunner, Task<TResult>> work,
         Action<TransactionConfigBuilder>? action = null) =>
-        Task.FromResult(default(TResult)!);
+        RunManagedTransactionAsync(AccessMode.Write, work, action);
 
     public Task ExecuteWriteAsync(
         Func<IAsyncQueryRunner, Task> work,
         Action<TransactionConfigBuilder>? action = null) =>
-        Task.CompletedTask;
+        RunManagedTransactionAsync(AccessMode.Write, work, action);
 
     // --- Pipelined ------------------------------------------------------
 
     public Task<EagerResult<T>> PipelinedExecuteReadAsync<T>(
         Func<IAsyncQueryRunner, Task<EagerResult<T>>> func,
         TransactionConfig config) =>
-        Task.FromResult(default(EagerResult<T>)!);
+        RunManagedTransactionAsync(AccessMode.Read, func, null);
 
     public Task<EagerResult<T>> PipelinedExecuteWriteAsync<T>(
         Func<IAsyncQueryRunner, Task<EagerResult<T>>> func,
         TransactionConfig config) =>
-        Task.FromResult(default(EagerResult<T>)!);
+        RunManagedTransactionAsync(AccessMode.Write, func, null);
+
+    // --- Internals ------------------------------------------------------
+
+    private async Task<TResult> RunManagedTransactionAsync<TResult>(
+        AccessMode mode,
+        Func<IAsyncQueryRunner, Task<TResult>> work,
+        Action<TransactionConfigBuilder>? action)
+    {
+        var tx = await _transactionFactory.BeginTransactionAsync(mode, action, LastBookmarks.Values)
+            .ConfigureAwait(false);
+        try
+        {
+            var result = await work(tx).ConfigureAwait(false);
+            var bookmarks = await tx.CommitAsync().ConfigureAwait(false);
+            LastBookmarks = Bookmarks.From(bookmarks);
+            return result;
+        }
+        catch
+        {
+            await tx.RollbackAsync().ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    private async Task RunManagedTransactionAsync(
+        AccessMode mode,
+        Func<IAsyncQueryRunner, Task> work,
+        Action<TransactionConfigBuilder>? action)
+    {
+        var tx = await _transactionFactory.BeginTransactionAsync(mode, action, LastBookmarks.Values)
+            .ConfigureAwait(false);
+        try
+        {
+            await work(tx).ConfigureAwait(false);
+            var bookmarks = await tx.CommitAsync().ConfigureAwait(false);
+            LastBookmarks = Bookmarks.From(bookmarks);
+        }
+        catch
+        {
+            await tx.RollbackAsync().ConfigureAwait(false);
+            throw;
+        }
+    }
 
     // --- Lifecycle ------------------------------------------------------
 

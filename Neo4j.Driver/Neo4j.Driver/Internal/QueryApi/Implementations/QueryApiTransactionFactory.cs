@@ -38,7 +38,7 @@ internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
         _resolutionScope = resolutionScope;
     }
 
-    public async Task<IAsyncTransaction> BeginTransactionAsync(
+    public async Task<IInternalAsyncTransaction> BeginTransactionAsync(
         AccessMode mode,
         Action<TransactionConfigBuilder>? action,
         IReadOnlyList<string> bookmarks,
@@ -50,6 +50,6 @@ internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
 
         var txScope = _resolutionScope.CreateChildScope(r => r.RegisterInstance(context));
 
-        return txScope.Resolve<IAsyncTransaction>();
+        return txScope.Resolve<IInternalAsyncTransaction>();
     }
 }

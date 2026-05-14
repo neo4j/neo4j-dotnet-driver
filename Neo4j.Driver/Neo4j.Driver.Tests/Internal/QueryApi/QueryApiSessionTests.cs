@@ -21,6 +21,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.QueryApi;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 using Neo4j.Driver.Internal.QueryApi.Implementations;
@@ -30,13 +32,15 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 public class QueryApiSessionTests
 {
-    private readonly Mock<IAutoCommitHandler> _autoCommitHandler = new();
-    private readonly Mock<IQueryApiResultCursorBuilder> _cursorBuilder = new();
-    private readonly Mock<IQueryApiTransactionFactory> _transactionFactory = new();
+    private readonly AutoMocker _mocker = new();
     private readonly SessionConfig _config = SessionConfig.Builder.Build();
 
-    private QueryApiSession CreateSession() =>
-        new(_config, _autoCommitHandler.Object, _cursorBuilder.Object, _transactionFactory.Object);
+    public QueryApiSessionTests()
+    {
+        _mocker.Use(_config);
+    }
+
+    private QueryApiSession CreateSession() => _mocker.CreateInstance<QueryApiSession>();
 
     [Fact]
     public void SessionConfig_ReturnsInjectedConfig()
@@ -57,11 +61,11 @@ public class QueryApiSessionTests
         var response = new QueryApiResultSet { Fields = ["x"], Rows = [], Bookmarks = [] };
         var expectedCursor = new Mock<IResultCursor>().Object;
 
-        _autoCommitHandler
+        _mocker.GetMock<IAutoCommitHandler>()
             .Setup(h => h.AutoCommitAsync(query, It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
-        _cursorBuilder
+        _mocker.GetMock<IQueryApiResultCursorBuilder>()
             .Setup(b => b.Build(response, query))
             .Returns(expectedCursor);
 
@@ -75,17 +79,17 @@ public class QueryApiSessionTests
     {
         var query = new Query("RETURN 1");
 
-        _autoCommitHandler
+        _mocker.GetMock<IAutoCommitHandler>()
             .Setup(h => h.AutoCommitAsync(query, It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(QueryApiResultSet.Empty);
 
-        _cursorBuilder
+        _mocker.GetMock<IQueryApiResultCursorBuilder>()
             .Setup(b => b.Build(It.IsAny<QueryApiResultSet>(), query))
             .Returns(Mock.Of<IResultCursor>());
 
         await CreateSession().RunAsync(query, null!, false);
 
-        _autoCommitHandler.Verify(
+        _mocker.GetMock<IAutoCommitHandler>().Verify(
             h => h.AutoCommitAsync(query, Bookmarks.Empty.Values, It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -97,11 +101,11 @@ public class QueryApiSessionTests
         var bookmarkValues = new[] { "neo4j:bookmark:v1:tx42" };
         var response = new QueryApiResultSet { Bookmarks = bookmarkValues };
 
-        _autoCommitHandler
+        _mocker.GetMock<IAutoCommitHandler>()
             .Setup(h => h.AutoCommitAsync(query, It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
-        _cursorBuilder
+        _mocker.GetMock<IQueryApiResultCursorBuilder>()
             .Setup(b => b.Build(response, query))
             .Returns(Mock.Of<IResultCursor>());
 
@@ -111,78 +115,13 @@ public class QueryApiSessionTests
         session.LastBookmarks.Values.Should().BeEquivalentTo(bookmarkValues);
     }
 
-    // --- ExecuteReadAsync ----------------------------------------------
-
-    [Fact]
-    public async Task ExecuteReadAsync_InvokesWorkAndReturnsResult()
-    {
-        var result = await CreateSession().ExecuteReadAsync(_ => Task.FromResult("hello"));
-
-        result.Should().Be("hello");
-    }
-
-    [Fact]
-    public async Task ExecuteReadAsync_Void_InvokesWork()
-    {
-        var invoked = false;
-        await CreateSession().ExecuteReadAsync(_ => { invoked = true; return Task.CompletedTask; });
-
-        invoked.Should().BeTrue();
-    }
-
-    // --- ExecuteWriteAsync ---------------------------------------------
-
-    [Fact]
-    public async Task ExecuteWriteAsync_InvokesWorkAndReturnsResult()
-    {
-        var result = await CreateSession().ExecuteWriteAsync(_ => Task.FromResult(42));
-
-        result.Should().Be(42);
-    }
-
-    [Fact]
-    public async Task ExecuteWriteAsync_Void_InvokesWork()
-    {
-        var invoked = false;
-        await CreateSession().ExecuteWriteAsync(_ => { invoked = true; return Task.CompletedTask; });
-
-        invoked.Should().BeTrue();
-    }
-
-    // --- PipelinedExecuteReadAsync / PipelinedExecuteWriteAsync --------
-
-    [Fact]
-    public async Task PipelinedExecuteReadAsync_InvokesWorkAndReturnsResult()
-    {
-        var expected = new EagerResult<string>("value", Mock.Of<IResultSummary>(), []);
-
-        var result = await CreateSession().PipelinedExecuteReadAsync(
-            _ => Task.FromResult(expected),
-            TransactionConfig.Default);
-
-        result.Should().BeSameAs(expected);
-    }
-
-    [Fact]
-    public async Task PipelinedExecuteWriteAsync_InvokesWorkAndReturnsResult()
-    {
-        var expected = new EagerResult<string>("value", Mock.Of<IResultSummary>(), []);
-
-        var result = await CreateSession().PipelinedExecuteWriteAsync(
-            _ => Task.FromResult(expected),
-            TransactionConfig.Default);
-
-        result.Should().BeSameAs(expected);
-    }
-
-    // --- BeginTransactionAsync -----------------------------------------
-
     [Fact]
     public async Task BeginTransactionAsync_DelegatesToFactoryWithAllParameters()
     {
         Action<TransactionConfigBuilder> configAction = _ => { };
-        var expectedTx = new Mock<IAsyncTransaction>().Object;
-        _transactionFactory
+        var expectedTx = new Mock<IInternalAsyncTransaction>().Object;
+
+        _mocker.GetMock<IQueryApiTransactionFactory>()
             .Setup(f => f.BeginTransactionAsync(
                 It.IsAny<AccessMode>(),
                 It.IsAny<Action<TransactionConfigBuilder>>(),
@@ -193,12 +132,37 @@ public class QueryApiSessionTests
         var tx = await CreateSession().BeginTransactionAsync(AccessMode.Read, configAction);
 
         tx.Should().BeSameAs(expectedTx);
-        _transactionFactory.Verify(
+        _mocker.GetMock<IQueryApiTransactionFactory>().Verify(
             f => f.BeginTransactionAsync(
                 AccessMode.Read,
                 configAction,
                 Bookmarks.Empty.Values,
                 It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteReadAsync_PassesTransactionToWorkAndReturnsResult()
+    {
+        var tx = new Mock<IInternalAsyncTransaction>();
+        tx.Setup(t => t.CommitAsync()).ReturnsAsync(Array.Empty<string>());
+
+        _mocker.GetMock<IQueryApiTransactionFactory>()
+            .Setup(f => f.BeginTransactionAsync(
+                AccessMode.Read,
+                It.IsAny<Action<TransactionConfigBuilder>>(),
+                It.IsAny<IReadOnlyList<string>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(tx.Object);
+
+        IAsyncQueryRunner? capturedRunner = null;
+        var result = await CreateSession().ExecuteReadAsync<int>(runner =>
+        {
+            capturedRunner = runner;
+            return Task.FromResult(42);
+        });
+
+        result.Should().Be(42);
+        capturedRunner.Should().BeSameAs(tx.Object);
     }
 }

@@ -21,6 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
@@ -49,12 +50,12 @@ public class QueryApiTransactionFactoryTests
     public async Task BeginTransactionAsync_ReturnsTransactionResolvedFromChildScope()
     {
         var context = new QueryApiTransactionContext("tx-1", null);
-        var expectedTx = new Mock<IAsyncTransaction>().Object;
+        var expectedTx = new Mock<IInternalAsyncTransaction>().Object;
 
         _beginHandler.Setup(h => h.BeginTransactionAsync(It.IsAny<IReadOnlyList<string>>(), default))
             .ReturnsAsync(context);
 
-        _txScope.Setup(s => s.Resolve<IAsyncTransaction>()).Returns(expectedTx);
+        _txScope.Setup(s => s.Resolve<IInternalAsyncTransaction>()).Returns(expectedTx);
 
         var result = await CreateFactory().BeginTransactionAsync(AccessMode.Write, null, []);
 
@@ -68,7 +69,7 @@ public class QueryApiTransactionFactoryTests
         var context = new QueryApiTransactionContext("tx-1", null);
 
         _beginHandler.Setup(h => h.BeginTransactionAsync(bookmarks, default)).ReturnsAsync(context);
-        _txScope.Setup(s => s.Resolve<IAsyncTransaction>()).Returns(Mock.Of<IAsyncTransaction>());
+        _txScope.Setup(s => s.Resolve<IInternalAsyncTransaction>()).Returns(Mock.Of<IInternalAsyncTransaction>());
 
         await CreateFactory().BeginTransactionAsync(AccessMode.Write, null, bookmarks);
 
@@ -89,7 +90,7 @@ public class QueryApiTransactionFactoryTests
             .Callback<Action<IServiceRegistry>>(action => action(mockRegistry.Object))
             .Returns(_txScope.Object);
 
-        _txScope.Setup(s => s.Resolve<IAsyncTransaction>()).Returns(Mock.Of<IAsyncTransaction>());
+        _txScope.Setup(s => s.Resolve<IInternalAsyncTransaction>()).Returns(Mock.Of<IInternalAsyncTransaction>());
 
         await CreateFactory().BeginTransactionAsync(AccessMode.Write, null, []);
 
