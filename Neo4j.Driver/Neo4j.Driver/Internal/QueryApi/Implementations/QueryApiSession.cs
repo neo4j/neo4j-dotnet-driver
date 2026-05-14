@@ -24,7 +24,7 @@ using Neo4j.Driver.Internal.QueryApi.Abstractions;
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
 [AutoRegister]
-internal class QueryApiSession : IInternalAsyncSession, IScopeAware
+internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScopeAware
 {
     private readonly IAutoCommitHandler _autoCommitHandler;
     private readonly IQueryApiResultCursorBuilder _cursorBuilder;
@@ -40,9 +40,17 @@ internal class QueryApiSession : IInternalAsyncSession, IScopeAware
         _autoCommitHandler = autoCommitHandler;
         _cursorBuilder = cursorBuilder;
         _transactionFactory = transactionFactory;
+        LastBookmarks = sessionConfig.Bookmarks != null
+            ? Bookmarks.From(sessionConfig.Bookmarks)
+            : Bookmarks.Empty;
     }
 
-    public Bookmarks LastBookmarks { get; private set; } = Bookmarks.Empty;
+    public Bookmarks LastBookmarks { get; private set; }
+
+    public void UpdateBookmarks(string[] bookmarks)
+    {
+        LastBookmarks = Bookmarks.From(bookmarks);
+    }
 
     public SessionConfig SessionConfig { get; }
 
@@ -179,7 +187,11 @@ internal class QueryApiSession : IInternalAsyncSession, IScopeAware
         }
     }
 
-    public void OnResolved(IServiceRegistry scope) { }
+    public void OnResolved(IServiceRegistry scope)
+    {
+        // session-scoped objects will see this instance as the bookmark tracker
+        scope.RegisterInstance<IBookmarkTracker>(this);
+    }
 
     public Task CloseAsync() => Task.CompletedTask;
 
