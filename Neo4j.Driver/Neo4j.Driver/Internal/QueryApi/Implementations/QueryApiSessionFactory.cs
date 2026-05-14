@@ -32,8 +32,12 @@ internal class QueryApiSessionFactory : IQueryApiSessionFactory
 
     public IInternalAsyncSession CreateSession(SessionConfig config, bool telemetryEnabled)
     {
-        var sessionScope = _resolutionScope.CreateChildScope(r => r.RegisterInstance(config));
-        
+        var sessionScope = _resolutionScope.CreateChildScope(r =>
+        {
+            r.RegisterInstance(config);
+            r.RegisterType<ISessionContext, QueryApiSessionContext>();
+        });
+
         return sessionScope.Resolve<IInternalAsyncSession>();
     }
 }

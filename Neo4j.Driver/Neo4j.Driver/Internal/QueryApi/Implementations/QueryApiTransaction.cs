@@ -104,6 +104,8 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
     private void EnsureOpen()
     {
         if (!IsOpen)
+        {
             throw new TransactionClosedException("Transaction has already been committed or rolled back.");
+        }
     }
 }
