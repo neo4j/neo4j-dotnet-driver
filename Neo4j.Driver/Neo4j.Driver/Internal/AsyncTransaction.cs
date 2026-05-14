@@ -120,7 +120,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         return result;
     }
 
-    public async Task CommitAsync()
+    public async Task<string[]> CommitAsync()
     {
         if (TransactionError != null)
         {
@@ -137,6 +137,8 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         {
             await DisposeTransactionAsync().ConfigureAwait(false);
         }
+
+        return _bookmarks?.Values ?? [];
     }
 
     public async Task RollbackAsync()

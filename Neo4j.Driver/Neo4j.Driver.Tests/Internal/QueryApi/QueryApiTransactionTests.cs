@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.QueryApi;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 using Neo4j.Driver.Internal.QueryApi.Implementations;
@@ -126,6 +127,43 @@ public class QueryApiTransactionTests
 
         await tx.Invoking(t => t.CommitAsync())
             .Should().ThrowAsync<TransactionClosedException>();
+    }
+
+    [Fact]
+    public void IsOpen_TrueInitially()
+    {
+        CreateTransaction().IsOpen.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task IsOpen_FalseAfterCommit()
+    {
+        var tx = CreateTransaction();
+        await tx.CommitAsync();
+
+        tx.IsOpen.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task IsOpen_FalseAfterRollback()
+    {
+        var tx = CreateTransaction();
+        await tx.RollbackAsync();
+
+        tx.IsOpen.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CommitAsync_ReturnsBookmarksFromHandler()
+    {
+        var bookmarks = new[] { "neo4j:bookmark:v1:tx42" };
+        _mocker.GetMock<ICommitTransactionHandler>()
+            .Setup(h => h.CommitTransactionAsync(default))
+            .ReturnsAsync(bookmarks);
+
+        var result = await ((IInternalAsyncTransaction)CreateTransaction()).CommitAsync();
+
+        result.Should().BeEquivalentTo(bookmarks);
     }
 
     [Fact]

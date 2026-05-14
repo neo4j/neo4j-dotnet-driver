@@ -67,7 +67,7 @@ internal sealed class NullTransaction : IInternalAsyncTransaction
     public TransactionConfig TransactionConfig => throw new InvalidOperationException(
         "Something very wrong has happened and an illegal function has been called.");
 
-    public Task CommitAsync()
+    public Task<string[]> CommitAsync()
     {
         throw new InvalidOperationException(
             "Something very wrong has happened and an illegal function has been called.");

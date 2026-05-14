@@ -24,13 +24,12 @@ using Neo4j.Driver.Internal.QueryApi.Abstractions;
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
 [AutoRegister]
-internal class QueryApiTransaction : IAsyncTransaction
+internal class QueryApiTransaction : IInternalAsyncTransaction
 {
     private readonly ICommitTransactionHandler _commitHandler;
     private readonly IQueryApiResultCursorBuilder _cursorBuilder;
     private readonly IRollbackTransactionHandler _rollbackHandler;
     private readonly IRunInTransactionHandler _runHandler;
-    private bool _closed;
 
     public QueryApiTransaction(
         IRunInTransactionHandler runHandler,
@@ -46,17 +45,26 @@ internal class QueryApiTransaction : IAsyncTransaction
 
     public TransactionConfig TransactionConfig => TransactionConfig.Default;
 
-    public async Task CommitAsync()
+    public bool IsOpen { get; private set; } = true;
+
+    public bool IsErrored(out Exception ex)
+    {
+        // any error would have already been thrown
+        ex = null!;
+        return false;
+    }
+
+    public async Task<string[]> CommitAsync()
     {
         EnsureOpen();
-        _closed = true;
-        await _commitHandler.CommitTransactionAsync().ConfigureAwait(false);
+        IsOpen = false;
+        return await _commitHandler.CommitTransactionAsync().ConfigureAwait(false);
     }
 
     public async Task RollbackAsync()
     {
         EnsureOpen();
-        _closed = true;
+        IsOpen = false;
         await _rollbackHandler.RollbackTransactionAsync().ConfigureAwait(false);
     }
 
@@ -77,9 +85,9 @@ internal class QueryApiTransaction : IAsyncTransaction
 
     public async ValueTask DisposeAsync()
     {
-        if (!_closed)
+        if (IsOpen)
         {
-            _closed = true;
+            IsOpen = false;
             await _rollbackHandler.RollbackTransactionAsync().ConfigureAwait(false);
         }
     }
@@ -91,7 +99,7 @@ internal class QueryApiTransaction : IAsyncTransaction
 
     private void EnsureOpen()
     {
-        if (_closed)
+        if (!IsOpen)
             throw new TransactionClosedException("Transaction has already been committed or rolled back.");
     }
 }
