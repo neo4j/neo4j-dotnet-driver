@@ -91,7 +91,7 @@ public class VerifyConnectivityHandlerTests
         mocker.GetMock<IJsonDeserializer>()
             .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(
                 It.IsAny<Stream>(),
-                It.IsAny<JsonNamingPolicy>(),
+                JsonNamingPolicy.SnakeCaseLower,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(ValidDiscovery());
 
@@ -121,7 +121,7 @@ public class VerifyConnectivityHandlerTests
         mocker.GetMock<IJsonDeserializer>()
             .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(
                 It.IsAny<Stream>(),
-                It.IsAny<JsonNamingPolicy>(),
+                JsonNamingPolicy.SnakeCaseLower,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(ValidDiscovery());
 
@@ -139,7 +139,7 @@ public class VerifyConnectivityHandlerTests
         mocker.GetMock<IJsonDeserializer>()
             .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(
                 It.IsAny<Stream>(),
-                It.IsAny<JsonNamingPolicy>(),
+                JsonNamingPolicy.SnakeCaseLower,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(ValidDiscovery());
 
@@ -157,7 +157,7 @@ public class VerifyConnectivityHandlerTests
         mocker.GetMock<IJsonDeserializer>()
             .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(
                 It.IsAny<Stream>(),
-                It.IsAny<JsonNamingPolicy>(),
+                JsonNamingPolicy.SnakeCaseLower,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(ValidDiscovery(neo4jVersion: "5.22.0"));
 
@@ -191,7 +191,7 @@ public class VerifyConnectivityHandlerTests
         mocker.GetMock<IJsonDeserializer>()
             .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(
                 It.IsAny<Stream>(),
-                It.IsAny<JsonNamingPolicy>(),
+                JsonNamingPolicy.SnakeCaseLower,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(ValidDiscovery(neo4jVersion: null));
 
