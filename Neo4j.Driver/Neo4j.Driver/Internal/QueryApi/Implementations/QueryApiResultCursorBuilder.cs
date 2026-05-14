@@ -40,23 +40,23 @@ internal class QueryApiResultCursorBuilder : IQueryApiResultCursorBuilder
         _jsonValueConverter = jsonValueConverter;
     }
 
-    public IResultCursor Build(QueryApiResponse response, Query query)
+    public IResultCursor Build(QueryApiResultSet resultSet, Query query)
     {
-        var lookup = new Dictionary<string, int>(response.Fields.Length, StringComparer.Ordinal);
-        var invariantLookup = new Dictionary<string, int>(response.Fields.Length, StringComparer.OrdinalIgnoreCase);
-        for (var i = 0; i < response.Fields.Length; i++)
+        var lookup = new Dictionary<string, int>(resultSet.Fields.Length, StringComparer.Ordinal);
+        var invariantLookup = new Dictionary<string, int>(resultSet.Fields.Length, StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < resultSet.Fields.Length; i++)
         {
-            lookup[response.Fields[i]] = i;
-            invariantLookup[response.Fields[i]] = i;
+            lookup[resultSet.Fields[i]] = i;
+            invariantLookup[resultSet.Fields[i]] = i;
         }
 
-        var records = response.Rows
+        var records = resultSet.Rows
             .Select(IRecord (row) => new Record(
                 lookup,
                 invariantLookup,
                 row.Select(_jsonValueConverter.Convert).ToArray()!))
             .ToList();
 
-        return new QueryApiResultCursor(records, response.Fields, query, _summaryFactory);
+        return new QueryApiResultCursor(records, resultSet.Fields, query, _summaryFactory);
     }
 }

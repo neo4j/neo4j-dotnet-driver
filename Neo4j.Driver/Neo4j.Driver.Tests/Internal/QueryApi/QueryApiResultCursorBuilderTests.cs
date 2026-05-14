@@ -41,7 +41,7 @@ public class QueryApiResultCursorBuilderTests
     private static async Task<IRecord> FetchSingle(object? value)
     {
         var element = JsonSerializer.SerializeToElement(value);
-        var response = new QueryApiResponse
+        var response = new QueryApiResultSet
         {
             Fields = ["v"],
             Rows = [[element]]
@@ -57,7 +57,7 @@ public class QueryApiResultCursorBuilderTests
     [Fact]
     public async Task Build_MapsFieldsToCorrectColumns()
     {
-        var response = new QueryApiResponse
+        var response = new QueryApiResultSet
         {
             Fields = ["name", "age"],
             Rows = [[JsonSerializer.SerializeToElement("Alice"), JsonSerializer.SerializeToElement(30)]]
@@ -73,7 +73,7 @@ public class QueryApiResultCursorBuilderTests
     [Fact]
     public async Task Build_EmptyResponse_ProducesNoCursor()
     {
-        var response = new QueryApiResponse { Fields = ["x"], Rows = [] };
+        var response = new QueryApiResultSet { Fields = ["x"], Rows = [] };
         var cursor = Builder.Build(response, AnyQuery);
         (await cursor.FetchAsync()).Should().BeFalse();
     }
@@ -81,7 +81,7 @@ public class QueryApiResultCursorBuilderTests
     [Fact]
     public async Task KeysAsync_ReturnsResponseFields()
     {
-        var response = new QueryApiResponse { Fields = ["a", "b", "c"], Rows = [] };
+        var response = new QueryApiResultSet { Fields = ["a", "b", "c"], Rows = [] };
         var cursor = Builder.Build(response, AnyQuery);
         (await cursor.KeysAsync()).Should().Equal("a", "b", "c");
     }

@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 internal interface IRunInTransactionHandler
 {
-    Task<QueryApiResponse> RunInTransactionAsync(
+    Task<QueryApiResultSet> RunInTransactionAsync(
         Query query,
         CancellationToken cancellationToken = default);
 }

@@ -47,7 +47,7 @@ internal class AutoCommitHandler : IAutoCommitHandler
         _jsonSerializer = jsonSerializer;
     }
 
-    public async Task<QueryApiResponse> AutoCommitAsync(
+    public async Task<QueryApiResultSet> AutoCommitAsync(
         Query query,
         IReadOnlyList<string> bookmarks,
         CancellationToken cancellationToken = default)
@@ -67,7 +67,7 @@ internal class AutoCommitHandler : IAutoCommitHandler
             _errorChecker.ThrowIfAnyError(errors[0].Code, errors[0].Message);
         }
 
-        return new QueryApiResponse
+        return new QueryApiResultSet
         {
             Fields = body?.Data?.Fields ?? [],
             Rows = body?.Data?.Values ?? [],

@@ -44,7 +44,7 @@ public class QueryApiTransactionTests
     public async Task RunAsync_ReturnsCursorBuiltFromHandlerResponse()
     {
         var query = new Query("RETURN 1");
-        var response = new QueryApiResponse { Fields = ["x"], Rows = [], Bookmarks = [] };
+        var response = new QueryApiResultSet { Fields = ["x"], Rows = [], Bookmarks = [] };
         var expectedCursor = new Mock<IResultCursor>().Object;
 
         _mocker.GetMock<IRunInTransactionHandler>()
@@ -63,7 +63,7 @@ public class QueryApiTransactionTests
     [Fact]
     public async Task RunAsync_String_DelegatesToQueryOverload()
     {
-        var response = QueryApiResponse.Empty;
+        var response = QueryApiResultSet.Empty;
         var expectedCursor = new Mock<IResultCursor>().Object;
 
         _mocker.GetMock<IRunInTransactionHandler>()

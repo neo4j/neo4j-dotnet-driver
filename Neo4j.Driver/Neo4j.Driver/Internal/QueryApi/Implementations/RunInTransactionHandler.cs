@@ -50,7 +50,7 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
         _txContext = txContext;
     }
 
-    public async Task<QueryApiResponse> RunInTransactionAsync(
+    public async Task<QueryApiResultSet> RunInTransactionAsync(
         Query query,
         CancellationToken cancellationToken = default)
     {
@@ -69,7 +69,7 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
             _errorChecker.ThrowIfAnyError(errors[0].Code, errors[0].Message);
         }
 
-        return new QueryApiResponse
+        return new QueryApiResultSet
         {
             Fields = body?.Data?.Fields ?? [],
             Rows = body?.Data?.Values ?? [],

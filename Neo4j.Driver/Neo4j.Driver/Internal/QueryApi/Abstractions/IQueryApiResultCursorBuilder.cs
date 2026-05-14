@@ -17,5 +17,5 @@ namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 internal interface IQueryApiResultCursorBuilder
 {
-    IResultCursor Build(QueryApiResponse response, Query query);
+    IResultCursor Build(QueryApiResultSet resultSet, Query query);
 }

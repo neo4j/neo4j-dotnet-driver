@@ -26,9 +26,9 @@ namespace Neo4j.Driver.Internal.QueryApi;
 /// are safe to hold indefinitely — they are backed by memory owned by the deserialized object graph, not by a live stream.
 /// </para>
 /// </summary>
-internal class QueryApiResponse
+internal class QueryRunResponse
 {
-    public static readonly QueryApiResponse Empty = new();
+    public static readonly QueryRunResponse Empty = new();
 
     public string[] Fields { get; init; } = [];
     public JsonElement[][] Rows { get; init; } = [];

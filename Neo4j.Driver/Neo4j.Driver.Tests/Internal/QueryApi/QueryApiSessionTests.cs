@@ -54,7 +54,7 @@ public class QueryApiSessionTests
     public async Task RunAsync_ReturnsCursorBuiltFromHandlerResponse()
     {
         var query = new Query("RETURN 1");
-        var response = new QueryApiResponse { Fields = ["x"], Rows = [], Bookmarks = [] };
+        var response = new QueryApiResultSet { Fields = ["x"], Rows = [], Bookmarks = [] };
         var expectedCursor = new Mock<IResultCursor>().Object;
 
         _autoCommitHandler
@@ -77,10 +77,10 @@ public class QueryApiSessionTests
 
         _autoCommitHandler
             .Setup(h => h.AutoCommitAsync(query, It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(QueryApiResponse.Empty);
+            .ReturnsAsync(QueryApiResultSet.Empty);
 
         _cursorBuilder
-            .Setup(b => b.Build(It.IsAny<QueryApiResponse>(), query))
+            .Setup(b => b.Build(It.IsAny<QueryApiResultSet>(), query))
             .Returns(Mock.Of<IResultCursor>());
 
         await CreateSession().RunAsync(query, null!, false);
@@ -95,7 +95,7 @@ public class QueryApiSessionTests
     {
         var query = new Query("CREATE (:Node)");
         var bookmarkValues = new[] { "neo4j:bookmark:v1:tx42" };
-        var response = new QueryApiResponse { Bookmarks = bookmarkValues };
+        var response = new QueryApiResultSet { Bookmarks = bookmarkValues };
 
         _autoCommitHandler
             .Setup(h => h.AutoCommitAsync(query, It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))

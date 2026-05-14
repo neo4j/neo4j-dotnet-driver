@@ -23,7 +23,7 @@ namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 internal interface IAutoCommitHandler
 {
-    Task<QueryApiResponse> AutoCommitAsync(
+    Task<QueryApiResultSet> AutoCommitAsync(
         Query query,
         IReadOnlyList<string> bookmarks,
         CancellationToken cancellationToken = default);
