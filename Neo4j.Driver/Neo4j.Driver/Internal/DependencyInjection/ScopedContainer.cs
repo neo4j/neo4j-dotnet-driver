@@ -292,6 +292,11 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             _disposables.Add(instance);
         }
 
+        if (instance is IScopeAware scopeAware)
+        {
+            scopeAware.OnResolved(this);
+        }
+
         return instance;
     }
 

@@ -24,7 +24,7 @@ using Neo4j.Driver.Internal.QueryApi.Abstractions;
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
 [AutoRegister]
-internal class QueryApiSession : IInternalAsyncSession
+internal class QueryApiSession : IInternalAsyncSession, IScopeAware
 {
     private readonly IAutoCommitHandler _autoCommitHandler;
     private readonly IQueryApiResultCursorBuilder _cursorBuilder;
@@ -178,6 +178,8 @@ internal class QueryApiSession : IInternalAsyncSession
             throw;
         }
     }
+
+    public void OnResolved(IServiceRegistry scope) { }
 
     public Task CloseAsync() => Task.CompletedTask;
 

@@ -55,6 +55,18 @@ public class QueryApiSessionTests
     }
 
     [Fact]
+    public void LastBookmarks_SeededFromSessionConfig()
+    {
+        var bookmarks = Bookmarks.From("neo4j:bookmark:v1:tx99");
+        var config = SessionConfig.Builder.WithBookmarks(bookmarks).Build();
+        var mocker = new AutoMocker();
+        mocker.Use(config);
+
+        mocker.CreateInstance<QueryApiSession>().LastBookmarks.Values
+            .Should().BeEquivalentTo(bookmarks.Values);
+    }
+
+    [Fact]
     public async Task RunAsync_ReturnsCursorBuiltFromHandlerResponse()
     {
         var query = new Query("RETURN 1");
@@ -119,7 +131,6 @@ public class QueryApiSessionTests
     public async Task BeginTransactionAsync_DelegatesToFactoryWithAllParameters()
     {
         Action<TransactionConfigBuilder> configAction = _ => { };
-        var expectedTx = new Mock<IInternalAsyncTransaction>().Object;
 
         _mocker.GetMock<IQueryApiTransactionFactory>()
             .Setup(f => f.BeginTransactionAsync(
@@ -127,11 +138,10 @@ public class QueryApiSessionTests
                 It.IsAny<Action<TransactionConfigBuilder>>(),
                 It.IsAny<IReadOnlyList<string>>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expectedTx);
+            .ReturnsAsync(new Mock<IInternalAsyncTransaction>().Object);
 
-        var tx = await CreateSession().BeginTransactionAsync(AccessMode.Read, configAction);
+        await CreateSession().BeginTransactionAsync(AccessMode.Read, configAction);
 
-        tx.Should().BeSameAs(expectedTx);
         _mocker.GetMock<IQueryApiTransactionFactory>().Verify(
             f => f.BeginTransactionAsync(
                 AccessMode.Read,
@@ -139,6 +149,28 @@ public class QueryApiSessionTests
                 Bookmarks.Empty.Values,
                 It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task BeginTransactionAsync_UpdatesLastBookmarksOnCommit()
+    {
+        var bookmarkValues = new[] { "neo4j:bookmark:v1:tx100" };
+        var tx = new Mock<IInternalAsyncTransaction>();
+        tx.Setup(t => t.CommitAsync()).ReturnsAsync(bookmarkValues);
+
+        _mocker.GetMock<IQueryApiTransactionFactory>()
+            .Setup(f => f.BeginTransactionAsync(
+                It.IsAny<AccessMode>(),
+                It.IsAny<Action<TransactionConfigBuilder>>(),
+                It.IsAny<IReadOnlyList<string>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(tx.Object);
+
+        var session = CreateSession();
+        var returnedTx = await session.BeginTransactionAsync(AccessMode.Write, null!);
+        await returnedTx.CommitAsync();
+
+        session.LastBookmarks.Values.Should().BeEquivalentTo(bookmarkValues);
     }
 
     [Fact]
