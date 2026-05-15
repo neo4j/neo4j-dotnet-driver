@@ -28,6 +28,10 @@ internal class QueryApiContainerBuilder : IQueryApiContainerBuilder
         
         container.RegisterInstance(driverContext);
         container.RegisterInstance(driverContext.AuthTokenManager);
+
+        var serverInfo = new QueryApiServerInfo(driverContext.InitialUri);
+        container.RegisterInstance<IServerInfo>(serverInfo);
+        container.RegisterInstance(serverInfo);
         
         // find types in this assembly that are marked with the AutoRegister attribute
         var types = typeof(QueryApiContainerBuilder)

@@ -13,23 +13,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.DependencyInjection;
-using Neo4j.Driver.Internal.QueryApi.Abstractions;
+#nullable enable
+
+using System;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
-[AutoRegister]
-internal class QueryApiResultSummaryFactory : IResultSummaryFactory
+/// <summary>
+/// Driver-scoped <see cref="IServerInfo"/> for the Query API. Address and protocol version are fixed at
+/// construction; <see cref="Agent"/> is populated when <see cref="IDriver.VerifyConnectivityAsync"/> is called
+/// and returns an empty string before that.
+/// </summary>
+internal class QueryApiServerInfo : IServerInfo
 {
-    private readonly IServerInfo _serverInfo;
+    private volatile string _agent = "";
 
-    public QueryApiResultSummaryFactory(IServerInfo serverInfo)
+    public QueryApiServerInfo(Uri initialUri)
     {
-        _serverInfo = serverInfo;
+        Address = $"{initialUri.Host}:{initialUri.Port}";
     }
 
-    public IResultSummary Create(Query query, string database)
-    {
-        return new QueryApiResultSummary(query, _serverInfo, database);
-    }
+    public string Address { get; }
+    public string ProtocolVersion => "QueryApi/2.0";
+    public string Agent => _agent;
+
+    internal void UpdateAgent(string agent) => _agent = agent;
 }

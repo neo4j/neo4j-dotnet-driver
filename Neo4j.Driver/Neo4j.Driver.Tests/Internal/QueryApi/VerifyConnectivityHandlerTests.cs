@@ -50,6 +50,7 @@ public class VerifyConnectivityHandlerTests
         HttpStatusCode statusCode = HttpStatusCode.OK)
     {
         var mocker = new AutoMocker();
+        mocker.Use(new QueryApiServerInfo(BaseUri));
         response = new HttpResponseMessage(statusCode) { Content = new ByteArrayContent([]) };
 
         mocker.GetMock<IQueryApiUrlBuilder>()
@@ -77,6 +78,7 @@ public class VerifyConnectivityHandlerTests
         // Always hits GET / unconditionally — even when the driver is warm
         HttpRequestMessage? capturedRequest = null;
         var mocker = new AutoMocker();
+        mocker.Use(new QueryApiServerInfo(BaseUri));
         var response = new HttpResponseMessage { Content = new ByteArrayContent([]) };
 
         mocker.GetMock<IQueryApiUrlBuilder>()
@@ -107,6 +109,7 @@ public class VerifyConnectivityHandlerTests
         // Discovery endpoint is unauthenticated — the handler must not add any Authorization header
         HttpRequestMessage? capturedRequest = null;
         var mocker = new AutoMocker();
+        mocker.Use(new QueryApiServerInfo(BaseUri));
         var response = new HttpResponseMessage { Content = new ByteArrayContent([]) };
 
         mocker.GetMock<IQueryApiUrlBuilder>()

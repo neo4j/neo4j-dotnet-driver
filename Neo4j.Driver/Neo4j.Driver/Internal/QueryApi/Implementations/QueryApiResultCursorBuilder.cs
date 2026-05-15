@@ -30,14 +30,17 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 internal class QueryApiResultCursorBuilder : IQueryApiResultCursorBuilder
 {
     private readonly IJsonValueConverter _jsonValueConverter;
+    private readonly ISessionContext _sessionContext;
     private readonly IResultSummaryFactory _summaryFactory;
 
     public QueryApiResultCursorBuilder(
         IResultSummaryFactory summaryFactory,
-        IJsonValueConverter jsonValueConverter)
+        IJsonValueConverter jsonValueConverter,
+        ISessionContext sessionContext)
     {
         _summaryFactory = summaryFactory;
         _jsonValueConverter = jsonValueConverter;
+        _sessionContext = sessionContext;
     }
 
     public IResultCursor Build(QueryApiResultSet resultSet, Query query)
@@ -57,6 +60,6 @@ internal class QueryApiResultCursorBuilder : IQueryApiResultCursorBuilder
                 row.Select(_jsonValueConverter.Convert).ToArray()!))
             .ToList();
 
-        return new QueryApiResultCursor(records, resultSet.Fields, query, _summaryFactory);
+        return new QueryApiResultCursor(records, resultSet.Fields, query, _summaryFactory, _sessionContext.Database);
     }
 }

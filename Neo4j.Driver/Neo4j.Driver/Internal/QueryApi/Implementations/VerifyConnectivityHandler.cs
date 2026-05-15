@@ -35,16 +35,19 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
 {
     private readonly IQueryApiHttpClient _httpClient;
     private readonly IJsonDeserializer _jsonDeserializer;
+    private readonly QueryApiServerInfo _serverInfo;
     private readonly IQueryApiUrlBuilder _urlBuilder;
 
     public VerifyConnectivityHandler(
         IQueryApiUrlBuilder urlBuilder,
         IQueryApiHttpClient httpClient,
-        IJsonDeserializer jsonDeserializer)
+        IJsonDeserializer jsonDeserializer,
+        QueryApiServerInfo serverInfo)
     {
         _urlBuilder = urlBuilder;
         _httpClient = httpClient;
         _jsonDeserializer = jsonDeserializer;
+        _serverInfo = serverInfo;
     }
 
     public async Task<IServerInfo> VerifyConnectivityAsync(CancellationToken cancellationToken = default)
@@ -76,27 +79,13 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
             throw new ServiceUnavailableException("The discovery endpoint did not include a server version.");
         }
 
-        var baseUri = _urlBuilder.Build(string.Empty);
-        return new ServerInfo($"{baseUri.Host}:{baseUri.Port}", body.Neo4jVersion);
+        _serverInfo.UpdateAgent(body.Neo4jVersion);
+        return _serverInfo;
     }
 
     internal class DiscoveryResponse
     {
         public string? Query { get; init; }
         public string? Neo4jVersion { get; init; }
-    }
-
-    private sealed class ServerInfo : IServerInfo
-    {
-        public ServerInfo(string address, string agent)
-        {
-            Address = address;
-            Agent = agent;
-            ProtocolVersion = "QueryApi/2.0";
-        }
-
-        public string Address { get; }
-        public string ProtocolVersion { get; }
-        public string Agent { get; }
     }
 }

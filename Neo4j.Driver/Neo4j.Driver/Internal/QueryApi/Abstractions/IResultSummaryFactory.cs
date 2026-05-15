@@ -17,5 +17,5 @@ namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 internal interface IResultSummaryFactory
 {
-    IResultSummary Create(Query query);
+    IResultSummary Create(Query query, string database);
 }

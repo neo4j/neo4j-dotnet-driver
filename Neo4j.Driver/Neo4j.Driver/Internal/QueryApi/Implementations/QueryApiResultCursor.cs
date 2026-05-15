@@ -28,6 +28,7 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 [AutoRegister]
 internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
 {
+    private readonly string _database;
     private readonly string[] _keys;
     private readonly Query _query;
     private readonly IReadOnlyList<IRecord> _records;
@@ -40,12 +41,14 @@ internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
         IReadOnlyList<IRecord> records,
         string[] keys,
         Query query,
-        IResultSummaryFactory summaryFactory)
+        IResultSummaryFactory summaryFactory,
+        string database)
     {
         _records = records;
         _keys = keys;
         _query = query;
         _summaryFactory = summaryFactory;
+        _database = database;
     }
 
     IRecord IAsyncEnumerator<IRecord>.Current => _records[_currentIndex];
@@ -103,7 +106,7 @@ internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
     public Task<IResultSummary> ConsumeAsync()
     {
         _isConsumed = true;
-        return Task.FromResult(_summaryFactory.Create(_query));
+        return Task.FromResult(_summaryFactory.Create(_query, _database));
     }
 
     public IAsyncEnumerator<IRecord> GetAsyncEnumerator(CancellationToken cancellationToken = default)

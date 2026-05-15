@@ -21,6 +21,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.QueryApi;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 using Neo4j.Driver.Internal.QueryApi.Implementations;
@@ -34,8 +35,9 @@ public class QueryApiResultCursorBuilderTests
     private static readonly Query AnyQuery = new("RETURN 1");
 
     private static readonly IQueryApiResultCursorBuilder Builder = new QueryApiResultCursorBuilder(
-        new QueryApiResultSummaryFactory(new Mock<IServerInfo>().Object, "neo4j"),
-        new JsonValueConverter([]));
+        new QueryApiResultSummaryFactory(new Mock<IServerInfo>().Object),
+        new JsonValueConverter([]),
+        Mock.Of<ISessionContext>(ctx => ctx.Database == "neo4j"));
 
     /// <summary>Builds a response with a single row and single column, then fetches that record.</summary>
     private static async Task<IRecord> FetchSingle(object? value)

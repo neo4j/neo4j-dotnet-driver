@@ -34,7 +34,7 @@ public class QueryApiResultCursorTests
     private static readonly Query AnyQuery = new("RETURN 1");
 
     private static readonly IResultSummaryFactory AnyFactory =
-        new QueryApiResultSummaryFactory(new Mock<IServerInfo>().Object, "neo4j");
+        new QueryApiResultSummaryFactory(new Mock<IServerInfo>().Object);
 
     // --- Helpers ---
 
@@ -46,7 +46,8 @@ public class QueryApiResultCursorTests
         string[] keys,
         object?[][] rows,
         Query? query = null,
-        IResultSummaryFactory? summaryFactory = null)
+        IResultSummaryFactory? summaryFactory = null,
+        string database = "neo4j")
     {
         var lookup = keys
             .Select((k, i) => (k, i))
@@ -60,7 +61,7 @@ public class QueryApiResultCursorTests
             .Select(row => (IRecord)new DriverRecord(lookup, invariantLookup, row!))
             .ToList();
 
-        return new QueryApiResultCursor(records, keys, query ?? AnyQuery, summaryFactory ?? AnyFactory);
+        return new QueryApiResultCursor(records, keys, query ?? AnyQuery, summaryFactory ?? AnyFactory, database);
     }
 
     // --- Iteration ---
@@ -214,8 +215,7 @@ public class QueryApiResultCursorTests
     [Fact]
     public async Task ConsumeAsync_SummaryContainsDatabase()
     {
-        var factory = new QueryApiResultSummaryFactory(new Mock<IServerInfo>().Object, "mydb");
-        var cursor = MakeCursor([], [], summaryFactory: factory);
+        var cursor = MakeCursor([], [], database: "mydb");
         var summary = await cursor.ConsumeAsync();
         summary.Database.Name.Should().Be("mydb");
     }
@@ -224,7 +224,7 @@ public class QueryApiResultCursorTests
     public async Task ConsumeAsync_SummaryContainsServerInfo()
     {
         var serverInfo = new Mock<IServerInfo>().Object;
-        var factory = new QueryApiResultSummaryFactory(serverInfo, "neo4j");
+        var factory = new QueryApiResultSummaryFactory(serverInfo);
         var cursor = MakeCursor([], [], summaryFactory: factory);
         var summary = await cursor.ConsumeAsync();
         summary.Server.Should().BeSameAs(serverInfo);
