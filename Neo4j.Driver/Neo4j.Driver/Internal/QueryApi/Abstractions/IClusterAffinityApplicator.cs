@@ -26,10 +26,10 @@ namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 internal interface IClusterAffinityApplicator
 {
     /// <summary>
-    /// Adds the cluster-affinity header to <paramref name="request"/> when <paramref name="context"/> carries an
-    /// affinity value.
+    /// Adds the cluster-affinity header to <paramref name="request"/> when a transaction context with an affinity
+    /// value is available in the current scope.
     /// </summary>
-    void Apply(HttpRequestMessage request, QueryApiTransactionContext context);
+    void Apply(HttpRequestMessage request);
 
     /// <summary>
     /// Reads the cluster-affinity header value from <paramref name="response"/>, or returns <c>null</c> if the header

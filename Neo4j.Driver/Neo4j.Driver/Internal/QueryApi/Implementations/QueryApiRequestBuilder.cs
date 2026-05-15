@@ -30,21 +30,18 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
     private readonly IAuthApplicator _authApplicator;
     private readonly IClusterAffinityApplicator _clusterAffinityApplicator;
     private readonly ISessionContext _sessionContext;
-    private readonly QueryApiTransactionContext? _txContext;
     private readonly IQueryApiUrlBuilder _urlBuilder;
 
     public QueryApiRequestBuilder(
         IQueryApiUrlBuilder urlBuilder,
         ISessionContext sessionContext,
         IAuthApplicator authApplicator,
-        IClusterAffinityApplicator clusterAffinityApplicator,
-        QueryApiTransactionContext? txContext = null)
+        IClusterAffinityApplicator clusterAffinityApplicator)
     {
         _urlBuilder = urlBuilder;
         _sessionContext = sessionContext;
         _authApplicator = authApplicator;
         _clusterAffinityApplicator = clusterAffinityApplicator;
-        _txContext = txContext;
     }
 
     public Task<HttpRequestMessage> PostAsync(string path, CancellationToken cancellationToken = default)
@@ -65,10 +62,7 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(TypedJsonMediaType));
         var auth = await _sessionContext.GetAuthTokenAsync(cancellationToken).ConfigureAwait(false);
         _authApplicator.Apply(request, auth);
-        if (_txContext is not null)
-        {
-            _clusterAffinityApplicator.Apply(request, _txContext);
-        }
+        _clusterAffinityApplicator.Apply(request);
 
         return request;
     }

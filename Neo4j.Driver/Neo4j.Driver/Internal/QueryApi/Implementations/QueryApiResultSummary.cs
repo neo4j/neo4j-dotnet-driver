@@ -22,7 +22,6 @@ using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.DependencyInjection;
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
-[AutoRegister]
 internal class QueryApiResultSummary : IResultSummary
 {
     public QueryApiResultSummary(Query query, IServerInfo serverInfo, string database)

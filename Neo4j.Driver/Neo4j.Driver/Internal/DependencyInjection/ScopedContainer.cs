@@ -79,6 +79,19 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         return ResolveCore(serviceType, requestingType, null);
     }
 
+    public bool TryResolve<T>(out T? value)
+    {
+        var result = TryResolveCore(typeof(T), null, null);
+        if (result is null)
+        {
+            value = default;
+            return false;
+        }
+
+        value = (T)result;
+        return true;
+    }
+
     public IResolutionScope CreateChildScope(Action<IServiceRegistry> registrations)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -188,6 +201,14 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
                 return ResolveEnumerable(elementType, extraRegistrations);
             }
 
+            // IScoped<T> — capture the leaf scope and wrap it for lazy optional resolution
+            if (serviceType.IsGenericType && serviceType.GetGenericTypeDefinition() == typeof(IScoped<>))
+            {
+                var innerType = serviceType.GetGenericArguments()[0];
+                var scope = (IResolutionScope)ResolveCore(typeof(IResolutionScope), requestingType, extraRegistrations);
+                return Activator.CreateInstance(typeof(Scoped<>).MakeGenericType(innerType), scope)!;
+            }
+
             // Local registrations
             if (_registrations.TryGetValue(serviceType, out var registrations) && registrations.Count > 0)
             {
@@ -204,6 +225,62 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             }
 
             throw new InvalidOperationException($"Service of type {serviceType} is not registered.");
+        }
+        finally
+        {
+            _resolutionStack.Value?.Remove(serviceType);
+        }
+    }
+
+    // Like ResolveCore but returns null instead of throwing when a service is not registered.
+    // Other failure modes (disposed, circular dependency, construction failure) still throw.
+    private object? TryResolveCore(
+        Type serviceType,
+        Type? requestingType,
+        Dictionary<Type, List<Registration>>? extraRegistrations)
+    {
+        if (_disposed)
+        {
+            throw new ObjectDisposedException(nameof(ScopedContainer));
+        }
+
+        if (_resolutionStack.Value != null && !_resolutionStack.Value.Add(serviceType))
+        {
+            throw new InvalidOperationException(
+                $"Circular dependency detected while resolving {serviceType}. " +
+                $"Resolution chain: {string.Join(" -> ", _resolutionStack.Value.Select(t => t.Name))}");
+        }
+
+        try
+        {
+            if (extraRegistrations != null
+                && extraRegistrations.TryGetValue(serviceType, out var extraRegs)
+                && extraRegs.Count > 0)
+            {
+                var reg = extraRegs[^1];
+                return reg.Instance ?? CreateInstance(reg.ImplementationType, serviceType, extraRegistrations);
+            }
+
+            foreach (var resolverOverride in _overrides)
+            {
+                if (resolverOverride.TryResolve(serviceType, requestingType, this, out var overrideResult))
+                {
+                    return overrideResult;
+                }
+            }
+
+            if (_registrations.TryGetValue(serviceType, out var registrations) && registrations.Count > 0)
+            {
+                var registration = registrations[^1];
+                return registration.Instance ?? CreateInstance(registration.ImplementationType, serviceType, extraRegistrations);
+            }
+
+            if (_parent != null)
+            {
+                return _parent.TryResolveCore(serviceType, requestingType, MergeRegistrations(_registrations, extraRegistrations));
+            }
+
+            return null;
         }
         finally
         {

@@ -26,11 +26,18 @@ internal class QueryApiClusterAffinityApplicator : IClusterAffinityApplicator
 {
     private const string HeaderName = "neo4j-cluster-affinity";
 
-    public void Apply(HttpRequestMessage request, QueryApiTransactionContext context)
+    private readonly IScoped<QueryApiTransactionContext> _txContext;
+
+    public QueryApiClusterAffinityApplicator(IScoped<QueryApiTransactionContext> txContext)
     {
-        if (context.ClusterAffinity is not null)
+        _txContext = txContext;
+    }
+
+    public void Apply(HttpRequestMessage request)
+    {
+        if (_txContext.TryGetValue(out var ctx) && ctx!.ClusterAffinity is not null)
         {
-            request.Headers.TryAddWithoutValidation(HeaderName, context.ClusterAffinity);
+            request.Headers.TryAddWithoutValidation(HeaderName, ctx.ClusterAffinity);
         }
     }
 

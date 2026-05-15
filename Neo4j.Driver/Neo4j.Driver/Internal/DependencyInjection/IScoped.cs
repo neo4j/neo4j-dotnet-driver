@@ -1,8 +1,8 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
-// you may not use this file except in compliance with the License.
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,14 +15,15 @@
 
 #nullable enable
 
-using System;
-
 namespace Neo4j.Driver.Internal.DependencyInjection;
 
-internal interface IServiceResolver
+/// <summary>
+/// Provides lazy, scope-aware access to a dependency that may not be registered in all scopes.
+/// The value is resolved from the scope that was active when this instance was created.
+/// Use <see cref="TryGetValue"/> for optional dependencies.
+/// </summary>
+internal interface IScoped<T>
 {
-    TService Resolve<TService>();
-    object Resolve(Type serviceType);
-    object Resolve(Type serviceType, Type requestingType);
-    bool TryResolve<T>(out T? value);
+    T Value { get; }
+    bool TryGetValue(out T? value);
 }
