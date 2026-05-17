@@ -63,18 +63,18 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
     public async Task CommitAsync()
     {
         EnsureOpen();
-        IsOpen = false;
         _logger.Debug("Committing transaction");
         var bookmarks = await _commitHandler.CommitTransactionAsync().ConfigureAwait(false);
+        IsOpen = false;
         _bookmarkTracker.UpdateBookmarks(bookmarks);
     }
 
     public async Task RollbackAsync()
     {
         EnsureOpen();
-        IsOpen = false;
         _logger.Debug("Rolling back transaction");
         await _rollbackHandler.RollbackTransactionAsync().ConfigureAwait(false);
+        IsOpen = false;
     }
 
     public Task<IResultCursor> RunAsync(string query) => RunAsync(new Query(query));

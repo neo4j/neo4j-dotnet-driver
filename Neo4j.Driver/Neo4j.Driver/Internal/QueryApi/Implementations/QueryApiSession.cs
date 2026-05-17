@@ -166,7 +166,11 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
         }
         catch
         {
-            await tx.RollbackAsync().ConfigureAwait(false);
+            if (tx.IsOpen)
+            {
+                try { await tx.RollbackAsync().ConfigureAwait(false); }
+                catch { /* best-effort; don't mask the original error */ }
+            }
             throw;
         }
     }
@@ -185,7 +189,11 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
         }
         catch
         {
-            await tx.RollbackAsync().ConfigureAwait(false);
+            if (tx.IsOpen)
+            {
+                try { await tx.RollbackAsync().ConfigureAwait(false); }
+                catch { /* best-effort; don't mask the original error */ }
+            }
             throw;
         }
     }

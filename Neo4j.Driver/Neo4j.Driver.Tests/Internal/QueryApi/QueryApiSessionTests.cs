@@ -153,6 +153,29 @@ public class QueryApiSessionTests
 
 
     [Fact]
+    public async Task ExecuteWriteAsync_WhenCommitFails_ThrowsOriginalExceptionEvenIfRollbackAlsoFails()
+    {
+        var commitError = new ServiceUnavailableException("HTTP 500");
+        var tx = new Mock<IInternalAsyncTransaction>();
+        tx.SetupGet(t => t.IsOpen).Returns(true);
+        tx.Setup(t => t.CommitAsync()).ThrowsAsync(commitError);
+        tx.Setup(t => t.RollbackAsync()).ThrowsAsync(
+            new ServiceUnavailableException("rollback also failed"));
+
+        _mocker.GetMock<IQueryApiTransactionFactory>()
+            .Setup(f => f.BeginTransactionAsync(
+                It.IsAny<AccessMode>(),
+                It.IsAny<Action<TransactionConfigBuilder>>(),
+                It.IsAny<IReadOnlyList<string>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(tx.Object);
+
+        var act = () => CreateSession().ExecuteWriteAsync<int>(_ => Task.FromResult(0));
+
+        await act.Should().ThrowAsync<ServiceUnavailableException>().WithMessage("HTTP 500");
+    }
+
+    [Fact]
     public async Task ExecuteReadAsync_PassesTransactionToWorkAndReturnsResult()
     {
         var tx = new Mock<IInternalAsyncTransaction>();
