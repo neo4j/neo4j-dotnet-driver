@@ -44,7 +44,7 @@ public class QueryApiTransactionFactoryTests
     }
 
     private QueryApiTransactionFactory CreateFactory() =>
-        new(_beginHandler.Object, _sessionScope.Object);
+        new(_beginHandler.Object, _sessionScope.Object, new Mock<ILogger>().Object);
 
     [Fact]
     public async Task BeginTransactionAsync_ReturnsTransactionResolvedFromChildScope()

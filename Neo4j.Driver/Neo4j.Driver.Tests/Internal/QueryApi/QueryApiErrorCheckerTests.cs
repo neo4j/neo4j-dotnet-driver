@@ -20,7 +20,8 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.Internal.QueryApi;
+using Moq;
+using Neo4j.Driver.Internal.QueryApi.Abstractions;
 using Neo4j.Driver.Internal.QueryApi.Implementations;
 using Xunit;
 
@@ -33,7 +34,7 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// </summary>
 public class QueryApiErrorCheckerTests
 {
-    private static QueryApiErrorChecker Checker => new(new QueryApiJsonSerializer());
+    private static QueryApiErrorChecker Checker => new(new QueryApiJsonSerializer(), new Mock<ILogger>().Object);
 
     private static HttpResponseMessage JsonResponse(HttpStatusCode status, object body)
     {

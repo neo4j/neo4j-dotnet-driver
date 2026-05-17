@@ -15,10 +15,8 @@
 
 using System;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 using Neo4j.Driver.Internal.QueryApi.Implementations;
-using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver;
