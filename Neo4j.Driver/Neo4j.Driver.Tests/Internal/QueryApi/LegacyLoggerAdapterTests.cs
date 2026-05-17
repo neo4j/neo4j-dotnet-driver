@@ -35,7 +35,7 @@ public class LegacyLoggerAdapterTests
         CreateAdapter().Debug("tx {txId} query {query}", "tx-1", "RETURN 1");
 
         _mocker.GetMock<INeo4jLogger>()
-        ~    .Verify(l => l.Debug(
+            .Verify(l => l.Debug(
                 "tx {0} query {1}",
                 It.Is<object[]>(a => a[0].Equals("tx-1") && a[1].Equals("RETURN 1"))));
     }
