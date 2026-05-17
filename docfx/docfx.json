@@ -56,7 +56,7 @@
       "_appTitle": "",
       "_disableContribution" : true,
       "_appFooter" : "Copyright (c) 2002-2023 Neo4j",
-      "_disableNavbar": true,
+      "_disableNavbar": false,
       "_appLogoPath": "images/neo4j-logo.png",
       "_appFaviconPath": "images/neo4j-logo.png"
     },
