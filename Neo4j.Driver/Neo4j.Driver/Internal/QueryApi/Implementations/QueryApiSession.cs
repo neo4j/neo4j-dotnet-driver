@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using ILogger = Neo4j.Driver.Internal.QueryApi.Abstractions.ILogger;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
@@ -28,18 +29,21 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
 {
     private readonly IAutoCommitHandler _autoCommitHandler;
     private readonly IQueryApiResultCursorBuilder _cursorBuilder;
+    private readonly ILogger _logger;
     private readonly IQueryApiTransactionFactory _transactionFactory;
 
     public QueryApiSession(
         SessionConfig sessionConfig,
         IAutoCommitHandler autoCommitHandler,
         IQueryApiResultCursorBuilder cursorBuilder,
-        IQueryApiTransactionFactory transactionFactory)
+        IQueryApiTransactionFactory transactionFactory,
+        ILogger logger)
     {
         SessionConfig = sessionConfig;
         _autoCommitHandler = autoCommitHandler;
         _cursorBuilder = cursorBuilder;
         _transactionFactory = transactionFactory;
+        _logger = logger;
         LastBookmarks = sessionConfig.Bookmarks != null
             ? Bookmarks.From(sessionConfig.Bookmarks)
             : Bookmarks.Empty;
@@ -59,6 +63,7 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult)
     {
+        _logger.Debug("Session auto-commit: {query}", query.Text);
         var response = await _autoCommitHandler.AutoCommitAsync(query, LastBookmarks.Values);
         LastBookmarks = Bookmarks.From(response.Bookmarks);
         return _cursorBuilder.Build(response, query);
@@ -100,6 +105,7 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult)
     {
+        _logger.Debug("Session beginning {mode} transaction", mode);
         return await _transactionFactory.BeginTransactionAsync(mode, action, LastBookmarks.Values)
             .ConfigureAwait(false);
     }

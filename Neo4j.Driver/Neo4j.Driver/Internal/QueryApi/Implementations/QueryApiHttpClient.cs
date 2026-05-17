@@ -21,6 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using ILogger = Neo4j.Driver.Internal.QueryApi.Abstractions.ILogger;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
@@ -28,18 +29,23 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 internal class QueryApiHttpClient : IQueryApiHttpClient
 {
     private readonly HttpClient _client;
+    private readonly ILogger _logger;
 
-    public QueryApiHttpClient()
+    public QueryApiHttpClient(ILogger logger)
     {
+        _logger = logger;
         _client = new HttpClient(
             new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(2) });
     }
 
-    public Task<HttpResponseMessage> SendAsync(
+    public async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken = default)
     {
-        return _client.SendAsync(request, cancellationToken);
+        _logger.Debug("{method} {uri}", request.Method, request.RequestUri);
+        var response = await _client.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        _logger.Debug("{method} {uri} → {statusCode}", request.Method, request.RequestUri, (int)response.StatusCode);
+        return response;
     }
 
     public ValueTask DisposeAsync()

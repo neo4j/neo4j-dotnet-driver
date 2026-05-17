@@ -22,6 +22,7 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using ILogger = Neo4j.Driver.Internal.QueryApi.Abstractions.ILogger;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
@@ -29,10 +30,12 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 internal class QueryApiErrorChecker : IQueryApiErrorChecker
 {
     private readonly IJsonDeserializer _jsonDeserializer;
+    private readonly ILogger _logger;
 
-    public QueryApiErrorChecker(IJsonDeserializer jsonDeserializer)
+    public QueryApiErrorChecker(IJsonDeserializer jsonDeserializer, ILogger logger)
     {
         _jsonDeserializer = jsonDeserializer;
+        _logger = logger;
     }
 
     public async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken cancellationToken = default)
@@ -62,6 +65,7 @@ internal class QueryApiErrorChecker : IQueryApiErrorChecker
 
         if (response.StatusCode != HttpStatusCode.Accepted)
         {
+            _logger.Debug("Unexpected HTTP {statusCode} from the Query API", (int)response.StatusCode);
             throw new ServiceUnavailableException($"Unexpected HTTP {(int)response.StatusCode} from the Query API.");
         }
     }

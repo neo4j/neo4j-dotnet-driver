@@ -19,6 +19,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using ILogger = Neo4j.Driver.Internal.QueryApi.Abstractions.ILogger;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
@@ -27,6 +28,7 @@ internal class RollbackTransactionHandler : IRollbackTransactionHandler
 {
     private readonly IQueryApiErrorChecker _errorChecker;
     private readonly IQueryApiHttpClient _httpClient;
+    private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
     private readonly QueryApiTransactionContext _txContext;
 
@@ -34,17 +36,20 @@ internal class RollbackTransactionHandler : IRollbackTransactionHandler
         IQueryApiRequestBuilder requestBuilder,
         IQueryApiHttpClient httpClient,
         IQueryApiErrorChecker errorChecker,
-        QueryApiTransactionContext txContext)
+        QueryApiTransactionContext txContext,
+        ILogger logger)
     {
         _requestBuilder = requestBuilder;
         _httpClient = httpClient;
         _errorChecker = errorChecker;
         _txContext = txContext;
+        _logger = logger;
     }
 
     public async Task RollbackTransactionAsync(
         CancellationToken cancellationToken = default)
     {
+        _logger.Debug("Rolling back transaction {txId}", _txContext.TxId);
         using var request = await _requestBuilder.DeleteAsync($"query/v2/tx/{_txContext.TxId}", cancellationToken).ConfigureAwait(false);
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);

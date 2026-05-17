@@ -21,6 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using ILogger = Neo4j.Driver.Internal.QueryApi.Abstractions.ILogger;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
@@ -28,14 +29,17 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
 {
     private readonly IBeginTransactionHandler _beginTransactionHandler;
+    private readonly ILogger _logger;
     private readonly IResolutionScope _resolutionScope;
 
     public QueryApiTransactionFactory(
         IBeginTransactionHandler beginTransactionHandler,
-        IResolutionScope resolutionScope)
+        IResolutionScope resolutionScope,
+        ILogger logger)
     {
         _beginTransactionHandler = beginTransactionHandler;
         _resolutionScope = resolutionScope;
+        _logger = logger;
     }
 
     public async Task<IInternalAsyncTransaction> BeginTransactionAsync(
@@ -44,6 +48,7 @@ internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
         IReadOnlyList<string> bookmarks,
         CancellationToken cancellationToken = default)
     {
+        _logger.Debug("Opening {mode} transaction", mode);
         var context = await _beginTransactionHandler
             .BeginTransactionAsync(bookmarks, cancellationToken)
             .ConfigureAwait(false);

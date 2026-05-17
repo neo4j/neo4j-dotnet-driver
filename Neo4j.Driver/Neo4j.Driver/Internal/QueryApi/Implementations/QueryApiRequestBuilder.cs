@@ -60,6 +60,7 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
     {
         var request = new HttpRequestMessage(method, _urlBuilder.Build($"db/{_sessionContext.Database}/{path}"));
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(TypedJsonMediaType));
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json", 0.9));
         var auth = await _sessionContext.GetAuthTokenAsync(cancellationToken).ConfigureAwait(false);
         _authApplicator.Apply(request, auth);
         _clusterAffinityApplicator.Apply(request);

@@ -19,6 +19,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using ILogger = Neo4j.Driver.Internal.QueryApi.Abstractions.ILogger;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
@@ -28,6 +29,7 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
     private readonly IQueryApiErrorChecker _errorChecker;
     private readonly IQueryApiHttpClient _httpClient;
     private readonly IJsonDeserializer _jsonDeserializer;
+    private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
     private readonly QueryApiTransactionContext _txContext;
 
@@ -36,18 +38,21 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
         IQueryApiHttpClient httpClient,
         IQueryApiErrorChecker errorChecker,
         IJsonDeserializer jsonDeserializer,
-        QueryApiTransactionContext txContext)
+        QueryApiTransactionContext txContext,
+        ILogger logger)
     {
         _requestBuilder = requestBuilder;
         _httpClient = httpClient;
         _errorChecker = errorChecker;
         _jsonDeserializer = jsonDeserializer;
         _txContext = txContext;
+        _logger = logger;
     }
 
     public async Task<string[]> CommitTransactionAsync(
         CancellationToken cancellationToken = default)
     {
+        _logger.Debug("Committing transaction {txId}", _txContext.TxId);
         using var request = await _requestBuilder.PostAsync($"query/v2/tx/{_txContext.TxId}/commit", cancellationToken).ConfigureAwait(false);
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
@@ -63,7 +68,9 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
             _errorChecker.ThrowIfAnyError(errors[0].Code, errors[0].Message);
         }
 
-        return body?.Bookmarks ?? [];
+        var bookmarks = body?.Bookmarks ?? [];
+        _logger.Debug("Transaction {txId} committed: {bookmarkCount} bookmark(s)", _txContext.TxId, bookmarks.Length);
+        return bookmarks;
     }
 
     internal record ResponseBody

@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using ILogger = Neo4j.Driver.Internal.QueryApi.Abstractions.ILogger;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
@@ -29,6 +30,7 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
     private readonly IBookmarkTracker _bookmarkTracker;
     private readonly ICommitTransactionHandler _commitHandler;
     private readonly IQueryApiResultCursorBuilder _cursorBuilder;
+    private readonly ILogger _logger;
     private readonly IRollbackTransactionHandler _rollbackHandler;
     private readonly IRunInTransactionHandler _runHandler;
 
@@ -37,13 +39,15 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
         ICommitTransactionHandler commitHandler,
         IRollbackTransactionHandler rollbackHandler,
         IQueryApiResultCursorBuilder cursorBuilder,
-        IBookmarkTracker bookmarkTracker)
+        IBookmarkTracker bookmarkTracker,
+        ILogger logger)
     {
         _runHandler = runHandler;
         _commitHandler = commitHandler;
         _rollbackHandler = rollbackHandler;
         _cursorBuilder = cursorBuilder;
         _bookmarkTracker = bookmarkTracker;
+        _logger = logger;
     }
 
     public TransactionConfig TransactionConfig => TransactionConfig.Default;
@@ -61,6 +65,7 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
     {
         EnsureOpen();
         IsOpen = false;
+        _logger.Debug("Committing transaction");
         var bookmarks = await _commitHandler.CommitTransactionAsync().ConfigureAwait(false);
         _bookmarkTracker.UpdateBookmarks(bookmarks);
     }
@@ -69,6 +74,7 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
     {
         EnsureOpen();
         IsOpen = false;
+        _logger.Debug("Rolling back transaction");
         await _rollbackHandler.RollbackTransactionAsync().ConfigureAwait(false);
     }
 
@@ -92,6 +98,7 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
         if (IsOpen)
         {
             IsOpen = false;
+            _logger.Debug("Disposing open transaction — rolling back");
             await _rollbackHandler.RollbackTransactionAsync().ConfigureAwait(false);
         }
     }

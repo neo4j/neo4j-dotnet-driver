@@ -22,6 +22,7 @@ using System.Threading.Tasks;
 
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using ILogger = Neo4j.Driver.Internal.QueryApi.Abstractions.ILogger;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
@@ -35,6 +36,7 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
 {
     private readonly IQueryApiHttpClient _httpClient;
     private readonly IJsonDeserializer _jsonDeserializer;
+    private readonly ILogger _logger;
     private readonly QueryApiServerInfo _serverInfo;
     private readonly IQueryApiUrlBuilder _urlBuilder;
 
@@ -42,16 +44,19 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
         IQueryApiUrlBuilder urlBuilder,
         IQueryApiHttpClient httpClient,
         IJsonDeserializer jsonDeserializer,
-        QueryApiServerInfo serverInfo)
+        QueryApiServerInfo serverInfo,
+        ILogger logger)
     {
         _urlBuilder = urlBuilder;
         _httpClient = httpClient;
         _jsonDeserializer = jsonDeserializer;
         _serverInfo = serverInfo;
+        _logger = logger;
     }
 
     public async Task<IServerInfo> VerifyConnectivityAsync(CancellationToken cancellationToken = default)
     {
+        _logger.Debug("Verifying connectivity via discovery endpoint at {address}", _serverInfo.Address);
         using var request = new HttpRequestMessage(HttpMethod.Get, _urlBuilder.Build(string.Empty));
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
@@ -80,6 +85,7 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
         }
 
         _serverInfo.UpdateAgent(body.Neo4jVersion);
+        _logger.Debug("Connectivity verified; server version {version}", body.Neo4jVersion);
         return _serverInfo;
     }
 

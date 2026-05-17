@@ -21,6 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using ILogger = Neo4j.Driver.Internal.QueryApi.Abstractions.ILogger;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
@@ -31,6 +32,7 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
     private readonly IQueryApiHttpClient _httpClient;
     private readonly IJsonDeserializer _jsonDeserializer;
     private readonly IJsonSerializer _jsonSerializer;
+    private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
     private readonly QueryApiTransactionContext _txContext;
 
@@ -40,7 +42,8 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
         IQueryApiErrorChecker errorChecker,
         IJsonDeserializer jsonDeserializer,
         IJsonSerializer jsonSerializer,
-        QueryApiTransactionContext txContext)
+        QueryApiTransactionContext txContext,
+        ILogger logger)
     {
         _requestBuilder = requestBuilder;
         _httpClient = httpClient;
@@ -48,12 +51,15 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
         _jsonDeserializer = jsonDeserializer;
         _jsonSerializer = jsonSerializer;
         _txContext = txContext;
+        _logger = logger;
     }
 
     public async Task<QueryApiResultSet> RunInTransactionAsync(
         Query query,
         CancellationToken cancellationToken = default)
     {
+        _logger.Debug("Running in transaction {txId}: {query}", _txContext.TxId, query.Text);
+
         using var request = await BuildRequestAsync(query, cancellationToken).ConfigureAwait(false);
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
@@ -69,12 +75,16 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
             _errorChecker.ThrowIfAnyError(errors[0].Code, errors[0].Message);
         }
 
-        return new QueryApiResultSet
+        var result = new QueryApiResultSet
         {
             Fields = body?.Data?.Fields ?? [],
             Rows = body?.Data?.Values ?? [],
             Bookmarks = body?.Bookmarks ?? []
         };
+
+        _logger.Debug("Run complete in transaction {txId}: {fieldCount} field(s), {rowCount} row(s)", _txContext.TxId, result.Fields.Length, result.Rows.Length);
+
+        return result;
     }
 
     private async Task<HttpRequestMessage> BuildRequestAsync(Query query, CancellationToken cancellationToken)

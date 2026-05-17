@@ -22,6 +22,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using ILogger = Neo4j.Driver.Internal.QueryApi.Abstractions.ILogger;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
@@ -33,6 +34,7 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
     private readonly IQueryApiHttpClient _httpClient;
     private readonly IJsonDeserializer _jsonDeserializer;
     private readonly IJsonSerializer _jsonSerializer;
+    private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
 
     public BeginTransactionHandler(
@@ -41,7 +43,8 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
         IQueryApiErrorChecker errorChecker,
         IJsonDeserializer jsonDeserializer,
         IJsonSerializer jsonSerializer,
-        IClusterAffinityApplicator clusterAffinityApplicator)
+        IClusterAffinityApplicator clusterAffinityApplicator,
+        ILogger logger)
     {
         _requestBuilder = requestBuilder;
         _httpClient = httpClient;
@@ -49,12 +52,15 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
         _jsonDeserializer = jsonDeserializer;
         _jsonSerializer = jsonSerializer;
         _clusterAffinityApplicator = clusterAffinityApplicator;
+        _logger = logger;
     }
 
     public async Task<QueryApiTransactionContext> BeginTransactionAsync(
         IReadOnlyList<string> bookmarks,
         CancellationToken cancellationToken = default)
     {
+        _logger.Debug("Beginning transaction with {bookmarkCount} bookmark(s)", bookmarks.Count);
+
         using var request = await BuildRequestAsync(bookmarks, cancellationToken).ConfigureAwait(false);
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
@@ -75,7 +81,9 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
             throw new InvalidOperationException("Server did not return a transaction ID.");
         }
 
-        return new QueryApiTransactionContext(txId, _clusterAffinityApplicator.Extract(response));
+        var context = new QueryApiTransactionContext(txId, _clusterAffinityApplicator.Extract(response));
+        _logger.Debug("Transaction begun: {txId}", txId);
+        return context;
     }
 
     private async Task<HttpRequestMessage> BuildRequestAsync(IReadOnlyList<string> bookmarks, CancellationToken cancellationToken)
