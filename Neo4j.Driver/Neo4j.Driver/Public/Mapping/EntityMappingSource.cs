@@ -27,10 +27,10 @@ namespace Neo4j.Driver.Mapping;
 /// <para>
 /// Specify the mapping source via <see cref="MappingSourceAttribute"/> on a property or parameter,
 /// or via the <c>mappingSource</c> parameter of
-/// <see cref="IMappingBuilder{TObject}.Map{TProperty}(System.Linq.Expressions.Expression{System.Func{TObject,TProperty}},string,MappingSource,System.Func{object,TProperty},bool)"/>.
+/// <see cref="IMappingBuilder{TObject}.Map{TProperty}(System.Linq.Expressions.Expression{System.Func{TObject,TProperty}},string,EntityMappingSource,System.Func{object,TProperty},bool)"/>.
 /// </para>
 /// </remarks>
-public enum MappingSource
+public enum EntityMappingSource
 {
     /// <summary>The value of the named property on the entity will be read.</summary>
     Property,
