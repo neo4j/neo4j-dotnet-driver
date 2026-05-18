@@ -470,6 +470,24 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     }
 
     [Fact]
+    public void ShouldTranslateParametersInNestedObjects()
+    {
+        var mockTranslator = new Mock<IConventionTranslator>();
+        mockTranslator.Setup(t => t.Translate(It.IsAny<string>()))
+            .Returns<string>(s => s.ToLowerInvariant());
+
+        ((IRecordObjectMapping)RecordObjectMapping.Instance).TranslateIdentifiers(mockTranslator.Object, true);
+        var testObj = new { InnerObject = new MyPoco { Key1 = "value1", Key2 = "value2" } };
+
+        var parameters = _converter.Convert(testObj);
+
+        parameters.Should().ContainKey("innerobject");
+        var inner = (IDictionary<string, object>)parameters["innerobject"];
+        inner.Should().Contain(new KeyValuePair<string, object>("key1", "value1"));
+        inner.Should().Contain(new KeyValuePair<string, object>("key2", "value2"));
+    }
+
+    [Fact]
     public void LaterAttributesShouldOverrideEarlierAttributes()
     {
         var propertyValue = Guid.NewGuid().ToString();
