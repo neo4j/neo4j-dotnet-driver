@@ -28,8 +28,10 @@ internal class QueryApiContainerBuilder : IQueryApiContainerBuilder
         
         container.RegisterInstance(driverContext);
         container.RegisterInstance(driverContext.AuthTokenManager);
-        
-        container.RegisterInstance<ILogger>(new LegacyLoggerAdapter(driverContext.Neo4JLogger));
+
+        var loggerFactory = new LoggerFactory(driverContext.Neo4JLogger);
+        var loggerPlugin = new LoggerResolverOverride(loggerFactory);
+        container.RegisterPlugin(loggerPlugin);
 
         var serverInfo = new QueryApiServerInfo(driverContext.InitialUri);
         container.RegisterInstance<IServerInfo>(serverInfo);

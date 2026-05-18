@@ -24,45 +24,54 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 internal class LegacyLoggerAdapter : ILogger
 {
     private readonly INeo4jLogger _legacyLogger;
+    private readonly Type _loggingType;
 
-    public LegacyLoggerAdapter(INeo4jLogger legacyLogger)
+    public LegacyLoggerAdapter(INeo4jLogger legacyLogger, Type loggingType)
     {
         _legacyLogger = legacyLogger;
+        _loggingType = loggingType;
+    }
+
+    private string GetModifiedFormat(string messageTemplate)
+    {
+        // replace "{id}, {name}" with "{0}, {1}""
+        var index = 0;
+        var indexedFormat = Regex.Replace(messageTemplate, @"\{[^}]+\}", _ => $"{{{index++}}}");
+        
+        // add the name of the type that's doing the logging
+        var typeName = _loggingType.Name;
+        var finalFormat = $"[{typeName}] {indexedFormat}";
+        
+        return finalFormat;
     }
 
     public void Debug(string messageTemplate, params object?[] args)
     {
-        var format = ToIndexedFormat(messageTemplate);
+        var format = GetModifiedFormat(messageTemplate);
         _legacyLogger.Debug(format, args);
     }
 
     public void Info(string messageTemplate, params object?[] args)
     {
-        var format = ToIndexedFormat(messageTemplate);
+        var format = GetModifiedFormat(messageTemplate);
         _legacyLogger.Info(format, args);
     }
 
     public void Warn(string messageTemplate, params object?[] args)
     {
-        var format = ToIndexedFormat(messageTemplate);
+        var format = GetModifiedFormat(messageTemplate);
         _legacyLogger.Warn(null, format, args);
     }
 
     public void Error(string messageTemplate, params object?[] args)
     {
-        var format = ToIndexedFormat(messageTemplate);
+        var format = GetModifiedFormat(messageTemplate);
         _legacyLogger.Error(null, format, args);
     }
 
     public void Error(Exception exception, string messageTemplate, params object?[] args)
     {
-        var format = ToIndexedFormat(messageTemplate);
+        var format = GetModifiedFormat(messageTemplate);
         _legacyLogger.Error(exception, format, args);
-    }
-
-    private static string ToIndexedFormat(string messageTemplate)
-    {
-        var index = 0;
-        return Regex.Replace(messageTemplate, @"\{[^}]+\}", _ => $"{{{index++}}}");
     }
 }
