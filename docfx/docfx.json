@@ -55,6 +55,7 @@
       "_appName": "[app name not set]",
       "_appTitle": "",
       "_disableContribution" : true,
+      "_disableToc": false,
       "_appFooter" : "Copyright (c) 2002-2023 Neo4j",
       "_disableNavbar": false,
       "_appLogoPath": "images/neo4j-logo.png",
