@@ -488,6 +488,52 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     }
 
     [Fact]
+    public void ShouldTranslateParametersInNestedObjectsInList()
+    {
+        var mockTranslator = new Mock<IConventionTranslator>();
+        mockTranslator.Setup(t => t.Translate(It.IsAny<string>()))
+            .Returns<string>(s => s.ToLowerInvariant());
+
+        ((IRecordObjectMapping)RecordObjectMapping.Instance).TranslateIdentifiers(mockTranslator.Object, true);
+        var testObj = new { InnerList = new List<MyPoco> { new() { Key1 = "value1", Key2 = "value2" } } };
+
+        var parameters = _converter.Convert(testObj);
+
+        parameters.Should().ContainKey("innerlist");
+        var innerList = (IList<object>)parameters["innerlist"];
+        innerList.Should().HaveCount(1);
+        var inner = (IDictionary<string, object>)innerList[0];
+        inner.Should().Contain(new KeyValuePair<string, object>("key1", "value1"));
+        inner.Should().Contain(new KeyValuePair<string, object>("key2", "value2"));
+    }
+
+    [Fact]
+    public void ShouldTranslateParametersInNestedObjectsInDictionary()
+    {
+        var mockTranslator = new Mock<IConventionTranslator>();
+        mockTranslator.Setup(t => t.Translate(It.IsAny<string>()))
+            .Returns<string>(s => s.ToLowerInvariant());
+
+        ((IRecordObjectMapping)RecordObjectMapping.Instance).TranslateIdentifiers(mockTranslator.Object, true);
+        var testObj = new
+        {
+            InnerDictionary = new Dictionary<string, MyPoco>
+            {
+                ["entry"] = new() { Key1 = "value1", Key2 = "value2" }
+            }
+        };
+
+        var parameters = _converter.Convert(testObj);
+
+        parameters.Should().ContainKey("innerdictionary");
+        var innerDictionary = (IDictionary<string, object>)parameters["innerdictionary"];
+        innerDictionary.Should().ContainKey("entry");
+        var inner = (IDictionary<string, object>)innerDictionary["entry"];
+        inner.Should().Contain(new KeyValuePair<string, object>("key1", "value1"));
+        inner.Should().Contain(new KeyValuePair<string, object>("key2", "value2"));
+    }
+
+    [Fact]
     public void LaterAttributesShouldOverrideEarlierAttributes()
     {
         var propertyValue = Guid.NewGuid().ToString();
