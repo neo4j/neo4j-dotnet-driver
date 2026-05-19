@@ -38,8 +38,8 @@ public static class EntityExtensions
     /// <para>
     /// The fields of the virtual record are only the entity's properties. Node labels and relationship types are
     /// not exposed through the <see cref="IRecord"/> returned by <c>AsRecord()</c>. If you need to map labels or
-    /// relationship types, use <see cref="MappingSource.NodeLabel"/> or
-    /// <see cref="MappingSource.RelationshipType"/> when mapping directly from a query result column whose value is
+    /// relationship types, use <see cref="EntityMappingSource.NodeLabel"/> or
+    /// <see cref="EntityMappingSource.RelationshipType"/> when mapping directly from a query result column whose value is
     /// an <see cref="INode"/> or <see cref="IRelationship"/>, rather than from <c>entity.AsRecord()</c>.
     /// </para>
     /// <para>

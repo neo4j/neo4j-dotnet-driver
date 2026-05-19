@@ -30,7 +30,7 @@ public class MappingSourceDelegateBuilderTests
     {
         var record = TestRecord.Create(new[] { "a" }, new object[] { "b" });
         var getter = new MappingSourceDelegateBuilder();
-        var mappingSource = new MappingBinding("a", MappingSource.Property);
+        var mappingSource = new MappingBinding("a", EntityMappingSource.Property);
 
         var mappingDelegate = getter.GetMappingDelegate(mappingSource);
         var found = mappingDelegate(record, out var value);
@@ -44,7 +44,7 @@ public class MappingSourceDelegateBuilderTests
     {
         var record = TestRecord.Create(new[] { "a" }, new object[] { "b" });
         var getter = new MappingSourceDelegateBuilder();
-        var mappingSource = new MappingBinding("c", MappingSource.Property);
+        var mappingSource = new MappingBinding("c", EntityMappingSource.Property);
 
         var mappingDelegate = getter.GetMappingDelegate(mappingSource);
         var found = mappingDelegate(record, out var value);
@@ -58,7 +58,7 @@ public class MappingSourceDelegateBuilderTests
         var node = new Node(1, new[] { "Actor", "Director" }, new Dictionary<string, object>());
         var record = TestRecord.Create(new[] { "a" }, new object[] { node });
         var getter = new MappingSourceDelegateBuilder();
-        var mappingSource = new MappingBinding("zzz", MappingSource.NodeLabel);
+        var mappingSource = new MappingBinding("zzz", EntityMappingSource.NodeLabel);
         mappingSource.Path = "a";
 
         var mappingDelegate = getter.GetMappingDelegate(mappingSource);
@@ -74,7 +74,7 @@ public class MappingSourceDelegateBuilderTests
         var rel = new Relationship(1, 2, 3, "ACTED_IN", new Dictionary<string, object>());
         var record = TestRecord.Create(new[] { "a" }, new object[] { rel });
         var getter = new MappingSourceDelegateBuilder();
-        var mappingSource = new MappingBinding("a", MappingSource.RelationshipType);
+        var mappingSource = new MappingBinding("a", EntityMappingSource.RelationshipType);
 
         var mappingDelegate = getter.GetMappingDelegate(mappingSource);
         var found = mappingDelegate(record, out var value);
