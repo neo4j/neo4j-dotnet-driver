@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Mapping;
 /// <list type="bullet">
 /// <item><description>
 /// <b>Override strategy:</b> call <see cref="UseDefaultMapping"/> first, then call <see cref="Map{TProperty}(
-/// System.Linq.Expressions.Expression{System.Func{TObject,TProperty}},string,MappingSource,
+/// System.Linq.Expressions.Expression{System.Func{TObject,TProperty}},string,EntityMappingSource,
 /// System.Func{object,TProperty},bool)"/> for each property that needs non-default behaviour. This is the least
 /// code when only a few properties differ from convention.
 /// </description></item>
@@ -64,7 +64,7 @@ public interface IMappingBuilder<TObject>
     /// <summary>Defines a mapping from a field in the record to a property on the object.</summary>
     /// <param name="destination">The property to map to.</param>
     /// <param name="path">The key of the field in the record.</param>
-    /// <param name="mappingSource">A value indicating the type of value to be mapped from the specified field.</param>
+    /// <param name="entityMappingSource">A value indicating the type of value to be mapped from the specified field.</param>
     /// <param name="converter">
     /// An optional converter function to convert the value from the field value to the type of the
     /// property.
@@ -81,7 +81,7 @@ public interface IMappingBuilder<TObject>
     IMappingBuilder<TObject> Map<TProperty>(
         Expression<Func<TObject, TProperty>> destination,
         string path,
-        MappingSource mappingSource = MappingSource.Property,
+        EntityMappingSource entityMappingSource = EntityMappingSource.Property,
         Func<object, TProperty> converter = null,
         bool optional = false);
 

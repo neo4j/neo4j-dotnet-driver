@@ -32,7 +32,7 @@ public class MappingBindingsAttribute : Attribute, IMappingBindingMutator
     /// <summary>
     /// Gets or sets the source type for the mapping (e.g. Property, Label, Id).
     /// </summary>
-    public MappingSource? Source { get; set; }
+    public EntityMappingSource? Source { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the mapping will not throw an exception if the source value is missing.
@@ -58,7 +58,7 @@ public class MappingBindingsAttribute : Attribute, IMappingBindingMutator
     public virtual void Mutate(MappingBinding binding)
     {
         binding.Path = Path ?? binding.Path;
-        binding.MappingSource = Source ?? binding.MappingSource;
+        binding.EntityMappingSource = Source ?? binding.EntityMappingSource;
         binding.Optional = Optional ?? binding.Optional;
         binding.DefaultValue = DefaultValue ?? binding.DefaultValue;
         binding.Explicit = Explicit ?? binding.Explicit;

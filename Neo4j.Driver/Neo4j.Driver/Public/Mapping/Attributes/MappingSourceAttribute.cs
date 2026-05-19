@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Mapping;
 /// where <c>person</c> is a node, relationship, or dictionary. All segments are matched case-sensitively.
 /// </para>
 /// <para>
-/// When a <see cref="MappingSource"/> other than <see cref="MappingSource.Property"/> is required (for example
+/// When a <see cref="EntityMappingSource"/> other than <see cref="EntityMappingSource.Property"/> is required (for example
 /// to read a node's labels), use the two-argument constructor.
 /// </para>
 /// </remarks>
@@ -65,14 +65,14 @@ public class MappingSourceAttribute : MappingBindingsAttribute
     /// The record field key to read from. May be a dot-separated path of the form <c>field.nestedKey</c>.
     /// All segments are matched case-sensitively.
     /// </param>
-    /// <param name="mappingSource">
-    /// The aspect of the entity to read. Use <see cref="MappingSource.NodeLabel"/> to read a node's labels,
-    /// or <see cref="MappingSource.RelationshipType"/> to read a relationship's type string.
+    /// <param name="entityMappingSource">
+    /// The aspect of the entity to read. Use <see cref="EntityMappingSource.NodeLabel"/> to read a node's labels,
+    /// or <see cref="EntityMappingSource.RelationshipType"/> to read a relationship's type string.
     /// </param>
-    public MappingSourceAttribute(string key, MappingSource mappingSource) 
+    public MappingSourceAttribute(string key, EntityMappingSource entityMappingSource) 
     {
         Path = key;
-        Source = mappingSource;
+        Source = entityMappingSource;
     }
 
     /// <inheritdoc/>
