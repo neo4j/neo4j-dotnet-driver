@@ -28,6 +28,8 @@ internal class CypherParameterValueTransformer : ICypherParameterValueTransforme
 
     public object Transform(object value, Func<object, IDictionary<string, object>, IDictionary<string, object>> fillDictionary)
     {
+        fillDictionary = fillDictionary ?? throw new ArgumentNullException(nameof(fillDictionary));
+        
         var valueType = value?.GetType();
         if (valueType == null || !NeedsConversion(valueType))
         {
