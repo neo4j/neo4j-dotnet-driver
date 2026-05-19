@@ -41,7 +41,7 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     {
         _mocker.GetMock<IMappingBindingProvider>()
             .Setup(p => p.GetMappingBinding(It.IsAny<PropertyInfo>()))
-            .Returns<PropertyInfo>(p => new MappingBinding(p.Name, MappingSource.Property));
+            .Returns<PropertyInfo>(p => new MappingBinding(p.Name, EntityMappingSource.Property));
 
         _mocker.GetMock<ICypherParameterValueTransformer>()
             .Setup(t => t.Transform(
@@ -396,7 +396,7 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
         RecordObjectMapping.TranslateIdentifiers(translateCypherParameters);
         _mocker.GetMock<IMappingBindingProvider>()
             .Setup(p => p.GetMappingBinding(It.Is<PropertyInfo>(pi => pi.Name == "MappingBindingsDecorated")))
-            .Returns(new MappingBinding("MappingBindingsDecorated", MappingSource.Property) { CypherParameterName = "decorated_property_with_bindings" });
+            .Returns(new MappingBinding("MappingBindingsDecorated", EntityMappingSource.Property) { CypherParameterName = "decorated_property_with_bindings" });
 
         var propertyValue = Guid.NewGuid().ToString();
         var testObj = new ParameterMappingTestClass { MappingBindingsDecorated = propertyValue };
@@ -416,7 +416,7 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
         RecordObjectMapping.TranslateIdentifiers(translateCypherParameters);
         _mocker.GetMock<IMappingBindingProvider>()
             .Setup(p => p.GetMappingBinding(It.Is<PropertyInfo>(pi => pi.Name == "SomeProperty")))
-            .Returns(new MappingBinding("SomeProperty", MappingSource.Property) { CypherParameterName = "explicitParamName" });
+            .Returns(new MappingBinding("SomeProperty", EntityMappingSource.Property) { CypherParameterName = "explicitParamName" });
 
         var propertyValue = Guid.NewGuid().ToString();
         var testObj = new ParameterMappingTestClass { SomeProperty = propertyValue };
@@ -521,7 +521,7 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
         SetupDefaultMocks();
         _mocker.GetMock<IMappingBindingProvider>()
             .Setup(p => p.GetMappingBinding(It.Is<PropertyInfo>(pi => pi.Name == "MultiplyDecoratedProperty")))
-            .Returns(new MappingBinding("MultiplyDecoratedProperty", MappingSource.Property) { CypherParameterName = "multiply_decorated_property" });
+            .Returns(new MappingBinding("MultiplyDecoratedProperty", EntityMappingSource.Property) { CypherParameterName = "multiply_decorated_property" });
 
         var propertyValue = Guid.NewGuid().ToString();
         var testObj = new ParameterMappingTestClass { MultiplyDecoratedProperty = propertyValue };
@@ -538,7 +538,7 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
         SetupDefaultMocks();
         _mocker.GetMock<IMappingBindingProvider>()
             .Setup(p => p.GetMappingBinding(It.Is<PropertyInfo>(pi => pi.Name == "CustomDecoratedProperty")))
-            .Returns(new MappingBinding("CustomDecoratedProperty", MappingSource.Property) { CypherParameterName = "CustomParameterName" });
+            .Returns(new MappingBinding("CustomDecoratedProperty", EntityMappingSource.Property) { CypherParameterName = "CustomParameterName" });
 
         var propertyValue = Guid.NewGuid().ToString();
         var testObj = new ParameterMappingTestClass { CustomDecoratedProperty = propertyValue };
