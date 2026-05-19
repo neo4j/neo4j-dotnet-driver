@@ -17,6 +17,7 @@ namespace Neo4j.Driver.Tests.Internal.Util;
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Util;
 using Xunit;
@@ -25,17 +26,24 @@ public class CypherParameterValueTransformerTests
 {
     private readonly CypherParameterValueTransformer _transformer = new();
 
+    private IDictionary<string, object> SimpleFill(object o, IDictionary<string, object> dict)
+    {
+        foreach (var prop in o.GetType().GetRuntimeProperties())
+            dict[prop.Name] = prop.GetValue(o);
+        return dict;
+    }
+
     [Fact]
     public void Transform_Null_ReturnsNull()
     {
-        _transformer.Transform(null).Should().BeNull();
+        _transformer.Transform(null, SimpleFill).Should().BeNull();
     }
 
     [Fact]
     public void Transform_String_ReturnsSameString()
     {
         var input = "hello";
-        var result = _transformer.Transform(input);
+        var result = _transformer.Transform(input, SimpleFill);
         result.Should().Be(input);
     }
 
@@ -43,7 +51,7 @@ public class CypherParameterValueTransformerTests
     public void Transform_IntArray_ReturnsIntArray()
     {
         var input = new[] { 1, 2, 3 };
-        var result = _transformer.Transform(input);
+        var result = _transformer.Transform(input, SimpleFill);
         result.Should()
             .BeOfType<int[]>()
             .Which.Should()
@@ -54,7 +62,7 @@ public class CypherParameterValueTransformerTests
     public void Transform_ListOfStrings_ReturnsListOfStrings()
     {
         var input = new List<string> { "a", "b" };
-        var result = _transformer.Transform(input);
+        var result = _transformer.Transform(input, SimpleFill);
         result.Should()
             .BeOfType<List<string>>()
             .Which.Should()
@@ -65,7 +73,7 @@ public class CypherParameterValueTransformerTests
     public void Transform_DictionaryStringInt_ReturnsDictionaryStringObject()
     {
         var input = new Dictionary<string, int> { { "x", 1 }, { "y", 2 } };
-        var result = _transformer.Transform(input);
+        var result = _transformer.Transform(input, SimpleFill);
         result.Should()
             .BeOfType<Dictionary<string, object>>()
             .Which.Should()
@@ -76,7 +84,7 @@ public class CypherParameterValueTransformerTests
     public void Transform_DictionaryWithNonStringKey_Throws()
     {
         var input = new Dictionary<int, string> { { 1, "a" } };
-        Action act = () => _transformer.Transform(input);
+        Action act = () => _transformer.Transform(input, SimpleFill);
         act.Should()
             .Throw<InvalidOperationException>()
             .WithMessage("*string keys*");
@@ -92,7 +100,7 @@ public class CypherParameterValueTransformerTests
     public void Transform_Object_ReturnsDictionaryOfProperties()
     {
         var input = new TestObject { A = 42, B = "foo" };
-        var result = _transformer.Transform(input);
+        var result = _transformer.Transform(input, SimpleFill);
         result.Should()
             .BeOfType<Dictionary<string, object>>()
             .Which.Should()
@@ -109,7 +117,7 @@ public class CypherParameterValueTransformerTests
             new TestObject { A = 2, B = "y" }
         };
 
-        var result = _transformer.Transform(input);
+        var result = _transformer.Transform(input, SimpleFill);
         result.Should().BeOfType<List<object>>();
         var list = result as List<object>;
         list.Should().AllBeOfType<Dictionary<string, object>>();
@@ -119,7 +127,7 @@ public class CypherParameterValueTransformerTests
     public void Transform_Vector_ReturnsSameVector()
     {
         var input = Vector.Create([1.0, 2.0, 3.0]);
-        var result = _transformer.Transform(input);
+        var result = _transformer.Transform(input, SimpleFill);
         result.Should().BeOfType<Vector<double>>();
         ((Vector<double>) result).Values.Should().BeEquivalentTo([1.0, 2.0, 3.0]);
     }

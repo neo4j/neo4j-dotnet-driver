@@ -40,7 +40,7 @@ internal class MappingSourceDelegateBuilder : IMappingSourceDelegateBuilder
                 return mappingBinding.Optional;
             }
 
-            var (result, returnValue) = (MappingSource: mappingBinding.EntityMappingSource, value) switch
+            var (result, returnValue) = (EntityMappingSource: mappingBinding.EntityMappingSource, value) switch
             {
                 (EntityMappingSource.NodeLabel, INode node) => (true, node.Labels),
                 (EntityMappingSource.RelationshipType, IRelationship relationship) => (true, relationship.Type),

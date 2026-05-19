@@ -30,9 +30,9 @@ public class MappingSourceDelegateBuilderTests
     {
         var record = TestRecord.Create(new[] { "a" }, new object[] { "b" });
         var getter = new MappingSourceDelegateBuilder();
-        var mappingSource = new MappingBinding("a", EntityMappingSource.Property);
+        var entityMappingSource = new MappingBinding("a", EntityMappingSource.Property);
 
-        var mappingDelegate = getter.GetMappingDelegate(mappingSource);
+        var mappingDelegate = getter.GetMappingDelegate(entityMappingSource);
         var found = mappingDelegate(record, out var value);
 
         found.Should().BeTrue();
@@ -44,9 +44,9 @@ public class MappingSourceDelegateBuilderTests
     {
         var record = TestRecord.Create(new[] { "a" }, new object[] { "b" });
         var getter = new MappingSourceDelegateBuilder();
-        var mappingSource = new MappingBinding("c", EntityMappingSource.Property);
+        var entityMappingSource = new MappingBinding("c", EntityMappingSource.Property);
 
-        var mappingDelegate = getter.GetMappingDelegate(mappingSource);
+        var mappingDelegate = getter.GetMappingDelegate(entityMappingSource);
         var found = mappingDelegate(record, out var value);
 
         found.Should().BeFalse();
@@ -58,10 +58,10 @@ public class MappingSourceDelegateBuilderTests
         var node = new Node(1, new[] { "Actor", "Director" }, new Dictionary<string, object>());
         var record = TestRecord.Create(new[] { "a" }, new object[] { node });
         var getter = new MappingSourceDelegateBuilder();
-        var mappingSource = new MappingBinding("zzz", EntityMappingSource.NodeLabel);
-        mappingSource.Path = "a";
+        var entityMappingSource = new MappingBinding("zzz", EntityMappingSource.NodeLabel);
+        entityMappingSource.Path = "a";
 
-        var mappingDelegate = getter.GetMappingDelegate(mappingSource);
+        var mappingDelegate = getter.GetMappingDelegate(entityMappingSource);
         var found = mappingDelegate(record, out var value);
 
         found.Should().BeTrue();
@@ -74,9 +74,9 @@ public class MappingSourceDelegateBuilderTests
         var rel = new Relationship(1, 2, 3, "ACTED_IN", new Dictionary<string, object>());
         var record = TestRecord.Create(new[] { "a" }, new object[] { rel });
         var getter = new MappingSourceDelegateBuilder();
-        var mappingSource = new MappingBinding("a", EntityMappingSource.RelationshipType);
+        var entityMappingSource = new MappingBinding("a", EntityMappingSource.RelationshipType);
 
-        var mappingDelegate = getter.GetMappingDelegate(mappingSource);
+        var mappingDelegate = getter.GetMappingDelegate(entityMappingSource);
         var found = mappingDelegate(record, out var value);
 
         found.Should().BeTrue();
