@@ -19,7 +19,7 @@ using System.Reflection;
 using AutoFixture;
 using AutoFixture.AutoMoq;
 using AutoFixture.Kernel;
-using AutoFixture.Xunit2;
+using AutoFixture.Xunit3;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 using Xunit;
 
