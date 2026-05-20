@@ -21,7 +21,6 @@ using System.Threading;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 

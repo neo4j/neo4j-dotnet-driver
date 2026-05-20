@@ -19,10 +19,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
-using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.Extensions.DatabaseExtensions;
 
 namespace Neo4j.Driver.IntegrationTests;
@@ -788,7 +788,7 @@ public class Examples
         }
 
         [RequireEnterpriseEdition("4.0.0", "5.0.0", VersionComparison.Between)]
-        public async void TestUseAnotherDatabaseExample()
+        public async Task TestUseAnotherDatabaseExample()
         {
             try
             {
@@ -812,7 +812,7 @@ public class Examples
         }
 
         [RequireEnterpriseEdition("5.0.0", VersionComparison.GreaterThanOrEqualTo)]
-        public async void TestUseAnotherDatabaseExampleAsync()
+        public async Task TestUseAnotherDatabaseExampleAsync()
         {
             try
             {

@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -21,56 +22,48 @@ namespace Neo4j.Driver.Tests.Filters;
 
 public class MonoFactAttribute : FactAttribute
 {
-    public MonoFactAttribute()
+    public MonoFactAttribute(
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(sourceFilePath, sourceLineNumber)
     {
-        var shouldSkip = Type.GetType("Mono.Runtime") == null;
-
-        if (shouldSkip)
-        {
+        if (Type.GetType("Mono.Runtime") == null)
             Skip = "Test is supposed to be run only on mono runtimes";
-        }
     }
 }
 
 public class MonoTheoryAttribute : TheoryAttribute
 {
-    public MonoTheoryAttribute()
+    public MonoTheoryAttribute(
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(sourceFilePath, sourceLineNumber)
     {
-        var shouldSkip = Type.GetType("Mono.Runtime") == null;
-
-        if (shouldSkip)
-        {
+        if (Type.GetType("Mono.Runtime") == null)
             Skip = "Test is supposed to be run only on mono runtimes";
-        }
     }
 }
 
 public class DotnetCoreFactAttribute : FactAttribute
 {
-    public DotnetCoreFactAttribute()
+    public DotnetCoreFactAttribute(
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(sourceFilePath, sourceLineNumber)
     {
-        var shouldSkip =
-            RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase) ==
-            false;
-
-        if (shouldSkip)
-        {
+        if (!RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase))
             Skip = "Test is supposed to be run only on .net core runtimes";
-        }
     }
 }
 
 public class DotnetCoreTheoryAttribute : TheoryAttribute
 {
-    public DotnetCoreTheoryAttribute()
+    public DotnetCoreTheoryAttribute(
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(sourceFilePath, sourceLineNumber)
     {
-        var shouldSkip =
-            RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase) ==
-            false;
-
-        if (shouldSkip)
-        {
+        if (!RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase))
             Skip = "Test is supposed to be run only on .net core runtimes";
-        }
     }
 }

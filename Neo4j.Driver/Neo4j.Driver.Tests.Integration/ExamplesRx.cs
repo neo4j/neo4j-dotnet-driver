@@ -21,7 +21,6 @@ using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Tests.Reactive;
 using Neo4j.Driver.Tests.Reactive.Utils;
 using Xunit;
-using Xunit.Abstractions;
 using static Microsoft.Reactive.Testing.ReactiveTest;
 using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 
@@ -90,7 +89,7 @@ public class ExamplesRx
         // end::rx-explicit-transaction[]
 
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public async void TestAutocommitTransactionExample()
+        public async Task TestAutocommitTransactionExample()
         {
             await WriteAsync(
                 "CREATE (p:Product) SET p.id = $id, p.title = $title",
@@ -105,7 +104,7 @@ public class ExamplesRx
         }
 
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public async void TestTransactionFunctionExample()
+        public async Task TestTransactionFunctionExample()
         {
             await WriteAsync(
                 "CREATE (p:Product) SET p.id = $id, p.title = $title",
@@ -120,7 +119,7 @@ public class ExamplesRx
         }
 
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public async void TestExplicitTransactionExample()
+        public async Task TestExplicitTransactionExample()
         {
             await WriteAsync(
                 "CREATE (p:Product) SET p.id = $id, p.title = $title",

@@ -21,7 +21,6 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests;
 
@@ -156,7 +155,7 @@ public class ExamplesAsync
         // end::async-multiple-tx[]
 
         [RequireServerFact]
-        public async void TestAutocommitTransactionExample()
+        public async Task TestAutocommitTransactionExample()
         {
             await WriteAsync(
                 "CREATE (p:Product) SET p.id = $id, p.title = $title",
@@ -170,7 +169,7 @@ public class ExamplesAsync
         }
 
         [RequireServerFact]
-        public async void TestTransactionFunctionExample()
+        public async Task TestTransactionFunctionExample()
         {
             await WriteAsync(
                 "CREATE (p:Product) SET p.id = $id, p.title = $title",
@@ -184,7 +183,7 @@ public class ExamplesAsync
         }
 
         [RequireServerFact]
-        public async void TestExplicitTransactionExample()
+        public async Task TestExplicitTransactionExample()
         {
             await WriteAsync(
                 "CREATE (p:Product) SET p.id = $id, p.title = $title",
@@ -197,7 +196,7 @@ public class ExamplesAsync
         }
 
         [RequireServerFact]
-        public async void TestAsyncMultipleTxExample()
+        public async Task TestAsyncMultipleTxExample()
         {
             await WriteAsync(
                 "CREATE (a:Person {name: $nameA}), (b:Person {name: $nameB})",
@@ -994,7 +993,7 @@ public class ExamplesAsync
         }
 
         [RequireServerFact]
-        public async void TestTransactionFunctionExample()
+        public async Task TestTransactionFunctionExample()
         {
             // Given & When
             await AddPersonAsync("Alice");
