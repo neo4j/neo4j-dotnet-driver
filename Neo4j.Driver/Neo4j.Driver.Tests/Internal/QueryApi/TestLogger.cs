@@ -21,33 +21,34 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
-internal class TestLogger(ITestOutputHelper output, Type subjectType) : ILogger
+internal class TestLogger(Type subjectType) : ILogger
 {
     private readonly string _prefix = $"[{subjectType.Name}]";
     private static readonly Regex Placeholders = new(@"\{[^}]+\}");
 
     private void WriteFormatted(string level, string messageTemplate, object?[] args, Exception? exception = null)
     {
+        var output = TestContext.Current.TestOutputHelper;
+        if (output is null)
+            return;
+
         var index = 0;
         var indexed = Placeholders.Replace(messageTemplate, _ => $"{{{index++}}}");
         try
         {
-            var message = args.Length > 0 
-                ? string.Format(indexed, args) 
+            var message = args.Length > 0
+                ? string.Format(indexed, args)
                 : indexed;
-            
+
             output.WriteLine($"{level} {_prefix} {message}");
         }
         catch
         {
-            // best effort
             output.WriteLine($"{level} {_prefix} {indexed} [{string.Join(", ", args)}]");
         }
 
         if (exception != null)
-        {
             output.WriteLine($"{exception}");
-        }
     }
 
     public void Debug(string messageTemplate, params object?[] args) =>

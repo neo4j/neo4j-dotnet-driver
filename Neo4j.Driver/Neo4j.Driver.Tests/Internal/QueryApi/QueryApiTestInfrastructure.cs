@@ -31,7 +31,7 @@ internal class TypedLoggerSpecimenBuilder : ISpecimenBuilder
     {
         if (request is ParameterInfo p && p.ParameterType == typeof(ILogger))
         {
-            return new TestLogger(TestContext.Current.TestOutputHelper!, p.Member.DeclaringType!);
+            return new TestLogger(p.Member.DeclaringType!);
         }
 
         return new NoSpecimen();

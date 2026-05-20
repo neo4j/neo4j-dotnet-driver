@@ -47,6 +47,7 @@ public class QueryApiScopeWiringTests
             .ReturnsAsync(bookmarkValues);
 
         var driverScope = new ScopedContainer();
+        driverScope.RegisterInstance<ILogger>(new TestLogger(typeof(QueryApiSession)));
         driverScope.RegisterInstance(beginHandler.Object);
         driverScope.RegisterInstance(commitHandler.Object);
         driverScope.RegisterInstance(Mock.Of<IRollbackTransactionHandler>());

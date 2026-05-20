@@ -26,8 +26,13 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 public class LegacyLoggerAdapterTests
 {
     private readonly AutoMocker _mocker = new();
+    private const string TypeName = nameof(LegacyLoggerAdapterTests);
 
-    private LegacyLoggerAdapter CreateAdapter() => _mocker.CreateInstance<LegacyLoggerAdapter>();
+    private LegacyLoggerAdapter CreateAdapter()
+    {
+        var neo4JLoggerMock = _mocker.GetMock<INeo4jLogger>().Object;
+        return new LegacyLoggerAdapter(neo4JLoggerMock, typeof(LegacyLoggerAdapterTests));
+    }
 
     [Fact]
     public void Debug_TranslatesNamedPlaceholdersAndDelegates()
@@ -36,7 +41,7 @@ public class LegacyLoggerAdapterTests
 
         _mocker.GetMock<INeo4jLogger>()
             .Verify(l => l.Debug(
-                "tx {0} query {1}",
+                $$"""[{{TypeName}}] tx {0} query {1}""",
                 It.Is<object[]>(a => a[0].Equals("tx-1") && a[1].Equals("RETURN 1"))));
     }
 
@@ -46,7 +51,9 @@ public class LegacyLoggerAdapterTests
         CreateAdapter().Info("version {version}", "5.0");
 
         _mocker.GetMock<INeo4jLogger>()
-            .Verify(l => l.Info("version {0}", It.Is<object[]>(a => a[0].Equals("5.0"))));
+            .Verify(l => l.Info(
+                $$"""[{{TypeName}}] version {0}""",
+                It.Is<object[]>(a => a[0].Equals("5.0"))));
     }
 
     [Fact]
@@ -55,7 +62,10 @@ public class LegacyLoggerAdapterTests
         CreateAdapter().Warn("status {code}", 404);
 
         _mocker.GetMock<INeo4jLogger>()
-            .Verify(l => l.Warn(null, "status {0}", It.Is<object[]>(a => a[0].Equals(404))));
+            .Verify(l => l.Warn(
+                null,
+                $$"""[{{TypeName}}] status {0}""",
+                It.Is<object[]>(a => a[0].Equals(404))));
     }
 
     [Fact]
@@ -64,7 +74,10 @@ public class LegacyLoggerAdapterTests
         CreateAdapter().Error("failed {reason}", "timeout");
 
         _mocker.GetMock<INeo4jLogger>()
-            .Verify(l => l.Error(null, "failed {0}", It.Is<object[]>(a => a[0].Equals("timeout"))));
+            .Verify(l => l.Error(
+                null,
+                $$"""[{{TypeName}}] failed {0}""",
+                It.Is<object[]>(a => a[0].Equals("timeout"))));
     }
 
     [Fact]
@@ -75,7 +88,10 @@ public class LegacyLoggerAdapterTests
         CreateAdapter().Error(ex, "failed {reason}", "timeout");
 
         _mocker.GetMock<INeo4jLogger>()
-            .Verify(l => l.Error(ex, "failed {0}", It.Is<object[]>(a => a[0].Equals("timeout"))));
+            .Verify(l => l.Error(
+                ex,
+                $$"""[{{TypeName}}] failed {0}""",
+                It.Is<object[]>(a => a[0].Equals("timeout"))));
     }
 
     [Fact]
@@ -84,6 +100,8 @@ public class LegacyLoggerAdapterTests
         CreateAdapter().Debug("no placeholders here");
 
         _mocker.GetMock<INeo4jLogger>()
-            .Verify(l => l.Debug("no placeholders here", It.IsAny<object[]>()));
+            .Verify(l => l.Debug(
+                $$"""[{{TypeName}}] no placeholders here""",
+                It.IsAny<object[]>()));
     }
 }
