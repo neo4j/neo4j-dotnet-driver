@@ -28,7 +28,6 @@ using Neo4j.Driver.Tests.Reactive.Utils;
 using Neo4j.Driver.Tests.Result;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-using Xunit.Abstractions;
 using static Microsoft.Reactive.Testing.ReactiveTest;
 using static Neo4j.Driver.Tests.Reactive.Internal.InternalRxResultTests.RxResultUtil;
 using static Neo4j.Driver.Tests.Reactive.Utils.Utils;

@@ -134,7 +134,7 @@ public class AsyncSessionTests
     public class BeginTransactionAsyncMethod
     {
         [Fact]
-        public async void ShouldReturnTransactionConfigAsItIs()
+        public async Task ShouldReturnTransactionConfigAsItIs()
         {
             var mockProtocol = new Mock<IBoltProtocol>();
             var mockConn = NewMockedConnection();
@@ -157,7 +157,7 @@ public class AsyncSessionTests
         }
 
         [Fact]
-        public async void ShouldNotAllowNewTxWhileOneIsRunning()
+        public async Task ShouldNotAllowNewTxWhileOneIsRunning()
         {
             var mockConn = NewMockedConnection();
             var session = NewSession(mockConn.Object);
@@ -167,7 +167,7 @@ public class AsyncSessionTests
         }
 
         [Fact]
-        public async void ShouldBeAbleToOpenTxAfterPreviousIsClosed()
+        public async Task ShouldBeAbleToOpenTxAfterPreviousIsClosed()
         {
             var mockConn = NewMockedConnection();
             var session = NewSession(mockConn.Object);
@@ -177,7 +177,7 @@ public class AsyncSessionTests
         }
 
         [Fact]
-        public async void ShouldNotBeAbleToUseSessionWhileOngoingTransaction()
+        public async Task ShouldNotBeAbleToUseSessionWhileOngoingTransaction()
         {
             var mockConn = NewMockedConnection();
             var session = NewSession(mockConn.Object);
@@ -188,7 +188,7 @@ public class AsyncSessionTests
         }
 
         [Fact]
-        public async void ShouldDefaultToBlockingTransactionStart()
+        public async Task ShouldDefaultToBlockingTransactionStart()
         {
             var mockProtocol = new Mock<IBoltProtocol>();
             var mockConn = new Mock<IConnection>();
@@ -212,7 +212,7 @@ public class AsyncSessionTests
         }
 
         [Fact]
-        public async void ShouldBeAbleToUseSessionAgainWhenTransactionIsClosed()
+        public async Task ShouldBeAbleToUseSessionAgainWhenTransactionIsClosed()
         {
             var mockConn = MockedConnectionWithSuccessResponse();
 
@@ -224,7 +224,7 @@ public class AsyncSessionTests
         }
 
         [Fact]
-        public async void ShouldClosePreviousRunConnectionWhenRunMoreQueries()
+        public async Task ShouldClosePreviousRunConnectionWhenRunMoreQueries()
         {
             var mockConn = MockedConnectionWithSuccessResponse();
             var session = NewSession(mockConn.Object);
@@ -235,7 +235,7 @@ public class AsyncSessionTests
         }
 
         [Fact]
-        public async void ShouldClosePreviousRunConnectionWhenRunMoreTransactions()
+        public async Task ShouldClosePreviousRunConnectionWhenRunMoreTransactions()
         {
             var mockConn = MockedConnectionWithSuccessResponse();
             mockConn.Setup(x => x.IsOpen).Returns(false);
@@ -247,7 +247,7 @@ public class AsyncSessionTests
         }
 
         [Fact]
-        public async void ShouldCloseConnectionOnRunIfBeginTxFailed()
+        public async Task ShouldCloseConnectionOnRunIfBeginTxFailed()
         {
             // Given
             var mockProtocol = new Mock<IBoltProtocol>();
@@ -274,7 +274,7 @@ public class AsyncSessionTests
         }
 
         [Fact]
-        public async void ShouldCloseConnectionOnNewBeginTxIfBeginTxFailed()
+        public async Task ShouldCloseConnectionOnNewBeginTxIfBeginTxFailed()
         {
             // Given
             var mockProtocol = new Mock<IBoltProtocol>();
@@ -315,7 +315,7 @@ public class AsyncSessionTests
     public class PipelinedRunTransactionMethod
     {
         [Fact]
-        public async void PipelinedShouldBeginWithoutBlocking()
+        public async Task PipelinedShouldBeginWithoutBlocking()
         {
             var mockProtocol = new Mock<IBoltProtocol>();
             var mockConn = new Mock<IConnection>();
@@ -353,7 +353,7 @@ public class AsyncSessionTests
     public class CloseAsyncMethod
     {
         [Fact]
-        public async void ShouldCloseConnectionIfBeginTxFailed()
+        public async Task ShouldCloseConnectionIfBeginTxFailed()
         {
             var mockProtocol = new Mock<IBoltProtocol>();
             var mockConn = NewMockedConnection(mockProtocol);
@@ -376,7 +376,7 @@ public class AsyncSessionTests
         }
 
         [Fact]
-        public async void ShouldCloseTxOnCloseAsync()
+        public async Task ShouldCloseTxOnCloseAsync()
         {
             var mockProtocol = new Mock<IBoltProtocol>();
             var mockConn = NewMockedConnection(mockProtocol);
@@ -389,7 +389,7 @@ public class AsyncSessionTests
         }
 
         [Fact]
-        public async void ShouldCloseConnectionOnCloseAsync()
+        public async Task ShouldCloseConnectionOnCloseAsync()
         {
             var mockConn = NewMockedConnection();
             mockConn.Setup(

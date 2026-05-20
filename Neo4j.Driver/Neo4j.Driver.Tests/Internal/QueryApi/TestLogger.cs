@@ -17,7 +17,7 @@
 using System;
 using System.Text.RegularExpressions;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 

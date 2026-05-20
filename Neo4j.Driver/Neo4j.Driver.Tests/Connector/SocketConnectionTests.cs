@@ -321,7 +321,7 @@ public class SocketConnectionTests
         }
 
         [Fact]
-        public async void ShouldNotThrowIfBoltProtocolIsNullAsync()
+        public async Task ShouldNotThrowIfBoltProtocolIsNullAsync()
         {
             // Given
             var mockClient = new Mock<ISocketClient>();
@@ -336,7 +336,7 @@ public class SocketConnectionTests
 
         [Theory]
         [MemberData(nameof(GenerateObjectDisposedExceptions))]
-        public async void ShouldNotThrowAndLogIfSocketDisposedAsync(Exception exc)
+        public async Task ShouldNotThrowAndLogIfSocketDisposedAsync(Exception exc)
         {
             // Given
             var logger = new Mock<INeo4jLogger>();

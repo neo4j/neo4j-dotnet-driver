@@ -223,7 +223,7 @@ public class ChunkWriterTests
     [InlineData(100, 200, 10)]
     [InlineData(100, 200, 50)]
     [InlineData(100, 200, 98)]
-    public async void ShouldNotResetCapacityWhenBelowMaxBufferSizeAsync(
+    public async Task ShouldNotResetCapacityWhenBelowMaxBufferSizeAsync(
         int defaultBufferSize,
         int maxBufferSize,
         int messageSize)
@@ -277,7 +277,7 @@ public class ChunkWriterTests
     [InlineData(100, 200, 150)]
     [InlineData(100, 200, 200)]
     [InlineData(100, 200, 500)]
-    public async void ShouldResetCapacityWhenAboveMaxBufferSizeAsync(
+    public async Task ShouldResetCapacityWhenAboveMaxBufferSizeAsync(
         int defaultBufferSize,
         int maxBufferSize,
         int messageSize)

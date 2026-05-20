@@ -23,7 +23,6 @@ using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-using Xunit.Abstractions;
 using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests.Result;

@@ -93,7 +93,7 @@ public class TransactionTests
     public class RunAsyncMethod
     {
         [Fact]
-        public async void ShouldDelegateToBoltProtocol()
+        public async Task ShouldDelegateToBoltProtocol()
         {
             var mockProtocol = new Mock<IBoltProtocol>();
             var mockConn = NewMockedConnection(mockProtocol);
@@ -117,7 +117,7 @@ public class TransactionTests
         }
 
         [Fact]
-        public async void ShouldThrowExceptionIfPreviousTxFailed()
+        public async Task ShouldThrowExceptionIfPreviousTxFailed()
         {
             var mockConn = new Mock<IConnection>();
             var tx = new AsyncTransaction(
@@ -134,7 +134,7 @@ public class TransactionTests
         }
 
         [Fact]
-        public async void ShouldThrowExceptionIfFailedToRunAndFetchResult()
+        public async Task ShouldThrowExceptionIfFailedToRunAndFetchResult()
         {
             var mockProtocol = new Mock<IBoltProtocol>();
             var mockConn = NewMockedConnection(mockProtocol);
@@ -167,7 +167,7 @@ public class TransactionTests
     public class CloseAsyncMethod
     {
         [Fact]
-        public async void ShouldCommitOnSuccess()
+        public async Task ShouldCommitOnSuccess()
         {
             var mockProtocol = new Mock<IBoltProtocol>();
             var mockConn = NewMockedConnection(mockProtocol);
@@ -183,7 +183,7 @@ public class TransactionTests
         }
 
         [Fact]
-        public async void ShouldRollbackOnFailure()
+        public async Task ShouldRollbackOnFailure()
         {
             var mockProtocol = new Mock<IBoltProtocol>();
             var mockConn = NewMockedConnection(mockProtocol);

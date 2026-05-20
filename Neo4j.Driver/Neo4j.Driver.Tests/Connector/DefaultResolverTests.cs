@@ -38,7 +38,7 @@ public class DefaultResolverTests
     }
 
     [Fact]
-    public async void ShouldResolveAsync()
+    public async Task ShouldResolveAsync()
     {
         var resolverMock = new Mock<IHostResolver>();
         var resolver = new DefaultHostResolver(resolverMock.Object);
@@ -61,7 +61,7 @@ public class DefaultResolverTests
     }
 
     [Fact]
-    public async void ShouldParseLocalhostAsync()
+    public async Task ShouldParseLocalhostAsync()
     {
         var resolver = new DefaultHostResolver();
         var ipAddresses = await resolver.ResolveAsync("LocALhOsT");
@@ -82,7 +82,7 @@ public class DefaultResolverTests
     }
     
     [Fact]
-    public async void ShouldParseLoopbackAsync()
+    public async Task ShouldParseLoopbackAsync()
     {
         var resolver = new DefaultHostResolver();
         var ipAddresses = await resolver.ResolveAsync("127.0.0.1");
@@ -100,7 +100,7 @@ public class DefaultResolverTests
     }
 
     [Fact]
-    public async void ShouldParseIPv6LoopbackAsync()
+    public async Task ShouldParseIPv6LoopbackAsync()
     {
         var resolver = new DefaultHostResolver();
         var ipAddresses = await resolver.ResolveAsync("[::1]");
@@ -118,7 +118,7 @@ public class DefaultResolverTests
     }
 
     [MonoFact]
-    public async void ShouldNotResolveLocalhostOnMonoAsync()
+    public async Task ShouldNotResolveLocalhostOnMonoAsync()
     {
         var resolverMock = new Mock<IHostResolver>(MockBehavior.Strict);
         var resolver = new DefaultHostResolver(resolverMock.Object);

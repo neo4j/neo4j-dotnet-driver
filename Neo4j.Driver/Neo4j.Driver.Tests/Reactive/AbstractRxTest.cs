@@ -14,7 +14,7 @@
 // limitations under the License.
 
 using Microsoft.Reactive.Testing;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace Neo4j.Driver.Tests.Reactive;
 
