@@ -19,19 +19,20 @@ using System.Reflection;
 using AutoFixture;
 using AutoFixture.AutoMoq;
 using AutoFixture.Kernel;
-using AutoFixture.Xunit3;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
-using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
-internal class TypedLoggerSpecimenBuilder : ISpecimenBuilder
+internal class QueryApiSpecimenBuilder : ISpecimenBuilder
 {
     public object Create(object request, ISpecimenContext context)
     {
-        if (request is ParameterInfo p && p.ParameterType == typeof(ILogger))
+        if (request is ParameterInfo p)
         {
-            return new TestLogger(p.Member.DeclaringType!);
+            if (p.ParameterType == typeof(ILogger))
+            {
+                return new TestLogger(p.Member.DeclaringType!);
+            }
         }
 
         return new NoSpecimen();
@@ -43,6 +44,7 @@ internal class QueryApiCustomization : ICustomization
     public void Customize(IFixture fixture)
     {
         fixture.Customize(new AutoMoqCustomization { ConfigureMembers = true });
-        fixture.Customizations.Add(new TypedLoggerSpecimenBuilder());
+        fixture.Customizations.Add(new QueryApiSpecimenBuilder());
+        fixture.Register(() => SessionConfig.Builder.Build());
     }
 }

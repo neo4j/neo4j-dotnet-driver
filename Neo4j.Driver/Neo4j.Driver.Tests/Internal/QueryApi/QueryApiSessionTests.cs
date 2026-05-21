@@ -39,17 +39,16 @@ public class QueryApiSessionTests
     [Fact]
     public async Task RunAsync_ReturnsCursorBuiltFromHandlerResponse()
     {
-        var handler = _fixture.Freeze<Mock<IAutoCommitHandler>>();
-        var builder = _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>();
-        var sut = _fixture.Create<QueryApiSession>();
         var query = new Query("RETURN 1");
         var response = new QueryApiResultSet { Fields = ["x"], Rows = [], Bookmarks = [] };
         var expectedCursor = Mock.Of<IResultCursor>();
-
-        handler.Setup(h => h.AutoCommitAsync(query, It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
+        _fixture.Freeze<Mock<IAutoCommitHandler>>()
+            .Setup(h => h.AutoCommitAsync(query, It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
-        builder.Setup(b => b.Build(response, query))
+        _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
+            .Setup(b => b.Build(response, query))
             .Returns(expectedCursor);
+        var sut = _fixture.Create<QueryApiSession>();
 
         var result = await sut.RunAsync(query, null!, false);
 
@@ -59,17 +58,17 @@ public class QueryApiSessionTests
     [Fact]
     public async Task RunAsync_PassesCurrentBookmarksToHandler()
     {
-        var handler = _fixture.Freeze<Mock<IAutoCommitHandler>>();
-        var builder = _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>();
-        var sut = _fixture.Create<QueryApiSession>();
         var query = new Query("RETURN 1");
+        var handler = _fixture.Freeze<Mock<IAutoCommitHandler>>();
+        _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
+            .Setup(b => b.Build(It.IsAny<QueryApiResultSet>(), query))
+            .Returns(Mock.Of<IResultCursor>());
+        var sut = _fixture.Create<QueryApiSession>();
 
         IReadOnlyList<string>? capturedBookmarks = null;
         handler.Setup(h => h.AutoCommitAsync(query, It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
             .Callback<Query, IReadOnlyList<string>, CancellationToken>((_, bm, _) => capturedBookmarks = bm)
             .ReturnsAsync(QueryApiResultSet.Empty);
-        builder.Setup(b => b.Build(It.IsAny<QueryApiResultSet>(), query))
-            .Returns(Mock.Of<IResultCursor>());
 
         await sut.RunAsync(query, null!, false);
 
@@ -79,17 +78,16 @@ public class QueryApiSessionTests
     [Fact]
     public async Task RunAsync_UpdatesLastBookmarksFromResponse()
     {
-        var handler = _fixture.Freeze<Mock<IAutoCommitHandler>>();
-        var builder = _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>();
-        var sut = _fixture.Create<QueryApiSession>();
         var query = new Query("CREATE (:Node)");
         var bookmarkValues = new[] { "neo4j:bookmark:v1:tx42" };
         var response = new QueryApiResultSet { Bookmarks = bookmarkValues };
-
-        handler.Setup(h => h.AutoCommitAsync(query, It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
+        _fixture.Freeze<Mock<IAutoCommitHandler>>()
+            .Setup(h => h.AutoCommitAsync(query, It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
-        builder.Setup(b => b.Build(response, query))
+        _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
+            .Setup(b => b.Build(response, query))
             .Returns(Mock.Of<IResultCursor>());
+        var sut = _fixture.Create<QueryApiSession>();
 
         await sut.RunAsync(query, null!, false);
 
@@ -99,16 +97,15 @@ public class QueryApiSessionTests
     [Fact]
     public async Task BeginTransactionAsync_ReturnsTransactionFromFactory()
     {
-        var factory = _fixture.Freeze<Mock<IQueryApiTransactionFactory>>();
-        var sut = _fixture.Create<QueryApiSession>();
         var tx = Mock.Of<IInternalAsyncTransaction>();
-
-        factory.Setup(f => f.BeginTransactionAsync(
+        _fixture.Freeze<Mock<IQueryApiTransactionFactory>>()
+            .Setup(f => f.BeginTransactionAsync(
                 AccessMode.Read,
                 It.IsAny<Action<TransactionConfigBuilder>>(),
                 It.IsAny<IReadOnlyList<string>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(tx);
+        var sut = _fixture.Create<QueryApiSession>();
 
         var result = await sut.BeginTransactionAsync(AccessMode.Read);
 
@@ -118,20 +115,19 @@ public class QueryApiSessionTests
     [Fact]
     public async Task ExecuteWriteAsync_WhenCommitFails_ThrowsOriginalExceptionEvenIfRollbackAlsoFails()
     {
-        var factory = _fixture.Freeze<Mock<IQueryApiTransactionFactory>>();
-        var sut = _fixture.Create<QueryApiSession>();
         var commitError = new ServiceUnavailableException("HTTP 500");
         var tx = new Mock<IInternalAsyncTransaction>();
         tx.SetupGet(t => t.IsOpen).Returns(true);
         tx.Setup(t => t.CommitAsync()).ThrowsAsync(commitError);
         tx.Setup(t => t.RollbackAsync()).ThrowsAsync(new ServiceUnavailableException("rollback also failed"));
-
-        factory.Setup(f => f.BeginTransactionAsync(
+        _fixture.Freeze<Mock<IQueryApiTransactionFactory>>()
+            .Setup(f => f.BeginTransactionAsync(
                 It.IsAny<AccessMode>(),
                 It.IsAny<Action<TransactionConfigBuilder>>(),
                 It.IsAny<IReadOnlyList<string>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(tx.Object);
+        var sut = _fixture.Create<QueryApiSession>();
 
         var act = () => sut.ExecuteWriteAsync<int>(_ => Task.FromResult(0));
 
@@ -141,17 +137,16 @@ public class QueryApiSessionTests
     [Fact]
     public async Task ExecuteReadAsync_PassesTransactionToWorkAndReturnsResult()
     {
-        var factory = _fixture.Freeze<Mock<IQueryApiTransactionFactory>>();
-        var sut = _fixture.Create<QueryApiSession>();
         var tx = new Mock<IInternalAsyncTransaction>();
         tx.Setup(t => t.CommitAsync()).Returns(Task.CompletedTask);
-
-        factory.Setup(f => f.BeginTransactionAsync(
+        _fixture.Freeze<Mock<IQueryApiTransactionFactory>>()
+            .Setup(f => f.BeginTransactionAsync(
                 AccessMode.Read,
                 It.IsAny<Action<TransactionConfigBuilder>>(),
                 It.IsAny<IReadOnlyList<string>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(tx.Object);
+        var sut = _fixture.Create<QueryApiSession>();
 
         IAsyncQueryRunner? capturedRunner = null;
         var result = await sut.ExecuteReadAsync<int>(runner =>
