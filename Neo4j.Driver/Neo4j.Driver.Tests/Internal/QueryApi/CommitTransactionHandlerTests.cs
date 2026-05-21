@@ -17,10 +17,11 @@
 
 using System.IO;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
+using AutoFixture;
 using FluentAssertions;
 using Moq;
-using Moq.AutoMock;
 using Neo4j.Driver.Internal.QueryApi;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 using Neo4j.Driver.Internal.QueryApi.Implementations;
@@ -34,50 +35,44 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// </summary>
 public class CommitTransactionHandlerTests
 {
-    private static readonly QueryApiTransactionContext DefaultTxContext = new("tx-55", null);
+    private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
 
-    /// <summary>
-    /// Minimum chain: PostAsync("query/v2/tx/{txId}/commit") → request → SendAsync(request) → response.
-    /// </summary>
-    private static AutoMocker CreateChain(
-        out HttpRequestMessage request,
-        out HttpResponseMessage response,
-        QueryApiTransactionContext? txContext = null)
+    // Freezes the minimum mock chain needed to exercise the handler without crashing:
+    // PostAsync("query/v2/tx/{txId}/commit") → request → SendAsync(request) → response
+    private HttpResponseMessage SetupChain()
     {
-        txContext ??= DefaultTxContext;
-        var mocker = new AutoMocker();
-        var req = new HttpRequestMessage();
-        var resp = new HttpResponseMessage { Content = new ByteArrayContent([]) };
-        request = req;
-        response = resp;
+        var txContext = _fixture.Freeze<QueryApiTransactionContext>();
+        var request = new HttpRequestMessage();
+        var response = new HttpResponseMessage { Content = new ByteArrayContent([]) };
 
-        mocker.Use(txContext);
+        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}/commit", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request);
 
-        mocker.GetMock<IQueryApiRequestBuilder>()
-            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}/commit", default))
-            .ReturnsAsync(req);
+        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+            .Setup(x => x.SendAsync(request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(response);
 
-        mocker.GetMock<IQueryApiHttpClient>()
-            .Setup(x => x.SendAsync(req, default))
-            .ReturnsAsync(resp);
-
-        return mocker;
+        return response;
     }
 
     [Fact]
     public async Task ReturnsBookmarks_FromDeserializedBody()
     {
         // Spec: the commit response contains updated bookmarks for causal consistency
-        var mocker = CreateChain(out _, out _);
+        SetupChain();
 
-        mocker.GetMock<IJsonDeserializer>()
-            .Setup(x => x.DeserializeAsync<CommitTransactionHandler.ResponseBody>(It.IsAny<Stream>(), default))
+        string[] expectedBookmarks = ["neo4j:bookmark:v1:tx300", "neo4j:bookmark:v1:tx301"];
+        
+        _fixture.Freeze<Mock<IJsonDeserializer>>()
+            .Setup(x => x.DeserializeAsync<CommitTransactionHandler.ResponseBody>(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new CommitTransactionHandler.ResponseBody
             {
-                Bookmarks = ["neo4j:bookmark:v1:tx300", "neo4j:bookmark:v1:tx301"]
+                Bookmarks = expectedBookmarks
             });
 
-        var bookmarks = await mocker.CreateInstance<CommitTransactionHandler>().CommitTransactionAsync();
+        var subject = _fixture.Create<CommitTransactionHandler>();
+        var bookmarks = await subject.CommitTransactionAsync(TestContext.Current.CancellationToken);
 
         bookmarks.Should().Equal("neo4j:bookmark:v1:tx300", "neo4j:bookmark:v1:tx301");
     }
@@ -85,13 +80,14 @@ public class CommitTransactionHandlerTests
     [Fact]
     public async Task ReturnsEmptyBookmarks_WhenBodyHasNoBookmarks()
     {
-        var mocker = CreateChain(out _, out _);
+        SetupChain();
 
-        mocker.GetMock<IJsonDeserializer>()
-            .Setup(x => x.DeserializeAsync<CommitTransactionHandler.ResponseBody>(It.IsAny<Stream>(), default))
+        _fixture.Freeze<Mock<IJsonDeserializer>>()
+            .Setup(x => x.DeserializeAsync<CommitTransactionHandler.ResponseBody>(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new CommitTransactionHandler.ResponseBody());
 
-        var bookmarks = await mocker.CreateInstance<CommitTransactionHandler>().CommitTransactionAsync();
+        var subject = _fixture.Create<CommitTransactionHandler>();
+        var bookmarks = await subject.CommitTransactionAsync(TestContext.Current.CancellationToken);
 
         bookmarks.Should().BeEmpty();
     }
@@ -100,10 +96,15 @@ public class CommitTransactionHandlerTests
     public async Task PassesResponse_ToErrorChecker()
     {
         // Chain: SendAsync(request) → response → EnsureSuccessAsync(response)
-        var mocker = CreateChain(out _, out var response);
-        await mocker.CreateInstance<CommitTransactionHandler>().CommitTransactionAsync();
+        HttpResponseMessage? capturedResponse = null;
+        _fixture.Freeze<Mock<IQueryApiErrorChecker>>()
+            .Setup(x => x.EnsureSuccessAsync(It.IsAny<HttpResponseMessage>(), It.IsAny<CancellationToken>()))
+            .Callback<HttpResponseMessage, CancellationToken>((r, _) => capturedResponse = r);
 
-        mocker.GetMock<IQueryApiErrorChecker>()
-            .Verify(x => x.EnsureSuccessAsync(response, default), Times.Once);
+        var response = SetupChain();
+        var subject = _fixture.Create<CommitTransactionHandler>();
+        await subject.CommitTransactionAsync(TestContext.Current.CancellationToken);
+
+        capturedResponse.Should().BeSameAs(response);
     }
 }
