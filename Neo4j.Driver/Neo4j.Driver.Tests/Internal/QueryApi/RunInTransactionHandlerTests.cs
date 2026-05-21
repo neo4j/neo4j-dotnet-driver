@@ -19,10 +19,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
+using AutoFixture;
 using FluentAssertions;
 using Moq;
-using Moq.AutoMock;
 using Neo4j.Driver.Internal.QueryApi;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 using Neo4j.Driver.Internal.QueryApi.Implementations;
@@ -37,46 +38,42 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// </summary>
 public class RunInTransactionHandlerTests
 {
-    private static readonly QueryApiTransactionContext DefaultTxContext = new("tx-99", null);
+    private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
 
-    /// <summary>
-    /// Minimum chain: PostAsync("query/v2/tx/{txId}") → request → SendAsync(request) → response.
-    /// </summary>
-    private static AutoMocker CreateChain(
-        out HttpRequestMessage request,
-        out HttpResponseMessage response,
-        QueryApiTransactionContext? txContext = null)
+    // Freezes the minimum mock chain needed to exercise the handler without crashing:
+    // PostAsync("query/v2/tx/{txId}") → request → SendAsync(request) → response
+    private void SetupChain()
     {
-        txContext ??= DefaultTxContext;
-        var mocker = new AutoMocker();
-        var req = new HttpRequestMessage();
-        var resp = new HttpResponseMessage { Content = new ByteArrayContent([]) };
-        request = req;
-        response = resp;
+        var txContext = _fixture.Freeze<QueryApiTransactionContext>();
+        var request = new HttpRequestMessage();
+        var response = new HttpResponseMessage { Content = new ByteArrayContent([]) };
 
-        mocker.Use(txContext);
+        _fixture.Freeze<Mock<IJsonSerializer>>()
+            .Setup(x => x.Serialize(It.IsAny<RunInTransactionHandler.RequestBody>()))
+            .Returns(new StringContent(""));
 
-        mocker.GetMock<IQueryApiRequestBuilder>()
-            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}", default))
-            .ReturnsAsync(req);
+        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request);
 
-        mocker.GetMock<IQueryApiHttpClient>()
-            .Setup(x => x.SendAsync(req, default))
-            .ReturnsAsync(resp);
-
-        return mocker;
+        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+            .Setup(x => x.SendAsync(request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(response);
     }
 
     [Fact]
     public async Task Serializes_Statement_InRequestBody()
     {
-        var mocker = CreateChain(out _, out _);
         RunInTransactionHandler.RequestBody? capturedBody = null;
-        mocker.GetMock<IJsonSerializer>()
-            .Setup(x => x.Serialize(It.IsAny<RunInTransactionHandler.RequestBody>()))
-            .Callback<RunInTransactionHandler.RequestBody>(b => capturedBody = b);
+        SetupChain();
 
-        await mocker.CreateInstance<RunInTransactionHandler>().RunInTransactionAsync(new Query("MATCH (n) RETURN n"));
+        _fixture.Freeze<Mock<IJsonSerializer>>()
+            .Setup(x => x.Serialize(It.IsAny<RunInTransactionHandler.RequestBody>()))
+            .Callback<RunInTransactionHandler.RequestBody>(b => capturedBody = b)
+            .Returns(new StringContent(""));
+
+        var subject = _fixture.Create<RunInTransactionHandler>();
+        await subject.RunInTransactionAsync(new Query("MATCH (n) RETURN n"), TestContext.Current.CancellationToken);
 
         capturedBody.Should().NotBeNull();
         capturedBody!.Statement.Should().Be("MATCH (n) RETURN n");
@@ -86,13 +83,16 @@ public class RunInTransactionHandlerTests
     public async Task Serializes_Parameters_WhenQueryHasParameters()
     {
         var query = new Query("MATCH (n {id: $id}) RETURN n", new Dictionary<string, object> { ["id"] = 7 });
-        var mocker = CreateChain(out _, out _);
         RunInTransactionHandler.RequestBody? capturedBody = null;
-        mocker.GetMock<IJsonSerializer>()
-            .Setup(x => x.Serialize(It.IsAny<RunInTransactionHandler.RequestBody>()))
-            .Callback<RunInTransactionHandler.RequestBody>(b => capturedBody = b);
+        SetupChain();
 
-        await mocker.CreateInstance<RunInTransactionHandler>().RunInTransactionAsync(query);
+        _fixture.Freeze<Mock<IJsonSerializer>>()
+            .Setup(x => x.Serialize(It.IsAny<RunInTransactionHandler.RequestBody>()))
+            .Callback<RunInTransactionHandler.RequestBody>(b => capturedBody = b)
+            .Returns(new StringContent(""));
+
+        var subject = _fixture.Create<RunInTransactionHandler>();
+        await subject.RunInTransactionAsync(query, TestContext.Current.CancellationToken);
 
         capturedBody.Should().NotBeNull();
         capturedBody!.Parameters.Should().ContainKey("id");
@@ -102,7 +102,6 @@ public class RunInTransactionHandlerTests
     public async Task Returns_FieldsRowsAndBookmarks_FromDeserializedBody()
     {
         // Spec: successful response contains data.fields, data.values, and bookmarks
-        var mocker = CreateChain(out _, out _);
         var expectedBody = new QueryApiResultBody
         {
             Data = new QueryApiDataBody
@@ -113,12 +112,16 @@ public class RunInTransactionHandlerTests
             Bookmarks = ["neo4j:bookmark:v1:tx200"]
         };
 
-        mocker.GetMock<IJsonDeserializer>()
-            .Setup(x => x.DeserializeAsync<QueryApiResultBody>(It.IsAny<Stream>(), default))
+        SetupChain();
+
+        _fixture.Freeze<Mock<IJsonDeserializer>>()
+            .Setup(x => x.DeserializeAsync<QueryApiResultBody>(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedBody);
 
-        var result = await mocker.CreateInstance<RunInTransactionHandler>()
-            .RunInTransactionAsync(new Query("RETURN 42 AS x"));
+        var subject = _fixture.Create<RunInTransactionHandler>();
+        var result = await subject.RunInTransactionAsync(
+            new Query("RETURN 42 AS x"),
+            TestContext.Current.CancellationToken);
 
         result.Fields.Should().Equal("x");
         result.Rows.Should().HaveCount(1);
@@ -126,13 +129,17 @@ public class RunInTransactionHandlerTests
     }
 
     [Fact]
-    public async Task PassesResponse_ToErrorChecker()
+    public async Task Throws_WhenErrorCheckerThrows()
     {
-        // Chain: SendAsync(request) → response → EnsureSuccessAsync(response)
-        var mocker = CreateChain(out _, out var response);
-        await mocker.CreateInstance<RunInTransactionHandler>().RunInTransactionAsync(new Query("RETURN 1"));
+        // Spec: errors surfaced by EnsureSuccessAsync must propagate to the caller
+        _fixture.Freeze<Mock<IQueryApiErrorChecker>>()
+            .Setup(x => x.EnsureSuccessAsync(It.IsAny<HttpResponseMessage>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ClientException("Neo.ClientError.General.Unknown", "server error"));
 
-        mocker.GetMock<IQueryApiErrorChecker>()
-            .Verify(x => x.EnsureSuccessAsync(response, default), Times.Once);
+        SetupChain();
+        var subject = _fixture.Create<RunInTransactionHandler>();
+        var act = () => subject.RunInTransactionAsync(new Query("RETURN 1"), TestContext.Current.CancellationToken);
+
+        await act.Should().ThrowAsync<ClientException>();
     }
 }
