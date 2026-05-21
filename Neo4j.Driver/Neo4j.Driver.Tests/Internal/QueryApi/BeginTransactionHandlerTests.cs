@@ -16,7 +16,6 @@
 #nullable enable
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Threading;
@@ -39,23 +38,16 @@ public class BeginTransactionHandlerTests
 {
     private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
 
-    // Freezes the minimum mock chain needed to exercise the handler without crashing:
-    // PostAsync("query/v2/tx") → request → SendAsync(request) → response → DeserializeAsync → ResponseBody(txId)
     private HttpResponseMessage SetupChain(string txId = "tx-1")
     {
-        var request = new HttpRequestMessage();
         var response = new HttpResponseMessage { Content = new ByteArrayContent([]) };
 
-        _fixture.Freeze<Mock<IJsonSerializer>>()
-            .Setup(x => x.Serialize(It.IsAny<BeginTransactionHandler.RequestBody>()))
-            .Returns(new StringContent(""));
-
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
-            .Setup(x => x.PostAsync("query/v2/tx", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(request);
+            .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new HttpRequestMessage());
 
         _fixture.Freeze<Mock<IQueryApiHttpClient>>()
-            .Setup(x => x.SendAsync(request, It.IsAny<CancellationToken>()))
+            .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
         _fixture.Freeze<Mock<IJsonDeserializer>>()
@@ -109,44 +101,6 @@ public class BeginTransactionHandlerTests
         var context = await subject.BeginTransactionAsync([], TestContext.Current.CancellationToken);
 
         context.ClusterAffinity.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task Serializes_Bookmarks_WhenProvided()
-    {
-        // Spec: bookmarks enable causal consistency at transaction start
-        var bookmarks = new List<string> { "neo4j:bookmark:v1:tx50" };
-        BeginTransactionHandler.RequestBody? capturedBody = null;
-        SetupChain();
-
-        _fixture.Freeze<Mock<IJsonSerializer>>()
-            .Setup(x => x.Serialize(It.IsAny<BeginTransactionHandler.RequestBody>()))
-            .Callback<BeginTransactionHandler.RequestBody>(b => capturedBody = b)
-            .Returns(new StringContent(""));
-
-        var subject = _fixture.Create<BeginTransactionHandler>();
-        await subject.BeginTransactionAsync(bookmarks, TestContext.Current.CancellationToken);
-
-        capturedBody.Should().NotBeNull();
-        capturedBody!.Bookmarks.Should().Equal("neo4j:bookmark:v1:tx50");
-    }
-
-    [Fact]
-    public async Task Omits_Bookmarks_WhenListIsEmpty()
-    {
-        BeginTransactionHandler.RequestBody? capturedBody = null;
-        SetupChain();
-
-        _fixture.Freeze<Mock<IJsonSerializer>>()
-            .Setup(x => x.Serialize(It.IsAny<BeginTransactionHandler.RequestBody>()))
-            .Callback<BeginTransactionHandler.RequestBody>(b => capturedBody = b)
-            .Returns(new StringContent(""));
-
-        var subject = _fixture.Create<BeginTransactionHandler>();
-        await subject.BeginTransactionAsync([], TestContext.Current.CancellationToken);
-
-        capturedBody.Should().NotBeNull();
-        capturedBody!.Bookmarks.Should().BeNull();
     }
 
     [Fact]

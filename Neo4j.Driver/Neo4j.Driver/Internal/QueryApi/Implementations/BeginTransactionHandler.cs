@@ -32,7 +32,6 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
     private readonly IQueryApiErrorChecker _errorChecker;
     private readonly IQueryApiHttpClient _httpClient;
     private readonly IJsonDeserializer _jsonDeserializer;
-    private readonly IJsonSerializer _jsonSerializer;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
 
@@ -41,7 +40,6 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
         IQueryApiHttpClient httpClient,
         IQueryApiErrorChecker errorChecker,
         IJsonDeserializer jsonDeserializer,
-        IJsonSerializer jsonSerializer,
         IClusterAffinityApplicator clusterAffinityApplicator,
         ILogger logger)
     {
@@ -49,7 +47,6 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
         _httpClient = httpClient;
         _errorChecker = errorChecker;
         _jsonDeserializer = jsonDeserializer;
-        _jsonSerializer = jsonSerializer;
         _clusterAffinityApplicator = clusterAffinityApplicator;
         _logger = logger;
     }
@@ -92,8 +89,7 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
             Bookmarks = bookmarks.Count > 0 ? [.. bookmarks] : null
         };
 
-        var request = await _requestBuilder.PostAsync("query/v2/tx", cancellationToken).ConfigureAwait(false);
-        request.Content = _jsonSerializer.Serialize(body);
+        var request = await _requestBuilder.PostAsync("query/v2/tx", body, cancellationToken).ConfigureAwait(false);
         return request;
     }
 

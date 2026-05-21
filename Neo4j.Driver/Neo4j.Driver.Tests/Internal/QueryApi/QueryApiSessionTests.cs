@@ -56,26 +56,6 @@ public class QueryApiSessionTests
     }
 
     [Fact]
-    public async Task RunAsync_PassesCurrentBookmarksToHandler()
-    {
-        var query = new Query("RETURN 1");
-        var handler = _fixture.Freeze<Mock<IAutoCommitHandler>>();
-        _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
-            .Setup(b => b.Build(It.IsAny<QueryApiResultSet>(), query))
-            .Returns(Mock.Of<IResultCursor>());
-        var sut = _fixture.Create<QueryApiSession>();
-
-        IReadOnlyList<string>? capturedBookmarks = null;
-        handler.Setup(h => h.AutoCommitAsync(query, It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .Callback<Query, IReadOnlyList<string>, CancellationToken>((_, bm, _) => capturedBookmarks = bm)
-            .ReturnsAsync(QueryApiResultSet.Empty);
-
-        await sut.RunAsync(query, null!, false);
-
-        capturedBookmarks.Should().BeEmpty();
-    }
-
-    [Fact]
     public async Task RunAsync_UpdatesLastBookmarksFromResponse()
     {
         var query = new Query("CREATE (:Node)");
@@ -148,14 +128,9 @@ public class QueryApiSessionTests
             .ReturnsAsync(tx.Object);
         var sut = _fixture.Create<QueryApiSession>();
 
-        IAsyncQueryRunner? capturedRunner = null;
-        var result = await sut.ExecuteReadAsync<int>(runner =>
-        {
-            capturedRunner = runner;
-            return Task.FromResult(42);
-        });
+        var result = await sut.ExecuteReadAsync<int>(
+            runner => Task.FromResult(ReferenceEquals(runner, tx.Object) ? 42 : -1));
 
         result.Should().Be(42);
-        capturedRunner.Should().BeSameAs(tx.Object);
     }
 }

@@ -30,7 +30,6 @@ internal class AutoCommitHandler : IAutoCommitHandler
     private readonly IQueryApiErrorChecker _errorChecker;
     private readonly IQueryApiHttpClient _httpClient;
     private readonly IJsonDeserializer _jsonDeserializer;
-    private readonly IJsonSerializer _jsonSerializer;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
 
@@ -39,14 +38,12 @@ internal class AutoCommitHandler : IAutoCommitHandler
         IQueryApiHttpClient httpClient,
         IQueryApiErrorChecker errorChecker,
         IJsonDeserializer jsonDeserializer,
-        IJsonSerializer jsonSerializer,
         ILogger logger)
     {
         _requestBuilder = requestBuilder;
         _httpClient = httpClient;
         _errorChecker = errorChecker;
         _jsonDeserializer = jsonDeserializer;
-        _jsonSerializer = jsonSerializer;
         _logger = logger;
     }
 
@@ -99,8 +96,7 @@ internal class AutoCommitHandler : IAutoCommitHandler
             Bookmarks = bookmarks.Count > 0 ? [.. bookmarks] : null
         };
 
-        var request = await _requestBuilder.PostAsync("query/v2", cancellationToken).ConfigureAwait(false);
-        request.Content = _jsonSerializer.Serialize(body);
+        var request = await _requestBuilder.PostAsync("query/v2", body, cancellationToken).ConfigureAwait(false);
         return request;
     }
 

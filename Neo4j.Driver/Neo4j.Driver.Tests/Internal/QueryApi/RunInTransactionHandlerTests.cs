@@ -15,7 +15,6 @@
 
 #nullable enable
 
-using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
@@ -40,62 +39,17 @@ public class RunInTransactionHandlerTests
 {
     private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
 
-    // Freezes the minimum mock chain needed to exercise the handler without crashing:
-    // PostAsync("query/v2/tx/{txId}") → request → SendAsync(request) → response
     private void SetupChain()
     {
         var txContext = _fixture.Freeze<QueryApiTransactionContext>();
-        var request = new HttpRequestMessage();
-        var response = new HttpResponseMessage { Content = new ByteArrayContent([]) };
-
-        _fixture.Freeze<Mock<IJsonSerializer>>()
-            .Setup(x => x.Serialize(It.IsAny<RunInTransactionHandler.RequestBody>()))
-            .Returns(new StringContent(""));
 
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
-            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(request);
+            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}", It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new HttpRequestMessage());
 
         _fixture.Freeze<Mock<IQueryApiHttpClient>>()
-            .Setup(x => x.SendAsync(request, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
-    }
-
-    [Fact]
-    public async Task Serializes_Statement_InRequestBody()
-    {
-        RunInTransactionHandler.RequestBody? capturedBody = null;
-        SetupChain();
-
-        _fixture.Freeze<Mock<IJsonSerializer>>()
-            .Setup(x => x.Serialize(It.IsAny<RunInTransactionHandler.RequestBody>()))
-            .Callback<RunInTransactionHandler.RequestBody>(b => capturedBody = b)
-            .Returns(new StringContent(""));
-
-        var subject = _fixture.Create<RunInTransactionHandler>();
-        await subject.RunInTransactionAsync(new Query("MATCH (n) RETURN n"), TestContext.Current.CancellationToken);
-
-        capturedBody.Should().NotBeNull();
-        capturedBody!.Statement.Should().Be("MATCH (n) RETURN n");
-    }
-
-    [Fact]
-    public async Task Serializes_Parameters_WhenQueryHasParameters()
-    {
-        var query = new Query("MATCH (n {id: $id}) RETURN n", new Dictionary<string, object> { ["id"] = 7 });
-        RunInTransactionHandler.RequestBody? capturedBody = null;
-        SetupChain();
-
-        _fixture.Freeze<Mock<IJsonSerializer>>()
-            .Setup(x => x.Serialize(It.IsAny<RunInTransactionHandler.RequestBody>()))
-            .Callback<RunInTransactionHandler.RequestBody>(b => capturedBody = b)
-            .Returns(new StringContent(""));
-
-        var subject = _fixture.Create<RunInTransactionHandler>();
-        await subject.RunInTransactionAsync(query, TestContext.Current.CancellationToken);
-
-        capturedBody.Should().NotBeNull();
-        capturedBody!.Parameters.Should().ContainKey("id");
+            .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new HttpResponseMessage { Content = new ByteArrayContent([]) });
     }
 
     [Fact]

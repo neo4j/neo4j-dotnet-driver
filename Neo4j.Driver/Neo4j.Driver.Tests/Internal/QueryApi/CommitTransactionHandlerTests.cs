@@ -46,7 +46,10 @@ public class CommitTransactionHandlerTests
         var response = new HttpResponseMessage { Content = new ByteArrayContent([]) };
 
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
-            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}/commit", It.IsAny<CancellationToken>()))
+            .Setup(x => x.PostAsync(
+                $"query/v2/tx/{txContext.TxId}/commit",
+                It.IsAny<object>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
 
         _fixture.Freeze<Mock<IQueryApiHttpClient>>()
@@ -63,13 +66,16 @@ public class CommitTransactionHandlerTests
         SetupChain();
 
         string[] expectedBookmarks = ["neo4j:bookmark:v1:tx300", "neo4j:bookmark:v1:tx301"];
-        
+
         _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<CommitTransactionHandler.ResponseBody>(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CommitTransactionHandler.ResponseBody
-            {
-                Bookmarks = expectedBookmarks
-            });
+            .Setup(x => x.DeserializeAsync<CommitTransactionHandler.ResponseBody>(
+                It.IsAny<Stream>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new CommitTransactionHandler.ResponseBody
+                {
+                    Bookmarks = expectedBookmarks
+                });
 
         var subject = _fixture.Create<CommitTransactionHandler>();
         var bookmarks = await subject.CommitTransactionAsync(TestContext.Current.CancellationToken);
@@ -83,7 +89,9 @@ public class CommitTransactionHandlerTests
         SetupChain();
 
         _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<CommitTransactionHandler.ResponseBody>(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.DeserializeAsync<CommitTransactionHandler.ResponseBody>(
+                It.IsAny<Stream>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(new CommitTransactionHandler.ResponseBody());
 
         var subject = _fixture.Create<CommitTransactionHandler>();

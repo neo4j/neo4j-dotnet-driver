@@ -30,7 +30,6 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
     private readonly IQueryApiErrorChecker _errorChecker;
     private readonly IQueryApiHttpClient _httpClient;
     private readonly IJsonDeserializer _jsonDeserializer;
-    private readonly IJsonSerializer _jsonSerializer;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
     private readonly QueryApiTransactionContext _txContext;
@@ -40,7 +39,6 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
         IQueryApiHttpClient httpClient,
         IQueryApiErrorChecker errorChecker,
         IJsonDeserializer jsonDeserializer,
-        IJsonSerializer jsonSerializer,
         QueryApiTransactionContext txContext,
         ILogger logger)
     {
@@ -48,7 +46,6 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
         _httpClient = httpClient;
         _errorChecker = errorChecker;
         _jsonDeserializer = jsonDeserializer;
-        _jsonSerializer = jsonSerializer;
         _txContext = txContext;
         _logger = logger;
     }
@@ -81,7 +78,11 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
             Bookmarks = body?.Bookmarks ?? []
         };
 
-        _logger.Debug("Run complete in transaction {txId}: {fieldCount} field(s), {rowCount} row(s)", _txContext.TxId, result.Fields.Length, result.Rows.Length);
+        _logger.Debug(
+            "Run complete in transaction {txId}: {fieldCount} field(s), {rowCount} row(s)",
+            _txContext.TxId,
+            result.Fields.Length,
+            result.Rows.Length);
 
         return result;
     }
@@ -94,8 +95,9 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
             Parameters = query.Parameters.Count > 0 ? query.Parameters : null
         };
 
-        var request = await _requestBuilder.PostAsync($"query/v2/tx/{_txContext.TxId}", cancellationToken).ConfigureAwait(false);
-        request.Content = _jsonSerializer.Serialize(body);
+        var request = await _requestBuilder.PostAsync($"query/v2/tx/{_txContext.TxId}", body, cancellationToken)
+            .ConfigureAwait(false);
+
         return request;
     }
 

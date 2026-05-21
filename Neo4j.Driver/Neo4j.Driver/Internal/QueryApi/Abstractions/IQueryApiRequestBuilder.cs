@@ -27,6 +27,6 @@ namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 /// </summary>
 internal interface IQueryApiRequestBuilder
 {
-    Task<HttpRequestMessage> PostAsync(string path, CancellationToken cancellationToken = default);
+    Task<HttpRequestMessage> PostAsync(string path, object? body, CancellationToken cancellationToken = default);
     Task<HttpRequestMessage> DeleteAsync(string path, CancellationToken cancellationToken = default);
 }

@@ -29,6 +29,7 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
 {
     private readonly IAuthApplicator _authApplicator;
     private readonly IClusterAffinityApplicator _clusterAffinityApplicator;
+    private readonly IJsonSerializer _jsonSerializer;
     private readonly ISessionContext _sessionContext;
     private readonly IQueryApiUrlBuilder _urlBuilder;
 
@@ -36,27 +37,33 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
         IQueryApiUrlBuilder urlBuilder,
         ISessionContext sessionContext,
         IAuthApplicator authApplicator,
-        IClusterAffinityApplicator clusterAffinityApplicator)
+        IClusterAffinityApplicator clusterAffinityApplicator,
+        IJsonSerializer jsonSerializer)
     {
         _urlBuilder = urlBuilder;
         _sessionContext = sessionContext;
         _authApplicator = authApplicator;
         _clusterAffinityApplicator = clusterAffinityApplicator;
+        _jsonSerializer = jsonSerializer;
     }
 
-    public Task<HttpRequestMessage> PostAsync(string path, CancellationToken cancellationToken = default)
+    public Task<HttpRequestMessage> PostAsync(string path, object? body, CancellationToken cancellationToken = default)
     {
-        return BuildAsync(HttpMethod.Post, path, cancellationToken);
+        return BuildAsync(HttpMethod.Post, path, body, cancellationToken);
     }
 
     public Task<HttpRequestMessage> DeleteAsync(string path, CancellationToken cancellationToken = default)
     {
-        return BuildAsync(HttpMethod.Delete, path, cancellationToken);
+        return BuildAsync(HttpMethod.Delete, path, null, cancellationToken);
     }
 
     private const string TypedJsonMediaType = "application/vnd.neo4j.query.v1.1";
 
-    private async Task<HttpRequestMessage> BuildAsync(HttpMethod method, string path, CancellationToken cancellationToken)
+    private async Task<HttpRequestMessage> BuildAsync(
+        HttpMethod method,
+        string path,
+        object? body,
+        CancellationToken cancellationToken)
     {
         var request = new HttpRequestMessage(method, _urlBuilder.Build($"db/{_sessionContext.Database}/{path}"));
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(TypedJsonMediaType));
@@ -64,6 +71,11 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
         var auth = await _sessionContext.GetAuthTokenAsync(cancellationToken).ConfigureAwait(false);
         _authApplicator.Apply(request, auth);
         _clusterAffinityApplicator.Apply(request);
+
+        if (body is not null)
+        {
+            request.Content = _jsonSerializer.Serialize(body);
+        }
 
         return request;
     }

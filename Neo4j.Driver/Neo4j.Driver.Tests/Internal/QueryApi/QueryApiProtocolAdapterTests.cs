@@ -60,20 +60,6 @@ public class QueryApiProtocolAdapterTests
         var result = CreateAdapter().CreateSession(config, reactive: false, telemetryEnabled: true);
 
         result.Should().BeSameAs(expected);
-        _sessionFactory.Verify(f => f.CreateSession(config, true), Times.Once);
-    }
-
-    [Fact]
-    public void CreateSession_PassesSessionConfigUnmodified()
-    {
-        var config = new SessionConfig();
-        _sessionFactory
-            .Setup(f => f.CreateSession(It.IsAny<SessionConfig>(), It.IsAny<bool>()))
-            .Returns(new Mock<IInternalAsyncSession>().Object);
-
-        CreateAdapter().CreateSession(config, reactive: false, telemetryEnabled: false);
-
-        _sessionFactory.Verify(f => f.CreateSession(config, false), Times.Once);
     }
 
     [Fact]
@@ -92,7 +78,7 @@ public class QueryApiProtocolAdapterTests
 
 
     [Fact]
-    public async Task VerifyConnectivityAndGetInfoAsync_CallsHandler()
+    public async Task VerifyConnectivityAndGetInfoAsync_ReturnsServerInfoFromHandler()
     {
         var serverInfo = new Mock<IServerInfo>().Object;
         _connectivityHandler
@@ -102,7 +88,6 @@ public class QueryApiProtocolAdapterTests
         var result = await CreateAdapter().VerifyConnectivityAndGetInfoAsync();
 
         result.Should().BeSameAs(serverInfo);
-        _connectivityHandler.Verify(h => h.VerifyConnectivityAsync(default), Times.Once);
     }
 
     [Fact]

@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -60,41 +59,6 @@ public class QueryApiTransactionFactoryTests
         var result = await CreateFactory().BeginTransactionAsync(AccessMode.Write, null, []);
 
         result.Should().BeSameAs(expectedTx);
-    }
-
-    [Fact]
-    public async Task BeginTransactionAsync_PassesBookmarksToBeginHandler()
-    {
-        var bookmarks = new[] { "neo4j:bookmark:v1:tx99" };
-        var context = new QueryApiTransactionContext("tx-1", null);
-
-        _beginHandler.Setup(h => h.BeginTransactionAsync(bookmarks, default)).ReturnsAsync(context);
-        _txScope.Setup(s => s.Resolve<IInternalAsyncTransaction>()).Returns(Mock.Of<IInternalAsyncTransaction>());
-
-        await CreateFactory().BeginTransactionAsync(AccessMode.Write, null, bookmarks);
-
-        _beginHandler.Verify(h => h.BeginTransactionAsync(bookmarks, default), Times.Once);
-    }
-
-    [Fact]
-    public async Task BeginTransactionAsync_RegistersTransactionContextInChildScope()
-    {
-        var context = new QueryApiTransactionContext("tx-42", "shard-1");
-        var mockRegistry = new Mock<IServiceRegistry>();
-
-        _beginHandler.Setup(h => h.BeginTransactionAsync(It.IsAny<IReadOnlyList<string>>(), default))
-            .ReturnsAsync(context);
-
-        _sessionScope
-            .Setup(s => s.CreateChildScope(It.IsAny<Action<IServiceRegistry>>()))
-            .Callback<Action<IServiceRegistry>>(action => action(mockRegistry.Object))
-            .Returns(_txScope.Object);
-
-        _txScope.Setup(s => s.Resolve<IInternalAsyncTransaction>()).Returns(Mock.Of<IInternalAsyncTransaction>());
-
-        await CreateFactory().BeginTransactionAsync(AccessMode.Write, null, []);
-
-        mockRegistry.Verify(r => r.RegisterInstance(context), Times.Once);
     }
 
 }

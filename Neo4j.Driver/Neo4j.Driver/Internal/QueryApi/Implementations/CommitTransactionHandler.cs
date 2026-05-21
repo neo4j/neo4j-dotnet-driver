@@ -52,7 +52,10 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
         CancellationToken cancellationToken = default)
     {
         _logger.Debug("Committing transaction {txId}", _txContext.TxId);
-        using var request = await _requestBuilder.PostAsync($"query/v2/tx/{_txContext.TxId}/commit", cancellationToken).ConfigureAwait(false);
+        using var request = await _requestBuilder
+            .PostAsync($"query/v2/tx/{_txContext.TxId}/commit", null, cancellationToken)
+            .ConfigureAwait(false);
+
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
 
