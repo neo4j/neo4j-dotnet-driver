@@ -16,9 +16,11 @@
 #nullable enable
 
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
+using AutoFixture;
+using FluentAssertions;
 using Moq;
-using Moq.AutoMock;
 using Neo4j.Driver.Internal.QueryApi;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 using Neo4j.Driver.Internal.QueryApi.Implementations;
@@ -32,44 +34,39 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// </summary>
 public class RollbackTransactionHandlerTests
 {
-    private static readonly QueryApiTransactionContext DefaultTxContext = new("tx-77", null);
+    private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
 
-    /// <summary>
-    /// Minimum chain: DeleteAsync("query/v2/tx/{txId}") → request → SendAsync(request) → response.
-    /// </summary>
-    private static AutoMocker CreateChain(
-        out HttpRequestMessage request,
-        out HttpResponseMessage response,
-        QueryApiTransactionContext? txContext = null)
+    // Freezes the minimum mock chain needed to exercise the handler without crashing:
+    // DeleteAsync("query/v2/tx/{txId}") → request → SendAsync(request) → response
+    private HttpResponseMessage SetupChain()
     {
-        txContext ??= DefaultTxContext;
-        var mocker = new AutoMocker();
-        var req = new HttpRequestMessage();
-        var resp = new HttpResponseMessage();
-        request = req;
-        response = resp;
+        var txContext = _fixture.Freeze<QueryApiTransactionContext>();
+        var request = new HttpRequestMessage();
 
-        mocker.Use(txContext);
+        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+            .Setup(x => x.DeleteAsync($"query/v2/tx/{txContext.TxId}", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request);
 
-        mocker.GetMock<IQueryApiRequestBuilder>()
-            .Setup(x => x.DeleteAsync($"query/v2/tx/{txContext.TxId}", default))
-            .ReturnsAsync(req);
+        var response = new HttpResponseMessage();
+        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+            .Setup(x => x.SendAsync(request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(response);
 
-        mocker.GetMock<IQueryApiHttpClient>()
-            .Setup(x => x.SendAsync(req, default))
-            .ReturnsAsync(resp);
-
-        return mocker;
+        return response;
     }
 
     [Fact]
-    public async Task PassesResponse_ToErrorChecker()
+    public async Task Throws_WhenErrorCheckerThrows()
     {
-        // Chain: SendAsync(request) → response → EnsureSuccessAsync(response)
-        var mocker = CreateChain(out _, out var response);
-        await mocker.CreateInstance<RollbackTransactionHandler>().RollbackTransactionAsync();
+        // Spec: errors surfaced by EnsureSuccessAsync must propagate to the caller
+        _fixture.Freeze<Mock<IQueryApiErrorChecker>>()
+            .Setup(x => x.EnsureSuccessAsync(It.IsAny<HttpResponseMessage>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ClientException("Neo.ClientError.General.Unknown", "server error"));
 
-        mocker.GetMock<IQueryApiErrorChecker>()
-            .Verify(x => x.EnsureSuccessAsync(response, default), Times.Once);
+        SetupChain();
+        var subject = _fixture.Create<RollbackTransactionHandler>();
+        var act = () => subject.RollbackTransactionAsync(TestContext.Current.CancellationToken);
+
+        await act.Should().ThrowAsync<ClientException>();
     }
 }

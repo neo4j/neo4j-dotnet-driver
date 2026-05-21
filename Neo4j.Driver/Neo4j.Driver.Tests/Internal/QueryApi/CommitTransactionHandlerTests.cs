@@ -93,18 +93,17 @@ public class CommitTransactionHandlerTests
     }
 
     [Fact]
-    public async Task PassesResponse_ToErrorChecker()
+    public async Task Throws_WhenErrorCheckerThrows()
     {
-        // Chain: SendAsync(request) → response → EnsureSuccessAsync(response)
-        HttpResponseMessage? capturedResponse = null;
+        // Spec: errors surfaced by EnsureSuccessAsync must propagate to the caller
         _fixture.Freeze<Mock<IQueryApiErrorChecker>>()
             .Setup(x => x.EnsureSuccessAsync(It.IsAny<HttpResponseMessage>(), It.IsAny<CancellationToken>()))
-            .Callback<HttpResponseMessage, CancellationToken>((r, _) => capturedResponse = r);
+            .ThrowsAsync(new ClientException("Neo.ClientError.General.Unknown", "server error"));
 
-        var response = SetupChain();
+        SetupChain();
         var subject = _fixture.Create<CommitTransactionHandler>();
-        await subject.CommitTransactionAsync(TestContext.Current.CancellationToken);
+        var act = () => subject.CommitTransactionAsync(TestContext.Current.CancellationToken);
 
-        capturedResponse.Should().BeSameAs(response);
+        await act.Should().ThrowAsync<ClientException>();
     }
 }
