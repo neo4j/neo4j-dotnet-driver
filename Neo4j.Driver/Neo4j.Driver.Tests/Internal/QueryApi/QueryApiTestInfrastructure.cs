@@ -44,6 +44,5 @@ internal class QueryApiCustomization : ICustomization
     {
         fixture.Customize(new AutoMoqCustomization { ConfigureMembers = true });
         fixture.Customizations.Add(new TypedLoggerSpecimenBuilder());
-        fixture.Register(() => SessionConfig.Builder.Build());
     }
 }
