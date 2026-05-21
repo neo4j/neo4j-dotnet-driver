@@ -19,11 +19,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
+using AutoFixture;
 using FluentAssertions;
 using Moq;
-using Moq.AutoMock;
-using Neo4j.Driver.Internal.QueryApi;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 using Neo4j.Driver.Internal.QueryApi.Implementations;
 using Xunit;
@@ -37,46 +37,45 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// </summary>
 public class BeginTransactionHandlerTests
 {
-    /// <summary>
-    /// Minimum chain: PostAsync("query/v2/tx") → request → SendAsync(request) → response.
-    /// Returns a mocker with the standard success body (transaction ID "tx-1") already set up on the deserializer.
-    /// </summary>
-    private static AutoMocker CreateChain(
-        out HttpRequestMessage request,
-        out HttpResponseMessage response,
-        string txId = "tx-1")
+    private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
+
+    // Freezes the minimum mock chain needed to exercise the handler without crashing:
+    // PostAsync("query/v2/tx") → request → SendAsync(request) → response → DeserializeAsync → ResponseBody(txId)
+    private HttpResponseMessage SetupChain(string txId = "tx-1")
     {
-        var mocker = new AutoMocker();
-        var req = new HttpRequestMessage();
-        var resp = new HttpResponseMessage { Content = new ByteArrayContent([]) };
-        request = req;
-        response = resp;
+        var request = new HttpRequestMessage();
+        var response = new HttpResponseMessage { Content = new ByteArrayContent([]) };
 
-        mocker.GetMock<IQueryApiRequestBuilder>()
-            .Setup(x => x.PostAsync("query/v2/tx", default))
-            .ReturnsAsync(req);
+        _fixture.Freeze<Mock<IJsonSerializer>>()
+            .Setup(x => x.Serialize(It.IsAny<BeginTransactionHandler.RequestBody>()))
+            .Returns(new StringContent(""));
 
-        mocker.GetMock<IQueryApiHttpClient>()
-            .Setup(x => x.SendAsync(req, default))
-            .ReturnsAsync(resp);
+        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+            .Setup(x => x.PostAsync("query/v2/tx", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request);
 
-        mocker.GetMock<IJsonDeserializer>()
-            .Setup(x => x.DeserializeAsync<BeginTransactionHandler.ResponseBody>(It.IsAny<Stream>(), default))
+        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+            .Setup(x => x.SendAsync(request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(response);
+
+        _fixture.Freeze<Mock<IJsonDeserializer>>()
+            .Setup(x => x.DeserializeAsync<BeginTransactionHandler.ResponseBody>(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new BeginTransactionHandler.ResponseBody
             {
                 Transaction = new BeginTransactionHandler.TransactionInfo { Id = txId }
             });
 
-        return mocker;
+        return response;
     }
 
     [Fact]
     public async Task ReturnsTransactionId_FromDeserializedBody()
     {
         // Spec: response body contains transaction.id — the handle for subsequent requests
-        var mocker = CreateChain(out _, out _, txId: "tx-abc-123");
+        SetupChain(txId: "tx-abc-123");
 
-        var context = await mocker.CreateInstance<BeginTransactionHandler>().BeginTransactionAsync([]);
+        var subject = _fixture.Create<BeginTransactionHandler>();
+        var context = await subject.BeginTransactionAsync([], TestContext.Current.CancellationToken);
 
         context.TxId.Should().Be("tx-abc-123");
     }
@@ -85,14 +84,14 @@ public class BeginTransactionHandlerTests
     public async Task ReturnsClusterAffinity_WhenResponseCarriesAffinityHeader()
     {
         // Spec: Aura instances return neo4j-cluster-affinity on BEGIN — it must be echoed back on subsequent requests.
-        // Chain: SendAsync(request) → response → Extract(response) → "shard-99"
-        var mocker = CreateChain(out _, out var response);
+        var response = SetupChain();
 
-        mocker.GetMock<IClusterAffinityApplicator>()
+        _fixture.Freeze<Mock<IClusterAffinityApplicator>>()
             .Setup(x => x.Extract(response))
             .Returns("shard-99");
 
-        var context = await mocker.CreateInstance<BeginTransactionHandler>().BeginTransactionAsync([]);
+        var subject = _fixture.Create<BeginTransactionHandler>();
+        var context = await subject.BeginTransactionAsync([], TestContext.Current.CancellationToken);
 
         context.ClusterAffinity.Should().Be("shard-99");
     }
@@ -100,13 +99,14 @@ public class BeginTransactionHandlerTests
     [Fact]
     public async Task ReturnsNullClusterAffinity_WhenResponseHasNoAffinityHeader()
     {
-        var mocker = CreateChain(out _, out var response);
+        var response = SetupChain();
 
-        mocker.GetMock<IClusterAffinityApplicator>()
+        _fixture.Freeze<Mock<IClusterAffinityApplicator>>()
             .Setup(x => x.Extract(response))
             .Returns((string?)null);
 
-        var context = await mocker.CreateInstance<BeginTransactionHandler>().BeginTransactionAsync([]);
+        var subject = _fixture.Create<BeginTransactionHandler>();
+        var context = await subject.BeginTransactionAsync([], TestContext.Current.CancellationToken);
 
         context.ClusterAffinity.Should().BeNull();
     }
@@ -116,13 +116,16 @@ public class BeginTransactionHandlerTests
     {
         // Spec: bookmarks enable causal consistency at transaction start
         var bookmarks = new List<string> { "neo4j:bookmark:v1:tx50" };
-        var mocker = CreateChain(out _, out _);
         BeginTransactionHandler.RequestBody? capturedBody = null;
-        mocker.GetMock<IJsonSerializer>()
-            .Setup(x => x.Serialize(It.IsAny<BeginTransactionHandler.RequestBody>()))
-            .Callback<BeginTransactionHandler.RequestBody>(b => capturedBody = b);
+        SetupChain();
 
-        await mocker.CreateInstance<BeginTransactionHandler>().BeginTransactionAsync(bookmarks);
+        _fixture.Freeze<Mock<IJsonSerializer>>()
+            .Setup(x => x.Serialize(It.IsAny<BeginTransactionHandler.RequestBody>()))
+            .Callback<BeginTransactionHandler.RequestBody>(b => capturedBody = b)
+            .Returns(new StringContent(""));
+
+        var subject = _fixture.Create<BeginTransactionHandler>();
+        await subject.BeginTransactionAsync(bookmarks, TestContext.Current.CancellationToken);
 
         capturedBody.Should().NotBeNull();
         capturedBody!.Bookmarks.Should().Equal("neo4j:bookmark:v1:tx50");
@@ -131,13 +134,16 @@ public class BeginTransactionHandlerTests
     [Fact]
     public async Task Omits_Bookmarks_WhenListIsEmpty()
     {
-        var mocker = CreateChain(out _, out _);
         BeginTransactionHandler.RequestBody? capturedBody = null;
-        mocker.GetMock<IJsonSerializer>()
-            .Setup(x => x.Serialize(It.IsAny<BeginTransactionHandler.RequestBody>()))
-            .Callback<BeginTransactionHandler.RequestBody>(b => capturedBody = b);
+        SetupChain();
 
-        await mocker.CreateInstance<BeginTransactionHandler>().BeginTransactionAsync([]);
+        _fixture.Freeze<Mock<IJsonSerializer>>()
+            .Setup(x => x.Serialize(It.IsAny<BeginTransactionHandler.RequestBody>()))
+            .Callback<BeginTransactionHandler.RequestBody>(b => capturedBody = b)
+            .Returns(new StringContent(""));
+
+        var subject = _fixture.Create<BeginTransactionHandler>();
+        await subject.BeginTransactionAsync([], TestContext.Current.CancellationToken);
 
         capturedBody.Should().NotBeNull();
         capturedBody!.Bookmarks.Should().BeNull();
@@ -147,16 +153,17 @@ public class BeginTransactionHandlerTests
     public async Task Throws_WhenDeserializedBodyHasNoTransactionId()
     {
         // A missing transaction ID means something went wrong server-side
-        var mocker = CreateChain(out _, out _);
+        SetupChain();
 
-        mocker.GetMock<IJsonDeserializer>()
-            .Setup(x => x.DeserializeAsync<BeginTransactionHandler.ResponseBody>(It.IsAny<Stream>(), default))
+        _fixture.Freeze<Mock<IJsonDeserializer>>()
+            .Setup(x => x.DeserializeAsync<BeginTransactionHandler.ResponseBody>(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new BeginTransactionHandler.ResponseBody
             {
                 Transaction = new BeginTransactionHandler.TransactionInfo { Id = null }
             });
 
-        var act = () => mocker.CreateInstance<BeginTransactionHandler>().BeginTransactionAsync([]);
+        var subject = _fixture.Create<BeginTransactionHandler>();
+        var act = () => subject.BeginTransactionAsync([], TestContext.Current.CancellationToken);
 
         await act.Should()
             .ThrowAsync<InvalidOperationException>()
