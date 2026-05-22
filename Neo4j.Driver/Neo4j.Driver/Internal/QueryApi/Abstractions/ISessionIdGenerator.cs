@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -13,29 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using Neo4j.Driver.Internal.DependencyInjection;
+#nullable enable
 
 namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
-internal class LoggerResolverOverride : IResolverOverride
+/// <summary>
+/// Generates short identifiers for use in logging contexts. Identifiers are not guaranteed
+/// unique — collisions are possible and acceptable where the only consequence is minor
+/// log ambiguity (e.g. two concurrent sessions sharing the same display ID).
+/// </summary>
+internal interface ISessionIdGenerator
 {
-    private ILoggerFactory _loggerFactory;
-
-    public LoggerResolverOverride(ILoggerFactory loggerFactory)
-    {
-        _loggerFactory = loggerFactory;
-    }
-
-    public bool TryResolve(Type serviceType, Type requestingType, IServiceResolver resolver, out object service)
-    {
-        if (serviceType == typeof(ILogger))
-        {
-            service = _loggerFactory.GetLoggerForType(requestingType);
-            return true;
-        }
-        
-        service = null;
-        return false;
-    }
+    string Generate();
 }

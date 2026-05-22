@@ -13,25 +13,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
+using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
-internal class LoggerFactory : ILoggerFactory
+internal class LoggingContext : ILoggingContext
 {
-    private readonly INeo4jLogger _neo4JLogger;
-
-    public LoggerFactory(INeo4jLogger neo4JLogger)
+    public LoggingContext(string key, object value)
     {
-        _neo4JLogger = neo4JLogger;
+        Key = key;
+        Value = value;
     }
 
-    public ILogger GetLoggerForType(Type type, IEnumerable<ILoggingContext> contexts)
+    public string Key { get; }
+    public object Value { get; }
+}
+
+internal static class LoggingContainerExtensions
+{
+    extension(IServiceRegistry registry)
     {
-        var legacyAdapter = new LegacyLoggerAdapter(_neo4JLogger, type);
-        var contextualAdapter = new ContextualLogger(contexts, legacyAdapter);
-        return contextualAdapter;
+        public IServiceRegistry AddLoggingContext(string key, object value)
+        {
+            return registry.RegisterInstance<ILoggingContext>(new LoggingContext(key, value));
+        }
     }
 }

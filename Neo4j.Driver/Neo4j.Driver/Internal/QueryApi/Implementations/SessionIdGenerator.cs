@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -13,12 +13,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#nullable enable
+
 using System;
-using System.Collections.Generic;
+using Neo4j.Driver.Internal.DependencyInjection;
+using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
-namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
+namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
-internal interface ILoggerFactory
+[AutoRegister]
+internal class SessionIdGenerator : ISessionIdGenerator
 {
-    ILogger GetLoggerForType(Type type, IEnumerable<ILoggingContext> contexts);
+    private const string Chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+
+    public string Generate() =>
+        string.Create(5, Random.Shared, static (span, rng) =>
+        {
+            for (var i = 0; i < span.Length; i++)
+                span[i] = Chars[rng.Next(Chars.Length)];
+        });
 }
