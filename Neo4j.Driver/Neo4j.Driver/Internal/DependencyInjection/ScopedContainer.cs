@@ -170,7 +170,7 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
     private object? TryResolveCore(
         Type serviceType,
         Type? requestingType,
-        Dictionary<Type, List<Registration>>? extraRegistrations)
+        Dictionary<Type, List<Registration>>? childRegistrations)
     {
         if (_disposed)
         {
@@ -187,12 +187,12 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         try
         {
             // Child-scope registrations take priority over everything in the parent chain.
-            if (extraRegistrations != null
-                && extraRegistrations.TryGetValue(serviceType, out var extraRegs)
-                && extraRegs.Count > 0)
+            if (childRegistrations != null
+                && childRegistrations.TryGetValue(serviceType, out var foundInChild)
+                && foundInChild.Count > 0)
             {
-                var reg = extraRegs[^1];
-                return reg.Instance ?? CreateInstance(reg.ImplementationType, serviceType, extraRegistrations);
+                var reg = foundInChild[^1];
+                return reg.Instance ?? CreateInstance(reg.ImplementationType, serviceType, childRegistrations);
             }
 
             // Plugin overrides
@@ -208,14 +208,14 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             if (serviceType.IsGenericType && serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
             {
                 var elementType = serviceType.GetGenericArguments()[0];
-                return ResolveEnumerable(elementType, extraRegistrations);
+                return ResolveEnumerable(elementType, childRegistrations);
             }
 
             // IScoped<T> — capture the leaf scope and wrap it for lazy optional resolution
             if (serviceType.IsGenericType && serviceType.GetGenericTypeDefinition() == typeof(IScoped<>))
             {
                 var innerType = serviceType.GetGenericArguments()[0];
-                var scope = (IResolutionScope)ResolveCore(typeof(IResolutionScope), requestingType, extraRegistrations);
+                var scope = (IResolutionScope)ResolveCore(typeof(IResolutionScope), requestingType, childRegistrations);
                 return Activator.CreateInstance(typeof(Scoped<>).MakeGenericType(innerType), scope)!;
             }
 
@@ -223,7 +223,7 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             if (_registrations.TryGetValue(serviceType, out var registrations) && registrations.Count > 0)
             {
                 var registration = registrations[^1];
-                return registration.Instance ?? CreateInstance(registration.ImplementationType, serviceType, extraRegistrations);
+                return registration.Instance ?? CreateInstance(registration.ImplementationType, serviceType, childRegistrations);
             }
 
             // Delegate to parent. Merge this scope's registrations with whatever the child
@@ -231,7 +231,7 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             // The more-derived scope's registrations win for any conflicting key.
             if (_parent != null)
             {
-                return _parent.TryResolveCore(serviceType, requestingType, MergeRegistrations(_registrations, extraRegistrations));
+                return _parent.TryResolveCore(serviceType, requestingType, MergeRegistrations(_registrations, childRegistrations));
             }
 
             return null;
