@@ -46,8 +46,19 @@ public class QueryApiErrorCheckerTests
         [Fact]
         public async Task DoesNotThrow_WhenStatusIs202Accepted()
         {
-            // 202 Accepted is the only success code for the Query API
+            // 202 Accepted: server processed the request but outcome is in the body (query endpoints)
             var response = new HttpResponseMessage(HttpStatusCode.Accepted);
+
+            var act = () => Checker.EnsureSuccessAsync(response);
+
+            await act.Should().NotThrowAsync();
+        }
+
+        [Fact]
+        public async Task DoesNotThrow_WhenStatusIs200Ok()
+        {
+            // 200 OK: server confirmed the operation immediately (e.g. rollback/DELETE)
+            var response = new HttpResponseMessage(HttpStatusCode.OK);
 
             var act = () => Checker.EnsureSuccessAsync(response);
 

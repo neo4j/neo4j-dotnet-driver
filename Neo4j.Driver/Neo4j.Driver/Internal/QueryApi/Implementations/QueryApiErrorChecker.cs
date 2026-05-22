@@ -62,7 +62,7 @@ internal class QueryApiErrorChecker : IQueryApiErrorChecker
                     first?.Message ?? response.ReasonPhrase ?? "Unauthorized"));
         }
 
-        if (response.StatusCode != HttpStatusCode.Accepted)
+        if (response.StatusCode != HttpStatusCode.Accepted && response.StatusCode != HttpStatusCode.OK)
         {
             var responseText = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             _logger.Debug(
