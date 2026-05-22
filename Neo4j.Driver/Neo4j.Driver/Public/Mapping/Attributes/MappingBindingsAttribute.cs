@@ -29,15 +29,19 @@ public class MappingBindingsAttribute : Attribute, IMappingBindingMutator
     /// </summary>
     public string Path { get; set; }
 
+    private EntityMappingSource? _source;
+    private bool? _optional;
+    private bool? _explicit;
+
     /// <summary>
     /// Gets or sets the source type for the mapping (e.g. Property, Label, Id).
     /// </summary>
-    public EntityMappingSource? Source { get; set; }
+    public EntityMappingSource Source { get => _source ?? default; set => _source = value; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the mapping will not throw an exception if the source value is missing.
     /// </summary>
-    public bool? Optional { get; set; }
+    public bool Optional { get => _optional ?? default; set => _optional = value; }
 
     /// <summary>
     /// Gets or sets the default value to be used if the source value is missing and the mapping is optional.
@@ -47,7 +51,7 @@ public class MappingBindingsAttribute : Attribute, IMappingBindingMutator
     /// <summary>
     /// Gets or sets a value indicating whether this mapping binding was explicitly defined by the user.
     /// </summary>
-    public bool? Explicit { get; set; }
+    public bool Explicit { get => _explicit ?? default; set => _explicit = value; }
 
     /// <summary>
     /// Gets or sets the name of the parameter that will be set when mapping to Cypher parameters.
@@ -58,10 +62,10 @@ public class MappingBindingsAttribute : Attribute, IMappingBindingMutator
     public virtual void Mutate(MappingBinding binding)
     {
         binding.Path = Path ?? binding.Path;
-        binding.EntityMappingSource = Source ?? binding.EntityMappingSource;
-        binding.Optional = Optional ?? binding.Optional;
+        binding.EntityMappingSource = _source ?? binding.EntityMappingSource;
+        binding.Optional = _optional ?? binding.Optional;
         binding.DefaultValue = DefaultValue ?? binding.DefaultValue;
-        binding.Explicit = Explicit ?? binding.Explicit;
+        binding.Explicit = _explicit ?? binding.Explicit;
         binding.CypherParameterName = CypherParameterName ?? binding.CypherParameterName;
     }
 }
