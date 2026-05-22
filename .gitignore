@@ -272,3 +272,6 @@ testkit/CustomCAs/customRoot2.crt
 
 # generated docs
 Docs/
+
+# local sandbox
+localdev/

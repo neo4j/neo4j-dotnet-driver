@@ -26,13 +26,13 @@ public class MappingBinding
     /// </summary>
     /// <param name="path">The path to the data in the source (e.g. a field name in a record or a property name
     /// in a node).</param>
-    /// <param name="mappingSource">The source type for the mapping (e.g. Property, Label, Id).</param>
+    /// <param name="entityMappingSource">The source type for the mapping (e.g. Property, Label, Id).</param>
     /// <param name="optional">If <c>true</c>, the mapping will not throw an exception if the source value is
     /// missing.</param>
-    internal MappingBinding(string path, MappingSource mappingSource, bool optional = false)
+    internal MappingBinding(string path, EntityMappingSource entityMappingSource, bool optional = false)
     {
         Path = path;
-        MappingSource = mappingSource;
+        EntityMappingSource = entityMappingSource;
         Optional = optional;
     }
 
@@ -44,7 +44,7 @@ public class MappingBinding
     /// <summary>
     /// Gets or sets the source type for the mapping (e.g. Property, Label, Id).
     /// </summary>
-    public MappingSource MappingSource { get; set; }
+    public EntityMappingSource EntityMappingSource { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the mapping is optional. 
