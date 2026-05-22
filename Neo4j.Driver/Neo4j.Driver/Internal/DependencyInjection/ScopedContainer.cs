@@ -28,7 +28,7 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 {
     private readonly HashSet<object> _disposables = [];
     private readonly List<IResolverOverride> _overrides = [];
-    internal readonly ScopedContainer? _parent;
+    private readonly ScopedContainer? _parent;
     private readonly Dictionary<Type, List<Registration>> _registrations = new();
     private readonly ThreadLocal<HashSet<Type>> _resolutionStack = new(() => []);
     private bool _disposed;

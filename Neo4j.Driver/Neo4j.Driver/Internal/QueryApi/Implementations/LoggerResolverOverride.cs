@@ -32,8 +32,6 @@ internal class LoggerResolverOverride : IResolverOverride
     {
         if (serviceType == typeof(ILogger))
         {
-            var scopedContainer = (ScopedContainer)resolver;
-            Console.WriteLine("resolver.parent " + scopedContainer._parent ?? "(null)" );
             var contexts = resolver.Resolve<IEnumerable<ILoggingContext>>();
             service = _loggerFactory.GetLoggerForType(requestingType, contexts);
             return true;
