@@ -24,20 +24,26 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 internal class QueryApiSessionFactory : IQueryApiSessionFactory
 {
     private readonly IResolutionScope _resolutionScope;
+    private readonly ILogger _logger;
 
-    public QueryApiSessionFactory(IResolutionScope resolutionScope)
+    public QueryApiSessionFactory(
+        IResolutionScope resolutionScope,
+        ILogger logger)
     {
         _resolutionScope = resolutionScope;
+        _logger = logger;
     }
 
     public IInternalAsyncSession CreateSession(SessionConfig config, bool telemetryEnabled)
     {
+        _logger.Debug("Creating Query API child scope");
         var sessionScope = _resolutionScope.CreateChildScope(r =>
         {
             r.RegisterInstance(config);
             r.RegisterType<ISessionContext, QueryApiSessionContext>();
         });
 
+        _logger.Debug("Resolving Query API session");
         return sessionScope.Resolve<IInternalAsyncSession>();
     }
 }

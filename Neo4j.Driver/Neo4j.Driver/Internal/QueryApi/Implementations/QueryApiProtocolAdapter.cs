@@ -41,9 +41,12 @@ internal class QueryApiProtocolAdapter : IQueryApiProtocolAdapter
 
     public IInternalAsyncSession CreateSession(SessionConfig config, bool reactive, bool telemetryEnabled)
     {
-        return !reactive 
-            ? _sessionFactory.CreateSession(config, telemetryEnabled) 
-            : throw new NotSupportedException("Reactive sessions are not supported by the Query API.");
+        if (reactive)
+        {
+            throw new NotSupportedException("Reactive sessions are not supported by the Query API.");
+        }
+    
+        return _sessionFactory.CreateSession(config, telemetryEnabled);
     }
 
     public Task<bool> SupportsMultiDbAsync() => Task.FromResult(true);

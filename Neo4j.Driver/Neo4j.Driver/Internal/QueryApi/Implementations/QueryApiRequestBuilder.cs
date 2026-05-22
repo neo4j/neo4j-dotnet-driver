@@ -49,7 +49,9 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
 
     public Task<HttpRequestMessage> PostAsync(string path, object? body, CancellationToken cancellationToken = default)
     {
-        return BuildAsync(HttpMethod.Post, path, body, cancellationToken);
+        // POST requests must have *some* body, even if it's empty
+        var theBody = body ?? new object();
+        return BuildAsync(HttpMethod.Post, path, theBody, cancellationToken);
     }
 
     public Task<HttpRequestMessage> DeleteAsync(string path, CancellationToken cancellationToken = default)

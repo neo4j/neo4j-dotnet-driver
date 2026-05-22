@@ -154,10 +154,20 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         return this;
     }
 
-    // Core resolution method. extraRegistrations carries the calling child scope's
-    // registrations so they take priority throughout the entire resolution chain,
-    // including transitive dependencies instantiated by ancestor scopes.
     private object ResolveCore(
+        Type serviceType,
+        Type? requestingType,
+        Dictionary<Type, List<Registration>>? extraRegistrations)
+    {
+        return TryResolveCore(serviceType, requestingType, extraRegistrations)
+            ?? throw new InvalidOperationException($"Service of type {serviceType} is not registered.");
+    }
+
+    // All resolution logic lives here. Returns null only when the service is not registered.
+    // Other failure modes (disposed, circular dependency, construction failure) still throw.
+    // extraRegistrations carries the calling child scope's registrations so they take priority
+    // throughout the entire resolution chain, including transitive dependencies resolved by ancestors.
+    private object? TryResolveCore(
         Type serviceType,
         Type? requestingType,
         Dictionary<Type, List<Registration>>? extraRegistrations)
@@ -219,62 +229,6 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             // Delegate to parent. Merge this scope's registrations with whatever the child
             // passed down, so every ancestor scope sees registrations from the full chain.
             // The more-derived scope's registrations win for any conflicting key.
-            if (_parent != null)
-            {
-                return _parent.ResolveCore(serviceType, requestingType, MergeRegistrations(_registrations, extraRegistrations));
-            }
-
-            throw new InvalidOperationException($"Service of type {serviceType} is not registered.");
-        }
-        finally
-        {
-            _resolutionStack.Value?.Remove(serviceType);
-        }
-    }
-
-    // Like ResolveCore but returns null instead of throwing when a service is not registered.
-    // Other failure modes (disposed, circular dependency, construction failure) still throw.
-    private object? TryResolveCore(
-        Type serviceType,
-        Type? requestingType,
-        Dictionary<Type, List<Registration>>? extraRegistrations)
-    {
-        if (_disposed)
-        {
-            throw new ObjectDisposedException(nameof(ScopedContainer));
-        }
-
-        if (_resolutionStack.Value != null && !_resolutionStack.Value.Add(serviceType))
-        {
-            throw new InvalidOperationException(
-                $"Circular dependency detected while resolving {serviceType}. " +
-                $"Resolution chain: {string.Join(" -> ", _resolutionStack.Value.Select(t => t.Name))}");
-        }
-
-        try
-        {
-            if (extraRegistrations != null
-                && extraRegistrations.TryGetValue(serviceType, out var extraRegs)
-                && extraRegs.Count > 0)
-            {
-                var reg = extraRegs[^1];
-                return reg.Instance ?? CreateInstance(reg.ImplementationType, serviceType, extraRegistrations);
-            }
-
-            foreach (var resolverOverride in _overrides)
-            {
-                if (resolverOverride.TryResolve(serviceType, requestingType, this, out var overrideResult))
-                {
-                    return overrideResult;
-                }
-            }
-
-            if (_registrations.TryGetValue(serviceType, out var registrations) && registrations.Count > 0)
-            {
-                var registration = registrations[^1];
-                return registration.Instance ?? CreateInstance(registration.ImplementationType, serviceType, extraRegistrations);
-            }
-
             if (_parent != null)
             {
                 return _parent.TryResolveCore(serviceType, requestingType, MergeRegistrations(_registrations, extraRegistrations));
@@ -354,7 +308,7 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 
         for (var i = 0; i < parameters.Length; i++)
         {
-            parameterInstances[i] = ResolveCore(parameters[i].ParameterType, requestingType, extraRegistrations);
+            parameterInstances[i] = ResolveCore(parameters[i].ParameterType, implementationType, extraRegistrations);
         }
 
         var instance = Activator.CreateInstance(implementationType, parameterInstances);

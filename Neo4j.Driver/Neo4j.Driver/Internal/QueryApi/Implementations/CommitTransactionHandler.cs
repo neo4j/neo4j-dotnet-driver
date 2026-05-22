@@ -15,6 +15,7 @@
 
 #nullable enable
 
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
@@ -71,7 +72,11 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
         }
 
         var bookmarks = body?.Bookmarks ?? [];
-        _logger.Debug("Transaction {txId} committed: {bookmarkCount} bookmark(s)", _txContext.TxId, bookmarks.Length);
+        _logger.Debug(
+            "Transaction {txId} committed. Bookmarks: {bookmarks}",
+            _txContext.TxId,
+            "[\"" + string.Join("\", \"", bookmarks) + "\"]");
+
         return bookmarks;
     }
 

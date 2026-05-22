@@ -33,17 +33,18 @@ internal class QueryApiHttpClient : IQueryApiHttpClient
     public QueryApiHttpClient(ILogger logger)
     {
         _logger = logger;
-        _client = new HttpClient(
-            new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(2) });
+        _client = new HttpClient(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(2) });
     }
 
     public async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken = default)
     {
-        _logger.Debug("{method} {uri}", request.Method, request.RequestUri);
+        _logger.Debug("Sending {method} request to {uri}", request.Method, request.RequestUri);
         var response = await _client.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        _logger.Debug("{method} {uri} → {statusCode}", request.Method, request.RequestUri, (int)response.StatusCode);
+        _logger.Debug(
+            "{method} {uri} returned {statusCode}", request.Method, request.RequestUri, (int)response.StatusCode);
+
         return response;
     }
 
