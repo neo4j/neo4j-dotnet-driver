@@ -21,6 +21,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.DependencyInjection;
 
@@ -75,22 +76,35 @@ internal class ScopedContainerRewrite : IResolutionScope
         var implementationType = registration.ImplementationType;
         var child = childScope;
 
+        var ctor = implementationType
+            .GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+            .OrderByDescending(c => c.GetParameters().Length)
+            .First();
+
+        var parameters = ctor.GetParameters();
+        var nullabilityCtx = new NullabilityInfoContext();
+        var parametersWithNullability = parameters
+            .Select(p => (p, nullabilityCtx.Create(p).WriteState == NullabilityState.Nullable))
+            .ToList();
+
         return () =>
         {
-            var ctor = implementationType
-                .GetConstructors(BindingFlags.Public | BindingFlags.Instance)
-                .OrderByDescending(c => c.GetParameters().Length)
-                .First();
-
-            var args = ctor.GetParameters()
-                .Select(p =>
+            var args = new List<object?>(parametersWithNullability.Count);
+            foreach (var (parameter, nullable) in parametersWithNullability)
+            {
+                var factories = GetFactories(parameter.ParameterType, child);
+                var arg = factories.Length switch
                 {
-                    var factories = GetFactories(p.ParameterType, child);
-                    return factories[^1]();
-                })
-                .ToArray();
+                    > 0 => factories[^1](),
+                    0 when nullable => null,
+                    _ => throw new InvalidOperationException(
+                        $"No service of type {parameter.ParameterType} has been registered.")
+                };
+                
+                args.Add(arg);
+            }
 
-            return Activator.CreateInstance(implementationType, args)!;
+            return Activator.CreateInstance(implementationType, args.ToArray())!;
         };
     }
 
