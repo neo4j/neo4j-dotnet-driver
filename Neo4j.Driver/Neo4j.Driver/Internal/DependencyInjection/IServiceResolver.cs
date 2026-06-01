@@ -25,4 +25,5 @@ internal interface IServiceResolver
     object Resolve(Type serviceType);
     object Resolve(Type serviceType, Type requestingType);
     bool TryResolve<T>(out T? value);
+    bool TryResolve(Type serviceType, out object? service);
 }
