@@ -238,7 +238,7 @@ public class ScopedContainerRewriteTests
         mockPlugin
             .Setup(x => x.TryResolve(
                 typeof(ITestService),
-                It.IsAny<Type>(),
+                It.Is<Type>(t => t == null), // top-level resolve has no requesting type
                 It.IsAny<IServiceResolver>(),
                 out It.Ref<object>.IsAny))
             .Returns(
@@ -281,6 +281,35 @@ public class ScopedContainerRewriteTests
         var resolved = container.Resolve<ITestService>();
 
         resolved.Should().BeSameAs(instance);
+    }
+
+    [Fact]
+    public void RegisterPlugin_ReceivesRequestingTypeWhenResolvingConstructorDependency()
+    {
+        var container = new ScopedContainerRewrite();
+        var mocker = new AutoMocker();
+        var mockPlugin = mocker.GetMock<IResolverOverride>();
+        var mockDependency = mocker.Get<IDependency>();
+
+        mockPlugin
+            .Setup(x => x.TryResolve(
+                typeof(IDependency),
+                typeof(TestService), // TestService is the type being constructed
+                It.IsAny<IServiceResolver>(),
+                out It.Ref<object>.IsAny))
+            .Returns(
+                new TryResolveDelegate((_, _, _, out service) =>
+                {
+                    service = mockDependency;
+                    return true;
+                }));
+
+        container.RegisterType<ITestService, TestService>();
+        container.RegisterPlugin(mockPlugin.Object);
+        var resolved = container.Resolve<ITestService>();
+
+        resolved.Should().BeOfType<TestService>();
+        ((TestService)resolved).Dependency.Should().BeSameAs(mockDependency);
     }
 
     [Fact]

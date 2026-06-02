@@ -67,21 +67,30 @@ internal class ScopedContainerRewrite : IResolutionScope, IServiceRegistry, IDis
     private IEnumerable<object> ResolveAll(
         Type serviceType,
         ScopedContainerRewrite? childScope,
-        HashSet<Type> resolutionStack)
+        HashSet<Type> resolutionStack,
+        Type? requestingType = null)
     {
+        foreach (var plugin in _overrides)
+        {
+            if (plugin.TryResolve(serviceType, requestingType!, childScope ?? this, out var result))
+            {
+                yield return result;
+                yield break;
+            }
+        }
+
         var local = _registrations.GetEnumerable(serviceType);
         foreach (var reg in local.Reverse())
         {
             yield return CreateInstance(reg, childScope, resolutionStack);
         }
 
-        // break recursion if no outer scope
         if (_outerScope == null)
         {
             yield break;
         }
 
-        foreach (var obj in _outerScope.ResolveAll(serviceType, childScope, resolutionStack))
+        foreach (var obj in _outerScope.ResolveAll(serviceType, childScope, resolutionStack, requestingType))
         {
             yield return obj;
         }
@@ -126,7 +135,7 @@ internal class ScopedContainerRewrite : IResolutionScope, IServiceRegistry, IDis
             var resolver = childScope ?? this;
             foreach (var (p, nullable) in parametersWithNullability)
             {
-                var resolved = resolver.ResolveAll(p.ParameterType, childScope, resolutionStack).FirstOrDefault();
+                var resolved = resolver.ResolveAll(p.ParameterType, childScope, resolutionStack, implementationType).FirstOrDefault();
                 var arg = resolved switch
                 {
                     not null => resolved,
