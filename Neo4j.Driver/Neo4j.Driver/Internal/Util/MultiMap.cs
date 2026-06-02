@@ -13,15 +13,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 
-namespace Neo4j.Driver.Internal.DependencyInjection;
+namespace Neo4j.Driver.Internal.Util;
 
-internal static class TypeExtensions
+internal class MultiMap<TKey, TValue> 
 {
-    public static bool IsGenericIEnumerable(this Type type)
+    private readonly ConcurrentDictionary<TKey, IList<TValue>> _store = new();
+
+    public IList<TValue> this[TKey key]
     {
-        return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>);
+        get
+        {
+            return _store.GetOrAdd(key, _ => new List<TValue>());
+        }
+    }
+
+    public IEnumerable<TValue> GetEnumerable(TKey key)
+    {
+        return _store.TryGetValue(key, out var list) ? list : Enumerable.Empty<TValue>();
     }
 }

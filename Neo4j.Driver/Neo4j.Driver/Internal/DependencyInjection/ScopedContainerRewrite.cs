@@ -20,25 +20,59 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.DependencyInjection;
 
-internal class ScopedContainerRewrite : IResolutionScope
+internal class ScopedContainerRewrite : IResolutionScope, IServiceRegistry
 {
     private readonly ScopedContainerRewrite? _outerScope;
-    private readonly Dictionary<Type, List<Registration>> _registrations = new();
+    private readonly MultiMap<Type, Registration> _registrations = new();
+    private readonly List<IResolverOverride> _overrides = [];
+
+    public ScopedContainerRewrite() : this(null)
+    {
+    }
+
+    private ScopedContainerRewrite(ScopedContainerRewrite? outerScope)
+    {
+        _outerScope = outerScope;
+        RegisterInstance<IResolutionScope>(this);
+    }
+
+    public IServiceRegistry RegisterInstance<TService>(TService instance)
+    {
+        var type = typeof(TService);
+        _registrations[type].Add(Registration.FromInstance(instance!));
+        return this;
+    }
+
+    public IServiceRegistry RegisterType<TService>() => RegisterType<TService, TService>();
+
+    public IServiceRegistry RegisterType<TService, TImplementation>() where TImplementation : TService
+        => RegisterType(typeof(TService), typeof(TImplementation));
+
+    public IServiceRegistry RegisterType(Type service, Type implementation)
+    {
+        _registrations[service].Add(Registration.FromType(implementation));
+        return this;
+    }
+
+    public IServiceRegistry RegisterPlugin(IResolverOverride resolverOverride)
+    {
+        _overrides.Add(resolverOverride);
+        return this;
+    }
 
     private IEnumerable<object> ResolveAll(
         Type serviceType,
         ScopedContainerRewrite? childScope,
         HashSet<Type> resolutionStack)
     {
-        if (_registrations.TryGetValue(serviceType, out var local))
+        var local = _registrations.GetEnumerable(serviceType);
+        foreach (var reg in local.Reverse())
         {
-            foreach (var reg in Enumerable.Reverse(local))
-            {
-                yield return CreateInstance(reg, childScope, resolutionStack);
-            }
+            yield return CreateInstance(reg, childScope, resolutionStack);
         }
 
         // break recursion if no outer scope
@@ -65,11 +99,12 @@ internal class ScopedContainerRewrite : IResolutionScope
 
         var implementationType = registration.ImplementationType;
 
+        // if adding fails, it's already in there 
         if (!resolutionStack.Add(implementationType))
         {
             var stack = string.Join(" > ", resolutionStack);
             throw new InvalidOperationException(
-                $"Circular dependency detected while constructing {implementationType.Name}. " + 
+                $"Circular dependency detected while constructing {implementationType.Name}. " +
                 $"Resolution stack: {stack}.");
         }
 
@@ -153,22 +188,24 @@ internal class ScopedContainerRewrite : IResolutionScope
 
     public IResolutionScope CreateChildScope(Action<IServiceRegistry> registrations)
     {
-        throw new NotImplementedException();
+        var child = new ScopedContainerRewrite(this);
+        registrations(child);
+        return child;
     }
 
     private class Registration
     {
-        public Registration(object instance)
+        private Registration(object? instance, Type implementationType)
         {
             Instance = instance;
-            ImplementationType = null!;
-        }
-
-        public Registration(Type implementationType)
-        {
-            Instance = null;
             ImplementationType = implementationType;
         }
+
+        public static Registration FromInstance(object instance)
+            => new(instance, null!);
+
+        public static Registration FromType(Type implementationType)
+            => new(null, implementationType);
 
         public object? Instance { get; }
         public Type ImplementationType { get; }
