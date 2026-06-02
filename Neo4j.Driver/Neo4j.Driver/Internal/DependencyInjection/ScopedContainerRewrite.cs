@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 
 namespace Neo4j.Driver.Internal.DependencyInjection;
 
@@ -28,99 +27,87 @@ internal class ScopedContainerRewrite : IResolutionScope
 {
     private readonly ScopedContainerRewrite? _outerScope;
     private readonly Dictionary<Type, List<Registration>> _registrations = new();
-    private readonly ThreadLocal<HashSet<Type>> _resolutionStack = new(() => []);
 
-    private Func<object>[] GetFactories(
+    private IEnumerable<object> ResolveAll(
         Type serviceType,
-        ScopedContainerRewrite? childScope = null)
+        ScopedContainerRewrite? childScope,
+        HashSet<Type> resolutionStack)
     {
-        if (!_resolutionStack.Value!.Add(serviceType))
+        if (_registrations.TryGetValue(serviceType, out var local))
         {
-            return [];
+            foreach (var reg in Enumerable.Reverse(local))
+            {
+                yield return CreateInstance(reg, childScope, resolutionStack);
+            }
         }
 
-        try
+        // break recursion if no outer scope
+        if (_outerScope == null)
         {
-            var factories = new List<Func<object>>();
-            if (_outerScope != null)
-            {
-                factories.AddRange(_outerScope.GetFactories(serviceType, childScope));
-            }
-
-            if (_registrations.TryGetValue(serviceType, out var local))
-            {
-                factories.AddRange(local.Select(r => MakeFactory(r, childScope)));
-            }
-
-            if (childScope != null)
-            {
-                factories.AddRange(childScope.GetFactories(serviceType, childScope));
-            }
-
-            return [.. factories];
+            yield break;
         }
-        finally
+
+        foreach (var obj in _outerScope.ResolveAll(serviceType, childScope, resolutionStack))
         {
-            _resolutionStack.Value.Remove(serviceType);
+            yield return obj;
         }
     }
 
-    private Func<object> MakeFactory(Registration registration, ScopedContainerRewrite? childScope)
+    private object CreateInstance(
+        Registration registration,
+        ScopedContainerRewrite? childScope,
+        HashSet<Type> resolutionStack)
     {
         if (registration.Instance is not null)
         {
-            return () => registration.Instance;
+            return registration.Instance;
         }
 
         var implementationType = registration.ImplementationType;
 
-        var ctor = implementationType
-            .GetConstructors(BindingFlags.Public | BindingFlags.Instance)
-            .OrderByDescending(c => c.GetParameters().Length)
-            .First();
-
-        var nullabilityCtx = new NullabilityInfoContext();
-        var parametersWithNullability = ctor.GetParameters()
-            .Select(p => (p, nullabilityCtx.Create(p).WriteState == NullabilityState.Nullable))
-            .ToList();
-
-        return () =>
+        if (!resolutionStack.Add(implementationType))
         {
-            var args = new List<object?>(parametersWithNullability.Count);
-            foreach (var (parameter, nullable) in parametersWithNullability)
+            var stack = string.Join(" > ", resolutionStack);
+            throw new InvalidOperationException(
+                $"Circular dependency detected while constructing {implementationType.Name}. " + 
+                $"Resolution stack: {stack}.");
+        }
+
+        try
+        {
+            var constructors = implementationType.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+            if (constructors.Length == 0)
             {
-                var factories = GetFactories(parameter.ParameterType, childScope);
-                var arg = factories.Length switch
+                throw new InvalidOperationException($"Type {implementationType.Name} has no public constructors.");
+            }
+
+            var ctor = constructors.OrderByDescending(c => c.GetParameters().Length).First();
+            var nullabilityCtx = new NullabilityInfoContext();
+            var parametersWithNullability = ctor.GetParameters()
+                .Select(p => (p, nullabilityCtx.Create(p).WriteState == NullabilityState.Nullable))
+                .ToList();
+
+            var args = new List<object?>(parametersWithNullability.Count);
+            foreach (var (p, nullable) in parametersWithNullability)
+            {
+                var resolved = ResolveAll(p.ParameterType, childScope, resolutionStack).FirstOrDefault();
+                var arg = resolved switch
                 {
-                    > 0 => factories[^1](),
-                    0 when nullable => null,
+                    not null => resolved,
+                    null when nullable => null,
                     _ => throw new InvalidOperationException(
-                        $"No service of type {parameter.ParameterType} has been registered.")
+                        $"No service of type {p.ParameterType} has been registered.")
                 };
 
                 args.Add(arg);
             }
 
             return Activator.CreateInstance(implementationType, args.ToArray())!;
-        };
-    }
-
-    private class Registration
-    {
-        public Registration(object instance)
-        {
-            Instance = instance;
-            ImplementationType = null!;
         }
-
-        public Registration(Type implementationType)
+        finally
         {
-            Instance = null;
-            ImplementationType = implementationType;
+            resolutionStack.Remove(implementationType);
         }
-
-        public object? Instance { get; }
-        public Type ImplementationType { get; }
     }
 
     public TService Resolve<TService>() => (TService)Resolve(typeof(TService));
@@ -148,30 +135,42 @@ internal class ScopedContainerRewrite : IResolutionScope
 
     public bool TryResolve(Type serviceType, [NotNullWhen(true)] out object? service)
     {
+        var resolutionStack = new HashSet<Type>();
+
         if (serviceType.IsGenericIEnumerable())
         {
             var elementType = serviceType.GetGenericArguments()[0];
-            var elementFactories = GetFactories(elementType, this);
-            var array = Array.CreateInstance(elementType, elementFactories.Length);
-            var items = elementFactories.Select(f => f());
-            items.ToArray().CopyTo(array, 0);
+            var instances = ResolveAll(elementType, this, resolutionStack).ToArray();
+            var array = Array.CreateInstance(elementType, instances.Length);
+            instances.CopyTo(array, 0);
             service = array;
             return true;
         }
 
-        var factories = GetFactories(serviceType, this);
-        if (factories.Length == 0)
-        {
-            service = null;
-            return false;
-        }
-
-        service = factories[^1]();
-        return true;
+        service = ResolveAll(serviceType, this, resolutionStack).FirstOrDefault();
+        return service is not null;
     }
 
     public IResolutionScope CreateChildScope(Action<IServiceRegistry> registrations)
     {
         throw new NotImplementedException();
+    }
+
+    private class Registration
+    {
+        public Registration(object instance)
+        {
+            Instance = instance;
+            ImplementationType = null!;
+        }
+
+        public Registration(Type implementationType)
+        {
+            Instance = null;
+            ImplementationType = implementationType;
+        }
+
+        public object? Instance { get; }
+        public Type ImplementationType { get; }
     }
 }
