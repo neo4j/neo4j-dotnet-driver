@@ -21,7 +21,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.DependencyInjection;
 
@@ -74,16 +73,14 @@ internal class ScopedContainerRewrite : IResolutionScope
         }
 
         var implementationType = registration.ImplementationType;
-        var child = childScope;
 
         var ctor = implementationType
             .GetConstructors(BindingFlags.Public | BindingFlags.Instance)
             .OrderByDescending(c => c.GetParameters().Length)
             .First();
 
-        var parameters = ctor.GetParameters();
         var nullabilityCtx = new NullabilityInfoContext();
-        var parametersWithNullability = parameters
+        var parametersWithNullability = ctor.GetParameters()
             .Select(p => (p, nullabilityCtx.Create(p).WriteState == NullabilityState.Nullable))
             .ToList();
 
@@ -92,7 +89,7 @@ internal class ScopedContainerRewrite : IResolutionScope
             var args = new List<object?>(parametersWithNullability.Count);
             foreach (var (parameter, nullable) in parametersWithNullability)
             {
-                var factories = GetFactories(parameter.ParameterType, child);
+                var factories = GetFactories(parameter.ParameterType, childScope);
                 var arg = factories.Length switch
                 {
                     > 0 => factories[^1](),
@@ -100,7 +97,7 @@ internal class ScopedContainerRewrite : IResolutionScope
                     _ => throw new InvalidOperationException(
                         $"No service of type {parameter.ParameterType} has been registered.")
                 };
-                
+
                 args.Add(arg);
             }
 
@@ -132,12 +129,9 @@ internal class ScopedContainerRewrite : IResolutionScope
 
     public object Resolve(Type serviceType, Type requestingType)
     {
-        if (TryResolve(serviceType, out var service))
-        {
-            return service;
-        }
-
-        throw new InvalidOperationException($"No service of type {serviceType} has been registered.");
+        return TryResolve(serviceType, out var service)
+            ? service
+            : throw new InvalidOperationException($"No service of type {serviceType} has been registered.");
     }
 
     public bool TryResolve<T>([NotNullWhen(true)] out T? value)
@@ -154,7 +148,7 @@ internal class ScopedContainerRewrite : IResolutionScope
 
     public bool TryResolve(Type serviceType, [NotNullWhen(true)] out object? service)
     {
-        if(serviceType.IsGenericIEnumerable())
+        if (serviceType.IsGenericIEnumerable())
         {
             var elementType = serviceType.GetGenericArguments()[0];
             var elementFactories = GetFactories(elementType, this);
