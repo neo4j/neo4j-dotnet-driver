@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
@@ -374,37 +375,37 @@ public class ScopedContainerRewriteTests
     }
 
     [Fact]
-    public void Dispose_DisposesCreatedDisposableInstances()
+    public async Task Dispose_DisposesCreatedDisposableInstances()
     {
         var container = new ScopedContainerRewrite();
         container.RegisterType<DisposableService>();
 
         var resolved = container.Resolve<DisposableService>();
-        container.Dispose();
+        await container.DisposeAsync();
 
         resolved.IsDisposed.Should().BeTrue();
     }
 
     [Fact]
-    public void Dispose_CascadesToChildScopes()
+    public async Task Dispose_CascadesToChildScopes()
     {
         var parent = new ScopedContainerRewrite();
         var child = parent.CreateChildScope(r => r.RegisterType<DisposableService>());
         var childService = child.Resolve<DisposableService>();
 
-        parent.Dispose();
+        await parent.DisposeAsync();
 
         childService.IsDisposed.Should().BeTrue();
     }
 
     [Fact]
-    public void Dispose_DoesNotDisposeRegisteredInstances()
+    public async Task Dispose_DoesNotDisposeRegisteredInstances()
     {
         var container = new ScopedContainerRewrite();
         var instance = new DisposableService();
 
         container.RegisterInstance(instance);
-        container.Dispose();
+        await container.DisposeAsync();
 
         instance.IsDisposed.Should().BeFalse();
     }
@@ -412,10 +413,10 @@ public class ScopedContainerRewriteTests
     [Theory]
     [InlineData(typeof(ITestService))]
     [InlineData(typeof(IDependency))]
-    public void Resolve_ThrowsAfterDispose(Type serviceType)
+    public async Task Resolve_ThrowsAfterDispose(Type serviceType)
     {
         var container = new ScopedContainerRewrite();
-        container.Dispose();
+        await container.DisposeAsync();
 
         var act = () => container.Resolve(serviceType);
 
@@ -423,10 +424,10 @@ public class ScopedContainerRewriteTests
     }
 
     [Fact]
-    public void CreateScope_ThrowsAfterDispose()
+    public async Task CreateScope_ThrowsAfterDispose()
     {
         var container = new ScopedContainerRewrite();
-        container.Dispose();
+        await container.DisposeAsync();
 
         var act = () => container.CreateChildScope(_ => {});
 

@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.DependencyInjection;
 
@@ -62,6 +63,12 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 
         _disposables.Clear();
         _resolutionStack.Dispose();
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        Dispose();
+        return ValueTask.CompletedTask;
     }
 
     public TService Resolve<TService>()

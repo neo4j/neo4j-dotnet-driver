@@ -16,27 +16,34 @@
 #nullable enable
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.DependencyInjection;
 
-internal class ScopedContainerRewrite : IResolutionScope, IServiceRegistry, IDisposable
+internal class ScopedContainerRewrite : IResolutionScope, IServiceRegistry
 {
     private readonly ScopedContainerRewrite? _outerScope;
     private readonly MultiMap<Type, Registration> _registrations = new();
     private readonly List<IResolverOverride> _overrides = [];
+    private readonly ConcurrentBag<object> _disposables = [];
+    private readonly ConcurrentHashSet<ScopedContainerRewrite> _children = new();
+    private readonly Action<ScopedContainerRewrite>? _onDispose;
+    private bool _disposed;
 
-    public ScopedContainerRewrite() : this(null)
+    public ScopedContainerRewrite() : this(null, null)
     {
     }
 
-    private ScopedContainerRewrite(ScopedContainerRewrite? outerScope)
+    private ScopedContainerRewrite(ScopedContainerRewrite? outerScope, Action<ScopedContainerRewrite>? onDispose)
     {
         _outerScope = outerScope;
+        _onDispose = onDispose;
         RegisterInstance<IResolutionScope>(this);
     }
 
@@ -108,7 +115,6 @@ internal class ScopedContainerRewrite : IResolutionScope, IServiceRegistry, IDis
 
         var implementationType = registration.ImplementationType;
 
-        // if adding fails, it's already in there 
         if (!resolutionStack.Add(implementationType))
         {
             var stack = string.Join(" > ", resolutionStack);
@@ -147,7 +153,13 @@ internal class ScopedContainerRewrite : IResolutionScope, IServiceRegistry, IDis
                 args.Add(arg);
             }
 
-            return Activator.CreateInstance(implementationType, args.ToArray())!;
+            var instance = Activator.CreateInstance(implementationType, args.ToArray())!;
+            if (instance is IAsyncDisposable or IDisposable)
+            {
+                _disposables.Add(instance);
+            }
+
+            return instance;
         }
         finally
         {
@@ -180,6 +192,11 @@ internal class ScopedContainerRewrite : IResolutionScope, IServiceRegistry, IDis
 
     public bool TryResolve(Type serviceType, [NotNullWhen(true)] out object? service)
     {
+        if (_disposed)
+        {
+            throw new ObjectDisposedException(nameof(ScopedContainerRewrite));
+        }
+
         var resolutionStack = new HashSet<Type>();
 
         if (serviceType.IsGenericIEnumerable())
@@ -196,13 +213,50 @@ internal class ScopedContainerRewrite : IResolutionScope, IServiceRegistry, IDis
         return service is not null;
     }
 
-    public void Dispose() { }
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        _onDispose?.Invoke(this);
+
+        var children = _children.ToArray();
+        var disposables = _disposables.ToArray();
+
+        foreach (var child in children)
+        {
+            await child.DisposeAsync();
+        }
+
+        foreach (var d in disposables)
+        {
+            switch (d)
+            {
+                case IAsyncDisposable ad: await ad.DisposeAsync(); break;
+                case IDisposable sd: sd.Dispose(); break;
+            }
+        }
+    }
 
     public IResolutionScope CreateChildScope(Action<IServiceRegistry> registrations)
     {
-        var child = new ScopedContainerRewrite(this);
+        if (_disposed)
+        {
+            throw new ObjectDisposedException(nameof(ScopedContainerRewrite));
+        }
+
+        var child = new ScopedContainerRewrite(this, RemoveChild);
+        _children.TryAdd(child);
         registrations(child);
         return child;
+    }
+
+    private void RemoveChild(ScopedContainerRewrite child)
+    {
+        _children.TryRemove(child);
     }
 
     private class Registration
