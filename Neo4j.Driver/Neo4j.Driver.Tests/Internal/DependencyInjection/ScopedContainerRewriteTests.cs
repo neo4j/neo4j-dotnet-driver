@@ -386,6 +386,18 @@ public class ScopedContainerRewriteTests
     }
 
     [Fact]
+    public void Dispose_CascadesToChildScopes()
+    {
+        var parent = new ScopedContainerRewrite();
+        var child = parent.CreateChildScope(r => r.RegisterType<DisposableService>());
+        var childService = child.Resolve<DisposableService>();
+
+        parent.Dispose();
+
+        childService.IsDisposed.Should().BeTrue();
+    }
+
+    [Fact]
     public void Dispose_DoesNotDisposeRegisteredInstances()
     {
         var container = new ScopedContainerRewrite();
