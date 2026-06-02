@@ -17,7 +17,7 @@ using System;
 
 namespace Neo4j.Driver.Internal.DependencyInjection;
 
-internal interface IResolutionScope : IServiceResolver
+internal interface IResolutionScope : IServiceResolver, IAsyncDisposable
 {
     IResolutionScope CreateChildScope(Action<IServiceRegistry> registrations);
 }

@@ -24,7 +24,7 @@ internal class QueryApiContainerBuilder : IQueryApiContainerBuilder
 {
     public IServiceResolver BuildContainer(DriverContext driverContext)
     {
-        var container = new ScopedContainer();
+        var container = new ScopedContainerRewrite();
         
         container.RegisterInstance(driverContext);
         container.RegisterInstance(driverContext.AuthTokenManager);
