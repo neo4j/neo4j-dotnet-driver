@@ -92,6 +92,19 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         return true;
     }
 
+    public bool TryResolve(Type serviceType, out object? service)
+    {
+        var result = TryResolveCore(serviceType, null, null);
+        if (result is null) 
+        {
+            service = null;
+            return false;
+        }           
+        
+        service = result;
+        return true;
+    }
+
     public IResolutionScope CreateChildScope(Action<IServiceRegistry> registrations)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);

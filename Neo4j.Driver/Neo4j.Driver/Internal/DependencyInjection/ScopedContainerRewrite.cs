@@ -24,7 +24,7 @@ using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.DependencyInjection;
 
-internal class ScopedContainerRewrite : IResolutionScope, IServiceRegistry
+internal class ScopedContainerRewrite : IResolutionScope, IServiceRegistry, IDisposable
 {
     private readonly ScopedContainerRewrite? _outerScope;
     private readonly MultiMap<Type, Registration> _registrations = new();
@@ -123,9 +123,10 @@ internal class ScopedContainerRewrite : IResolutionScope, IServiceRegistry
                 .ToList();
 
             var args = new List<object?>(parametersWithNullability.Count);
+            var resolver = childScope ?? this;
             foreach (var (p, nullable) in parametersWithNullability)
             {
-                var resolved = ResolveAll(p.ParameterType, childScope, resolutionStack).FirstOrDefault();
+                var resolved = resolver.ResolveAll(p.ParameterType, childScope, resolutionStack).FirstOrDefault();
                 var arg = resolved switch
                 {
                     not null => resolved,
@@ -185,6 +186,8 @@ internal class ScopedContainerRewrite : IResolutionScope, IServiceRegistry
         service = ResolveAll(serviceType, this, resolutionStack).FirstOrDefault();
         return service is not null;
     }
+
+    public void Dispose() { }
 
     public IResolutionScope CreateChildScope(Action<IServiceRegistry> registrations)
     {
