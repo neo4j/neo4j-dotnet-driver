@@ -231,14 +231,6 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
                 return ResolveEnumerable(elementType, childRegistrations);
             }
 
-            // IScoped<T> — capture the leaf scope and wrap it for lazy optional resolution
-            if (serviceType.IsGenericType && serviceType.GetGenericTypeDefinition() == typeof(IScoped<>))
-            {
-                var innerType = serviceType.GetGenericArguments()[0];
-                var scope = (IResolutionScope)ResolveCore(typeof(IResolutionScope), requestingType, childRegistrations);
-                return Activator.CreateInstance(typeof(Scoped<>).MakeGenericType(innerType), scope)!;
-            }
-
             // Local registrations
             if (_registrations.TryGetValue(serviceType, out var registrations) && registrations.Count > 0)
             {

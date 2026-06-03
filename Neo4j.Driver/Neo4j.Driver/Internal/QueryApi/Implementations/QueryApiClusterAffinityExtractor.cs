@@ -15,15 +15,19 @@
 
 #nullable enable
 
-namespace Neo4j.Driver.Internal.DependencyInjection;
+using System.Net.Http;
+using Neo4j.Driver.Internal.DependencyInjection;
+using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
-internal class Scoped<T> : IScoped<T>
+namespace Neo4j.Driver.Internal.QueryApi.Implementations;
+
+[AutoRegister]
+internal class QueryApiClusterAffinityExtractor : IClusterAffinityExtractor
 {
-    private readonly IResolutionScope _scope;
+    private const string HeaderName = "neo4j-cluster-affinity";
 
-    public Scoped(IResolutionScope scope) => _scope = scope;
-
-    public T Value => _scope.Resolve<T>();
-
-    public bool TryGetValue(out T? value) => _scope.TryResolve(out value);
+    public string? Extract(HttpResponseMessage response) =>
+        response.Headers.TryGetValues(HeaderName, out var vals)
+            ? string.Join(",", vals)
+            : null;
 }

@@ -15,15 +15,11 @@
 
 #nullable enable
 
-namespace Neo4j.Driver.Internal.DependencyInjection;
+using System.Net.Http;
 
-/// <summary>
-/// Provides lazy, scope-aware access to a dependency that may not be registered in all scopes.
-/// The value is resolved from the scope that was active when this instance was created.
-/// Use <see cref="TryGetValue"/> for optional dependencies.
-/// </summary>
-internal interface IScoped<T>
+namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
+
+internal interface IClusterAffinityExtractor
 {
-    T Value { get; }
-    bool TryGetValue(out T? value);
+    string? Extract(HttpResponseMessage response);
 }

@@ -16,35 +16,26 @@
 #nullable enable
 
 using System.Net.Http;
-using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
-[AutoRegister]
 internal class QueryApiClusterAffinityApplicator : IClusterAffinityApplicator
 {
     private const string HeaderName = "neo4j-cluster-affinity";
 
-    private readonly IScoped<QueryApiTransactionContext> _txContext;
+    private readonly QueryApiTransactionContext _txContext;
 
-    public QueryApiClusterAffinityApplicator(IScoped<QueryApiTransactionContext> txContext)
+    public QueryApiClusterAffinityApplicator(QueryApiTransactionContext txContext)
     {
         _txContext = txContext;
     }
 
     public void Apply(HttpRequestMessage request)
     {
-        if (_txContext.TryGetValue(out var ctx) && ctx!.ClusterAffinity is not null)
+        if (_txContext.ClusterAffinity is not null)
         {
-            request.Headers.TryAddWithoutValidation(HeaderName, ctx.ClusterAffinity);
+            request.Headers.TryAddWithoutValidation(HeaderName, _txContext.ClusterAffinity);
         }
-    }
-
-    public string? Extract(HttpResponseMessage response)
-    {
-        return response.Headers.TryGetValues(HeaderName, out var vals)
-            ? string.Join(",", vals)
-            : null;
     }
 }

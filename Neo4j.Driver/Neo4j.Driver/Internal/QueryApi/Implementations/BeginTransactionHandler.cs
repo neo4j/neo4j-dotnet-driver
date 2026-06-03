@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 [AutoRegister]
 internal class BeginTransactionHandler : IBeginTransactionHandler
 {
-    private readonly IClusterAffinityApplicator _clusterAffinityApplicator;
+    private readonly IClusterAffinityExtractor _affinityExtractor;
     private readonly IQueryApiErrorChecker _errorChecker;
     private readonly IQueryApiHttpClient _httpClient;
     private readonly IJsonDeserializer _jsonDeserializer;
@@ -40,14 +40,14 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
         IQueryApiHttpClient httpClient,
         IQueryApiErrorChecker errorChecker,
         IJsonDeserializer jsonDeserializer,
-        IClusterAffinityApplicator clusterAffinityApplicator,
+        IClusterAffinityExtractor affinityExtractor,
         ILogger logger)
     {
         _requestBuilder = requestBuilder;
         _httpClient = httpClient;
         _errorChecker = errorChecker;
         _jsonDeserializer = jsonDeserializer;
-        _clusterAffinityApplicator = clusterAffinityApplicator;
+        _affinityExtractor = affinityExtractor;
         _logger = logger;
     }
 
@@ -77,7 +77,7 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
             throw new InvalidOperationException("Server did not return a transaction ID.");
         }
 
-        var context = new QueryApiTransactionContext(txId, _clusterAffinityApplicator.Extract(response));
+        var context = new QueryApiTransactionContext(txId, _affinityExtractor.Extract(response));
         _logger.Debug("Transaction begun: {txId}", txId);
         return context;
     }

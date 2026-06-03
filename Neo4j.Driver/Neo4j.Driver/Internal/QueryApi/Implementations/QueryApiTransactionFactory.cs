@@ -52,7 +52,10 @@ internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
             .BeginTransactionAsync(bookmarks, cancellationToken)
             .ConfigureAwait(false);
 
-        var txScope = _resolutionScope.CreateChildScope(r => r.RegisterInstance(context));
+        var txScope = _resolutionScope.CreateChildScope(r => r
+              .RegisterInstance(context)
+              .RegisterType<IClusterAffinityApplicator, QueryApiClusterAffinityApplicator>()
+        );
 
         return txScope.Resolve<IInternalAsyncTransaction>();
     }

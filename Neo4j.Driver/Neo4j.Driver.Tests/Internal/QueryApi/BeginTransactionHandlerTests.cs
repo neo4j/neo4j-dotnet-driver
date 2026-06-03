@@ -78,9 +78,8 @@ public class BeginTransactionHandlerTests
         // Spec: Aura instances return neo4j-cluster-affinity on BEGIN — it must be echoed back on subsequent requests.
         var response = SetupChain();
 
-        _fixture.Freeze<Mock<IClusterAffinityApplicator>>()
-            .Setup(x => x.Extract(response))
-            .Returns("shard-99");
+        _fixture.Freeze<Mock<IClusterAffinityExtractor>>()
+            .Setup(x => x.Extract(response)).Returns("shard-99");
 
         var subject = _fixture.Create<BeginTransactionHandler>();
         var context = await subject.BeginTransactionAsync([], TestContext.Current.CancellationToken);
@@ -93,9 +92,8 @@ public class BeginTransactionHandlerTests
     {
         var response = SetupChain();
 
-        _fixture.Freeze<Mock<IClusterAffinityApplicator>>()
-            .Setup(x => x.Extract(response))
-            .Returns((string?)null);
+        _fixture.Freeze<Mock<IClusterAffinityExtractor>>()
+            .Setup(x => x.Extract(response)).Returns((string?)null);
 
         var subject = _fixture.Create<BeginTransactionHandler>();
         var context = await subject.BeginTransactionAsync([], TestContext.Current.CancellationToken);

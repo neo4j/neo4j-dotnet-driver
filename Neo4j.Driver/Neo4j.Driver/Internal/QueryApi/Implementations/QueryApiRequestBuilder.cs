@@ -15,6 +15,7 @@
 
 #nullable enable
 
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
@@ -28,7 +29,7 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
 {
     private readonly IAuthApplicator _authApplicator;
-    private readonly IClusterAffinityApplicator _clusterAffinityApplicator;
+    private readonly IEnumerable<IClusterAffinityApplicator> _affinityApplicators;
     private readonly IJsonSerializer _jsonSerializer;
     private readonly ISessionContext _sessionContext;
     private readonly IQueryApiUrlBuilder _urlBuilder;
@@ -37,13 +38,13 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
         IQueryApiUrlBuilder urlBuilder,
         ISessionContext sessionContext,
         IAuthApplicator authApplicator,
-        IClusterAffinityApplicator clusterAffinityApplicator,
+        IEnumerable<IClusterAffinityApplicator> affinityApplicators,
         IJsonSerializer jsonSerializer)
     {
         _urlBuilder = urlBuilder;
         _sessionContext = sessionContext;
         _authApplicator = authApplicator;
-        _clusterAffinityApplicator = clusterAffinityApplicator;
+        _affinityApplicators = affinityApplicators;
         _jsonSerializer = jsonSerializer;
     }
 
@@ -72,7 +73,10 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json", 0.9));
         var auth = await _sessionContext.GetAuthTokenAsync(cancellationToken).ConfigureAwait(false);
         _authApplicator.Apply(request, auth);
-        _clusterAffinityApplicator.Apply(request);
+        foreach (var applicator in _affinityApplicators)
+        {
+            applicator.Apply(request);
+        }
 
         if (body is not null)
         {
