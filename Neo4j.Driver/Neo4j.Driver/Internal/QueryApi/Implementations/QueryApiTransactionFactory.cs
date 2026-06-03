@@ -53,7 +53,7 @@ internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
             .ConfigureAwait(false);
 
         var txScope = _resolutionScope.CreateChildScope(r => r
-          .AddLoggingContext("t", context.TxId)
+          .AddLoggingContext("tx", context)
           .RegisterInstance(context)
           .RegisterType<IHttpRequestEnricher, QueryApiClusterAffinityEnricher>());
 

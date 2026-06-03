@@ -79,7 +79,7 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
         };
 
         _logger.Debug(
-            "Run complete in transaction {txId}: {fieldCount} field(s), {rowCount} row(s)",
+            "Run complete: {fieldCount} field(s), {rowCount} row(s)",
             _txContext.TxId,
             result.Fields.Length,
             result.Rows.Length);

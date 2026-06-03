@@ -46,7 +46,7 @@ internal class QueryApiSessionFactory : IQueryApiSessionFactory
             : config.DriverContext.AuthTokenManager;
 
         var sessionScope = _resolutionScope.CreateChildScope(r => r
-            .AddLoggingContext("s", sessionId)
+            .AddLoggingContext("sn", sessionId)
             .RegisterInstance(config)
             .RegisterInstance(authTokenManager)
             .RegisterType<ISessionContext, QueryApiSessionContext>());
