@@ -399,6 +399,22 @@ public class ScopedContainerRewriteTests
     }
 
     [Fact]
+    public async Task Dispose_CascadesThroughMultipleGenerations()
+    {
+        var grandfather = new ScopedContainerRewrite();
+        var father = grandfather.CreateChildScope(r => r.RegisterType<DisposableService>());
+        var son = father.CreateChildScope(r => r.RegisterType<DisposableService>());
+
+        var fatherService = father.Resolve<DisposableService>();
+        var sonService = son.Resolve<DisposableService>();
+
+        await grandfather.DisposeAsync();
+
+        fatherService.IsDisposed.Should().BeTrue();
+        sonService.IsDisposed.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Dispose_DoesNotDisposeRegisteredInstances()
     {
         var container = new ScopedContainerRewrite();
