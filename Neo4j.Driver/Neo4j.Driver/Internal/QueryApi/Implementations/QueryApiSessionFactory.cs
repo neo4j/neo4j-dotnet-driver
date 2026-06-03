@@ -14,7 +14,6 @@
 // limitations under the License.
 
 #nullable enable
-using System;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
@@ -41,12 +40,16 @@ internal class QueryApiSessionFactory : IQueryApiSessionFactory
     {
         var sessionId = _sessionIdGenerator.Generate();
         _logger.Debug("Building session scope {sessionId}", sessionId);
-        var sessionScope = _resolutionScope.CreateChildScope(r =>
-        {
-            r.AddLoggingContext("session", sessionId);
-            r.RegisterInstance(config);
-            r.RegisterType<ISessionContext, QueryApiSessionContext>();
-        });
+
+        var authTokenManager = config.AuthToken is {}
+            ? AuthTokenManagers.Static(config.AuthToken)
+            : config.DriverContext.AuthTokenManager;
+
+        var sessionScope = _resolutionScope.CreateChildScope(r => r
+            .AddLoggingContext("session", sessionId)
+            .RegisterInstance(config)
+            .RegisterInstance(authTokenManager)
+            .RegisterType<ISessionContext, QueryApiSessionContext>());
 
         _logger.Debug("Resolving session");
         return sessionScope.Resolve<IInternalAsyncSession>();

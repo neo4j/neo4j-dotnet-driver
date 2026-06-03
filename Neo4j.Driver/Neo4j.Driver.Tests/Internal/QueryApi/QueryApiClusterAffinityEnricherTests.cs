@@ -17,6 +17,7 @@
 
 using System.Linq;
 using System.Net.Http;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal.QueryApi;
 using Neo4j.Driver.Internal.QueryApi.Implementations;
@@ -24,29 +25,29 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
-public class QueryApiClusterAffinityApplicatorTests
+public class QueryApiClusterAffinityEnricherTests
 {
     public class Apply
     {
         [Fact]
-        public void AddsClusterAffinityHeader_WhenContextCarriesAffinityValue()
+        public async Task AddsClusterAffinityHeader_WhenContextCarriesAffinityValue()
         {
             var request = new HttpRequestMessage();
-            var subject = new QueryApiClusterAffinityApplicator(new QueryApiTransactionContext("tx-1", "shard-42"));
+            var subject = new QueryApiClusterAffinityEnricher(new QueryApiTransactionContext("tx-1", "shard-42"));
 
-            subject.Apply(request);
+            await subject.Enrich(request, TestContext.Current.CancellationToken);
 
             request.Headers.TryGetValues("neo4j-cluster-affinity", out var values).Should().BeTrue();
             values!.First().Should().Be("shard-42");
         }
 
         [Fact]
-        public void DoesNotAddHeader_WhenContextHasNoClusterAffinity()
+        public async Task DoesNotAddHeader_WhenContextHasNoClusterAffinity()
         {
             var request = new HttpRequestMessage();
-            var subject = new QueryApiClusterAffinityApplicator(new QueryApiTransactionContext("tx-1", null));
+            var subject = new QueryApiClusterAffinityEnricher(new QueryApiTransactionContext("tx-1", null));
 
-            subject.Apply(request);
+            await subject.Enrich(request, TestContext.Current.CancellationToken);
 
             request.Headers.Contains("neo4j-cluster-affinity").Should().BeFalse();
         }

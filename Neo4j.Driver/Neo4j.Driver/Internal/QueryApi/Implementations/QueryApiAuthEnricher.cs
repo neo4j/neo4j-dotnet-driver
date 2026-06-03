@@ -19,6 +19,8 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
@@ -26,15 +28,23 @@ using Neo4j.Driver.Internal.QueryApi.Abstractions;
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
 [AutoRegister]
-internal class QueryApiAuthApplicator : IAuthApplicator
+internal class QueryApiAuthEnricher : IHttpRequestEnricher
 {
-    public void Apply(HttpRequestMessage request, IAuthToken auth)
-    {
-        if (auth is not AuthToken authToken)
-        {
-            throw new ArgumentException($"Unsupported auth token type: {auth.GetType().Name}", nameof(auth));
-        }
+    private readonly IAuthTokenManager _authTokenManager;
 
+    public QueryApiAuthEnricher(IAuthTokenManager authTokenManager)
+    {
+        _authTokenManager = authTokenManager;
+    }
+
+    public async ValueTask Enrich(HttpRequestMessage request, CancellationToken cancellationToken = default)
+    {
+        var returnedToken = await _authTokenManager.GetTokenAsync(cancellationToken).ConfigureAwait(false);
+        if (returnedToken is not AuthToken authToken)
+        {
+            throw new InvalidOperationException("Unsupported auth token: " + returnedToken.GetType().Name);
+        }
+        
         request.Headers.Authorization = authToken.Scheme switch
         {
             "basic" => new AuthenticationHeaderValue(

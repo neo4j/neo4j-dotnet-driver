@@ -28,8 +28,9 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 [AutoRegister]
 internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
 {
-    private readonly IAuthApplicator _authApplicator;
-    private readonly IEnumerable<IClusterAffinityApplicator> _affinityApplicators;
+    private const string TypedJsonMediaType = "application/vnd.neo4j.query.v1.1";
+    
+    private readonly IEnumerable<IHttpRequestEnricher> _requestEnrichers;
     private readonly IJsonSerializer _jsonSerializer;
     private readonly ISessionContext _sessionContext;
     private readonly IQueryApiUrlBuilder _urlBuilder;
@@ -37,30 +38,24 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
     public QueryApiRequestBuilder(
         IQueryApiUrlBuilder urlBuilder,
         ISessionContext sessionContext,
-        IAuthApplicator authApplicator,
-        IEnumerable<IClusterAffinityApplicator> affinityApplicators,
+        IEnumerable<IHttpRequestEnricher> requestEnrichers,
         IJsonSerializer jsonSerializer)
     {
         _urlBuilder = urlBuilder;
         _sessionContext = sessionContext;
-        _authApplicator = authApplicator;
-        _affinityApplicators = affinityApplicators;
+        _requestEnrichers = requestEnrichers;
         _jsonSerializer = jsonSerializer;
     }
 
     public Task<HttpRequestMessage> PostAsync(string path, object? body, CancellationToken cancellationToken = default)
     {
-        // POST requests must have *some* body, even if it's empty
-        var theBody = body ?? new object();
-        return BuildAsync(HttpMethod.Post, path, theBody, cancellationToken);
+        return BuildAsync(HttpMethod.Post, path, body ?? new object(), cancellationToken);
     }
 
     public Task<HttpRequestMessage> DeleteAsync(string path, CancellationToken cancellationToken = default)
     {
         return BuildAsync(HttpMethod.Delete, path, null, cancellationToken);
     }
-
-    private const string TypedJsonMediaType = "application/vnd.neo4j.query.v1.1";
 
     private async Task<HttpRequestMessage> BuildAsync(
         HttpMethod method,
@@ -71,11 +66,9 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
         var request = new HttpRequestMessage(method, _urlBuilder.Build($"db/{_sessionContext.Database}/{path}"));
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(TypedJsonMediaType));
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json", 0.9));
-        var auth = await _sessionContext.GetAuthTokenAsync(cancellationToken).ConfigureAwait(false);
-        _authApplicator.Apply(request, auth);
-        foreach (var applicator in _affinityApplicators)
+        foreach (var enricher in _requestEnrichers)
         {
-            applicator.Apply(request);
+            await enricher.Enrich(request, cancellationToken).ConfigureAwait(false);
         }
 
         if (body is not null)

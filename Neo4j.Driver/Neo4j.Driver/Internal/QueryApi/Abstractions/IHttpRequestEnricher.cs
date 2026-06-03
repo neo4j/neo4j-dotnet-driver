@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -16,10 +16,14 @@
 #nullable enable
 
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
-internal interface IClusterAffinityApplicator
+#nullable enable
+
+internal interface IHttpRequestEnricher
 {
-    void Apply(HttpRequestMessage request);
+    ValueTask Enrich(HttpRequestMessage request, CancellationToken cancellationToken = default);
 }

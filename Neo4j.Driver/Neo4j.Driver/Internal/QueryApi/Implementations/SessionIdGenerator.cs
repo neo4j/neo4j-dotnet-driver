@@ -30,6 +30,8 @@ internal class SessionIdGenerator : ISessionIdGenerator
         string.Create(5, Random.Shared, static (span, rng) =>
         {
             for (var i = 0; i < span.Length; i++)
+            {
                 span[i] = Chars[rng.Next(Chars.Length)];
+            }
         });
 }
