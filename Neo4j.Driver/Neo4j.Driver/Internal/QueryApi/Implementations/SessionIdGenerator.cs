@@ -16,6 +16,7 @@
 #nullable enable
 
 using System;
+using System.Linq;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
@@ -24,14 +25,14 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 [AutoRegister]
 internal class SessionIdGenerator : ISessionIdGenerator
 {
-    private const string Chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    private const string Chars = "0123456789abcdef";
+    private const int IdLength = 4;
 
-    public string Generate() =>
-        string.Create(5, Random.Shared, static (span, rng) =>
-        {
-            for (var i = 0; i < span.Length; i++)
-            {
-                span[i] = Chars[rng.Next(Chars.Length)];
-            }
-        });
+    public string Generate()
+    {
+        var randoms = Enumerable.Range(0, IdLength)
+            .Select(_ => Chars[Random.Shared.Next(Chars.Length)]);
+        
+        return new string([.. randoms]);
+    }
 }

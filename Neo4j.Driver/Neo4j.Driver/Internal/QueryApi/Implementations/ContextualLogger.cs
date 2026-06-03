@@ -32,9 +32,6 @@ internal class ContextualLogger : ILogger
     {
         _contexts = contexts.ToArray();
         _downstream = downstream;
-        
-        var contextNames = string.Join(", ", _contexts.Select(c => $"[{c.Key}:{c.Value}]"));
-        _downstream.Trace("Contexts: {contexts}", contextNames);
     }
 
     private (string, object[]) Contextualise(string messageTemplate, params object[] args)
@@ -48,7 +45,7 @@ internal class ContextualLogger : ILogger
         for (var index = 0; index < _contexts.Length; index++)
         {
             var context = _contexts[index];
-            messageSegments[index + 1] = $"[{context.Key}:{{{context.Key}}}] ";
+            messageSegments[index] = $"[{context.Key}:{{{context.Key}}}] ";
             
             allArgs[index] = context.Value;
         }
@@ -60,7 +57,7 @@ internal class ContextualLogger : ILogger
     public void Trace(string messageTemplate, params object[] args)
     {
         (messageTemplate, args) = Contextualise(messageTemplate, args);
-        _downstream.Debug(messageTemplate, args);
+        _downstream.Trace(messageTemplate, args);
     }
 
     public void Debug(string messageTemplate, params object[] args)

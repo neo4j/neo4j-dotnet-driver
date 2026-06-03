@@ -45,8 +45,8 @@ internal class JsonValueConverter : IJsonValueConverter
             JsonValueKind.Array => jsonElement.EnumerateArray().Select(Convert).ToList(),
             JsonValueKind.Object => ConvertObject(jsonElement),
             
-            // the cast to object is necessary to force the return type of the ?: expression to be `object`
-            // - otherwise, the compiler will use double, potentially losing precision for large integers
+            // the cast to object is necessary to force the return type of the ternary expression to be `object` -
+            // otherwise, the compiler will use double, potentially losing precision for large integers
             JsonValueKind.Number => jsonElement.TryGetInt64(out var l) ? (object)l : jsonElement.GetDouble(),
             
             _ => throw new ArgumentOutOfRangeException(

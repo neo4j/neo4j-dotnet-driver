@@ -39,7 +39,7 @@ internal class LegacyLoggerAdapter : ILogger
         var indexedFormat = Regex.Replace(messageTemplate, @"\{[^}]+\}", _ => $"{{{index++}}}");
         
         // add the name of the type that's doing the logging
-        var typeName = _loggingType.Name;
+        var typeName = _loggingType?.Name ?? "Unknown";
         var finalFormat = $"[{typeName}] {indexedFormat}";
         
         return finalFormat;
