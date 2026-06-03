@@ -230,14 +230,14 @@ public class ScopedContainerTests
     }
 
     [Fact]
-    public void RegisterPlugin_CallsPluginDuringResolution()
+    public void RegisterInterceptor_CallsInterceptorDuringResolution()
     {
         var container = new ScopedContainer();
         var mocker = new AutoMocker();
-        var mockPlugin = mocker.GetMock<IResolverOverride>();
+        var mockInterceptor = mocker.GetMock<IResolutionInterceptor>();
         var overrideInstance = mocker.Get<ITestService>();
 
-        mockPlugin
+        mockInterceptor
             .Setup(x => x.TryResolve(
                 typeof(ITestService),
                 It.IsAny<Type>(),
@@ -250,7 +250,7 @@ public class ScopedContainerTests
                     return true;
                 }));
 
-        container.RegisterPlugin(mockPlugin.Object);
+        container.RegisterInterceptor(mockInterceptor.Object);
         var resolved = container.Resolve<ITestService>();
 
         resolved.Should().BeSameAs(overrideInstance);
@@ -263,14 +263,14 @@ public class ScopedContainerTests
         out object service);
 
     [Fact]
-    public void RegisterPlugin_FallsBackToNormalResolutionWhenPluginReturnsFalse()
+    public void RegisterInterceptor_FallsBackToNormalResolutionWhenInterceptorReturnsFalse()
     {
         var container = new ScopedContainer();
         var mocker = new AutoMocker();
-        var mockPlugin = mocker.GetMock<IResolverOverride>();
+        var mockInterceptor = mocker.GetMock<IResolutionInterceptor>();
         var instance = mocker.Get<ITestService>();
 
-        mockPlugin
+        mockInterceptor
             .Setup(x => x.TryResolve(
                 It.IsAny<Type>(),
                 It.IsAny<Type>(),
@@ -278,7 +278,7 @@ public class ScopedContainerTests
                 out It.Ref<object>.IsAny))
             .Returns(false);
 
-        container.RegisterPlugin(mockPlugin.Object);
+        container.RegisterInterceptor(mockInterceptor.Object);
         container.RegisterInstance(instance);
         var resolved = container.Resolve<ITestService>();
 

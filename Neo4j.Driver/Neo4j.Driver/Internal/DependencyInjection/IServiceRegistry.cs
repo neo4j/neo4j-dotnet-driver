@@ -23,5 +23,5 @@ internal interface IServiceRegistry
     IServiceRegistry RegisterType<TService, TImplementation>() where TImplementation : TService;
     IServiceRegistry RegisterType(Type service, Type implementation);
     IServiceRegistry RegisterType<TService>();
-    IServiceRegistry RegisterPlugin(IResolverOverride resolverOverride);
+    IServiceRegistry RegisterInterceptor(IResolutionInterceptor interceptor);
 }

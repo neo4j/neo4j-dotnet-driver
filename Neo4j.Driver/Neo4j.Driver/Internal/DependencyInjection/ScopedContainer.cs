@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal.DependencyInjection;
 internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 {
     private readonly HashSet<object> _disposables = [];
-    private readonly List<IResolverOverride> _overrides = [];
+    private readonly List<IResolutionInterceptor> _interceptors = [];
     private readonly ScopedContainer? _parent;
     private readonly Dictionary<Type, List<Registration>> _registrations = new();
     private readonly ThreadLocal<HashSet<Type>> _resolutionStack = new(() => []);
@@ -168,9 +168,9 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         return this;
     }
 
-    public IServiceRegistry RegisterPlugin(IResolverOverride resolverOverride)
+    public IServiceRegistry RegisterInterceptor(IResolutionInterceptor interceptor)
     {
-        _overrides.Add(resolverOverride);
+        _interceptors.Add(interceptor);
         return this;
     }
 
@@ -215,10 +215,10 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
                 return reg.Instance ?? CreateInstance(reg.ImplementationType, serviceType, childRegistrations);
             }
 
-            // Plugin overrides
-            foreach (var resolverOverride in _overrides)
+            // Interceptors
+            foreach (var interceptor in _interceptors)
             {
-                if (resolverOverride.TryResolve(serviceType, requestingType, this, out var overrideResult))
+                if (interceptor.TryResolve(serviceType, requestingType, this, out var overrideResult))
                 {
                     return overrideResult;
                 }

@@ -24,14 +24,13 @@ internal class QueryApiContainerBuilder : IQueryApiContainerBuilder
 {
     public IServiceResolver BuildContainer(DriverContext driverContext)
     {
-        var container = new ScopedContainerRewrite();
+        var container = new ScopedContainer();
         
         container.RegisterInstance(driverContext);
         container.RegisterInstance(driverContext.AuthTokenManager);
 
         var loggerFactory = new LoggerFactory(driverContext.Neo4JLogger);
-        var loggerPlugin = new LoggerResolverOverride(loggerFactory);
-        container.RegisterPlugin(loggerPlugin);
+        container.RegisterInterceptor(new LoggingInterceptor(loggerFactory));
 
         var serverInfo = new QueryApiServerInfo(driverContext.InitialUri);
         container.RegisterInstance<IServerInfo>(serverInfo);
