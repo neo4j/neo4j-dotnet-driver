@@ -22,6 +22,5 @@ namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 internal interface ICommitTransactionHandler
 {
-    Task<string[]> CommitTransactionAsync(
-        CancellationToken cancellationToken = default);
+    Task<string[]> CommitTransactionAsync(CancellationToken cancellationToken = default);
 }

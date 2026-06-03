@@ -52,6 +52,7 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
 
     public void UpdateBookmarks(string[] bookmarks)
     {
+        _logger.Debug("Session updated bookmarks: {bookmarks}", "[\"" + string.Join("\", \"", bookmarks) + "\"]");
         LastBookmarks = Bookmarks.From(bookmarks);
     }
 

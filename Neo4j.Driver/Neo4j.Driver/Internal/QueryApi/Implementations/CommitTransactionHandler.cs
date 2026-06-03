@@ -52,7 +52,7 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
     public async Task<string[]> CommitTransactionAsync(
         CancellationToken cancellationToken = default)
     {
-        _logger.Debug("Committing transaction {txId}", _txContext.TxId);
+        _logger.Debug("Building transaction commit request", _txContext.TxId);
         using var request = await _requestBuilder
             .PostAsync($"query/v2/tx/{_txContext.TxId}/commit", null, cancellationToken)
             .ConfigureAwait(false);
@@ -72,11 +72,7 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
         }
 
         var bookmarks = body?.Bookmarks ?? [];
-        _logger.Debug(
-            "Transaction {txId} committed. Bookmarks: {bookmarks}",
-            _txContext.TxId,
-            "[\"" + string.Join("\", \"", bookmarks) + "\"]");
-
+        _logger.Debug("Committed transaction" + (bookmarks.Length == 0 ? "" : " and got bookmarks"));
         return bookmarks;
     }
 

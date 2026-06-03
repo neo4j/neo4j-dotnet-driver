@@ -11,8 +11,13 @@ Console.WriteLine(result.Address);
 Console.WriteLine(result.Agent);
 Console.WriteLine(result.ProtocolVersion);
 
-var result2 = await driver.ExecutableQuery("RETURN 1 AS n").ExecuteAsync().AsObjectsFromBlueprintAsync(new {n = 0});
-Console.WriteLine(result2.Single().n);
+var result2 = await driver
+    .ExecutableQuery("RETURN 1 AS n, 'Dave' as name")
+    .ExecuteAsync()
+    .AsObjectsFromBlueprintAsync(new {n = 0, name = ""});
+
+var single = result2.Single();
+Console.WriteLine($"{single.n} -> {single.name}");
 
 class ConsoleLogger : INeo4jLogger
 {
