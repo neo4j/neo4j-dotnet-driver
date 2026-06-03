@@ -45,6 +45,12 @@ internal class LegacyLoggerAdapter : ILogger
         return finalFormat;
     }
 
+    public void Trace(string messageTemplate, params object?[] args)
+    {
+        var format = GetModifiedFormat(messageTemplate);
+        _legacyLogger.Trace(format, args);
+    }
+
     public void Debug(string messageTemplate, params object?[] args)
     {
         var format = GetModifiedFormat(messageTemplate);

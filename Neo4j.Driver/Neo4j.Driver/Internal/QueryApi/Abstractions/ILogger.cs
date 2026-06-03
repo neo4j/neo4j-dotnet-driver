@@ -25,6 +25,7 @@ namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 /// </summary>
 internal interface ILogger
 {
+    void Trace(string messageTemplate, params object?[] args);
     void Debug(string messageTemplate, params object?[] args);
     void Info(string messageTemplate, params object?[] args);
     void Warn(string messageTemplate, params object?[] args);

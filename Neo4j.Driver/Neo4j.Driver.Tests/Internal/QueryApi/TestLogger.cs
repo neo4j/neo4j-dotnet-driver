@@ -51,6 +51,9 @@ internal class TestLogger(Type subjectType) : ILogger
             output.WriteLine($"{exception}");
     }
 
+    public void Trace(string messageTemplate, params object?[] args) =>
+        WriteFormatted("TRC", messageTemplate, args);
+
     public void Debug(string messageTemplate, params object?[] args) =>
         WriteFormatted("DBG", messageTemplate, args);
 
