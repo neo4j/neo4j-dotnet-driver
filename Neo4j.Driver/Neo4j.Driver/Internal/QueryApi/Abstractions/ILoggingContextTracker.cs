@@ -14,29 +14,12 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver.Internal.DependencyInjection;
+using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
-internal class LoggingInterceptor : IResolutionInterceptor
+internal interface ILoggingContextTracker
 {
-    private ILoggerFactory _loggerFactory;
-
-    public LoggingInterceptor(ILoggerFactory loggerFactory)
-    {
-        _loggerFactory = loggerFactory;
-    }
-
-    public bool TryResolve(Type serviceType, Type requestingType, IServiceResolver resolver, out object service)
-    {
-        if (serviceType == typeof(ILogger))
-        {
-            var tracker = resolver.Resolve<ILoggingContextTracker>();
-            service = _loggerFactory.GetLoggerForType(requestingType, tracker);
-            return true;
-        }
-        
-        service = null;
-        return false;
-    }
+    IReadOnlyList<ILoggingContext> Contexts { get; }
+    IDisposable Add(string key, object value);
 }

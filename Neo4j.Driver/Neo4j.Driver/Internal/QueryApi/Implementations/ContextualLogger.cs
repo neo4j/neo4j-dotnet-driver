@@ -14,42 +14,39 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
 internal class ContextualLogger : ILogger
 {
-    private readonly ILoggingContext[] _contexts;
+    private readonly ILoggingContextTracker _tracker;
     private ILogger _downstream;
 
     public ContextualLogger(
-        IEnumerable<ILoggingContext> contexts,
+        ILoggingContextTracker tracker,
         ILogger downstream)
     {
-        _contexts = contexts.ToArray();
+        _tracker = tracker;
         _downstream = downstream;
     }
 
     private (string, object[]) Contextualise(string messageTemplate, params object[] args)
     {
-        var messageSegments = new string[_contexts.Length + 1];
+        var contexts = _tracker.Contexts;
+        var messageSegments = new string[contexts.Count + 1];
         messageSegments[^1] = messageTemplate;
-        
-        var allArgs = new object[_contexts.Length + args.Length];
-        args.CopyTo(allArgs, _contexts.Length);
-        
-        for (var index = 0; index < _contexts.Length; index++)
+
+        var allArgs = new object[contexts.Count + args.Length];
+        args.CopyTo(allArgs, contexts.Count);
+
+        for (var index = 0; index < contexts.Count; index++)
         {
-            var context = _contexts[index];
+            var context = contexts[index];
             messageSegments[index] = $"[{context.Key}:{{{context.Key}}}] ";
-            
             allArgs[index] = context.Value;
         }
-        
+
         var message = string.Join("", messageSegments);
         return (message, allArgs);
     }

@@ -14,7 +14,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
@@ -28,10 +27,9 @@ internal class LoggerFactory : ILoggerFactory
         _neo4JLogger = neo4JLogger;
     }
 
-    public ILogger GetLoggerForType(Type type, IEnumerable<ILoggingContext> contexts)
+    public ILogger GetLoggerForType(Type type, ILoggingContextTracker tracker)
     {
         var legacyAdapter = new LegacyLoggerAdapter(_neo4JLogger, type);
-        var contextualAdapter = new ContextualLogger(contexts, legacyAdapter);
-        return contextualAdapter;
+        return new ContextualLogger(tracker, legacyAdapter);
     }
 }

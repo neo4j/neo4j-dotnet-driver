@@ -70,7 +70,8 @@ public class QueryApiScopeWiringTests
 
         var sessionScope = parentScope.CreateChildScope(r => r
             .RegisterInstance(SessionConfig.Builder.Build())
-            .RegisterType<IBookmarkTracker, BookmarkTracker>(singleton: true));
+            .RegisterType<IBookmarkTracker, BookmarkTracker>(singleton: true)
+            .RegisterType<ILoggingContextTracker, LoggingContextTracker>(singleton: true));
 
         var session = sessionScope.Resolve<IInternalAsyncSession>();
 

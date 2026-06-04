@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using Neo4j.Driver.Internal.QueryApi.Types;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
@@ -29,6 +30,7 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
     private readonly IBookmarkTracker _bookmarkTracker;
     private readonly ICommitTransactionHandler _commitHandler;
     private readonly IQueryApiResultCursorBuilder _cursorBuilder;
+    private readonly IDisposable _loggingContext;
     private readonly ILogger _logger;
     private readonly IRollbackTransactionHandler _rollbackHandler;
     private readonly IRunInTransactionHandler _runHandler;
@@ -39,6 +41,8 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
         IRollbackTransactionHandler rollbackHandler,
         IQueryApiResultCursorBuilder cursorBuilder,
         IBookmarkTracker bookmarkTracker,
+        ILoggingContextTracker contextTracker,
+        QueryApiTransactionContext transactionContext,
         ILogger logger)
     {
         _runHandler = runHandler;
@@ -46,6 +50,7 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
         _rollbackHandler = rollbackHandler;
         _cursorBuilder = cursorBuilder;
         _bookmarkTracker = bookmarkTracker;
+        _loggingContext = contextTracker.Add("tx", transactionContext);
         _logger = logger;
     }
 
@@ -100,6 +105,8 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
             _logger.Debug("Disposing open transaction — rolling back");
             await _rollbackHandler.RollbackTransactionAsync().ConfigureAwait(false);
         }
+
+        _loggingContext.Dispose();
     }
 
     public void Dispose()

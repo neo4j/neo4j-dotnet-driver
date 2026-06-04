@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -13,19 +13,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
-internal class LoggingContext : ILoggingContext
+internal class LoggingContextTracker : ILoggingContextTracker
 {
-    public LoggingContext(string key, object value)
+    private readonly List<ILoggingContext> _contexts = [];
+
+    public IReadOnlyList<ILoggingContext> Contexts => _contexts;
+
+    public IDisposable Add(string key, object value)
     {
-        Key = key;
-        Value = value;
+        var ctx = new LoggingContext(key, value);
+        _contexts.Add(ctx);
+        return new ContextHandle(() => _contexts.Remove(ctx));
     }
 
-    public string Key { get; }
-    public object Value { get; }
+    private sealed class ContextHandle(Action remove) : IDisposable
+    {
+        public void Dispose() => remove();
+    }
 }
-

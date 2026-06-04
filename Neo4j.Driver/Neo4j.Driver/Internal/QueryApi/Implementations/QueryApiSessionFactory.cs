@@ -46,10 +46,12 @@ internal class QueryApiSessionFactory : IQueryApiSessionFactory
             : config.DriverContext.AuthTokenManager;
 
         var sessionScope = _resolutionScope.CreateChildScope(r => r
-            .AddLoggingContext("sn", sessionId)
+            .RegisterType<ILoggingContextTracker, LoggingContextTracker>(singleton: true)
             .RegisterInstance(config)
             .RegisterInstance(authTokenManager)
             .RegisterType<ISessionContext, QueryApiSessionContext>());
+
+        sessionScope.Resolve<ILoggingContextTracker>().Add("sn", sessionId);
 
         var session = sessionScope.Resolve<IInternalAsyncSession>();
         return session;

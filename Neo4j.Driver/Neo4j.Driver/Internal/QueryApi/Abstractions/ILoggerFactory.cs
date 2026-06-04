@@ -14,11 +14,10 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 internal interface ILoggerFactory
 {
-    ILogger GetLoggerForType(Type type, IEnumerable<ILoggingContext> contexts);
+    ILogger GetLoggerForType(Type type, ILoggingContextTracker tracker);
 }
