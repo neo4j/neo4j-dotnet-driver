@@ -47,10 +47,12 @@ internal class QueryApiContainerBuilder : IQueryApiContainerBuilder
         
         foreach (var type in types)
         {
+            var attr = (AutoRegisterAttribute)type.GetCustomAttributes(typeof(AutoRegisterAttribute), false)[0];
+            var singleton = attr.Singleton;
             var interfaces = type.GetInterfaces();
             foreach (var ifc in interfaces)
             {
-                container.RegisterType(ifc, type);
+                container.RegisterType(ifc, type, singleton);
             }
         }
         

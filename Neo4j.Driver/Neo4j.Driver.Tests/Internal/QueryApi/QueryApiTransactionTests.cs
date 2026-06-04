@@ -165,17 +165,14 @@ public class QueryApiTransactionTests
             .Setup(h => h.CommitTransactionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(bookmarks);
 
-        var tracker = _fixture.Freeze<Mock<IBookmarkTracker>>();
-        string[]? capturedBookmarks = null;
-        
-        tracker.Setup(t => t.UpdateBookmarks(It.IsAny<string[]>()))
-            .Callback<string[]>(bm => capturedBookmarks = bm);
+        var tracker = new BookmarkTracker(SessionConfig.Builder.Build());
+        _fixture.Inject<IBookmarkTracker>(tracker);
 
         var subject = _fixture.Create<QueryApiTransaction>();
         
         await subject.CommitAsync();
 
-        capturedBookmarks.Should().BeEquivalentTo(bookmarks);
+        tracker.CurrentBookmarks.Values.Should().BeEquivalentTo(bookmarks);
     }
 
     [Fact]

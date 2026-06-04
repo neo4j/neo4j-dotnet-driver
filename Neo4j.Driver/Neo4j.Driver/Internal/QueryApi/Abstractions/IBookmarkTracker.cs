@@ -19,5 +19,6 @@ namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 internal interface IBookmarkTracker
 {
+    Bookmarks CurrentBookmarks { get; }
     void UpdateBookmarks(string[] bookmarks);
 }

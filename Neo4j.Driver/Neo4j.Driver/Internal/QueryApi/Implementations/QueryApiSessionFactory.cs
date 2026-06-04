@@ -52,6 +52,7 @@ internal class QueryApiSessionFactory : IQueryApiSessionFactory
             .RegisterType<ISessionContext, QueryApiSessionContext>());
 
         _logger.Debug("Resolving session");
-        return sessionScope.Resolve<IInternalAsyncSession>();
+        var session = sessionScope.Resolve<IInternalAsyncSession>();
+        return session;
     }
 }

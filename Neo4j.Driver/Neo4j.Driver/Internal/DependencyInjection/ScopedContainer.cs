@@ -138,7 +138,8 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         return this;
     }
 
-    public IServiceRegistry RegisterType<TService, TImplementation>(bool singleton = false) where TImplementation : TService
+    public IServiceRegistry RegisterType<TService, TImplementation>(bool singleton = false)
+        where TImplementation : TService
     {
         return RegisterType(typeof(TService), typeof(TImplementation), singleton);
     }
@@ -214,7 +215,18 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
                 foundInChild.Count > 0)
             {
                 var reg = foundInChild[^1];
-                return reg.Instance ?? CreateInstance(reg.ImplementationType, serviceType, childRegistrations, childScope);
+                if (reg.Instance != null)
+                {
+                    return reg.Instance;
+                }
+
+                if (reg.Singleton && childScope != null)
+                {
+                    // singletons should be attached to innermost scope
+                    return childScope.ResolveCore(serviceType, requestingType, null, null);
+                }
+
+                return CreateInstance(reg.ImplementationType, serviceType, childRegistrations, childScope);
             }
 
             // Interceptors
@@ -239,11 +251,20 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             {
                 var registration = registrations[^1];
                 if (registration.Instance != null)
+                {
                     return registration.Instance;
+                }
 
-                var instance = CreateInstance(registration.ImplementationType, serviceType, childRegistrations, childScope);
+                var instance = CreateInstance(
+                    registration.ImplementationType,
+                    serviceType,
+                    childRegistrations,
+                    childScope);
+
                 if (registration.Singleton)
+                {
                     registrations[^1] = new Registration(instance);
+                }
 
                 return instance;
             }
@@ -342,7 +363,11 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 
         for (var i = 0; i < parameters.Length; i++)
         {
-            parameterInstances[i] = ResolveCore(parameters[i].ParameterType, implementationType, extraRegistrations, childScope);
+            parameterInstances[i] = ResolveCore(
+                parameters[i].ParameterType,
+                implementationType,
+                extraRegistrations,
+                childScope);
         }
 
         var instance = Activator.CreateInstance(implementationType, parameterInstances);
@@ -357,22 +382,14 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             _disposables.Add(instance);
         }
 
-        if (instance is IScopeAware scopeAware)
-        {
-            scopeAware.OnResolved(this);
-        }
-
         return instance;
     }
 
-    // Returns a new dictionary containing all entries from base, with entries from
-    // overrides winning for any conflicting key. Returns base unchanged if overrides
-    // is null or empty (avoids allocation on the common non-nested path).
     private static Dictionary<Type, List<Registration>> MergeRegistrations(
         Dictionary<Type, List<Registration>> baseRegistrations,
         Dictionary<Type, List<Registration>>? overrides)
     {
-        if (overrides == null || overrides.Count == 0)
+        if (overrides is not { Count: > 0 })
         {
             return baseRegistrations;
         }

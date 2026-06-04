@@ -18,6 +18,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using AutoFixture;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -32,39 +33,53 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 public class QueryApiScopeWiringTests
 {
+    private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
+
+    // This test is checking that Bookmarks are successfully tracked over the course
+    // of a session, and that when a transaction is committed, the bookmarks returned 
+    // from the commit handler are passed to subsequent transactions begun from the 
+    // same session. 
     [Fact]
-    public async Task CommitAsync_BookmarksFlowFromTransactionToSession_ViaScope()
+    public async Task CommittedBookmarks_ArePassedToSubsequentBeginTransaction()
     {
-        var bookmarkValues = new[] { "neo4j:bookmark:v1:tx42" };
+        var committedBookmarks = new[] { "neo4j:bookmark:v1:tx42" };
+        var capturedBookmarks = new List<IReadOnlyList<string>>();
 
         var beginHandler = new Mock<IBeginTransactionHandler>();
         beginHandler
             .Setup(h => h.BeginTransactionAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
+            .Callback<IReadOnlyList<string>, CancellationToken>((bm, _) => capturedBookmarks.Add(bm))
             .ReturnsAsync(new QueryApiTransactionContext("tx-1", null));
 
         var commitHandler = new Mock<ICommitTransactionHandler>();
         commitHandler
             .Setup(h => h.CommitTransactionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(bookmarkValues);
+            .ReturnsAsync(committedBookmarks);
 
-        var driverScope = new ScopedContainer();
-        driverScope.RegisterInstance<ILogger>(new TestLogger(typeof(QueryApiSession)));
-        driverScope.RegisterInstance(beginHandler.Object);
-        driverScope.RegisterInstance(commitHandler.Object);
-        driverScope.RegisterInstance(Mock.Of<IRollbackTransactionHandler>());
-        driverScope.RegisterInstance(Mock.Of<IRunInTransactionHandler>());
-        driverScope.RegisterInstance(Mock.Of<IAutoCommitHandler>());
-        driverScope.RegisterInstance(Mock.Of<IQueryApiResultCursorBuilder>());
-        driverScope.RegisterType<IInternalAsyncSession, QueryApiSession>();
-        driverScope.RegisterType<IInternalAsyncTransaction, QueryApiTransaction>();
-        driverScope.RegisterType<IQueryApiTransactionFactory, QueryApiTransactionFactory>();
+        var parentScope = new ScopedContainer();
+        parentScope.RegisterInstance<ILogger>(new TestLogger(typeof(QueryApiSession)));
+        parentScope.RegisterInstance(beginHandler.Object);
+        parentScope.RegisterInstance(commitHandler.Object);
+        parentScope.RegisterInstance(Mock.Of<IRollbackTransactionHandler>());
+        parentScope.RegisterInstance(Mock.Of<IRunInTransactionHandler>());
+        parentScope.RegisterInstance(Mock.Of<IAutoCommitHandler>());
+        parentScope.RegisterInstance(Mock.Of<IQueryApiResultCursorBuilder>());
+        parentScope.RegisterType<IInternalAsyncTransaction, QueryApiTransaction>();
+        parentScope.RegisterType<IQueryApiTransactionFactory, QueryApiTransactionFactory>();
+        parentScope.RegisterType<IInternalAsyncSession, QueryApiSession>();
 
-        var sessionScope = driverScope.CreateChildScope(r => r.RegisterInstance(SessionConfig.Builder.Build()));
-        var session = (QueryApiSession)sessionScope.Resolve<IInternalAsyncSession>();
+        var sessionScope = parentScope.CreateChildScope(r => r
+            .RegisterInstance(SessionConfig.Builder.Build())
+            .RegisterType<IBookmarkTracker, BookmarkTracker>(singleton: true));
+
+        var session = sessionScope.Resolve<IInternalAsyncSession>();
 
         var tx = await session.BeginTransactionAsync(AccessMode.Write, null!);
         await tx.CommitAsync();
+        await session.BeginTransactionAsync(AccessMode.Write, null!);
 
-        session.LastBookmarks.Values.Should().BeEquivalentTo(bookmarkValues);
+        capturedBookmarks.Should().HaveCount(2);
+        capturedBookmarks[0].Should().BeEmpty();
+        capturedBookmarks[1].Should().BeEquivalentTo(committedBookmarks);
     }
 }

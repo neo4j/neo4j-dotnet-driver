@@ -24,9 +24,10 @@ using Neo4j.Driver.Internal.QueryApi.Abstractions;
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
 [AutoRegister]
-internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScopeAware
+internal class QueryApiSession : IInternalAsyncSession
 {
     private readonly IAutoCommitHandler _autoCommitHandler;
+    private readonly IBookmarkTracker _bookmarkTracker;
     private readonly IQueryApiResultCursorBuilder _cursorBuilder;
     private readonly ILogger _logger;
     private readonly IQueryApiTransactionFactory _transactionFactory;
@@ -36,25 +37,18 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
         IAutoCommitHandler autoCommitHandler,
         IQueryApiResultCursorBuilder cursorBuilder,
         IQueryApiTransactionFactory transactionFactory,
+        IBookmarkTracker bookmarkTracker,
         ILogger logger)
     {
         SessionConfig = sessionConfig;
         _autoCommitHandler = autoCommitHandler;
         _cursorBuilder = cursorBuilder;
         _transactionFactory = transactionFactory;
+        _bookmarkTracker = bookmarkTracker;
         _logger = logger;
-        LastBookmarks = sessionConfig.Bookmarks != null
-            ? Bookmarks.From(sessionConfig.Bookmarks)
-            : Bookmarks.Empty;
     }
 
-    public Bookmarks LastBookmarks { get; private set; }
-
-    public void UpdateBookmarks(string[] bookmarks)
-    {
-        _logger.Debug("Session updated bookmarks: {bookmarks}", "[\"" + string.Join("\", \"", bookmarks) + "\"]");
-        LastBookmarks = Bookmarks.From(bookmarks);
-    }
+    public Bookmarks LastBookmarks => _bookmarkTracker.CurrentBookmarks;
 
     public SessionConfig SessionConfig { get; }
 
@@ -64,8 +58,8 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
         bool disposeUnconsumedSessionResult)
     {
         _logger.Debug("Session auto-commit: {query}", query.Text);
-        var response = await _autoCommitHandler.AutoCommitAsync(query, LastBookmarks.Values);
-        LastBookmarks = Bookmarks.From(response.Bookmarks);
+        var response = await _autoCommitHandler.AutoCommitAsync(query, _bookmarkTracker.CurrentBookmarks.Values);
+        _bookmarkTracker.UpdateBookmarks(response.Bookmarks);
         return _cursorBuilder.Build(response, query);
     }
 
@@ -106,7 +100,9 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
         bool disposeUnconsumedSessionResult)
     {
         _logger.Debug("Session beginning {mode} transaction", mode);
-        return await _transactionFactory.BeginTransactionAsync(mode, action, LastBookmarks.Values)
+        var bookmarks = _bookmarkTracker.CurrentBookmarks.Values;
+        return await _transactionFactory
+            .BeginTransactionAsync(mode, action, bookmarks)
             .ConfigureAwait(false);
     }
 
@@ -157,7 +153,9 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
         Func<IAsyncQueryRunner, Task<TResult>> work,
         Action<TransactionConfigBuilder>? action)
     {
-        var tx = await _transactionFactory.BeginTransactionAsync(mode, action, LastBookmarks.Values)
+        var bookmarks = _bookmarkTracker.CurrentBookmarks.Values;
+        var tx = await _transactionFactory
+            .BeginTransactionAsync(mode, action, bookmarks)
             .ConfigureAwait(false);
 
         try
@@ -168,16 +166,18 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
         }
         catch
         {
-            if (tx.IsOpen)
+            if (!tx.IsOpen)
             {
-                try
-                {
-                    await tx.RollbackAsync().ConfigureAwait(false);
-                }
-                catch
-                {
-                    /* best-effort; don't mask the original error */
-                }
+                throw;
+            }
+
+            try
+            {
+                await tx.RollbackAsync().ConfigureAwait(false);
+            }
+            catch
+            {
+                /* best-effort; don't mask the original error */
             }
 
             throw;
@@ -189,7 +189,9 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
         Func<IAsyncQueryRunner, Task> work,
         Action<TransactionConfigBuilder>? action)
     {
-        var tx = await _transactionFactory.BeginTransactionAsync(mode, action, LastBookmarks.Values)
+        var bookmarks = _bookmarkTracker.CurrentBookmarks.Values;
+        var tx = await _transactionFactory
+            .BeginTransactionAsync(mode, action, bookmarks)
             .ConfigureAwait(false);
 
         try
@@ -213,12 +215,6 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
 
             throw;
         }
-    }
-
-    public void OnResolved(IServiceRegistry scope)
-    {
-        // session-scoped objects will see this instance as the bookmark tracker
-        scope.RegisterInstance<IBookmarkTracker>(this);
     }
 
     public Task CloseAsync() => Task.CompletedTask;

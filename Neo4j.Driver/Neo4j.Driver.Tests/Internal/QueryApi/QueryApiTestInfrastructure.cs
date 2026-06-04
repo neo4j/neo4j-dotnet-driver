@@ -20,6 +20,7 @@ using AutoFixture;
 using AutoFixture.AutoMoq;
 using AutoFixture.Kernel;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using Neo4j.Driver.Internal.QueryApi.Implementations;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
@@ -46,5 +47,6 @@ internal class QueryApiCustomization : ICustomization
         fixture.Customize(new AutoMoqCustomization { ConfigureMembers = true });
         fixture.Customizations.Add(new QueryApiSpecimenBuilder());
         fixture.Register(() => SessionConfig.Builder.Build());
+        fixture.Register<IBookmarkTracker>(() => new BookmarkTracker(SessionConfig.Builder.Build()));
     }
 }

@@ -13,14 +13,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal.DependencyInjection;
+using Neo4j.Driver.Internal.DependencyInjection;
+using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
-/// <summary>
-/// Implemented by types that need to register additional aliases in the scope
-/// in which they are instantiated. The container calls <see cref="OnResolved"/>
-/// immediately after construction, before returning the instance to the caller.
-/// </summary>
-internal interface IScopeAware
+namespace Neo4j.Driver.Internal.QueryApi.Implementations;
+
+[AutoRegister(singleton: true)]
+internal class BookmarkTracker : IBookmarkTracker
 {
-    void OnResolved(IServiceRegistry scope);
+    private Bookmarks _bookmarks;
+
+    public BookmarkTracker(SessionConfig config)
+    {
+        _bookmarks = config.Bookmarks != null
+            ? Bookmarks.From(config.Bookmarks)
+            : Bookmarks.Empty;
+    }
+
+    public Bookmarks CurrentBookmarks => _bookmarks;
+
+    public void UpdateBookmarks(string[] bookmarks)
+    {
+        _bookmarks = Bookmarks.From(bookmarks);
+    }
+
 }
