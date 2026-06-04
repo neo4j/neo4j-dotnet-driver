@@ -15,7 +15,7 @@
 
 #nullable enable
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal.QueryApi.Types;
 
 /// <summary>
 /// Carries the server-side transaction ID and the optional cluster-affinity header value that Aura instances

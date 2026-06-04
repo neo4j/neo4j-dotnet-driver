@@ -20,6 +20,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using Neo4j.Driver.Internal.QueryApi.Types;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
@@ -72,7 +73,8 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
         }
 
         var bookmarks = body?.Bookmarks ?? [];
-        _logger.Debug("Committed transaction" + (bookmarks.Length == 0 ? "" : " and got bookmarks"));
+        var len = bookmarks.Length;
+        _logger.Debug("Committed transaction" + (len == 0 ? "" : $" and got {len} bookmarks"));
         return bookmarks;
     }
 

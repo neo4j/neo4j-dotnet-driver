@@ -159,6 +159,7 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
     {
         var tx = await _transactionFactory.BeginTransactionAsync(mode, action, LastBookmarks.Values)
             .ConfigureAwait(false);
+
         try
         {
             var result = await work(tx).ConfigureAwait(false);
@@ -169,9 +170,16 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
         {
             if (tx.IsOpen)
             {
-                try { await tx.RollbackAsync().ConfigureAwait(false); }
-                catch { /* best-effort; don't mask the original error */ }
+                try
+                {
+                    await tx.RollbackAsync().ConfigureAwait(false);
+                }
+                catch
+                {
+                    /* best-effort; don't mask the original error */
+                }
             }
+
             throw;
         }
     }
@@ -183,6 +191,7 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
     {
         var tx = await _transactionFactory.BeginTransactionAsync(mode, action, LastBookmarks.Values)
             .ConfigureAwait(false);
+
         try
         {
             await work(tx).ConfigureAwait(false);
@@ -192,9 +201,16 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
         {
             if (tx.IsOpen)
             {
-                try { await tx.RollbackAsync().ConfigureAwait(false); }
-                catch { /* best-effort; don't mask the original error */ }
+                try
+                {
+                    await tx.RollbackAsync().ConfigureAwait(false);
+                }
+                catch
+                {
+                    /* best-effort; don't mask the original error */
+                }
             }
+
             throw;
         }
     }
@@ -209,5 +225,7 @@ internal class QueryApiSession : IInternalAsyncSession, IBookmarkTracker, IScope
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
-    public void Dispose() { }
+    public void Dispose()
+    {
+    }
 }

@@ -22,6 +22,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using Neo4j.Driver.Internal.QueryApi.Types;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
