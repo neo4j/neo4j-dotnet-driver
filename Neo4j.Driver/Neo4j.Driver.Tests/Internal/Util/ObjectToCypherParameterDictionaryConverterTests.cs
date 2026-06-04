@@ -16,9 +16,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Mapping;
 using Neo4j.Driver.Internal.Util;
 using Neo4j.Driver.Mapping;
 using Neo4j.Driver.Mapping.ConventionTranslation;
@@ -29,12 +32,39 @@ namespace Neo4j.Driver.Tests.Internal.Util;
 
 public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGlobalState
 {
-    private readonly ObjectToCypherParameterDictionaryConverter _converter = new();
+    private readonly AutoMocker _mocker = new();
+
+    private ObjectToCypherParameterDictionaryConverter GetSubject() =>
+        _mocker.CreateInstance<ObjectToCypherParameterDictionaryConverter>();
+
+    private void SetupDefaultMocks()
+    {
+        _mocker.GetMock<IMappingBindingProvider>()
+            .Setup(p => p.GetMappingBinding(It.IsAny<PropertyInfo>()))
+            .Returns<PropertyInfo>(p => new MappingBinding(p.Name, EntityMappingSource.Property));
+
+        _mocker.GetMock<ICypherParameterValueTransformer>()
+            .Setup(t => t.Transform(
+                It.IsAny<object>(),
+                It.IsAny<Func<object, IDictionary<string, object>, IDictionary<string, object>>>()))
+            .Returns<object, Func<object, IDictionary<string, object>, IDictionary<string, object>>>((v, _) => v);
+    }
+
+    private void SetupLowercaseCypherParameterTranslation(bool translateCypherParameters = false)
+    {
+        SetupDefaultMocks();
+        _mocker.GetMock<IConventionTranslator>()
+            .Setup(t => t.Translate(It.IsAny<string>()))
+            .Returns<string>(s => s.ToLowerInvariant());
+
+        ((IRecordObjectMapping)RecordObjectMapping.Instance)
+            .TranslateIdentifiers(_mocker.Get<IConventionTranslator>(), translateCypherParameters);
+    }
 
     [Fact]
     public void ShouldReturnNullGivenNull()
     {
-        var dict = _converter.Convert(null);
+        var dict = GetSubject().Convert(null);
         dict.Should().BeNull();
     }
 
@@ -53,7 +83,8 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [InlineData(true)]
     public void ShouldHandleSimpleTypes(object value)
     {
-        var dict = _converter.Convert(new { key = value });
+        SetupDefaultMocks();
+        var dict = GetSubject().Convert(new { key = value });
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("key");
@@ -63,7 +94,8 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [Fact]
     public void ShouldHandleString()
     {
-        var dict = _converter.Convert(new { key = "value" });
+        SetupDefaultMocks();
+        var dict = GetSubject().Convert(new { key = "value" });
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("key");
@@ -73,8 +105,9 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [Fact]
     public void ShouldHandleArray()
     {
+        SetupDefaultMocks();
         var array = new byte[2];
-        var dict = _converter.Convert(new { key = array });
+        var dict = GetSubject().Convert(new { key = array });
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("key");
@@ -84,7 +117,8 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [Fact]
     public void ShouldHandleAnonymousObjects()
     {
-        var dict = _converter.Convert(new { key1 = "value1", key2 = "value2" });
+        SetupDefaultMocks();
+        var dict = GetSubject().Convert(new { key1 = "value1", key2 = "value2" });
         dict.Should().NotBeNull();
         dict.Should().HaveCount(2);
         dict.Should()
@@ -96,8 +130,9 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [Fact]
     public void ShouldHandleVectors()
     {
+        SetupDefaultMocks();
         var vector = Vector.Create([1.0, 2.0, 3.0]);
-        var dict = _converter.Convert(new { vector });
+        var dict = GetSubject().Convert(new { vector });
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("vector");
@@ -108,7 +143,8 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [Fact]
     public void ShouldHandlePoco()
     {
-        var dict = _converter.Convert(new MyPoco { Key1 = "value1", Key2 = "value2" });
+        SetupDefaultMocks();
+        var dict = GetSubject().Convert(new MyPoco { Key1 = "value1", Key2 = "value2" });
         dict.Should().NotBeNull();
         dict.Should().HaveCount(2);
         dict.Should()
@@ -120,34 +156,30 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [Fact]
     public void ShouldHandleDeeperObjects()
     {
-        var dict = _converter.Convert(new { InnerObject = new { Key1 = 1, Key2 = "a", Key3 = 0L } });
+        SetupDefaultMocks();
+        var inner = new { Key1 = 1, Key2 = "a", Key3 = 0L };
+        var dict = GetSubject().Convert(new { InnerObject = inner });
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("InnerObject");
-        var innerObjectObject = dict["InnerObject"];
-        innerObjectObject.Should().NotBeNull();
-        innerObjectObject.Should().BeAssignableTo<IDictionary<string, object>>();
-        var innerObject = (IDictionary<string, object>)innerObjectObject;
-        innerObject.Should()
-            .Contain(
-                new KeyValuePair<string, object>("Key1", 1),
-                new KeyValuePair<string, object>("Key2", "a"),
-                new KeyValuePair<string, object>("Key3", 0L));
+        dict["InnerObject"].Should().BeSameAs(inner);
     }
 
     [Fact]
     public void ShouldHandleDictionary()
     {
-        var dict = _converter.Convert(
-            new
-            {
-                InnerDictionary = new Dictionary<string, object>
+        SetupDefaultMocks();
+        var dict = GetSubject()
+            .Convert(
+                new
                 {
-                    { "Key1", 1 },
-                    { "Key2", "a" },
-                    { "Key3", 0L }
-                }
-            });
+                    InnerDictionary = new Dictionary<string, object>
+                    {
+                        { "Key1", 1 },
+                        { "Key2", "a" },
+                        { "Key3", 0L }
+                    }
+                });
 
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
@@ -166,7 +198,8 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [Fact]
     public void ShouldHandleCollections()
     {
-        var dict = _converter.Convert(new { InnerCollection = new List<int> { 1, 2, 3 } });
+        SetupDefaultMocks();
+        var dict = GetSubject().Convert(new { InnerCollection = new List<int> { 1, 2, 3 } });
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("InnerCollection");
@@ -180,64 +213,45 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [Fact]
     public void ShouldHandleCollectionsOfArbitraryObjects()
     {
-        var dict = _converter.Convert(
-            new
-            {
-                InnerCollection = new List<object>
-                {
-                    new { a = "a" },
-                    3,
-                    new MyPoco { Key1 = "value1" }
-                }
-            });
+        SetupDefaultMocks();
+        var anon = new { a = "a" };
+        var poco = new MyPoco { Key1 = "value1" };
+        var dict = GetSubject()
+            .Convert(new { InnerCollection = new List<object> { anon, 3, poco } });
 
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("InnerCollection");
-        var innerCollectionObject = dict["InnerCollection"];
-        innerCollectionObject.Should().NotBeNull();
-        innerCollectionObject.Should().BeAssignableTo<IList<object>>();
-        var innerCollection = (IList<object>)innerCollectionObject;
+        var innerCollection = (List<object>)dict["InnerCollection"];
         innerCollection.Should().HaveCount(3);
-        innerCollection.Should()
-            .Contain(o => o is IDictionary<string, object> &&
-                ((IDictionary<string, object>)o).Contains(new KeyValuePair<string, object>("a", "a")));
-
-        innerCollection.Should().Contain(3);
-        innerCollection.Should()
-            .Contain(o => o is IDictionary<string, object> &&
-                ((IDictionary<string, object>)o).Contains(new KeyValuePair<string, object>("Key1", "value1")));
+        innerCollection[0].Should().BeSameAs(anon);
+        innerCollection[1].Should().Be(3);
+        innerCollection[2].Should().BeSameAs(poco);
     }
 
     [Fact]
     public void ShouldHandleDictionaryOfArbitraryObjects()
     {
-        var dict = _converter.Convert(
-            new
-            {
-                InnerDictionary = new Dictionary<string, object>
+        SetupDefaultMocks();
+        var anon = new { a = "a" };
+        var dict = GetSubject()
+            .Convert(
+                new
                 {
-                    { "a", new { a = "a" } },
-                    { "b", "b" },
-                    { "c", 3 }
-                }
-            });
+                    InnerDictionary = new Dictionary<string, object>
+                    {
+                        { "a", anon },
+                        { "b", "b" },
+                        { "c", 3 }
+                    }
+                });
 
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("InnerDictionary");
-        var innerDictionaryObject = dict["InnerDictionary"];
-        innerDictionaryObject.Should().NotBeNull();
-        innerDictionaryObject.Should().BeAssignableTo<IDictionary<string, object>>();
-        var innerDictionary = (IDictionary<string, object>)innerDictionaryObject;
+        var innerDictionary = (IDictionary<string, object>)dict["InnerDictionary"];
         innerDictionary.Should().HaveCount(3);
-        innerDictionary.Should().ContainKey("a");
-        innerDictionary["a"].Should().BeAssignableTo<IDictionary<string, object>>();
-        innerDictionary["a"]
-            .As<IDictionary<string, object>>()
-            .Should()
-            .Contain(new KeyValuePair<string, object>("a", "a"));
-
+        innerDictionary["a"].Should().BeSameAs(anon);
         innerDictionary.Should().Contain(new KeyValuePair<string, object>("b", "b"));
         innerDictionary.Should().Contain(new KeyValuePair<string, object>("c", 3));
     }
@@ -245,16 +259,24 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [Fact]
     public void ShouldRaiseExceptionWhenDictionaryKeysAreNotStrings()
     {
-        var ex = Record.Exception(() => _converter.Convert(
-            new
-            {
-                InnerDictionary = new Dictionary<int, object>
+        SetupDefaultMocks();
+        _mocker.GetMock<ICypherParameterValueTransformer>()
+            .Setup(t => t.Transform(
+                It.Is<object>(v => v is Dictionary<int, object>),
+                It.IsAny<Func<object, IDictionary<string, object>, IDictionary<string, object>>>()))
+            .Throws(new InvalidOperationException("dictionaries passed as part of a parameter to cypher queries should have string keys!"));
+
+        var ex = Record.Exception(() => GetSubject()
+            .Convert(
+                new
                 {
-                    { 1, new { a = "a" } },
-                    { 2, "b" },
-                    { 3, 3 }
-                }
-            }));
+                    InnerDictionary = new Dictionary<int, object>
+                    {
+                        { 1, new { a = "a" } },
+                        { 2, "b" },
+                        { 3, 3 }
+                    }
+                }));
 
         ex.Should().NotBeNull();
         ex.Should().BeOfType<InvalidOperationException>();
@@ -264,29 +286,19 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [Fact]
     public void ShouldHandleListOfArbitraryObjects()
     {
-        var dict = _converter.Convert(
-            new
-            {
-                InnerList = new List<object>
-                {
-                    new { a = "a" },
-                    "b",
-                    3
-                }
-            });
+        SetupDefaultMocks();
+        var anon = new { a = "a" };
+        var dict = GetSubject()
+            .Convert(new { InnerList = new List<object> { anon, "b", 3 } });
 
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("InnerList");
-        var innerListObject = dict["InnerList"];
-        innerListObject.Should().NotBeNull();
-        innerListObject.Should().BeAssignableTo<IList<object>>();
-        var innerList = (IList<object>)innerListObject;
+        var innerList = (List<object>)dict["InnerList"];
         innerList.Should().HaveCount(3);
-        innerList[0].Should().BeAssignableTo<IDictionary<string, object>>();
-        innerList[0].As<IDictionary<string, object>>().Should().Contain(new KeyValuePair<string, object>("a", "a"));
+        innerList[0].Should().BeSameAs(anon);
         innerList[1].Should().Be("b");
-        innerList[2].As<int>().Should().Be(3);
+        innerList[2].Should().Be(3);
     }
 
     public class Person
@@ -299,7 +311,7 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     public void ToDictionary_ShouldHandleEmptyDictionary()
     {
         var emptyDictionary = new Dictionary<string, Person>();
-        var result = _converter.Convert(emptyDictionary);
+        var result = GetSubject().Convert(emptyDictionary);
         result.Should().BeEmpty();
     }
 
@@ -312,7 +324,7 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
             { "Key2", new Person { Name = "Jane", Age = 25 } }
         };
 
-        var result = _converter.Convert(sourceDictionary);
+        var result = GetSubject().Convert(sourceDictionary);
         result.Should().HaveCount(2);
         result["Key1"].Should().BeEquivalentTo(sourceDictionary["Key1"]);
         result["Key2"].Should().BeEquivalentTo(sourceDictionary["Key2"]);
@@ -322,7 +334,7 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     public void ToDictionary_ShouldReturnNullForNullDictionary()
     {
         Dictionary<string, Person> nullDictionary = null;
-        var actual = _converter.Convert(nullDictionary);
+        var actual = GetSubject().Convert(nullDictionary);
         actual.Should().BeNull();
     }
 
@@ -339,7 +351,7 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
             }
         };
 
-        var result = _converter.Convert(nestedDictionary);
+        var result = GetSubject().Convert(nestedDictionary);
         result.Should().ContainKey("Nested");
         var innerDict = result["Nested"].As<Dictionary<string, Person>>();
         innerDict.Should().ContainKey("InnerKey");
@@ -349,9 +361,10 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [Fact]
     public void ShouldHandleEnumerable()
     {
+        SetupDefaultMocks();
         var array = new[] { 1, 2, 3 };
         var value = new MyCollection<int>(array);
-        var dict = _converter.Convert(new { key = value });
+        var dict = GetSubject().Convert(new { key = value });
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("key");
@@ -362,10 +375,11 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [Fact]
     public void ShouldHandleEnumerableOfEnumerable()
     {
+        SetupDefaultMocks();
         var array = new[] { 1, 2, 3 };
         IEnumerable element = new MyCollection<int>(array);
         var value = new MyCollection<object>(new[] { element, "a" });
-        var dict = _converter.Convert(new { key = value });
+        var dict = GetSubject().Convert(new { key = value });
         dict.Should().NotBeNull();
         dict.Should().HaveCount(1);
         dict.Should().ContainKey("key");
@@ -378,15 +392,17 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [InlineData(false)]
     public void ShouldObserveMappingBindingsAttribute(bool translateCypherParameters)
     {
+        SetupDefaultMocks();
         RecordObjectMapping.TranslateIdentifiers(translateCypherParameters);
+        _mocker.GetMock<IMappingBindingProvider>()
+            .Setup(p => p.GetMappingBinding(It.Is<PropertyInfo>(pi => pi.Name == "MappingBindingsDecorated")))
+            .Returns(new MappingBinding("MappingBindingsDecorated", EntityMappingSource.Property) { CypherParameterName = "decorated_property_with_bindings" });
+
         var propertyValue = Guid.NewGuid().ToString();
-        var testObj = new ParameterMappingTestClass
-        {
-            MappingBindingsDecorated = propertyValue,
-        };
-        
-        var parameters = _converter.Convert(testObj);
-        
+        var testObj = new ParameterMappingTestClass { MappingBindingsDecorated = propertyValue };
+
+        var parameters = GetSubject().Convert(testObj);
+
         parameters.Should().ContainKey("decorated_property_with_bindings");
         parameters["decorated_property_with_bindings"].Should().Be(propertyValue);
     }
@@ -396,14 +412,16 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [InlineData(false)]
     public void ShouldObserveCypherParameterMappingAttribute(bool translateCypherParameters)
     {
+        SetupDefaultMocks();
         RecordObjectMapping.TranslateIdentifiers(translateCypherParameters);
-        var propertyValue = Guid.NewGuid().ToString();
-        var testObj = new ParameterMappingTestClass
-        {
-            SomeProperty = propertyValue,
-        };
+        _mocker.GetMock<IMappingBindingProvider>()
+            .Setup(p => p.GetMappingBinding(It.Is<PropertyInfo>(pi => pi.Name == "SomeProperty")))
+            .Returns(new MappingBinding("SomeProperty", EntityMappingSource.Property) { CypherParameterName = "explicitParamName" });
 
-        var parameters = _converter.Convert(testObj);
+        var propertyValue = Guid.NewGuid().ToString();
+        var testObj = new ParameterMappingTestClass { SomeProperty = propertyValue };
+
+        var parameters = GetSubject().Convert(testObj);
 
         parameters.Should().ContainKey("explicitParamName");
         parameters["explicitParamName"].Should().Be(propertyValue);
@@ -412,19 +430,15 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [Fact]
     public void ShouldNotTranslateParametersByDefault()
     {
-        var mockTranslator = new Mock<IConventionTranslator>();
-        mockTranslator.Setup(t => t.Translate(It.IsAny<string>()))
-            .Returns<string>(s => s.ToLowerInvariant());
-
-        ((IRecordObjectMapping)RecordObjectMapping.Instance).TranslateIdentifiers(mockTranslator.Object);
+        SetupLowercaseCypherParameterTranslation();
         var propertyValue = Guid.NewGuid().ToString();
         var testObj = new ParameterMappingTestClass
         {
             NotDecoratedProperty = propertyValue,
         };
-        
-        var parameters = _converter.Convert(testObj);
-        
+
+        var parameters = GetSubject().Convert(testObj);
+
         parameters.Should().ContainKey("NotDecoratedProperty");
         parameters["NotDecoratedProperty"].Should().Be(propertyValue);
     }
@@ -432,18 +446,14 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [Fact]
     public void ShouldNotTranslateParametersWhenToldNotTo()
     {
-        var mockTranslator = new Mock<IConventionTranslator>();
-        mockTranslator.Setup(t => t.Translate(It.IsAny<string>()))
-            .Returns<string>(s => s.ToLowerInvariant());
-
-        ((IRecordObjectMapping)RecordObjectMapping.Instance).TranslateIdentifiers(mockTranslator.Object, false);
+        SetupLowercaseCypherParameterTranslation(false);
         var propertyValue = Guid.NewGuid().ToString();
         var testObj = new ParameterMappingTestClass
         {
             NotDecoratedProperty = propertyValue,
         };
 
-        var parameters = _converter.Convert(testObj);
+        var parameters = GetSubject().Convert(testObj);
 
         parameters.Should().ContainKey("NotDecoratedProperty");
         parameters["NotDecoratedProperty"].Should().Be(propertyValue);
@@ -452,34 +462,72 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [Fact]
     public void ShouldTranslateParameters()
     {
-        var mockTranslator = new Mock<IConventionTranslator>();
-        mockTranslator.Setup(t => t.Translate(It.IsAny<string>()))
-            .Returns<string>(s => s.ToLowerInvariant());
-        
-        ((IRecordObjectMapping)RecordObjectMapping.Instance).TranslateIdentifiers(mockTranslator.Object, true);
+        SetupLowercaseCypherParameterTranslation(true);
         var propertyValue = Guid.NewGuid().ToString();
         var testObj = new ParameterMappingTestClass
         {
             NotDecoratedProperty = propertyValue,
         };
 
-        var parameters = _converter.Convert(testObj);
+        var parameters = GetSubject().Convert(testObj);
 
         parameters.Should().ContainKey("notdecoratedproperty");
         parameters["notdecoratedproperty"].Should().Be(propertyValue);
     }
 
     [Fact]
+    public void ShouldTranslateParametersInNestedObjects()
+    {
+        SetupLowercaseCypherParameterTranslation(true);
+        var innerPoco = new MyPoco { Key1 = "value1", Key2 = "value2" };
+
+        var parameters = GetSubject().Convert(new { InnerObject = innerPoco });
+
+        parameters.Should().ContainKey("innerobject");
+        parameters["innerobject"].Should().BeSameAs(innerPoco);
+    }
+
+    [Fact]
+    public void ShouldTranslateParametersInNestedObjectsInList()
+    {
+        SetupLowercaseCypherParameterTranslation(true);
+        var innerPoco = new MyPoco { Key1 = "value1", Key2 = "value2" };
+        var innerList = new List<MyPoco> { innerPoco };
+
+        var parameters = GetSubject().Convert(new { InnerList = innerList });
+
+        parameters.Should().ContainKey("innerlist");
+        parameters["innerlist"].Should().BeSameAs(innerList);
+    }
+
+    [Fact]
+    public void ShouldTranslateParametersInNestedObjectsInDictionary()
+    {
+        SetupLowercaseCypherParameterTranslation(true);
+        var innerDict = new Dictionary<string, MyPoco>
+        {
+            ["entry"] = new() { Key1 = "value1", Key2 = "value2" }
+        };
+
+        var parameters = GetSubject().Convert(new { InnerDictionary = innerDict });
+
+        parameters.Should().ContainKey("innerdictionary");
+        parameters["innerdictionary"].Should().BeSameAs(innerDict);
+    }
+
+    [Fact]
     public void LaterAttributesShouldOverrideEarlierAttributes()
     {
+        SetupDefaultMocks();
+        _mocker.GetMock<IMappingBindingProvider>()
+            .Setup(p => p.GetMappingBinding(It.Is<PropertyInfo>(pi => pi.Name == "MultiplyDecoratedProperty")))
+            .Returns(new MappingBinding("MultiplyDecoratedProperty", EntityMappingSource.Property) { CypherParameterName = "multiply_decorated_property" });
+
         var propertyValue = Guid.NewGuid().ToString();
-        var testObj = new ParameterMappingTestClass
-        {
-            MultiplyDecoratedProperty = propertyValue,
-        };
-        
-        var parameters = _converter.Convert(testObj);
-        
+        var testObj = new ParameterMappingTestClass { MultiplyDecoratedProperty = propertyValue };
+
+        var parameters = GetSubject().Convert(testObj);
+
         parameters.Should().ContainKey("multiply_decorated_property");
         parameters["multiply_decorated_property"].Should().Be(propertyValue);
     }
@@ -487,14 +535,16 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
     [Fact]
     public void CustomCypherParameterAttributeShouldWork()
     {
+        SetupDefaultMocks();
+        _mocker.GetMock<IMappingBindingProvider>()
+            .Setup(p => p.GetMappingBinding(It.Is<PropertyInfo>(pi => pi.Name == "CustomDecoratedProperty")))
+            .Returns(new MappingBinding("CustomDecoratedProperty", EntityMappingSource.Property) { CypherParameterName = "CustomParameterName" });
+
         var propertyValue = Guid.NewGuid().ToString();
-        var testObj = new ParameterMappingTestClass
-        {
-            CustomDecoratedProperty = propertyValue,
-        };
-        
-        var parameters = _converter.Convert(testObj);
-        
+        var testObj = new ParameterMappingTestClass { CustomDecoratedProperty = propertyValue };
+
+        var parameters = GetSubject().Convert(testObj);
+
         parameters.Should().ContainKey("CustomParameterName");
         parameters["CustomParameterName"].Should().Be(propertyValue);
     }
@@ -504,9 +554,9 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
         [MappingBindings(CypherParameterName = "decorated_property_with_bindings")]
         public string MappingBindingsDecorated { get; init; }
 
-        [CypherParameterMapping("explicitParamName")] 
+        [CypherParameterMapping("explicitParamName")]
         public string SomeProperty { get; init; }
-        
+
         public string NotDecoratedProperty { get; init; }
 
         [MappingSource("not_used", CypherParameterName = "shouldn't_be_used")]
@@ -516,7 +566,7 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
         [CustomCypherParameter]
         public string CustomDecoratedProperty { get; init; }
     }
-    
+
     [AttributeUsage(AttributeTargets.Property)]
     private class CustomCypherParameterAttribute : Attribute, IMappingBindingMutator
     {
@@ -531,7 +581,7 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
         public string Key1 { get; set; }
         public string Key2 { get; set; }
     }
-    
+
     public class MyCollection<T> : IEnumerable<T>
     {
         private readonly IEnumerable<T> _values;

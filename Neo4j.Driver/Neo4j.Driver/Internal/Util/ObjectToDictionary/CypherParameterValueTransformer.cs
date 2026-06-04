@@ -26,8 +26,10 @@ internal class CypherParameterValueTransformer : ICypherParameterValueTransforme
 {
     private static readonly TypeInfo NeoValueTypeInfo = typeof(IValue).GetTypeInfo();
 
-    public object Transform(object value)
+    public object Transform(object value, Func<object, IDictionary<string, object>, IDictionary<string, object>> fillDictionary)
     {
+        fillDictionary = fillDictionary ?? throw new ArgumentNullException(nameof(fillDictionary));
+        
         var valueType = value?.GetType();
         if (valueType == null || !NeedsConversion(valueType))
         {
@@ -43,7 +45,7 @@ internal class CypherParameterValueTransformer : ICypherParameterValueTransforme
                 if (NeedsConversion(elementType))
                 {
                     // recursive call
-                    value = array.Cast<object>().Select(Transform).ToList();
+                    value = array.Cast<object>().Select(x => Transform(x, fillDictionary)).ToList();
                 }
 
                 break;
@@ -64,7 +66,7 @@ internal class CypherParameterValueTransformer : ICypherParameterValueTransforme
                     var convertedList = new List<object>(list.Count);
                     foreach (var element in list)
                     {
-                        convertedList.Add(Transform(element));
+                        convertedList.Add(Transform(element, fillDictionary));
                     }
 
                     value = convertedList;
@@ -96,7 +98,7 @@ internal class CypherParameterValueTransformer : ICypherParameterValueTransforme
                                 "dictionaries passed as part of a parameter to cypher queries should have string keys!");
                         }
 
-                        convertedDict.Add(str, Transform(dict[str]));
+                        convertedDict.Add(str, Transform(dict[str], fillDictionary));
                     }
 
                     value = convertedDict;
@@ -117,7 +119,7 @@ internal class CypherParameterValueTransformer : ICypherParameterValueTransforme
 
                 if (elementType == null || NeedsConversion(elementType))
                 {
-                    var converted = enumerable.Cast<object>().Select(Transform);
+                    var converted = enumerable.Cast<object>().Select(x => Transform(x, fillDictionary));
                     value = new List<object>(converted);
                 }
                 break;
@@ -127,7 +129,7 @@ internal class CypherParameterValueTransformer : ICypherParameterValueTransforme
             {
                 if (NeedsConversion(valueType))
                 {
-                    value = FillDictionary(value, new Dictionary<string, object>());
+                    value = fillDictionary(value, new Dictionary<string, object>());
                 }
 
                 break;
@@ -157,19 +159,5 @@ internal class CypherParameterValueTransformer : ICypherParameterValueTransforme
         }
 
         return true;
-    }
-
-    private IDictionary<string, object> FillDictionary(object o, IDictionary<string, object> dict)
-    {
-        foreach (var propInfo in o.GetType().GetRuntimeProperties())
-        {
-            var name = propInfo.Name;
-            var value = propInfo.GetValue(o);
-            var valueTransformed = Transform(value);
-
-            dict.Add(name, valueTransformed);
-        }
-
-        return dict;
     }
 }
