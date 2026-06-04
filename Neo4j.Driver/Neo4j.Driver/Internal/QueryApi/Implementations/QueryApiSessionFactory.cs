@@ -51,7 +51,6 @@ internal class QueryApiSessionFactory : IQueryApiSessionFactory
             .RegisterInstance(authTokenManager)
             .RegisterType<ISessionContext, QueryApiSessionContext>());
 
-        _logger.Debug("Resolving session");
         var session = sessionScope.Resolve<IInternalAsyncSession>();
         return session;
     }

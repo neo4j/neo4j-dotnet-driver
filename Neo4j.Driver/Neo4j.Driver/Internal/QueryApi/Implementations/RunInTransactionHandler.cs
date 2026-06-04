@@ -55,7 +55,7 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
         Query query,
         CancellationToken cancellationToken = default)
     {
-        _logger.Debug("Running in transaction {txId}: {query}", _txContext.TxId, query.Text);
+        _logger.Debug("Running query: {query}", query.Text);
 
         using var request = await BuildRequestAsync(query, cancellationToken).ConfigureAwait(false);
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);

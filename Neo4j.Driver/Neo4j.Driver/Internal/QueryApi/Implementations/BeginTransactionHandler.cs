@@ -79,7 +79,7 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
         }
 
         var context = new QueryApiTransactionContext(txId, _affinityExtractor.Extract(response));
-        _logger.Debug("Transaction begun: {txId}", txId);
+        _logger.Debug("Transaction begun");
         return context;
     }
 

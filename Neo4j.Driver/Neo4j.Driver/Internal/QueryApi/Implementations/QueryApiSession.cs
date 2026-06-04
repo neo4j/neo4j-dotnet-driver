@@ -160,6 +160,7 @@ internal class QueryApiSession : IInternalAsyncSession
 
         try
         {
+            _logger.Debug("Session beginning work", mode);
             var result = await work(tx).ConfigureAwait(false);
             await tx.CommitAsync().ConfigureAwait(false);
             return result;
