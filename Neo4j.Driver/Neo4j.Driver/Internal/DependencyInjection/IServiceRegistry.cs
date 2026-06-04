@@ -20,8 +20,8 @@ namespace Neo4j.Driver.Internal.DependencyInjection;
 internal interface IServiceRegistry
 {
     IServiceRegistry RegisterInstance<TService>(TService instance);
-    IServiceRegistry RegisterType<TService, TImplementation>() where TImplementation : TService;
-    IServiceRegistry RegisterType(Type service, Type implementation);
-    IServiceRegistry RegisterType<TService>();
+    IServiceRegistry RegisterType<TService, TImplementation>(bool singleton = false) where TImplementation : TService;
+    IServiceRegistry RegisterType(Type service, Type implementation, bool singleton = false);
+    IServiceRegistry RegisterType<TService>(bool singleton = false);
     IServiceRegistry RegisterInterceptor(IResolutionInterceptor interceptor);
 }

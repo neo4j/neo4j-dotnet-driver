@@ -138,12 +138,12 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         return this;
     }
 
-    public IServiceRegistry RegisterType<TService, TImplementation>() where TImplementation : TService
+    public IServiceRegistry RegisterType<TService, TImplementation>(bool singleton = false) where TImplementation : TService
     {
-        return RegisterType(typeof(TService), typeof(TImplementation));
+        return RegisterType(typeof(TService), typeof(TImplementation), singleton);
     }
 
-    public IServiceRegistry RegisterType(Type service, Type implementation)
+    public IServiceRegistry RegisterType(Type service, Type implementation, bool singleton = false)
     {
         if (!_registrations.TryGetValue(service, out var registrations))
         {
@@ -151,11 +151,11 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             _registrations[service] = registrations;
         }
 
-        registrations.Add(new Registration(implementation));
+        registrations.Add(new Registration(implementation, singleton));
         return this;
     }
 
-    public IServiceRegistry RegisterType<TService>()
+    public IServiceRegistry RegisterType<TService>(bool singleton = false)
     {
         var serviceType = typeof(TService);
         if (!_registrations.TryGetValue(serviceType, out var registrations))
@@ -164,7 +164,7 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             _registrations[serviceType] = registrations;
         }
 
-        registrations.Add(new Registration(serviceType));
+        registrations.Add(new Registration(serviceType, singleton));
         return this;
     }
 
@@ -238,8 +238,14 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             if (_registrations.TryGetValue(serviceType, out var registrations) && registrations.Count > 0)
             {
                 var registration = registrations[^1];
-                return registration.Instance ??
-                    CreateInstance(registration.ImplementationType, serviceType, childRegistrations, childScope);
+                if (registration.Instance != null)
+                    return registration.Instance;
+
+                var instance = CreateInstance(registration.ImplementationType, serviceType, childRegistrations, childScope);
+                if (registration.Singleton)
+                    registrations[^1] = new Registration(instance);
+
+                return instance;
             }
 
             // Delegate to parent. Merge this scope's registrations with whatever the child
@@ -386,15 +392,18 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         {
             Instance = instance;
             ImplementationType = null!;
+            Singleton = false;
         }
 
-        public Registration(Type implementationType)
+        public Registration(Type implementationType, bool singleton = false)
         {
             Instance = null;
             ImplementationType = implementationType;
+            Singleton = singleton;
         }
 
         public object? Instance { get; }
         public Type ImplementationType { get; }
+        public bool Singleton { get; }
     }
 }

@@ -21,7 +21,12 @@ namespace Neo4j.Driver.Internal.DependencyInjection;
 /// Marks a class to be automatically registered for all interfaces it implements when using
 /// the built-in dependency injection container.
 /// </summary>
+/// <param name="singleton">
+/// When <c>true</c>, the container creates only one instance per scope and returns it for all
+/// subsequent resolutions of any of the registered interfaces within that scope.
+/// </param>
 [AttributeUsage(AttributeTargets.Class)]
-internal class AutoRegisterAttribute : Attribute
+internal class AutoRegisterAttribute(bool singleton = false) : Attribute
 {
+    public bool Singleton { get; } = singleton;
 }
