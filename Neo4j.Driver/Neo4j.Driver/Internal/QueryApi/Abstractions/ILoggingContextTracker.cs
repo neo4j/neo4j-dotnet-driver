@@ -22,4 +22,5 @@ internal interface ILoggingContextTracker
 {
     IReadOnlyList<ILoggingContext> Contexts { get; }
     IDisposable Add(string key, object value);
+    ILoggingContextTracker CreateChild();
 }

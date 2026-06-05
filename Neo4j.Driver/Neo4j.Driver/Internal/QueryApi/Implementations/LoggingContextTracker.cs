@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
@@ -21,9 +23,22 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
 internal class LoggingContextTracker : ILoggingContextTracker
 {
+    private readonly ILoggingContextTracker? _parent;
     private readonly List<ILoggingContext> _contexts = [];
 
-    public IReadOnlyList<ILoggingContext> Contexts => _contexts;
+    public LoggingContextTracker()
+    {
+    }
+
+    private LoggingContextTracker(ILoggingContextTracker parent)
+    {
+        _parent = parent;
+    }
+
+    public ILoggingContextTracker CreateChild() => new LoggingContextTracker(this);
+
+    public IReadOnlyList<ILoggingContext> Contexts =>
+        _parent is null ? _contexts : [.._parent.Contexts, .._contexts];
 
     public IDisposable Add(string key, object value)
     {

@@ -31,6 +31,7 @@ internal class QueryApiContainerBuilder : IQueryApiContainerBuilder
 
         var loggerFactory = new LoggerFactory(driverContext.Neo4JLogger);
         container.RegisterInterceptor(new LoggingInterceptor(loggerFactory));
+        container.RegisterInstance<ILoggingContextTracker>(new LoggingContextTracker());
 
         var serverInfo = new QueryApiServerInfo(driverContext.InitialUri);
         container.RegisterInstance<IServerInfo>(serverInfo);

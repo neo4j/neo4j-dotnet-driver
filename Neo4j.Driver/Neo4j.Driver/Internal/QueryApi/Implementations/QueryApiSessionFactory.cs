@@ -24,15 +24,18 @@ internal class QueryApiSessionFactory : IQueryApiSessionFactory
 {
     private readonly IResolutionScope _resolutionScope;
     private readonly ISessionIdGenerator _sessionIdGenerator;
+    private readonly ILoggingContextTracker _driverTracker;
     private readonly ILogger _logger;
 
     public QueryApiSessionFactory(
         IResolutionScope resolutionScope,
         ISessionIdGenerator sessionIdGenerator,
+        ILoggingContextTracker driverTracker,
         ILogger logger)
     {
         _resolutionScope = resolutionScope;
         _sessionIdGenerator = sessionIdGenerator;
+        _driverTracker = driverTracker;
         _logger = logger;
     }
 
@@ -46,7 +49,7 @@ internal class QueryApiSessionFactory : IQueryApiSessionFactory
             : config.DriverContext.AuthTokenManager;
 
         var sessionScope = _resolutionScope.CreateChildScope(r => r
-            .RegisterType<ILoggingContextTracker, LoggingContextTracker>(singleton: true)
+            .RegisterInstance<ILoggingContextTracker>(_driverTracker.CreateChild())
             .RegisterInstance(config)
             .RegisterInstance(authTokenManager)
             .RegisterType<ISessionContext, QueryApiSessionContext>());
