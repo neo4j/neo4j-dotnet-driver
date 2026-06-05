@@ -17,12 +17,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 using Neo4j.Driver.Internal.QueryApi.Types;
+using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
@@ -35,6 +37,7 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
     private readonly IJsonDeserializer _jsonDeserializer;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
+    private readonly ISessionContext _sessionContext;
 
     public BeginTransactionHandler(
         IQueryApiRequestBuilder requestBuilder,
@@ -42,6 +45,7 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
         IQueryApiErrorChecker errorChecker,
         IJsonDeserializer jsonDeserializer,
         IClusterAffinityExtractor affinityExtractor,
+        ISessionContext sessionContext,
         ILogger logger)
     {
         _requestBuilder = requestBuilder;
@@ -49,6 +53,7 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
         _errorChecker = errorChecker;
         _jsonDeserializer = jsonDeserializer;
         _affinityExtractor = affinityExtractor;
+        _sessionContext = sessionContext;
         _logger = logger;
     }
 
@@ -68,10 +73,7 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
                 cancellationToken)
             .ConfigureAwait(false);
 
-        if (body?.Errors is { Length: > 0 } errors)
-        {
-            _errorChecker.ThrowIfAnyError(errors[0].Code, errors[0].Message);
-        }
+        _errorChecker.ThrowIfErrors(body?.Errors);
 
         if (body?.Transaction?.Id is not {} txId)
         {
@@ -85,16 +87,12 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
 
     private async Task<HttpRequestMessage> BuildRequestAsync(IReadOnlyList<string> bookmarks, CancellationToken cancellationToken)
     {
-        var body = new RequestBody
-        {
-            Bookmarks = bookmarks.Count > 0 ? [.. bookmarks] : null
-        };
-
+        var body = new RequestBody(bookmarks?.ToArray(), _sessionContext.ImpersonatedUser);
         var request = await _requestBuilder.PostAsync("query/v2/tx", body, cancellationToken).ConfigureAwait(false);
         return request;
     }
 
-    internal record RequestBody(string[]? Bookmarks = null);
+    internal record RequestBody(string[]? Bookmarks, string? ImpersonatedUser);
 
     internal record ResponseBody
     {

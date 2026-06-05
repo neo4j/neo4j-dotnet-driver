@@ -22,6 +22,7 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using Neo4j.Driver.Internal.QueryApi;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
@@ -77,9 +78,12 @@ internal class QueryApiErrorChecker : IQueryApiErrorChecker
         }
     }
 
-    public void ThrowIfAnyError(string code, string message)
+    public void ThrowIfErrors(QueryApiErrorBody[]? errors)
     {
-        throw ErrorExtensions.ParseServerException(new FailureMessage(code, message));
+        if (errors is { Length: > 0 } e)
+        {
+            throw ErrorExtensions.ParseServerException(new FailureMessage(e[0].Code, e[0].Message));
+        }
     }
 
     private class ErrorResponseBody

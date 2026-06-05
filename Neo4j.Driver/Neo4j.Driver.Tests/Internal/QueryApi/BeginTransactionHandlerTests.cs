@@ -23,6 +23,7 @@ using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 using Neo4j.Driver.Internal.QueryApi.Implementations;
 using Xunit;
@@ -120,5 +121,36 @@ public class BeginTransactionHandlerTests
         await act.Should()
             .ThrowAsync<InvalidOperationException>()
             .WithMessage("*transaction ID*");
+    }
+
+    [Fact]
+    public async Task RequestBody_IncludesImpersonatedUser_FromSessionContext()
+    {
+        // Spec: impersonatedUser must be forwarded from the session context on begin transaction
+        _fixture.Freeze<Mock<ISessionContext>>()
+            .Setup(x => x.ImpersonatedUser).Returns("banana_bob");
+
+        object? capturedBody = null;
+        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+            .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Callback<string, object, CancellationToken>((_, body, _) => capturedBody = body)
+            .ReturnsAsync(new HttpRequestMessage());
+
+        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+            .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new HttpResponseMessage { Content = new ByteArrayContent([]) });
+
+        _fixture.Freeze<Mock<IJsonDeserializer>>()
+            .Setup(x => x.DeserializeAsync<BeginTransactionHandler.ResponseBody>(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BeginTransactionHandler.ResponseBody
+            {
+                Transaction = new BeginTransactionHandler.TransactionInfo { Id = "tx-1" }
+            });
+
+        var subject = _fixture.Create<BeginTransactionHandler>();
+        await subject.BeginTransactionAsync([], TestContext.Current.CancellationToken);
+
+        var body = capturedBody.Should().BeOfType<BeginTransactionHandler.RequestBody>().Subject;
+        body.ImpersonatedUser.Should().Be("banana_bob");
     }
 }

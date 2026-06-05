@@ -32,6 +32,8 @@ internal class QueryApiSessionContext : ISessionContext
     }
 
     public string Database => _sessionConfig.Database ?? "neo4j";
+    public string? ImpersonatedUser => _sessionConfig.ImpersonatedUser;
+    public AccessMode AccessMode => _sessionConfig.DefaultAccessMode;
 
     public ValueTask<IAuthToken> GetAuthTokenAsync(CancellationToken cancellationToken = default)
     {

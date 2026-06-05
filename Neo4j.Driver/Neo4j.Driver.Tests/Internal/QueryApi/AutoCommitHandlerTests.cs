@@ -23,8 +23,10 @@ using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.QueryApi;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using Neo4j.Driver.Internal.QueryApi;
 using Neo4j.Driver.Internal.QueryApi.Implementations;
 using Xunit;
 
@@ -131,12 +133,39 @@ public class AutoCommitHandlerTests
             .ReturnsAsync(bodyWithError);
 
         _fixture.Freeze<Mock<IQueryApiErrorChecker>>()
-            .Setup(x => x.ThrowIfAnyError("Neo.ClientError.Statement.SyntaxError", "Invalid Cypher"))
+            .Setup(x => x.ThrowIfErrors(It.Is<QueryApiErrorBody[]?>(e => e != null && e[0].Code == "Neo.ClientError.Statement.SyntaxError")))
             .Throws(new ClientException("SyntaxError", "Invalid Cypher"));
 
         var subject = _fixture.Create<AutoCommitHandler>();
         var act = () => subject.AutoCommitAsync(new Query("RETUN 1"), [], TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<ClientException>();
+    }
+
+    [Fact]
+    public async Task RequestBody_IncludesImpersonatedUserAndAccessMode_FromSessionContext()
+    {
+        // Spec: impersonatedUser and accessMode must be forwarded from the session context on every request
+        _fixture.Freeze<Mock<ISessionContext>>()
+            .Setup(x => x.ImpersonatedUser).Returns("banana_bob");
+        _fixture.Freeze<Mock<ISessionContext>>()
+            .Setup(x => x.AccessMode).Returns(AccessMode.Read);
+
+        object? capturedBody = null;
+        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+            .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Callback<string, object, CancellationToken>((_, body, _) => capturedBody = body)
+            .ReturnsAsync(new HttpRequestMessage());
+
+        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+            .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new HttpResponseMessage { Content = new ByteArrayContent([]) });
+
+        var subject = _fixture.Create<AutoCommitHandler>();
+        await subject.AutoCommitAsync(new Query("RETURN 1"), [], TestContext.Current.CancellationToken);
+
+        var body = capturedBody.Should().BeOfType<AutoCommitHandler.RequestBody>().Subject;
+        body.ImpersonatedUser.Should().Be("banana_bob");
+        body.AccessMode.Should().Be("Read");
     }
 }

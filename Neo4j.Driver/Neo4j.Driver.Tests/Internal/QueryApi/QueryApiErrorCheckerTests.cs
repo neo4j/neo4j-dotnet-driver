@@ -21,6 +21,7 @@ using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal.QueryApi;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 using Neo4j.Driver.Internal.QueryApi.Implementations;
 using Xunit;
@@ -138,16 +139,15 @@ public class QueryApiErrorCheckerTests
         }
     }
 
-    public class ThrowIfAnyError
+    public class ThrowIfErrors
     {
         [Fact]
         public void ThrowsClientException_ForSyntaxError()
         {
             // Application-level errors from the response body are mapped to the correct exception type
             // Spec: https://neo4j.com/docs/query-api/current/#_errors
-            var act = () => Checker.ThrowIfAnyError(
-                "Neo.ClientError.Statement.SyntaxError",
-                "Invalid input 'RETUN': expected 'RETURN'");
+            var act = () => Checker.ThrowIfErrors(
+                [new QueryApiErrorBody("Neo.ClientError.Statement.SyntaxError", "Invalid input 'RETUN': expected 'RETURN'")]);
 
             act.Should()
                 .Throw<ClientException>()
@@ -157,11 +157,24 @@ public class QueryApiErrorCheckerTests
         [Fact]
         public void ThrowsTransientException_ForTransientDatabaseUnavailable()
         {
-            var act = () => Checker.ThrowIfAnyError(
-                "Neo.TransientError.General.DatabaseUnavailable",
-                "Database is temporarily unavailable.");
+            var act = () => Checker.ThrowIfErrors(
+                [new QueryApiErrorBody("Neo.TransientError.General.DatabaseUnavailable", "Database is temporarily unavailable.")]);
 
             act.Should().Throw<TransientException>();
+        }
+
+        [Fact]
+        public void DoesNotThrow_WhenErrorsIsNull()
+        {
+            var act = () => Checker.ThrowIfErrors(null);
+            act.Should().NotThrow();
+        }
+
+        [Fact]
+        public void DoesNotThrow_WhenErrorsIsEmpty()
+        {
+            var act = () => Checker.ThrowIfErrors([]);
+            act.Should().NotThrow();
         }
     }
 }

@@ -67,10 +67,7 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
                 cancellationToken)
             .ConfigureAwait(false);
 
-        if (body?.Errors is { Length: > 0 } errors)
-        {
-            _errorChecker.ThrowIfAnyError(errors[0].Code, errors[0].Message);
-        }
+        _errorChecker.ThrowIfErrors(body?.Errors);
 
         var result = new QueryApiResultSet
         {

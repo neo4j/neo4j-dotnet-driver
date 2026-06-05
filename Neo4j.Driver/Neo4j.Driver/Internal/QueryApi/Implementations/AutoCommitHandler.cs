@@ -21,6 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
@@ -32,18 +33,21 @@ internal class AutoCommitHandler : IAutoCommitHandler
     private readonly IJsonDeserializer _jsonDeserializer;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
+    private readonly ISessionContext _sessionContext;
 
     public AutoCommitHandler(
         IQueryApiRequestBuilder requestBuilder,
         IQueryApiHttpClient httpClient,
         IQueryApiErrorChecker errorChecker,
         IJsonDeserializer jsonDeserializer,
+        ISessionContext sessionContext,
         ILogger logger)
     {
         _requestBuilder = requestBuilder;
         _httpClient = httpClient;
         _errorChecker = errorChecker;
         _jsonDeserializer = jsonDeserializer;
+        _sessionContext = sessionContext;
         _logger = logger;
     }
 
@@ -64,10 +68,7 @@ internal class AutoCommitHandler : IAutoCommitHandler
                 cancellationToken)
             .ConfigureAwait(false);
 
-        if (body?.Errors is { Length: > 0 } errors)
-        {
-            _errorChecker.ThrowIfAnyError(errors[0].Code, errors[0].Message);
-        }
+        _errorChecker.ThrowIfErrors(body?.Errors);
 
         var result = new QueryApiResultSet
         {
@@ -93,7 +94,9 @@ internal class AutoCommitHandler : IAutoCommitHandler
         {
             Statement = query.Text,
             Parameters = query.Parameters.Count > 0 ? query.Parameters : null,
-            Bookmarks = bookmarks.Count > 0 ? [.. bookmarks] : null
+            Bookmarks = bookmarks.Count > 0 ? [.. bookmarks] : null,
+            ImpersonatedUser = _sessionContext.ImpersonatedUser,
+            AccessMode = _sessionContext.AccessMode == AccessMode.Read ? "Read" : "Write"
         };
 
         var request = await _requestBuilder.PostAsync("query/v2", body, cancellationToken).ConfigureAwait(false);
@@ -105,5 +108,7 @@ internal class AutoCommitHandler : IAutoCommitHandler
         public string? Statement { get; init; }
         public IDictionary<string, object>? Parameters { get; init; }
         public string[]? Bookmarks { get; init; }
+        public string? ImpersonatedUser { get; init; }
+        public string? AccessMode { get; init; }
     }
 }

@@ -27,6 +27,8 @@ namespace Neo4j.Driver.Internal;
 internal interface ISessionContext
 {
     string Database { get; }
+    string? ImpersonatedUser { get; }
+    AccessMode AccessMode { get; }
 
     /// <summary>
     /// Returns a valid auth token for the current session. The implementation handles

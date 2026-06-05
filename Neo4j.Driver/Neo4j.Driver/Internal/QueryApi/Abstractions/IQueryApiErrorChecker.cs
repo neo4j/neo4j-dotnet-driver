@@ -18,6 +18,7 @@
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.QueryApi;
 
 namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
@@ -31,8 +32,8 @@ internal interface IQueryApiErrorChecker
     Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Throws the appropriate <see cref="Neo4jException"/> for the given error code and message found in the response
-    /// body's <c>errors</c> array.
+    /// Throws the appropriate <see cref="Neo4jException"/> for the first error in the array, if any.
+    /// No-ops when <paramref name="errors"/> is null or empty.
     /// </summary>
-    void ThrowIfAnyError(string code, string message);
+    void ThrowIfErrors(QueryApiErrorBody[]? errors);
 }
