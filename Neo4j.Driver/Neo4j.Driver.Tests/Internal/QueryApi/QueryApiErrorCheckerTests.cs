@@ -38,7 +38,13 @@ public class QueryApiErrorCheckerTests
 
     private static HttpResponseMessage JsonResponse(HttpStatusCode status, object body)
     {
-        return new HttpResponseMessage(status) { Content = new QueryApiJsonSerializer().Serialize(body) };
+        return new HttpResponseMessage(status)
+        {
+            Content = new System.Net.Http.StringContent(
+                new QueryApiJsonSerializer().Serialize(body),
+                System.Text.Encoding.UTF8,
+                "application/json")
+        };
     }
 
     public class EnsureSuccessAsync

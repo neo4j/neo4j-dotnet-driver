@@ -18,6 +18,7 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
@@ -28,8 +29,8 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 [AutoRegister]
 internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
 {
-    private const string TypedJsonMediaType = "application/vnd.neo4j.query.v1.1";
-    
+    private const string TypedJsonMediaType = "application/vnd.neo4j.query.v1.0";
+
     private readonly IEnumerable<IHttpRequestEnricher> _requestEnrichers;
     private readonly IJsonSerializer _jsonSerializer;
     private readonly ISessionContext _sessionContext;
@@ -73,7 +74,9 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
 
         if (body is not null)
         {
-            request.Content = _jsonSerializer.Serialize(body);
+            request.Content = new StringContent(
+                _jsonSerializer.Serialize(body),
+                new MediaTypeHeaderValue(TypedJsonMediaType));
         }
 
         return request;

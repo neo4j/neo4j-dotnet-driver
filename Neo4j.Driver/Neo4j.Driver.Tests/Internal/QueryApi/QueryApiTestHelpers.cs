@@ -18,6 +18,7 @@
 using System;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using Neo4j.Driver.Internal.QueryApi;
 using Neo4j.Driver.Internal.QueryApi.Implementations;
 
@@ -31,10 +32,13 @@ internal static class QueryApiTestHelpers
     private static readonly QueryApiJsonSerializer JsonSerializer = new();
     internal static QueryApiUrlBuilder UrlBuilder => new(TestDriverContext.With(uri: BaseUri));
 
+    private static StringContent ToContent(object body) =>
+        new(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+
     /// <summary>Builds a 202 Accepted response with a JSON body serialized using the production options.</summary>
     internal static HttpResponseMessage AcceptedWith(object body)
     {
-        return new HttpResponseMessage(HttpStatusCode.Accepted) { Content = JsonSerializer.Serialize(body) };
+        return new HttpResponseMessage(HttpStatusCode.Accepted) { Content = ToContent(body) };
     }
 
     internal static HttpResponseMessage Accepted()
@@ -45,7 +49,7 @@ internal static class QueryApiTestHelpers
     /// <summary>Builds a 200 OK response with a JSON body — for discovery endpoint tests.</summary>
     internal static HttpResponseMessage OkWith(object body)
     {
-        return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonSerializer.Serialize(body) };
+        return new HttpResponseMessage(HttpStatusCode.OK) { Content = ToContent(body) };
     }
 
     internal static HttpResponseMessage Unauthorized(
@@ -54,7 +58,7 @@ internal static class QueryApiTestHelpers
     {
         return new HttpResponseMessage(HttpStatusCode.Unauthorized)
         {
-            Content = JsonSerializer.Serialize(new { errors = new[] { new { code, message } } })
+            Content = ToContent(new { errors = new[] { new { code, message } } })
         };
     }
 }

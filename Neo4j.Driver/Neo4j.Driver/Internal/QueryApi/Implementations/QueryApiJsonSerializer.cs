@@ -18,8 +18,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.IO;
-using System.Net.Http;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -78,8 +76,8 @@ internal class QueryApiJsonSerializer : IJsonDeserializer, IJsonSerializer
             });
     }
 
-    public StringContent Serialize<T>(T value)
+    public string Serialize<T>(T value)
     {
-        return new StringContent(JsonSerializer.Serialize(value, Options), Encoding.UTF8, "application/json");
+        return JsonSerializer.Serialize(value, Options);
     }
 }

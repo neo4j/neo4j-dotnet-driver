@@ -15,11 +15,9 @@
 
 #nullable enable
 
-using System.Net.Http;
-
 namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 internal interface IJsonSerializer
 {
-    StringContent Serialize<T>(T value);
+    string Serialize<T>(T value);
 }
