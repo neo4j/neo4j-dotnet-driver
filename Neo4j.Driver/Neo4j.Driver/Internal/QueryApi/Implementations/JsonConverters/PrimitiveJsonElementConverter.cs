@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using Neo4j.Driver.Internal.DependencyInjection;
+using Neo4j.Driver.Internal.QueryApi.Abstractions;
 using Neo4j.Driver.Internal.QueryApi.Abstractions.JsonConverters;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations.JsonConverters;
@@ -28,7 +29,14 @@ internal class PrimitiveJsonElementConverter : ITypedJsonElementConverter
 {
     private static readonly HashSet<string> SupportedTypes =
         ["Null", "Boolean", "Integer", "Float", "String", "Base64", "Unsupported"];
-    
+
+    private readonly IBase64Decoder _decoder;
+
+    public PrimitiveJsonElementConverter(IBase64Decoder decoder)
+    {
+        _decoder = decoder;
+    }
+
     public bool CanConvert(string typeName)
     {
         return SupportedTypes.Contains(typeName);
@@ -45,7 +53,7 @@ internal class PrimitiveJsonElementConverter : ITypedJsonElementConverter
             "Integer" => long.Parse(element.GetProperty("_value").GetString()!),
             "Float" => ParseFloat(element.GetProperty("_value").GetString()!),
             "String" => element.GetProperty("_value").GetString(),
-            "Base64" => System.Convert.FromBase64String(element.GetProperty("_value").GetString()!),
+            "Base64" => _decoder.Decode(element.GetProperty("_value").GetString()!),
             "Unsupported" => new UnsupportedType("Unsupported", 0, 0, element.GetProperty("_value").GetString()!),
             _ => throw new NotSupportedException($"Unsupported Neo4j type: {typeName}")
         };

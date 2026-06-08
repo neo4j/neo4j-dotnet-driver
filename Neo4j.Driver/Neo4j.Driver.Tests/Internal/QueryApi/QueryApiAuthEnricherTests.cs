@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.Internal.QueryApi.Abstractions;
 using Neo4j.Driver.Internal.QueryApi.Implementations;
 using Xunit;
 
@@ -30,8 +31,13 @@ public class QueryApiAuthEnricherTests
 {
     private readonly AutoMocker _autoMocker = new();
 
+    public QueryApiAuthEnricherTests()
+    {
+
+    }
+
     [Fact]
-    public async Task Enrich_SetsBasicAuthorizationHeader_WithBase64EncodedCredentials()
+    public async Task Enrich_SetsBasicAuthorizationHeader_UsingEncoder()
     {
         var request = new HttpRequestMessage();
 
@@ -39,17 +45,19 @@ public class QueryApiAuthEnricherTests
             .Setup(m => m.GetTokenAsync(TestContext.Current.CancellationToken))
             .ReturnsAsync(AuthTokens.Basic("alice", "s3cret"));
 
-        var subject = _autoMocker.CreateInstance<QueryApiAuthEnricher>();
+        _autoMocker.GetMock<IBase64Encoder>()
+            .Setup(e => e.Encode("alice:s3cret"))
+            .Returns("encoded");
 
+        var subject = _autoMocker.CreateInstance<QueryApiAuthEnricher>();
         await subject.Enrich(request, TestContext.Current.CancellationToken);
 
         request.Headers.Authorization!.Scheme.Should().Be("Basic");
-        var base64Encoded = Convert.ToBase64String("alice:s3cret"u8.ToArray());
-        request.Headers.Authorization.Parameter!.Should().Be(base64Encoded);
+        request.Headers.Authorization.Parameter.Should().Be("encoded");
     }
 
     [Fact]
-    public async Task Enrich_SetsBearerAuthorizationHeader_WithCredentialsAsToken()
+    public async Task Enrich_SetsBearerAuthorizationHeader_UsingEncoder()
     {
         var request = new HttpRequestMessage();
 
@@ -57,12 +65,15 @@ public class QueryApiAuthEnricherTests
             .Setup(m => m.GetTokenAsync(TestContext.Current.CancellationToken))
             .ReturnsAsync(AuthTokens.Bearer("my-jwt-token"));
 
-        var subject = _autoMocker.CreateInstance<QueryApiAuthEnricher>();
+        _autoMocker.GetMock<IBase64Encoder>()
+            .Setup(e => e.Encode("my-jwt-token"))
+            .Returns("encoded");
 
+        var subject = _autoMocker.CreateInstance<QueryApiAuthEnricher>();
         await subject.Enrich(request, TestContext.Current.CancellationToken);
 
         request.Headers.Authorization!.Scheme.Should().Be("Bearer");
-        request.Headers.Authorization.Parameter.Should().Be("my-jwt-token");
+        request.Headers.Authorization.Parameter.Should().Be("encoded");
     }
 
     [Fact]

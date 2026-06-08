@@ -18,7 +18,6 @@
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Auth;
@@ -31,16 +30,18 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 internal class QueryApiAuthEnricher : IHttpRequestEnricher
 {
     private readonly IAuthTokenManager _authTokenManager;
+    private readonly IBase64Encoder _encoder;
 
-    public QueryApiAuthEnricher(IAuthTokenManager authTokenManager)
+    public QueryApiAuthEnricher(IAuthTokenManager authTokenManager, IBase64Encoder encoder)
     {
         _authTokenManager = authTokenManager;
+        _encoder = encoder;
     }
 
-    private static AuthenticationHeaderValue BuildBasicHeader(AuthToken authToken)
+    private AuthenticationHeaderValue BuildBasicHeader(AuthToken authToken)
     {
         var principal = authToken.Principal ?? string.Empty;
-        var credentials = authToken.Content.GetValueOrDefault(AuthToken.CredentialsKey) as string ?? string.Empty;
+        var credentials = authToken.Content.GetValueOrDefault(AuthToken.CredentialsKey) as string  ?? string.Empty;
 
         if (principal.Contains(':'))
         {
@@ -49,23 +50,15 @@ internal class QueryApiAuthEnricher : IHttpRequestEnricher
                 "the Query API cannot distinguish it from the credentials separator.");
         }
 
-        if (authToken.Realm is not null)
-        {
-            throw new NotSupportedException(
-                "Basic auth realm is not supported by the Query API.");
-        }
-
-        return new AuthenticationHeaderValue(
-            "Basic",
-            Convert.ToBase64String(Encoding.UTF8.GetBytes($"{principal}:{credentials}")));
+        return authToken.Realm is null 
+            ? new AuthenticationHeaderValue("Basic", _encoder.Encode($"{principal}:{credentials}")) 
+            : throw new NotSupportedException("Basic auth realm is not supported by the Query API.");
     }
 
-    private static AuthenticationHeaderValue BuildBearerHeader(AuthToken authToken)
+    private AuthenticationHeaderValue BuildBearerHeader(AuthToken authToken)
     {
-        var token = authToken.Content.GetValueOrDefault(AuthToken.CredentialsKey) as string ?? string.Empty;
-        return new AuthenticationHeaderValue(
-            "Bearer",
-            Convert.ToBase64String(Encoding.UTF8.GetBytes(token)));
+        var token = authToken.Content.GetValueOrDefault(AuthToken.CredentialsKey) as string  ?? string.Empty;
+        return new AuthenticationHeaderValue("Bearer", _encoder.Encode(token));
     }
 
     public async ValueTask Enrich(HttpRequestMessage request, CancellationToken cancellationToken = default)
@@ -75,13 +68,13 @@ internal class QueryApiAuthEnricher : IHttpRequestEnricher
         {
             throw new InvalidOperationException("Unsupported auth token: " + returnedToken.GetType().Name);
         }
-        
+
         request.Headers.Authorization = authToken.Scheme switch
         {
             "basic" => BuildBasicHeader(authToken),
             "bearer" => BuildBearerHeader(authToken),
             "none" => null,
-            _ => throw new NotSupportedException($"Auth scheme '{authToken.Scheme}' is not supported by the Query API.")
+            _  => throw new NotSupportedException($"Auth scheme '{authToken.Scheme}' is not supported by the Query API.")
         };
     }
 }
