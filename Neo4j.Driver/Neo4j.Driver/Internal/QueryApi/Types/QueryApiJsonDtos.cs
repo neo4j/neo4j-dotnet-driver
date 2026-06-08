@@ -36,9 +36,8 @@ internal record QueryApiDataBody
 /// The full response body shape shared by auto-commit and run-in-transaction endpoints:
 /// <c>data.fields</c>, <c>data.values</c>, <c>bookmarks</c>, and an optional <c>errors</c> array.
 /// </summary>
-internal record QueryApiResultBody
+internal record QueryApiResultBody : QueryApiResponse
 {
     public QueryApiDataBody? Data { get; init; }
     public string[]? Bookmarks { get; init; }
-    public QueryApiErrorBody[]? Errors { get; init; }
 }

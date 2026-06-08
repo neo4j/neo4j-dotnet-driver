@@ -16,14 +16,15 @@
 #nullable enable
 
 using System;
-using System.IO;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.QueryApi;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 using Neo4j.Driver.Internal.QueryApi.Implementations;
 using Xunit;
@@ -39,26 +40,25 @@ public class BeginTransactionHandlerTests
 {
     private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
 
-    private HttpResponseMessage SetupChain(string txId = "tx-1")
+    private void SetupChain(string txId = "tx-1", HttpResponseHeaders? headers = null)
     {
-        var response = new HttpResponseMessage { Content = new ByteArrayContent([]) };
+        headers ??= new HttpResponseMessage().Headers;
+        var request = new HttpRequestMessage();
 
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
             .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HttpRequestMessage());
+            .ReturnsAsync(request);
 
-        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
-            .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
-
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<BeginTransactionHandler.ResponseBody>(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new BeginTransactionHandler.ResponseBody
-            {
-                Transaction = new BeginTransactionHandler.TransactionInfo { Id = txId }
-            });
-
-        return response;
+        _fixture.Freeze<Mock<IQueryApiClient>>()
+            .Setup(x => x.ExecuteAsync<BeginTransactionHandler.ResponseBody>(
+                request,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new QueryApiResult<BeginTransactionHandler.ResponseBody>(
+                new BeginTransactionHandler.ResponseBody
+                {
+                    Transaction = new BeginTransactionHandler.TransactionInfo { Id = txId }
+                },
+                headers));
     }
 
     [Fact]
@@ -76,11 +76,10 @@ public class BeginTransactionHandlerTests
     [Fact]
     public async Task ReturnsClusterAffinity_WhenResponseCarriesAffinityHeader()
     {
-        // Spec: Aura instances return neo4j-cluster-affinity on BEGIN — it must be echoed back on subsequent requests.
-        var response = SetupChain();
+        SetupChain();
 
         _fixture.Freeze<Mock<IClusterAffinityExtractor>>()
-            .Setup(x => x.Extract(response)).Returns("shard-99");
+            .Setup(x => x.Extract(It.IsAny<HttpResponseHeaders>())).Returns("shard-99");
 
         var subject = _fixture.Create<BeginTransactionHandler>();
         var context = await subject.BeginTransactionAsync([], TestContext.Current.CancellationToken);
@@ -91,10 +90,10 @@ public class BeginTransactionHandlerTests
     [Fact]
     public async Task ReturnsNullClusterAffinity_WhenResponseHasNoAffinityHeader()
     {
-        var response = SetupChain();
+        SetupChain();
 
         _fixture.Freeze<Mock<IClusterAffinityExtractor>>()
-            .Setup(x => x.Extract(response)).Returns((string?)null);
+            .Setup(x => x.Extract(It.IsAny<HttpResponseHeaders>())).Returns((string?)null);
 
         var subject = _fixture.Create<BeginTransactionHandler>();
         var context = await subject.BeginTransactionAsync([], TestContext.Current.CancellationToken);
@@ -106,14 +105,22 @@ public class BeginTransactionHandlerTests
     public async Task Throws_WhenDeserializedBodyHasNoTransactionId()
     {
         // A missing transaction ID means something went wrong server-side
-        SetupChain();
+        var request = new HttpRequestMessage();
 
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<BeginTransactionHandler.ResponseBody>(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new BeginTransactionHandler.ResponseBody
-            {
-                Transaction = new BeginTransactionHandler.TransactionInfo { Id = null }
-            });
+        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+            .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request);
+
+        _fixture.Freeze<Mock<IQueryApiClient>>()
+            .Setup(x => x.ExecuteAsync<BeginTransactionHandler.ResponseBody>(
+                request,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new QueryApiResult<BeginTransactionHandler.ResponseBody>(
+                new BeginTransactionHandler.ResponseBody
+                {
+                    Transaction = new BeginTransactionHandler.TransactionInfo { Id = null }
+                },
+                new HttpResponseMessage().Headers));
 
         var subject = _fixture.Create<BeginTransactionHandler>();
         var act = () => subject.BeginTransactionAsync([], TestContext.Current.CancellationToken);
@@ -130,22 +137,24 @@ public class BeginTransactionHandlerTests
         _fixture.Freeze<Mock<ISessionContext>>()
             .Setup(x => x.ImpersonatedUser).Returns("banana_bob");
 
+        var request = new HttpRequestMessage();
         object? capturedBody = null;
+
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
             .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
             .Callback<string, object, CancellationToken>((_, body, _) => capturedBody = body)
-            .ReturnsAsync(new HttpRequestMessage());
+            .ReturnsAsync(request);
 
-        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
-            .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HttpResponseMessage { Content = new ByteArrayContent([]) });
-
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<BeginTransactionHandler.ResponseBody>(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new BeginTransactionHandler.ResponseBody
-            {
-                Transaction = new BeginTransactionHandler.TransactionInfo { Id = "tx-1" }
-            });
+        _fixture.Freeze<Mock<IQueryApiClient>>()
+            .Setup(x => x.ExecuteAsync<BeginTransactionHandler.ResponseBody>(
+                request,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new QueryApiResult<BeginTransactionHandler.ResponseBody>(
+                new BeginTransactionHandler.ResponseBody
+                {
+                    Transaction = new BeginTransactionHandler.TransactionInfo { Id = "tx-1" }
+                },
+                new HttpResponseMessage().Headers));
 
         var subject = _fixture.Create<BeginTransactionHandler>();
         await subject.BeginTransactionAsync([], TestContext.Current.CancellationToken);

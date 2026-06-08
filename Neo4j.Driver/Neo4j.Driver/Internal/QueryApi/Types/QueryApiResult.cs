@@ -16,20 +16,15 @@
 #nullable enable
 
 using System.Net.Http.Headers;
-using Neo4j.Driver.Internal.DependencyInjection;
-using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
-namespace Neo4j.Driver.Internal.QueryApi.Implementations;
+namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
-internal class QueryApiClusterAffinityExtractor : IClusterAffinityExtractor
-{
-    private const string HeaderName = "neo4j-cluster-affinity";
-
-    public string? Extract(HttpResponseHeaders headers)
-    {
-        return headers.TryGetValues(HeaderName, out var vals)
-            ? string.Join(",", vals)
-            : null;
-    }
-}
+/// <summary>
+/// The result of a <see cref="Abstractions.IQueryApiClient.ExecuteAsync{TBody}"/> call.
+/// <para>
+/// <see cref="ResponseHeaders"/> is captured before the <see cref="System.Net.Http.HttpResponseMessage"/> is
+/// disposed — header objects survive disposal and are safe to hold.
+/// </para>
+/// </summary>
+internal record QueryApiResult<TBody>(TBody Body, HttpResponseHeaders ResponseHeaders)
+    where TBody : QueryApiResponse;

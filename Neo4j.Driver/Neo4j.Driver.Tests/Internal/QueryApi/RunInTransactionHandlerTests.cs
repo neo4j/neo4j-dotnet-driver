@@ -15,7 +15,6 @@
 
 #nullable enable
 
-using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
@@ -40,17 +39,19 @@ public class RunInTransactionHandlerTests
 {
     private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
 
-    private void SetupChain()
+    private void SetupChain(QueryApiResultBody? body = null)
     {
         var txContext = _fixture.Freeze<QueryApiTransactionContext>();
+        body ??= new QueryApiResultBody();
+        var request = new HttpRequestMessage();
 
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
             .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}", It.IsAny<object>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HttpRequestMessage());
+            .ReturnsAsync(request);
 
-        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
-            .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HttpResponseMessage { Content = new ByteArrayContent([]) });
+        _fixture.Freeze<Mock<IQueryApiClient>>()
+            .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new QueryApiResult<QueryApiResultBody>(body, new HttpResponseMessage().Headers));
     }
 
     [Fact]
@@ -67,11 +68,7 @@ public class RunInTransactionHandlerTests
             Bookmarks = ["neo4j:bookmark:v1:tx200"]
         };
 
-        SetupChain();
-
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<QueryApiResultBody>(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expectedBody);
+        SetupChain(expectedBody);
 
         var subject = _fixture.Create<RunInTransactionHandler>();
         var result = await subject.RunInTransactionAsync(
@@ -84,11 +81,17 @@ public class RunInTransactionHandlerTests
     }
 
     [Fact]
-    public async Task Throws_WhenHttpClientThrows()
+    public async Task Throws_WhenExecuteAsyncThrows()
     {
-        SetupChain();
-        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
-            .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
+        var txContext = _fixture.Freeze<QueryApiTransactionContext>();
+        var request = new HttpRequestMessage();
+
+        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}", It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request);
+
+        _fixture.Freeze<Mock<IQueryApiClient>>()
+            .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ServiceUnavailableException("HTTP 503"));
 
         var subject = _fixture.Create<RunInTransactionHandler>();

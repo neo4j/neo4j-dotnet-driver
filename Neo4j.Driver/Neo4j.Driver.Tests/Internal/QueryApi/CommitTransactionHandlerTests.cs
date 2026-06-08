@@ -15,7 +15,6 @@
 
 #nullable enable
 
-using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,13 +37,11 @@ public class CommitTransactionHandlerTests
 {
     private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
 
-    // Freezes the minimum mock chain needed to exercise the handler without crashing:
-    // PostAsync("query/v2/tx/{txId}/commit") → request → SendAsync(request) → response
-    private HttpResponseMessage SetupChain()
+    private void SetupChain(CommitTransactionHandler.ResponseBody? body = null)
     {
         var txContext = _fixture.Freeze<QueryApiTransactionContext>();
+        body ??= new CommitTransactionHandler.ResponseBody();
         var request = new HttpRequestMessage();
-        var response = new HttpResponseMessage { Content = new ByteArrayContent([]) };
 
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
             .Setup(x => x.PostAsync(
@@ -53,30 +50,20 @@ public class CommitTransactionHandlerTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
 
-        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
-            .Setup(x => x.SendAsync(request, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
-
-        return response;
+        _fixture.Freeze<Mock<IQueryApiClient>>()
+            .Setup(x => x.ExecuteAsync<CommitTransactionHandler.ResponseBody>(
+                request,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new QueryApiResult<CommitTransactionHandler.ResponseBody>(body, new HttpResponseMessage().Headers));
     }
 
     [Fact]
     public async Task ReturnsBookmarks_FromDeserializedBody()
     {
         // Spec: the commit response contains updated bookmarks for causal consistency
-        SetupChain();
-
         string[] expectedBookmarks = ["neo4j:bookmark:v1:tx300", "neo4j:bookmark:v1:tx301"];
 
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<CommitTransactionHandler.ResponseBody>(
-                It.IsAny<Stream>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(
-                new CommitTransactionHandler.ResponseBody
-                {
-                    Bookmarks = expectedBookmarks
-                });
+        SetupChain(new CommitTransactionHandler.ResponseBody { Bookmarks = expectedBookmarks });
 
         var subject = _fixture.Create<CommitTransactionHandler>();
         var bookmarks = await subject.CommitTransactionAsync(TestContext.Current.CancellationToken);
@@ -89,12 +76,6 @@ public class CommitTransactionHandlerTests
     {
         SetupChain();
 
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<CommitTransactionHandler.ResponseBody>(
-                It.IsAny<Stream>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CommitTransactionHandler.ResponseBody());
-
         var subject = _fixture.Create<CommitTransactionHandler>();
         var bookmarks = await subject.CommitTransactionAsync(TestContext.Current.CancellationToken);
 
@@ -102,11 +83,22 @@ public class CommitTransactionHandlerTests
     }
 
     [Fact]
-    public async Task Throws_WhenHttpClientThrows()
+    public async Task Throws_WhenExecuteAsyncThrows()
     {
-        SetupChain();
-        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
-            .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
+        var txContext = _fixture.Freeze<QueryApiTransactionContext>();
+        var request = new HttpRequestMessage();
+
+        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+            .Setup(x => x.PostAsync(
+                $"query/v2/tx/{txContext.TxId}/commit",
+                It.IsAny<object>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request);
+
+        _fixture.Freeze<Mock<IQueryApiClient>>()
+            .Setup(x => x.ExecuteAsync<CommitTransactionHandler.ResponseBody>(
+                request,
+                It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ServiceUnavailableException("HTTP 503"));
 
         var subject = _fixture.Create<CommitTransactionHandler>();

@@ -28,25 +28,19 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 [AutoRegister]
 internal class AutoCommitHandler : IAutoCommitHandler
 {
-    private readonly IQueryApiErrorChecker _errorChecker;
-    private readonly IQueryApiHttpTransport _httpTransport;
-    private readonly IJsonDeserializer _jsonDeserializer;
+    private readonly IQueryApiClient _client;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
     private readonly ISessionContext _sessionContext;
 
     public AutoCommitHandler(
         IQueryApiRequestBuilder requestBuilder,
-        IQueryApiHttpTransport httpTransport,
-        IQueryApiErrorChecker errorChecker,
-        IJsonDeserializer jsonDeserializer,
+        IQueryApiClient client,
         ISessionContext sessionContext,
         ILogger logger)
     {
         _requestBuilder = requestBuilder;
-        _httpTransport = httpTransport;
-        _errorChecker = errorChecker;
-        _jsonDeserializer = jsonDeserializer;
+        _client = client;
         _sessionContext = sessionContext;
         _logger = logger;
     }
@@ -59,26 +53,22 @@ internal class AutoCommitHandler : IAutoCommitHandler
         _logger.Debug("Auto-commit: {query}", query.Text);
 
         using var request = await BuildRequestAsync(query, bookmarks, cancellationToken).ConfigureAwait(false);
-        using var response = await _httpTransport.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        var result = await _client.ExecuteAsync<QueryApiResultBody>(request, cancellationToken).ConfigureAwait(false);
 
-        var body = await _jsonDeserializer
-            .DeserializeAsync<QueryApiResultBody>(
-                await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false),
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        _errorChecker.ThrowIfErrors(body?.Errors);
-
-        var result = new QueryApiResultSet
+        var body = result.Body;
+        var resultSet = new QueryApiResultSet
         {
             Fields = body?.Data?.Fields ?? [],
             Rows = body?.Data?.Values ?? [],
             Bookmarks = body?.Bookmarks ?? []
         };
 
-        _logger.Debug("Auto-commit complete: {fieldCount} field(s), {rowCount} row(s)", result.Fields.Length, result.Rows.Length);
+        _logger.Debug(
+            "Auto-commit complete: {fieldCount} field(s), {rowCount} row(s)",
+            resultSet.Fields.Length,
+            resultSet.Rows.Length);
 
-        return result;
+        return resultSet;
     }
 
     private async Task<HttpRequestMessage> BuildRequestAsync(

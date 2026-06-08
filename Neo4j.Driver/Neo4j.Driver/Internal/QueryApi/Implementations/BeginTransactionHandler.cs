@@ -32,26 +32,20 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 internal class BeginTransactionHandler : IBeginTransactionHandler
 {
     private readonly IClusterAffinityExtractor _affinityExtractor;
-    private readonly IQueryApiErrorChecker _errorChecker;
-    private readonly IQueryApiHttpTransport _httpTransport;
-    private readonly IJsonDeserializer _jsonDeserializer;
+    private readonly IQueryApiClient _client;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
     private readonly ISessionContext _sessionContext;
 
     public BeginTransactionHandler(
         IQueryApiRequestBuilder requestBuilder,
-        IQueryApiHttpTransport httpTransport,
-        IQueryApiErrorChecker errorChecker,
-        IJsonDeserializer jsonDeserializer,
+        IQueryApiClient client,
         IClusterAffinityExtractor affinityExtractor,
         ISessionContext sessionContext,
         ILogger logger)
     {
         _requestBuilder = requestBuilder;
-        _httpTransport = httpTransport;
-        _errorChecker = errorChecker;
-        _jsonDeserializer = jsonDeserializer;
+        _client = client;
         _affinityExtractor = affinityExtractor;
         _sessionContext = sessionContext;
         _logger = logger;
@@ -64,22 +58,14 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
         _logger.Debug("Beginning transaction with {bookmarkCount} bookmark(s)", bookmarks.Count);
 
         using var request = await BuildRequestAsync(bookmarks, cancellationToken).ConfigureAwait(false);
-        using var response = await _httpTransport.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        var result = await _client.ExecuteAsync<ResponseBody>(request, cancellationToken).ConfigureAwait(false);
 
-        var body = await _jsonDeserializer
-            .DeserializeAsync<ResponseBody>(
-                await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false),
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        _errorChecker.ThrowIfErrors(body?.Errors);
-
-        if (body?.Transaction?.Id is not {} txId)
+        if (result.Body?.Transaction?.Id is not {} txId)
         {
             throw new InvalidOperationException("Server did not return a transaction ID.");
         }
 
-        var context = new QueryApiTransactionContext(txId, _affinityExtractor.Extract(response));
+        var context = new QueryApiTransactionContext(txId, _affinityExtractor.Extract(result.ResponseHeaders));
         _logger.Debug("Transaction begun");
         return context;
     }
@@ -93,10 +79,9 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
 
     internal record RequestBody(string[]? Bookmarks, string? ImpersonatedUser);
 
-    internal record ResponseBody
+    internal record ResponseBody : QueryApiResponse
     {
         public TransactionInfo? Transaction { get; init; }
-        public QueryApiErrorBody[]? Errors { get; init; }
     }
 
     internal record TransactionInfo(string? Id = null);

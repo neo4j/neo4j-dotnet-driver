@@ -15,21 +15,9 @@
 
 #nullable enable
 
-using System.Net.Http.Headers;
-using Neo4j.Driver.Internal.DependencyInjection;
-using Neo4j.Driver.Internal.QueryApi.Abstractions;
+namespace Neo4j.Driver.Internal.QueryApi;
 
-namespace Neo4j.Driver.Internal.QueryApi.Implementations;
-
-[AutoRegister]
-internal class QueryApiClusterAffinityExtractor : IClusterAffinityExtractor
+internal abstract record QueryApiResponse
 {
-    private const string HeaderName = "neo4j-cluster-affinity";
-
-    public string? Extract(HttpResponseHeaders headers)
-    {
-        return headers.TryGetValues(HeaderName, out var vals)
-            ? string.Join(",", vals)
-            : null;
-    }
+    public QueryApiErrorBody[]? Errors { get; init; }
 }

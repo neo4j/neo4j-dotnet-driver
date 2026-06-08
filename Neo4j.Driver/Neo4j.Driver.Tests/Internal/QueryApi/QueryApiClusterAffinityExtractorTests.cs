@@ -33,7 +33,7 @@ public class QueryApiClusterAffinityExtractorTests
         var response = new HttpResponseMessage(HttpStatusCode.Accepted);
         response.Headers.TryAddWithoutValidation("neo4j-cluster-affinity", "shard-42");
 
-        _subject.Extract(response).Should().Be("shard-42");
+        _subject.Extract(response.Headers).Should().Be("shard-42");
     }
 
     [Fact]
@@ -41,7 +41,7 @@ public class QueryApiClusterAffinityExtractorTests
     {
         var response = new HttpResponseMessage(HttpStatusCode.Accepted);
 
-        _subject.Extract(response).Should().BeNull();
+        _subject.Extract(response.Headers).Should().BeNull();
     }
 
     [Fact]
@@ -51,6 +51,6 @@ public class QueryApiClusterAffinityExtractorTests
         response.Headers.TryAddWithoutValidation("neo4j-cluster-affinity", "shard-1");
         response.Headers.TryAddWithoutValidation("neo4j-cluster-affinity", "shard-2");
 
-        _subject.Extract(response).Should().Be("shard-1,shard-2");
+        _subject.Extract(response.Headers).Should().Be("shard-1,shard-2");
     }
 }

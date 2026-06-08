@@ -15,7 +15,6 @@
 
 #nullable enable
 
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
@@ -27,56 +26,40 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 [AutoRegister]
 internal class CommitTransactionHandler : ICommitTransactionHandler
 {
-    private readonly IQueryApiErrorChecker _errorChecker;
-    private readonly IQueryApiHttpTransport _httpTransport;
-    private readonly IJsonDeserializer _jsonDeserializer;
+    private readonly IQueryApiClient _client;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
     private readonly QueryApiTransactionContext _txContext;
 
     public CommitTransactionHandler(
         IQueryApiRequestBuilder requestBuilder,
-        IQueryApiHttpTransport httpTransport,
-        IQueryApiErrorChecker errorChecker,
-        IJsonDeserializer jsonDeserializer,
+        IQueryApiClient client,
         QueryApiTransactionContext txContext,
         ILogger logger)
     {
         _requestBuilder = requestBuilder;
-        _httpTransport = httpTransport;
-        _errorChecker = errorChecker;
-        _jsonDeserializer = jsonDeserializer;
+        _client = client;
         _txContext = txContext;
         _logger = logger;
     }
 
-    public async Task<string[]> CommitTransactionAsync(
-        CancellationToken cancellationToken = default)
+    public async Task<string[]> CommitTransactionAsync(CancellationToken cancellationToken = default)
     {
         _logger.Debug("Building transaction commit request", _txContext.TxId);
         using var request = await _requestBuilder
             .PostAsync($"query/v2/tx/{_txContext.TxId}/commit", null, cancellationToken)
             .ConfigureAwait(false);
 
-        using var response = await _httpTransport.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        var result = await _client.ExecuteAsync<ResponseBody>(request, cancellationToken).ConfigureAwait(false);
 
-        var body = await _jsonDeserializer
-            .DeserializeAsync<ResponseBody>(
-                await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false),
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        _errorChecker.ThrowIfErrors(body?.Errors);
-
-        var bookmarks = body?.Bookmarks ?? [];
+        var bookmarks = result.Body?.Bookmarks ?? [];
         var len = bookmarks.Length;
         _logger.Debug("Committed transaction" + (len == 0 ? "" : $" and got {len} bookmarks"));
         return bookmarks;
     }
 
-    internal record ResponseBody
+    internal record ResponseBody : QueryApiResponse
     {
         public string[]? Bookmarks { get; init; }
-        public QueryApiErrorBody[]? Errors { get; init; }
     }
 }

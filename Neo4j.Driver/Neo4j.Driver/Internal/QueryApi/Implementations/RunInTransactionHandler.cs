@@ -28,25 +28,19 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 [AutoRegister]
 internal class RunInTransactionHandler : IRunInTransactionHandler
 {
-    private readonly IQueryApiErrorChecker _errorChecker;
-    private readonly IQueryApiHttpTransport _httpTransport;
-    private readonly IJsonDeserializer _jsonDeserializer;
+    private readonly IQueryApiClient _client;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
     private readonly QueryApiTransactionContext _txContext;
 
     public RunInTransactionHandler(
         IQueryApiRequestBuilder requestBuilder,
-        IQueryApiHttpTransport httpTransport,
-        IQueryApiErrorChecker errorChecker,
-        IJsonDeserializer jsonDeserializer,
+        IQueryApiClient client,
         QueryApiTransactionContext txContext,
         ILogger logger)
     {
         _requestBuilder = requestBuilder;
-        _httpTransport = httpTransport;
-        _errorChecker = errorChecker;
-        _jsonDeserializer = jsonDeserializer;
+        _client = client;
         _txContext = txContext;
         _logger = logger;
     }
@@ -58,17 +52,10 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
         _logger.Debug("Running query: {query}", query.Text);
 
         using var request = await BuildRequestAsync(query, cancellationToken).ConfigureAwait(false);
-        using var response = await _httpTransport.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        var result = await _client.ExecuteAsync<QueryApiResultBody>(request, cancellationToken).ConfigureAwait(false);
 
-        var body = await _jsonDeserializer
-            .DeserializeAsync<QueryApiResultBody>(
-                await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false),
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        _errorChecker.ThrowIfErrors(body?.Errors);
-
-        var result = new QueryApiResultSet
+        var body = result.Body;
+        var resultSet = new QueryApiResultSet
         {
             Fields = body?.Data?.Fields ?? [],
             Rows = body?.Data?.Values ?? [],
@@ -78,10 +65,10 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
         _logger.Debug(
             "Run complete: {fieldCount} field(s), {rowCount} row(s)",
             _txContext.TxId,
-            result.Fields.Length,
-            result.Rows.Length);
+            resultSet.Fields.Length,
+            resultSet.Rows.Length);
 
-        return result;
+        return resultSet;
     }
 
     private async Task<HttpRequestMessage> BuildRequestAsync(Query query, CancellationToken cancellationToken)

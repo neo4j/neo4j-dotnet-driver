@@ -15,7 +15,6 @@
 
 #nullable enable
 
-using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
@@ -39,19 +38,18 @@ public class AutoCommitHandlerTests
 {
     private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
 
-    private HttpResponseMessage SetupChain()
+    private void SetupChain(QueryApiResultBody? body = null)
     {
-        var response = new HttpResponseMessage { Content = new ByteArrayContent([]) };
+        body ??= new QueryApiResultBody();
+        var request = new HttpRequestMessage();
 
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
             .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HttpRequestMessage());
+            .ReturnsAsync(request);
 
-        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
-            .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
-
-        return response;
+        _fixture.Freeze<Mock<IQueryApiClient>>()
+            .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new QueryApiResult<QueryApiResultBody>(body, new HttpResponseMessage().Headers));
     }
 
     [Fact]
@@ -68,10 +66,7 @@ public class AutoCommitHandlerTests
             Bookmarks = ["neo4j:bookmark:v1:tx55"]
         };
 
-        SetupChain();
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<QueryApiResultBody>(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expectedBody);
+        SetupChain(expectedBody);
 
         var subject = _fixture.Create<AutoCommitHandler>();
         var result = await subject.AutoCommitAsync(
@@ -85,12 +80,17 @@ public class AutoCommitHandlerTests
     }
 
     [Fact]
-    public async Task Returns_EmptyResponse_WhenDeserializedBodyIsNull()
+    public async Task Returns_EmptyResponse_WhenBodyIsNull()
     {
-        SetupChain();
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<QueryApiResultBody>(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((QueryApiResultBody?)null);
+        var request = new HttpRequestMessage();
+
+        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+            .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request);
+
+        _fixture.Freeze<Mock<IQueryApiClient>>()
+            .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new QueryApiResult<QueryApiResultBody>(null!, new HttpResponseMessage().Headers));
 
         var subject = _fixture.Create<AutoCommitHandler>();
         var result = await subject.AutoCommitAsync(new Query("RETURN 1"), [], TestContext.Current.CancellationToken);
@@ -101,44 +101,22 @@ public class AutoCommitHandlerTests
     }
 
     [Fact]
-    public async Task Throws_WhenHttpClientThrows()
+    public async Task Throws_WhenExecuteAsyncThrows()
     {
-        SetupChain();
-        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
-            .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
+        var request = new HttpRequestMessage();
+
+        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+            .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request);
+
+        _fixture.Freeze<Mock<IQueryApiClient>>()
+            .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ServiceUnavailableException("HTTP 503"));
 
         var subject = _fixture.Create<AutoCommitHandler>();
         var act = () => subject.AutoCommitAsync(new Query("RETURN 1"), [], TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<ServiceUnavailableException>();
-    }
-
-    [Fact]
-    public async Task PropagatesBodyError_WhenResponseContainsErrorArray()
-    {
-        // Spec: even on 202, the response body may contain an errors array
-        var bodyWithError = new QueryApiResultBody
-        {
-            Errors =
-            [
-                new QueryApiErrorBody("Neo.ClientError.Statement.SyntaxError", "Invalid Cypher")
-            ]
-        };
-
-        SetupChain();
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<QueryApiResultBody>(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(bodyWithError);
-
-        _fixture.Freeze<Mock<IQueryApiErrorChecker>>()
-            .Setup(x => x.ThrowIfErrors(It.Is<QueryApiErrorBody[]?>(e => e != null && e[0].Code == "Neo.ClientError.Statement.SyntaxError")))
-            .Throws(new ClientException("SyntaxError", "Invalid Cypher"));
-
-        var subject = _fixture.Create<AutoCommitHandler>();
-        var act = () => subject.AutoCommitAsync(new Query("RETUN 1"), [], TestContext.Current.CancellationToken);
-
-        await act.Should().ThrowAsync<ClientException>();
     }
 
     [Fact]
@@ -150,15 +128,17 @@ public class AutoCommitHandlerTests
         _fixture.Freeze<Mock<ISessionContext>>()
             .Setup(x => x.AccessMode).Returns(AccessMode.Read);
 
+        var request = new HttpRequestMessage();
         object? capturedBody = null;
+
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
             .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
             .Callback<string, object, CancellationToken>((_, body, _) => capturedBody = body)
-            .ReturnsAsync(new HttpRequestMessage());
+            .ReturnsAsync(request);
 
-        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
-            .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HttpResponseMessage { Content = new ByteArrayContent([]) });
+        _fixture.Freeze<Mock<IQueryApiClient>>()
+            .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new QueryApiResult<QueryApiResultBody>(new QueryApiResultBody(), new HttpResponseMessage().Headers));
 
         var subject = _fixture.Create<AutoCommitHandler>();
         await subject.AutoCommitAsync(new Query("RETURN 1"), [], TestContext.Current.CancellationToken);

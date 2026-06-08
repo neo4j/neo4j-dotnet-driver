@@ -15,11 +15,11 @@
 
 #nullable enable
 
-using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 internal interface IClusterAffinityExtractor
 {
-    string? Extract(HttpResponseMessage response);
+    string? Extract(HttpResponseHeaders headers);
 }
