@@ -23,11 +23,11 @@ using Neo4j.Driver.Internal.QueryApi.Abstractions;
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 /// <summary>
-/// A fake <see cref="IQueryApiHttpClient"/> that records the last request (including its body, read eagerly
+/// A fake <see cref="IQueryApiHttpTransport"/> that records the last request (including its body, read eagerly
 /// before the handler's <c>using</c> block disposes the message) and returns a pre-configured
 /// <see cref="HttpResponseMessage"/>.
 /// </summary>
-internal class FakeQueryApiHttpClient(HttpResponseMessage response) : IQueryApiHttpClient
+internal class FakeQueryApiHttpTransport(HttpResponseMessage response) : IQueryApiHttpTransport
 {
     public HttpRequestMessage? LastRequest { get; private set; }
     public string? LastRequestBody { get; private set; }

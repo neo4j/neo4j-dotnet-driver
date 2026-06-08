@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
 
-internal interface IQueryApiHttpClient : IAsyncDisposable
+internal interface IQueryApiHttpTransport : IAsyncDisposable
 {
     Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken = default);
 }

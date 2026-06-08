@@ -47,7 +47,7 @@ public class AutoCommitHandlerTests
             .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HttpRequestMessage());
 
-        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
@@ -104,7 +104,7 @@ public class AutoCommitHandlerTests
     public async Task Throws_WhenHttpClientThrows()
     {
         SetupChain();
-        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ServiceUnavailableException("HTTP 503"));
 
@@ -156,7 +156,7 @@ public class AutoCommitHandlerTests
             .Callback<string, object, CancellationToken>((_, body, _) => capturedBody = body)
             .ReturnsAsync(new HttpRequestMessage());
 
-        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HttpResponseMessage { Content = new ByteArrayContent([]) });
 

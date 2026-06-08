@@ -47,7 +47,7 @@ public class BeginTransactionHandlerTests
             .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HttpRequestMessage());
 
-        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
@@ -136,7 +136,7 @@ public class BeginTransactionHandlerTests
             .Callback<string, object, CancellationToken>((_, body, _) => capturedBody = body)
             .ReturnsAsync(new HttpRequestMessage());
 
-        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HttpResponseMessage { Content = new ByteArrayContent([]) });
 

@@ -25,13 +25,13 @@ using Neo4j.Driver.Internal.QueryApi.Abstractions;
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 
 [AutoRegister]
-internal class QueryApiHttpClient : IQueryApiHttpClient
+internal class QueryApiHttpTransport : IQueryApiHttpTransport
 {
     private readonly HttpClient _client;
     private readonly IQueryApiErrorChecker _errorChecker;
     private readonly ILogger _logger;
 
-    public QueryApiHttpClient(IQueryApiErrorChecker errorChecker, ILogger logger)
+    public QueryApiHttpTransport(IQueryApiErrorChecker errorChecker, ILogger logger)
     {
         _errorChecker = errorChecker;
         _logger = logger;

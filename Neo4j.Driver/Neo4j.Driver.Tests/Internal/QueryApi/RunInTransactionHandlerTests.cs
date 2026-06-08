@@ -48,7 +48,7 @@ public class RunInTransactionHandlerTests
             .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}", It.IsAny<object>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HttpRequestMessage());
 
-        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HttpResponseMessage { Content = new ByteArrayContent([]) });
     }
@@ -87,7 +87,7 @@ public class RunInTransactionHandlerTests
     public async Task Throws_WhenHttpClientThrows()
     {
         SetupChain();
-        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ServiceUnavailableException("HTTP 503"));
 

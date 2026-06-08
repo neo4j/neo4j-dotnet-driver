@@ -62,7 +62,7 @@ public class VerifyConnectivityHandlerTests
             .Returns(BaseUri);
 
         // The handler builds its own HttpRequestMessage internally, so we match on GET method
-        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
             .Setup(x => x.SendAsync(
                 It.Is<HttpRequestMessage>(r => r.Method == HttpMethod.Get),
                 It.IsAny<CancellationToken>()))
@@ -148,7 +148,7 @@ public class VerifyConnectivityHandlerTests
             .Setup(x => x.Build(string.Empty))
             .Returns(BaseUri);
 
-        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ServiceUnavailableException("HTTP 404 GET https://neo4j.example.com:7474/ : "));
 

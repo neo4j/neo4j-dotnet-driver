@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 [AutoRegister]
 internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
 {
-    private readonly IQueryApiHttpClient _httpClient;
+    private readonly IQueryApiHttpTransport _httpTransport;
     private readonly IJsonDeserializer _jsonDeserializer;
     private readonly ILogger _logger;
     private readonly QueryApiServerInfo _serverInfo;
@@ -41,13 +41,13 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
 
     public VerifyConnectivityHandler(
         IQueryApiUrlBuilder urlBuilder,
-        IQueryApiHttpClient httpClient,
+        IQueryApiHttpTransport httpTransport,
         IJsonDeserializer jsonDeserializer,
         QueryApiServerInfo serverInfo,
         ILogger logger)
     {
         _urlBuilder = urlBuilder;
-        _httpClient = httpClient;
+        _httpTransport = httpTransport;
         _jsonDeserializer = jsonDeserializer;
         _serverInfo = serverInfo;
         _logger = logger;
@@ -57,7 +57,7 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
     {
         _logger.Debug("Verifying connectivity via discovery endpoint at {address}", _serverInfo.Address);
         using var request = new HttpRequestMessage(HttpMethod.Get, _urlBuilder.Build(string.Empty));
-        using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        using var response = await _httpTransport.SendAsync(request, cancellationToken).ConfigureAwait(false);
         var responseContent = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         var body = await _jsonDeserializer
             .DeserializeAsync<DiscoveryResponse>(responseContent, JsonNamingPolicy.SnakeCaseLower, cancellationToken)

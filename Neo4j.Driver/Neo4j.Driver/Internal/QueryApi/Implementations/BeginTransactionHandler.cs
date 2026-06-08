@@ -33,7 +33,7 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
 {
     private readonly IClusterAffinityExtractor _affinityExtractor;
     private readonly IQueryApiErrorChecker _errorChecker;
-    private readonly IQueryApiHttpClient _httpClient;
+    private readonly IQueryApiHttpTransport _httpTransport;
     private readonly IJsonDeserializer _jsonDeserializer;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
@@ -41,7 +41,7 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
 
     public BeginTransactionHandler(
         IQueryApiRequestBuilder requestBuilder,
-        IQueryApiHttpClient httpClient,
+        IQueryApiHttpTransport httpTransport,
         IQueryApiErrorChecker errorChecker,
         IJsonDeserializer jsonDeserializer,
         IClusterAffinityExtractor affinityExtractor,
@@ -49,7 +49,7 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
         ILogger logger)
     {
         _requestBuilder = requestBuilder;
-        _httpClient = httpClient;
+        _httpTransport = httpTransport;
         _errorChecker = errorChecker;
         _jsonDeserializer = jsonDeserializer;
         _affinityExtractor = affinityExtractor;
@@ -64,7 +64,7 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
         _logger.Debug("Beginning transaction with {bookmarkCount} bookmark(s)", bookmarks.Count);
 
         using var request = await BuildRequestAsync(bookmarks, cancellationToken).ConfigureAwait(false);
-        using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        using var response = await _httpTransport.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
         var body = await _jsonDeserializer
             .DeserializeAsync<ResponseBody>(

@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 internal class RunInTransactionHandler : IRunInTransactionHandler
 {
     private readonly IQueryApiErrorChecker _errorChecker;
-    private readonly IQueryApiHttpClient _httpClient;
+    private readonly IQueryApiHttpTransport _httpTransport;
     private readonly IJsonDeserializer _jsonDeserializer;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
@@ -37,14 +37,14 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
 
     public RunInTransactionHandler(
         IQueryApiRequestBuilder requestBuilder,
-        IQueryApiHttpClient httpClient,
+        IQueryApiHttpTransport httpTransport,
         IQueryApiErrorChecker errorChecker,
         IJsonDeserializer jsonDeserializer,
         QueryApiTransactionContext txContext,
         ILogger logger)
     {
         _requestBuilder = requestBuilder;
-        _httpClient = httpClient;
+        _httpTransport = httpTransport;
         _errorChecker = errorChecker;
         _jsonDeserializer = jsonDeserializer;
         _txContext = txContext;
@@ -58,7 +58,7 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
         _logger.Debug("Running query: {query}", query.Text);
 
         using var request = await BuildRequestAsync(query, cancellationToken).ConfigureAwait(false);
-        using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        using var response = await _httpTransport.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
         var body = await _jsonDeserializer
             .DeserializeAsync<QueryApiResultBody>(

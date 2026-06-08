@@ -48,7 +48,7 @@ public class RollbackTransactionHandlerTests
             .ReturnsAsync(request);
 
         var response = new HttpResponseMessage();
-        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
             .Setup(x => x.SendAsync(request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
@@ -59,7 +59,7 @@ public class RollbackTransactionHandlerTests
     public async Task Throws_WhenHttpClientThrows()
     {
         SetupChain();
-        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ServiceUnavailableException("HTTP 503"));
 
