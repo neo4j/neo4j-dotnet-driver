@@ -104,7 +104,6 @@ public class BeginTransactionHandlerTests
     [Fact]
     public async Task Throws_WhenDeserializedBodyHasNoTransactionId()
     {
-        // A missing transaction ID means something went wrong server-side
         var request = new HttpRequestMessage();
 
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
@@ -133,7 +132,6 @@ public class BeginTransactionHandlerTests
     [Fact]
     public async Task RequestBody_IncludesImpersonatedUser_FromSessionContext()
     {
-        // Spec: impersonatedUser must be forwarded from the session context on begin transaction
         _fixture.Freeze<Mock<ISessionContext>>()
             .Setup(x => x.ImpersonatedUser).Returns("banana_bob");
 
