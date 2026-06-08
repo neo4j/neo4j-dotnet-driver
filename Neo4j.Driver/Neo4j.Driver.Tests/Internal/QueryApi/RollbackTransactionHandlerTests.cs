@@ -21,7 +21,6 @@ using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Internal.QueryApi;
 using Neo4j.Driver.Internal.QueryApi.Abstractions;
 using Neo4j.Driver.Internal.QueryApi.Implementations;
 using Neo4j.Driver.Internal.QueryApi.Types;
@@ -57,17 +56,16 @@ public class RollbackTransactionHandlerTests
     }
 
     [Fact]
-    public async Task Throws_WhenErrorCheckerThrows()
+    public async Task Throws_WhenHttpClientThrows()
     {
-        // Spec: errors surfaced by EnsureSuccessAsync must propagate to the caller
-        _fixture.Freeze<Mock<IQueryApiErrorChecker>>()
-            .Setup(x => x.EnsureSuccessAsync(It.IsAny<HttpResponseMessage>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new ClientException("Neo.ClientError.General.Unknown", "server error"));
-
         SetupChain();
+        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+            .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ServiceUnavailableException("HTTP 503"));
+
         var subject = _fixture.Create<RollbackTransactionHandler>();
         var act = () => subject.RollbackTransactionAsync(TestContext.Current.CancellationToken);
 
-        await act.Should().ThrowAsync<ClientException>();
+        await act.Should().ThrowAsync<ServiceUnavailableException>();
     }
 }

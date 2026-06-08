@@ -66,14 +66,11 @@ internal class QueryApiErrorChecker : IQueryApiErrorChecker
         if (response.StatusCode != HttpStatusCode.Accepted && response.StatusCode != HttpStatusCode.OK)
         {
             var responseText = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            _logger.Debug(
-                "Unexpected HTTP {statusCode} from the Query API. {response}",
-                (int)response.StatusCode,
-                responseText);
+            var method = response.RequestMessage?.Method;
+            var uri = response.RequestMessage?.RequestUri;
+            var message = $"HTTP {(int)response.StatusCode} {method} {uri}: {responseText}";
 
-            var message = $"Unexpected HTTP {(int)response.StatusCode} from the Query API." +
-                $" Response: {responseText}";
-
+            _logger.Debug(message);
             throw new ServiceUnavailableException(message);
         }
     }

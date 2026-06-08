@@ -28,10 +28,12 @@ namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 internal class QueryApiHttpClient : IQueryApiHttpClient
 {
     private readonly HttpClient _client;
+    private readonly IQueryApiErrorChecker _errorChecker;
     private readonly ILogger _logger;
 
-    public QueryApiHttpClient(ILogger logger)
+    public QueryApiHttpClient(IQueryApiErrorChecker errorChecker, ILogger logger)
     {
+        _errorChecker = errorChecker;
         _logger = logger;
         _client = new HttpClient(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(2) });
     }
@@ -45,6 +47,7 @@ internal class QueryApiHttpClient : IQueryApiHttpClient
         _logger.Debug(
             "{method} {uri} returned {statusCode}", request.Method, request.RequestUri, (int)response.StatusCode);
 
+        await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
         return response;
     }
 

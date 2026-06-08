@@ -58,14 +58,6 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
         _logger.Debug("Verifying connectivity via discovery endpoint at {address}", _serverInfo.Address);
         using var request = new HttpRequestMessage(HttpMethod.Get, _urlBuilder.Build(string.Empty));
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new ServiceUnavailableException(
-                $"Discovery endpoint returned HTTP {(int)response.StatusCode}. " +
-                "Verify the server is running and the base URI is correct.");
-        }
-
         var responseContent = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         var body = await _jsonDeserializer
             .DeserializeAsync<DiscoveryResponse>(responseContent, JsonNamingPolicy.SnakeCaseLower, cancellationToken)

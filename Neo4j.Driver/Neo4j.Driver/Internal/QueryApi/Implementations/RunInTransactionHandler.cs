@@ -59,7 +59,6 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
 
         using var request = await BuildRequestAsync(query, cancellationToken).ConfigureAwait(false);
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
 
         var body = await _jsonDeserializer
             .DeserializeAsync<QueryApiResultBody>(

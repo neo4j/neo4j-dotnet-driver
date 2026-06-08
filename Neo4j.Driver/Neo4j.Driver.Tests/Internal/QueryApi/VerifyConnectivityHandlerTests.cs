@@ -52,10 +52,10 @@ public class VerifyConnectivityHandlerTests
 
     // Freezes the minimum mock chain needed to exercise the handler without crashing:
     // Build("") → BaseUri → SendAsync(GET BaseUri) → response → DeserializeAsync → ValidDiscovery()
-    private HttpResponseMessage SetupChain(HttpStatusCode statusCode = HttpStatusCode.OK)
+    private HttpResponseMessage SetupChain()
     {
         _fixture.Inject(new QueryApiServerInfo(BaseUri));
-        var response = new HttpResponseMessage(statusCode) { Content = new ByteArrayContent([]) };
+        var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([]) };
 
         _fixture.Freeze<Mock<IQueryApiUrlBuilder>>()
             .Setup(x => x.Build(string.Empty))
@@ -140,9 +140,17 @@ public class VerifyConnectivityHandlerTests
     }
 
     [Fact]
-    public async Task ThrowsServiceUnavailableException_WhenDiscoveryEndpointReturnsNon2xx()
+    public async Task ThrowsServiceUnavailableException_WhenDiscoveryThrows()
     {
-        SetupChain(statusCode: HttpStatusCode.NotFound);
+        _fixture.Inject(new QueryApiServerInfo(BaseUri));
+
+        _fixture.Freeze<Mock<IQueryApiUrlBuilder>>()
+            .Setup(x => x.Build(string.Empty))
+            .Returns(BaseUri);
+
+        _fixture.Freeze<Mock<IQueryApiHttpClient>>()
+            .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ServiceUnavailableException("HTTP 404 GET https://neo4j.example.com:7474/ : "));
 
         var subject = _fixture.Create<VerifyConnectivityHandler>();
         var act = () => subject.VerifyConnectivityAsync(TestContext.Current.CancellationToken);
