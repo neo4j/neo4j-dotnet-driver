@@ -133,13 +133,11 @@ public class BoltHandshakerTests
 
         socket.SetupGet(x => x.WriterStream).Returns(writerStream);
         socket.SetupGet(x => x.ReaderStream).Returns(readerStream);
-        
-        var exception = await Record.ExceptionAsync(
-                () => BoltHandshaker.Default.DoHandshakeAsync(
-                    socket.Object,
-                    new Mock<INeo4jLogger>().Object,
-                    CancellationToken.None))
-            .ConfigureAwait(false);
+
+        var exception = await Record.ExceptionAsync(() => BoltHandshaker.Default.DoHandshakeAsync(
+            socket.Object,
+            new Mock<INeo4jLogger>().Object,
+            CancellationToken.None));
 
         exception.Should().BeOfType<NotSupportedException>();
     }
@@ -192,7 +190,7 @@ public class BoltHandshakerTests
         var exception = await Record.ExceptionAsync(() => BoltHandshaker.Default.DoHandshakeAsync(
             socket.Object,
             new Mock<INeo4jLogger>().Object,
-            CancellationToken.None)).ConfigureAwait(false);
+            CancellationToken.None));
 
         exception.Should().BeOfType<ProtocolException>();    
     }

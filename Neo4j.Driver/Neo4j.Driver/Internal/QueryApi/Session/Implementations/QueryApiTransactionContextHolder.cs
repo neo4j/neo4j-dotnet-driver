@@ -15,16 +15,17 @@
 
 #nullable enable
 
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace Neo4j.Driver.Internal.QueryApi;
 
-internal interface IQueryApiTransactionFactory
+/// <summary>
+/// Session-scoped pass-through that carries the <see cref="QueryApiTransactionContext"/> produced by
+/// <see cref="TransactionBeginner"/> back to <see cref="QueryApiTransactionFactory"/> so the factory can
+/// register it in the transaction child scope. Sequential use within a session is safe; the value is
+/// overwritten on each begin.
+/// </summary>
+internal class QueryApiTransactionContextHolder
 {
-    Task<IInternalAsyncTransaction> BeginTransactionAsync(
-        AccessMode mode,
-        Action<TransactionConfigBuilder>? action,
-        CancellationToken cancellationToken = default);
+    public QueryApiTransactionContext? Context { get; private set; }
+
+    public void Set(QueryApiTransactionContext context) => Context = context;
 }

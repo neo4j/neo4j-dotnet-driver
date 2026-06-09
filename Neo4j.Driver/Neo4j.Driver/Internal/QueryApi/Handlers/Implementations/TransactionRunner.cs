@@ -24,30 +24,31 @@ using Neo4j.Driver.Internal.DependencyInjection;
 namespace Neo4j.Driver.Internal.QueryApi;
 
 [AutoRegister]
-internal class RunInTransactionHandler : IRunInTransactionHandler
+internal class TransactionRunner : ITransactionRunner
 {
     private readonly IQueryApiClient _client;
+    private readonly IQueryApiResultCursorBuilder _cursorBuilder;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
     private readonly QueryApiTransactionContext _txContext;
 
-    public RunInTransactionHandler(
+    public TransactionRunner(
         IQueryApiRequestBuilder requestBuilder,
         IQueryApiClient client,
+        IQueryApiResultCursorBuilder cursorBuilder,
         QueryApiTransactionContext txContext,
         ILogger logger)
     {
         _requestBuilder = requestBuilder;
         _client = client;
+        _cursorBuilder = cursorBuilder;
         _txContext = txContext;
         _logger = logger;
     }
 
-    public async Task<QueryApiResultSet> RunInTransactionAsync(
-        Query query,
-        CancellationToken cancellationToken = default)
+    public async Task<IResultCursor> RunAsync(Query query, CancellationToken cancellationToken = default)
     {
-        _logger.Debug("Running query: {query}", query.Text);
+        _logger.Debug("Running query in tx {txId}: {query}", _txContext.TxId, query.Text);
 
         using var request = await BuildRequestAsync(query, cancellationToken).ConfigureAwait(false);
         var result = await _client.ExecuteAsync<QueryApiResultBody>(request, cancellationToken).ConfigureAwait(false);
@@ -62,11 +63,10 @@ internal class RunInTransactionHandler : IRunInTransactionHandler
 
         _logger.Debug(
             "Run complete: {fieldCount} field(s), {rowCount} row(s)",
-            _txContext.TxId,
             resultSet.Fields.Length,
             resultSet.Rows.Length);
 
-        return resultSet;
+        return _cursorBuilder.Build(resultSet, query);
     }
 
     private async Task<HttpRequestMessage> BuildRequestAsync(Query query, CancellationToken cancellationToken)

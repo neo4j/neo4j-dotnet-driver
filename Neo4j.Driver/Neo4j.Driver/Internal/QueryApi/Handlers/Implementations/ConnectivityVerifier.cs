@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Internal.QueryApi;
 /// Decision: always hit discovery even when the driver is warm; do not run a dummy query.
 /// </summary>
 [AutoRegister]
-internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
+internal class ConnectivityVerifier : IConnectivityVerifier
 {
     private readonly IQueryApiHttpTransport _httpTransport;
     private readonly IJsonDeserializer _jsonDeserializer;
@@ -38,7 +38,7 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
     private readonly QueryApiServerInfo _serverInfo;
     private readonly IQueryApiUrlBuilder _urlBuilder;
 
-    public VerifyConnectivityHandler(
+    public ConnectivityVerifier(
         IQueryApiUrlBuilder urlBuilder,
         IQueryApiHttpTransport httpTransport,
         IJsonDeserializer jsonDeserializer,
@@ -52,7 +52,7 @@ internal class VerifyConnectivityHandler : IVerifyConnectivityHandler
         _logger = logger;
     }
 
-    public async Task<IServerInfo> VerifyConnectivityAsync(CancellationToken cancellationToken = default)
+    public async Task<IServerInfo> VerifyAsync(CancellationToken cancellationToken = default)
     {
         _logger.Debug("Verifying connectivity via discovery endpoint at {address}", _serverInfo.Address);
         using var request = new HttpRequestMessage(HttpMethod.Get, _urlBuilder.Build(string.Empty));

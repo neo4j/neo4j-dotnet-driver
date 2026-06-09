@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// Rolling back a transaction discards all statements run within it. A DELETE request is used — the only Query
 /// API operation that is not a POST. Spec: https://neo4j.com/docs/query-api/current/#query-api-rollback-transaction
 /// </summary>
-public class RollbackTransactionHandlerTests
+public class TransactionRollbackerTests
 {
     private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
 
@@ -61,8 +61,8 @@ public class RollbackTransactionHandlerTests
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ServiceUnavailableException("HTTP 503"));
 
-        var subject = _fixture.Create<RollbackTransactionHandler>();
-        var act = () => subject.RollbackTransactionAsync(TestContext.Current.CancellationToken);
+        var subject = _fixture.Create<TransactionRollbacker>();
+        var act = () => subject.RollbackAsync(TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<ServiceUnavailableException>();
     }

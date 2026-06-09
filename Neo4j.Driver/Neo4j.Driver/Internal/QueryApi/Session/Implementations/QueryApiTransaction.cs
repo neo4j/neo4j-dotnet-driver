@@ -25,29 +25,23 @@ namespace Neo4j.Driver.Internal.QueryApi;
 [AutoRegister]
 internal class QueryApiTransaction : IInternalAsyncTransaction
 {
-    private readonly IBookmarkTracker _bookmarkTracker;
-    private readonly ICommitTransactionHandler _commitHandler;
-    private readonly IQueryApiResultCursorBuilder _cursorBuilder;
+    private readonly ITransactionCommitter _committer;
     private readonly IDisposable _loggingContext;
     private readonly ILogger _logger;
-    private readonly IRollbackTransactionHandler _rollbackHandler;
-    private readonly IRunInTransactionHandler _runHandler;
+    private readonly ITransactionRollback _rollback;
+    private readonly ITransactionRunner _runner;
 
     public QueryApiTransaction(
-        IRunInTransactionHandler runHandler,
-        ICommitTransactionHandler commitHandler,
-        IRollbackTransactionHandler rollbackHandler,
-        IQueryApiResultCursorBuilder cursorBuilder,
-        IBookmarkTracker bookmarkTracker,
+        ITransactionRunner runner,
+        ITransactionCommitter committer,
+        ITransactionRollback rollback,
         ILoggingContextTracker contextTracker,
         QueryApiTransactionContext transactionContext,
         ILogger logger)
     {
-        _runHandler = runHandler;
-        _commitHandler = commitHandler;
-        _rollbackHandler = rollbackHandler;
-        _cursorBuilder = cursorBuilder;
-        _bookmarkTracker = bookmarkTracker;
+        _runner = runner;
+        _committer = committer;
+        _rollback = rollback;
         _loggingContext = contextTracker.Add("tx", transactionContext);
         _logger = logger;
     }
@@ -67,16 +61,15 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
     {
         EnsureOpen();
         _logger.Debug("Committing transaction");
-        var bookmarks = await _commitHandler.CommitTransactionAsync().ConfigureAwait(false);
+        await _committer.CommitAsync().ConfigureAwait(false);
         IsOpen = false;
-        _bookmarkTracker.UpdateBookmarks(bookmarks);
     }
 
     public async Task RollbackAsync()
     {
         EnsureOpen();
         _logger.Debug("Rolling back transaction");
-        await _rollbackHandler.RollbackTransactionAsync().ConfigureAwait(false);
+        await _rollback.RollbackAsync().ConfigureAwait(false);
         IsOpen = false;
     }
 
@@ -88,11 +81,10 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
     public Task<IResultCursor> RunAsync(string query, IDictionary<string, object> parameters) =>
         RunAsync(new Query(query, parameters));
 
-    public async Task<IResultCursor> RunAsync(Query query)
+    public Task<IResultCursor> RunAsync(Query query)
     {
         EnsureOpen();
-        var response = await _runHandler.RunInTransactionAsync(query).ConfigureAwait(false);
-        return _cursorBuilder.Build(response, query);
+        return _runner.RunAsync(query);
     }
 
     public async ValueTask DisposeAsync()
@@ -101,7 +93,7 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
         {
             IsOpen = false;
             _logger.Debug("Disposing open transaction — rolling back");
-            await _rollbackHandler.RollbackTransactionAsync().ConfigureAwait(false);
+            await _rollback.RollbackAsync().ConfigureAwait(false);
         }
 
         _loggingContext.Dispose();

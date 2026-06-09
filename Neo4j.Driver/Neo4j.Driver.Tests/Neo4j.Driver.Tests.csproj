@@ -19,9 +19,13 @@
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)' == 'CI' ">
       <Optimize Condition=" '$(Optimize)' == '' ">true</Optimize>
+      <NoWarn>1701;1702;0618;xUnit1051;xUnit1031</NoWarn>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-      <NoWarn>1701;1702;0618</NoWarn>
+      <NoWarn>1701;1702;0618;xUnit1051;xUnit1031</NoWarn>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <NoWarn>1701;1702;0618;xUnit1051;xUnit1031</NoWarn>
     </PropertyGroup>
     <ItemGroup>
         <Content Include="App.config" />

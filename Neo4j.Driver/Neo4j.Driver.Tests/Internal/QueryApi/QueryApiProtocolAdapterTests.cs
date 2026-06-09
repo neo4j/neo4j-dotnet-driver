@@ -27,24 +27,23 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 public class QueryApiProtocolAdapterTests
 {
-    private readonly Mock<IVerifyConnectivityHandler> _connectivityHandler = new();
+    private readonly Mock<IConnectivityVerifier> _connectivityVerifier = new();
     private readonly Mock<IQueryApiSessionFactory> _sessionFactory = new();
 
     private QueryApiProtocolAdapter CreateAdapter() =>
-        new(_connectivityHandler.Object, _sessionFactory.Object);
-
+        new(_connectivityVerifier.Object, _sessionFactory.Object);
 
     [Fact]
-    public void Constructor_NullVerifyConnectivityHandler_Throws()
+    public void Constructor_NullConnectivityVerifier_Throws()
     {
         var act = () => new QueryApiProtocolAdapter(null!, _sessionFactory.Object);
-        act.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("verifyConnectivityHandler");
+        act.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("connectivityVerifier");
     }
 
     [Fact]
     public void Constructor_NullSessionFactory_Throws()
     {
-        var act = () => new QueryApiProtocolAdapter(_connectivityHandler.Object, null!);
+        var act = () => new QueryApiProtocolAdapter(_connectivityVerifier.Object, null!);
         act.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("sessionFactory");
     }
 
@@ -74,13 +73,12 @@ public class QueryApiProtocolAdapterTests
         result.Should().BeTrue();
     }
 
-
     [Fact]
-    public async Task VerifyConnectivityAndGetInfoAsync_ReturnsServerInfoFromHandler()
+    public async Task VerifyConnectivityAndGetInfoAsync_ReturnsServerInfoFromVerifier()
     {
         var serverInfo = new Mock<IServerInfo>().Object;
-        _connectivityHandler
-            .Setup(h => h.VerifyConnectivityAsync(default))
+        _connectivityVerifier
+            .Setup(h => h.VerifyAsync(default))
             .ReturnsAsync(serverInfo);
 
         var result = await CreateAdapter().VerifyConnectivityAndGetInfoAsync();
@@ -89,11 +87,11 @@ public class QueryApiProtocolAdapterTests
     }
 
     [Fact]
-    public async Task VerifyConnectivityAndGetInfoAsync_HandlerThrows_Propagates()
+    public async Task VerifyConnectivityAndGetInfoAsync_VerifierThrows_Propagates()
     {
         var exception = new ServiceUnavailableException("down");
-        _connectivityHandler
-            .Setup(h => h.VerifyConnectivityAsync(default))
+        _connectivityVerifier
+            .Setup(h => h.VerifyAsync(default))
             .ThrowsAsync(exception);
 
         var act = () => CreateAdapter().VerifyConnectivityAndGetInfoAsync();

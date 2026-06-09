@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
 
@@ -30,14 +31,14 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// Committing a transaction finalises all statements run within it and returns updated bookmarks. Spec:
 /// https://neo4j.com/docs/query-api/current/#query-api-commit-transaction
 /// </summary>
-public class CommitTransactionHandlerTests
+public class TransactionCommitterTests
 {
     private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
 
-    private void SetupChain(CommitTransactionHandler.ResponseBody? body = null)
+    private void SetupChain(TransactionCommitter.ResponseBody? body = null)
     {
         var txContext = _fixture.Freeze<QueryApiTransactionContext>();
-        body ??= new CommitTransactionHandler.ResponseBody();
+        body ??= new TransactionCommitter.ResponseBody();
         var request = new HttpRequestMessage();
 
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
@@ -48,39 +49,47 @@ public class CommitTransactionHandlerTests
             .ReturnsAsync(request);
 
         _fixture.Freeze<Mock<IQueryApiClient>>()
-            .Setup(x => x.ExecuteAsync<CommitTransactionHandler.ResponseBody>(
+            .Setup(x => x.ExecuteAsync<TransactionCommitter.ResponseBody>(
                 request,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new QueryApiResult<CommitTransactionHandler.ResponseBody>(body, new HttpResponseMessage().Headers));
+            .ReturnsAsync(new QueryApiResult<TransactionCommitter.ResponseBody>(body, new HttpResponseMessage().Headers));
     }
 
     [Fact]
-    public async Task ReturnsBookmarks_FromDeserializedBody()
+    public async Task CommitAsync_UpdatesBookmarkTracker_WithServerBookmarks()
     {
-        // Spec: the commit response contains updated bookmarks for causal consistency
-        string[] expectedBookmarks = ["neo4j:bookmark:v1:tx300", "neo4j:bookmark:v1:tx301"];
+        // Spec: commit response bookmarks must be applied to the session's tracker for causal chaining
+        SetupChain(new TransactionCommitter.ResponseBody
+        {
+            Bookmarks = ["neo4j:bookmark:v1:tx300", "neo4j:bookmark:v1:tx301"]
+        });
 
-        SetupChain(new CommitTransactionHandler.ResponseBody { Bookmarks = expectedBookmarks });
+        var tracker = new BookmarkTracker(SessionConfig.Builder.Build());
+        _fixture.Inject<IBookmarkTracker>(tracker);
 
-        var subject = _fixture.Create<CommitTransactionHandler>();
-        var bookmarks = await subject.CommitTransactionAsync(TestContext.Current.CancellationToken);
+        var subject = _fixture.Create<TransactionCommitter>();
+        await subject.CommitAsync(TestContext.Current.CancellationToken);
 
-        bookmarks.Should().Equal("neo4j:bookmark:v1:tx300", "neo4j:bookmark:v1:tx301");
+        tracker.CurrentBookmarks.Values.Should().Equal("neo4j:bookmark:v1:tx300", "neo4j:bookmark:v1:tx301");
     }
 
     [Fact]
-    public async Task ReturnsEmptyBookmarks_WhenBodyHasNoBookmarks()
+    public async Task CommitAsync_UpdatesBookmarkTracker_WithEmptyArray_WhenBodyHasNoBookmarks()
     {
         SetupChain();
 
-        var subject = _fixture.Create<CommitTransactionHandler>();
-        var bookmarks = await subject.CommitTransactionAsync(TestContext.Current.CancellationToken);
+        var tracker = new BookmarkTracker(SessionConfig.Builder.Build());
+        tracker.UpdateBookmarks(["pre-existing"]);
+        _fixture.Inject<IBookmarkTracker>(tracker);
 
-        bookmarks.Should().BeEmpty();
+        var subject = _fixture.Create<TransactionCommitter>();
+        await subject.CommitAsync(TestContext.Current.CancellationToken);
+
+        tracker.CurrentBookmarks.Values.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task Throws_WhenExecuteAsyncThrows()
+    public async Task CommitAsync_Throws_WhenExecuteAsyncThrows()
     {
         var txContext = _fixture.Freeze<QueryApiTransactionContext>();
         var request = new HttpRequestMessage();
@@ -93,13 +102,13 @@ public class CommitTransactionHandlerTests
             .ReturnsAsync(request);
 
         _fixture.Freeze<Mock<IQueryApiClient>>()
-            .Setup(x => x.ExecuteAsync<CommitTransactionHandler.ResponseBody>(
+            .Setup(x => x.ExecuteAsync<TransactionCommitter.ResponseBody>(
                 request,
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ServiceUnavailableException("HTTP 503"));
 
-        var subject = _fixture.Create<CommitTransactionHandler>();
-        var act = () => subject.CommitTransactionAsync(TestContext.Current.CancellationToken);
+        var subject = _fixture.Create<TransactionCommitter>();
+        var act = () => subject.CommitAsync(TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<ServiceUnavailableException>();
     }

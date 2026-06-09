@@ -15,15 +15,12 @@
 
 #nullable enable
 
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal;
 
-internal interface IBeginTransactionHandler
+internal interface ITransactionCommitter
 {
-    Task<QueryApiTransactionContext> BeginTransactionAsync(
-        IReadOnlyList<string> bookmarks,
-        CancellationToken cancellationToken = default);
+    Task CommitAsync(CancellationToken cancellationToken = default);
 }

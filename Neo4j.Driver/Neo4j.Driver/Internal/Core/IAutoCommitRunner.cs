@@ -15,16 +15,12 @@
 
 #nullable enable
 
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal;
 
-internal interface IAutoCommitHandler
+internal interface IAutoCommitRunner
 {
-    Task<QueryApiResultSet> AutoCommitAsync(
-        Query query,
-        IReadOnlyList<string> bookmarks,
-        CancellationToken cancellationToken = default);
+    Task<IResultCursor> RunAsync(Query query, CancellationToken cancellationToken = default);
 }

@@ -24,15 +24,15 @@ namespace Neo4j.Driver.Internal.QueryApi;
 [AutoRegister]
 internal class QueryApiProtocolAdapter : IQueryApiProtocolAdapter
 {
+    private readonly IConnectivityVerifier _connectivityVerifier;
     private readonly IQueryApiSessionFactory _sessionFactory;
-    private readonly IVerifyConnectivityHandler _verifyConnectivityHandler;
 
     public QueryApiProtocolAdapter(
-        IVerifyConnectivityHandler verifyConnectivityHandler,
+        IConnectivityVerifier connectivityVerifier,
         IQueryApiSessionFactory sessionFactory)
     {
-        _verifyConnectivityHandler = verifyConnectivityHandler ??
-            throw new ArgumentNullException(nameof(verifyConnectivityHandler));
+        _connectivityVerifier = connectivityVerifier ??
+            throw new ArgumentNullException(nameof(connectivityVerifier));
 
         _sessionFactory = sessionFactory ?? 
             throw new ArgumentNullException(nameof(sessionFactory));
@@ -49,7 +49,7 @@ internal class QueryApiProtocolAdapter : IQueryApiProtocolAdapter
     
     public Task<IServerInfo> VerifyConnectivityAndGetInfoAsync()
     {
-        return _verifyConnectivityHandler.VerifyConnectivityAsync();
+        return _connectivityVerifier.VerifyAsync();
     }
 
     public ValueTask DisposeAsync()

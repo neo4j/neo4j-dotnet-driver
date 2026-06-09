@@ -39,22 +39,16 @@ public class QueryApiTransactionTests
     }
 
     [Fact]
-    public async Task RunAsync_ReturnsCursorBuiltFromHandlerResponse()
+    public async Task RunAsync_ReturnsCursorFromRunner()
     {
         var query = new Query("RETURN 1");
-        var response = new QueryApiResultSet { Fields = ["x"], Rows = [], Bookmarks = [] };
-        
-        _fixture.Freeze<Mock<IRunInTransactionHandler>>()
-            .Setup(h => h.RunInTransactionAsync(query, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
-
         var expectedCursor = Mock.Of<IResultCursor>();
-        _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
-            .Setup(b => b.Build(response, query))
-            .Returns(expectedCursor);
+
+        _fixture.Freeze<Mock<ITransactionRunner>>()
+            .Setup(r => r.RunAsync(query, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedCursor);
 
         var subject = _fixture.Create<QueryApiTransaction>();
-
         var result = await subject.RunAsync(query);
 
         result.Should().BeSameAs(expectedCursor);
@@ -63,19 +57,13 @@ public class QueryApiTransactionTests
     [Fact]
     public async Task RunAsync_String_DelegatesToQueryOverload()
     {
-        var response = QueryApiResultSet.Empty;
-
-        _fixture.Freeze<Mock<IRunInTransactionHandler>>()
-            .Setup(h => h.RunInTransactionAsync(It.IsAny<Query>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
-
         var expectedCursor = Mock.Of<IResultCursor>();
-        _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
-            .Setup(b => b.Build(response, It.Is<Query>(q => q.Text == "RETURN 1")))
-            .Returns(expectedCursor);
+
+        _fixture.Freeze<Mock<ITransactionRunner>>()
+            .Setup(r => r.RunAsync(It.Is<Query>(q => q.Text == "RETURN 1"), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedCursor);
 
         var subject = _fixture.Create<QueryApiTransaction>();
-
         var result = await subject.RunAsync("RETURN 1");
 
         result.Should().BeSameAs(expectedCursor);
@@ -156,31 +144,12 @@ public class QueryApiTransactionTests
     }
 
     [Fact]
-    public async Task CommitAsync_ForwardsBookmarksFromHandlerToTracker()
-    {
-        var bookmarks = new[] { "neo4j:bookmark:v1:tx42", "another one" };
-        
-        _fixture.Freeze<Mock<ICommitTransactionHandler>>()
-            .Setup(h => h.CommitTransactionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(bookmarks);
-
-        var tracker = new BookmarkTracker(SessionConfig.Builder.Build());
-        _fixture.Inject<IBookmarkTracker>(tracker);
-
-        var subject = _fixture.Create<QueryApiTransaction>();
-        
-        await subject.CommitAsync();
-
-        tracker.CurrentBookmarks.Values.Should().BeEquivalentTo(bookmarks);
-    }
-
-    [Fact]
     public async Task DisposeAsync_WhenOpen_RollsBack()
     {
         var rollbackCalled = false;
 
-        _fixture.Freeze<Mock<IRollbackTransactionHandler>>()
-            .Setup(h => h.RollbackTransactionAsync(It.IsAny<CancellationToken>()))
+        _fixture.Freeze<Mock<ITransactionRollback>>()
+            .Setup(h => h.RollbackAsync(It.IsAny<CancellationToken>()))
             .Callback(() => rollbackCalled = true)
             .Returns(Task.CompletedTask);
 
@@ -195,9 +164,9 @@ public class QueryApiTransactionTests
     public async Task DisposeAsync_WhenCommitted_DoesNotRollBack()
     {
         var rollbackCalled = false;
-        
-        _fixture.Freeze<Mock<IRollbackTransactionHandler>>()
-            .Setup(h => h.RollbackTransactionAsync(It.IsAny<CancellationToken>()))
+
+        _fixture.Freeze<Mock<ITransactionRollback>>()
+            .Setup(h => h.RollbackAsync(It.IsAny<CancellationToken>()))
             .Callback(() => rollbackCalled = true)
             .Returns(Task.CompletedTask);
 
@@ -213,8 +182,8 @@ public class QueryApiTransactionTests
     {
         var rollbackCount = 0;
 
-        _fixture.Freeze<Mock<IRollbackTransactionHandler>>()
-            .Setup(h => h.RollbackTransactionAsync(It.IsAny<CancellationToken>()))
+        _fixture.Freeze<Mock<ITransactionRollback>>()
+            .Setup(h => h.RollbackAsync(It.IsAny<CancellationToken>()))
             .Callback(() => rollbackCount++)
             .Returns(Task.CompletedTask);
 

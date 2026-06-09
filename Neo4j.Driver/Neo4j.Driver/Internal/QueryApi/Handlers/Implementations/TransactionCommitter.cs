@@ -22,28 +22,31 @@ using Neo4j.Driver.Internal.DependencyInjection;
 namespace Neo4j.Driver.Internal.QueryApi;
 
 [AutoRegister]
-internal class CommitTransactionHandler : ICommitTransactionHandler
+internal class TransactionCommitter : ITransactionCommitter
 {
+    private readonly IBookmarkTracker _bookmarkTracker;
     private readonly IQueryApiClient _client;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
     private readonly QueryApiTransactionContext _txContext;
 
-    public CommitTransactionHandler(
+    public TransactionCommitter(
         IQueryApiRequestBuilder requestBuilder,
         IQueryApiClient client,
         QueryApiTransactionContext txContext,
+        IBookmarkTracker bookmarkTracker,
         ILogger logger)
     {
         _requestBuilder = requestBuilder;
         _client = client;
         _txContext = txContext;
+        _bookmarkTracker = bookmarkTracker;
         _logger = logger;
     }
 
-    public async Task<string[]> CommitTransactionAsync(CancellationToken cancellationToken = default)
+    public async Task CommitAsync(CancellationToken cancellationToken = default)
     {
-        _logger.Debug("Building transaction commit request", _txContext.TxId);
+        _logger.Debug("Committing transaction {txId}", _txContext.TxId);
         using var request = await _requestBuilder
             .PostAsync($"query/v2/tx/{_txContext.TxId}/commit", null, cancellationToken)
             .ConfigureAwait(false);
@@ -51,9 +54,10 @@ internal class CommitTransactionHandler : ICommitTransactionHandler
         var result = await _client.ExecuteAsync<ResponseBody>(request, cancellationToken).ConfigureAwait(false);
 
         var bookmarks = result.Body?.Bookmarks ?? [];
+        _bookmarkTracker.UpdateBookmarks(bookmarks);
+
         var len = bookmarks.Length;
         _logger.Debug("Committed transaction" + (len == 0 ? "" : $" and got {len} bookmarks"));
-        return bookmarks;
     }
 
     internal record ResponseBody : QueryApiResponse

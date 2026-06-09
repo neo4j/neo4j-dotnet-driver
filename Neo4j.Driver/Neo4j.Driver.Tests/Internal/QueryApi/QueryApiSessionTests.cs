@@ -16,7 +16,6 @@
 #nullable enable
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
@@ -30,46 +29,22 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 public class QueryApiSessionTests
 {
-
     private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
 
-
     [Fact]
-    public async Task RunAsync_ReturnsCursorBuiltFromHandlerResponse()
+    public async Task RunAsync_ReturnsCursorFromRunner()
     {
         var query = new Query("RETURN 1");
-        var response = new QueryApiResultSet { Fields = ["x"], Rows = [], Bookmarks = [] };
         var expectedCursor = Mock.Of<IResultCursor>();
-        _fixture.Freeze<Mock<IAutoCommitHandler>>()
-            .Setup(h => h.AutoCommitAsync(query, It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
-        _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
-            .Setup(b => b.Build(response, query))
-            .Returns(expectedCursor);
-        var sut = _fixture.Create<QueryApiSession>();
 
+        _fixture.Freeze<Mock<IAutoCommitRunner>>()
+            .Setup(r => r.RunAsync(query, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedCursor);
+
+        var sut = _fixture.Create<QueryApiSession>();
         var result = await sut.RunAsync(query, null!, false);
 
         result.Should().BeSameAs(expectedCursor);
-    }
-
-    [Fact]
-    public async Task RunAsync_UpdatesLastBookmarksFromResponse()
-    {
-        var query = new Query("CREATE (:Node)");
-        var bookmarkValues = new[] { "neo4j:bookmark:v1:tx42" };
-        var response = new QueryApiResultSet { Bookmarks = bookmarkValues };
-        _fixture.Freeze<Mock<IAutoCommitHandler>>()
-            .Setup(h => h.AutoCommitAsync(query, It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
-        _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
-            .Setup(b => b.Build(response, query))
-            .Returns(Mock.Of<IResultCursor>());
-        var sut = _fixture.Create<QueryApiSession>();
-
-        await sut.RunAsync(query, null!, false);
-
-        sut.LastBookmarks.Values.Should().BeEquivalentTo(bookmarkValues);
     }
 
     [Fact]
@@ -80,7 +55,6 @@ public class QueryApiSessionTests
             .Setup(f => f.BeginTransactionAsync(
                 AccessMode.Read,
                 It.IsAny<Action<TransactionConfigBuilder>>(),
-                It.IsAny<IReadOnlyList<string>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(tx);
         var sut = _fixture.Create<QueryApiSession>();
@@ -102,7 +76,6 @@ public class QueryApiSessionTests
             .Setup(f => f.BeginTransactionAsync(
                 It.IsAny<AccessMode>(),
                 It.IsAny<Action<TransactionConfigBuilder>>(),
-                It.IsAny<IReadOnlyList<string>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(tx.Object);
         var sut = _fixture.Create<QueryApiSession>();
@@ -121,7 +94,6 @@ public class QueryApiSessionTests
             .Setup(f => f.BeginTransactionAsync(
                 AccessMode.Read,
                 It.IsAny<Action<TransactionConfigBuilder>>(),
-                It.IsAny<IReadOnlyList<string>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(tx.Object);
         var sut = _fixture.Create<QueryApiSession>();

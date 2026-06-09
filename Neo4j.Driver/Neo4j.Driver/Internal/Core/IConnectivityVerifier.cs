@@ -18,11 +18,9 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal;
 
-internal interface IRunInTransactionHandler
+internal interface IConnectivityVerifier
 {
-    Task<QueryApiResultSet> RunInTransactionAsync(
-        Query query,
-        CancellationToken cancellationToken = default);
+    Task<IServerInfo> VerifyAsync(CancellationToken cancellationToken = default);
 }

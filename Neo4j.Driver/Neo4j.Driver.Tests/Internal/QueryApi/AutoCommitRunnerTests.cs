@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// Auto-commit queries execute a single Cypher statement outside an explicit transaction. Spec:
 /// https://neo4j.com/docs/query-api/current/#query-api-run-autocommit-query
 /// </summary>
-public class AutoCommitHandlerTests
+public class AutoCommitRunnerTests
 {
     private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
 
@@ -51,10 +51,10 @@ public class AutoCommitHandlerTests
     }
 
     [Fact]
-    public async Task Returns_FieldsRowsAndBookmarks_FromDeserializedBody()
+    public async Task RunAsync_ReturnsCursor_BuiltFromResultSet()
     {
-        // Spec: successful response contains data.fields and data.values
-        var expectedBody = new QueryApiResultBody
+        // Spec: the result cursor is built from the deserialized response body
+        var responseBody = new QueryApiResultBody
         {
             Data = new QueryApiDataBody
             {
@@ -63,43 +63,69 @@ public class AutoCommitHandlerTests
             },
             Bookmarks = ["neo4j:bookmark:v1:tx55"]
         };
+        SetupChain(responseBody);
 
-        SetupChain(expectedBody);
+        var expectedCursor = new Mock<IResultCursor>().Object;
+        _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
+            .Setup(x => x.Build(It.IsAny<QueryApiResultSet>(), It.IsAny<Query>()))
+            .Returns(expectedCursor);
 
-        var subject = _fixture.Create<AutoCommitHandler>();
-        var result = await subject.AutoCommitAsync(
+        var subject = _fixture.Create<AutoCommitRunner>();
+        var cursor = await subject.RunAsync(
             new Query("MATCH (n) RETURN n.name, n.age"),
-            [],
             TestContext.Current.CancellationToken);
 
-        result.Fields.Should().Equal("name", "age");
-        result.Rows.Should().HaveCount(1);
-        result.Bookmarks.Should().Equal("neo4j:bookmark:v1:tx55");
+        cursor.Should().BeSameAs(expectedCursor);
     }
 
     [Fact]
-    public async Task Returns_EmptyResponse_WhenBodyIsNull()
+    public async Task RunAsync_UpdatesBookmarkTracker_WithServerBookmarks()
     {
-        var request = new HttpRequestMessage();
+        // Spec: auto-commit response bookmarks must be applied to the session's tracker for causal chaining
+        SetupChain(new QueryApiResultBody { Bookmarks = ["neo4j:bookmark:v1:tx55"] });
+        _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
+            .Setup(x => x.Build(It.IsAny<QueryApiResultSet>(), It.IsAny<Query>()))
+            .Returns(new Mock<IResultCursor>().Object);
 
+        var tracker = new BookmarkTracker(SessionConfig.Builder.Build());
+        _fixture.Inject<IBookmarkTracker>(tracker);
+
+        var subject = _fixture.Create<AutoCommitRunner>();
+        await subject.RunAsync(new Query("RETURN 1"), TestContext.Current.CancellationToken);
+
+        tracker.CurrentBookmarks.Values.Should().Equal("neo4j:bookmark:v1:tx55");
+    }
+
+    [Fact]
+    public async Task RunAsync_IncludesCurrentBookmarks_FromTracker_InRequest()
+    {
+        // Spec: current session bookmarks must be forwarded in the request for causal consistency
+        var tracker = new BookmarkTracker(SessionConfig.Builder.Build());
+        tracker.UpdateBookmarks(["existing-bookmark"]);
+        _fixture.Inject<IBookmarkTracker>(tracker);
+
+        object? capturedBody = null;
+        var request = new HttpRequestMessage();
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
             .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Callback<string, object, CancellationToken>((_, body, _) => capturedBody = body)
             .ReturnsAsync(request);
-
         _fixture.Freeze<Mock<IQueryApiClient>>()
             .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new QueryApiResult<QueryApiResultBody>(null!, new HttpResponseMessage().Headers));
+            .ReturnsAsync(new QueryApiResult<QueryApiResultBody>(new QueryApiResultBody(), new HttpResponseMessage().Headers));
+        _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
+            .Setup(x => x.Build(It.IsAny<QueryApiResultSet>(), It.IsAny<Query>()))
+            .Returns(new Mock<IResultCursor>().Object);
 
-        var subject = _fixture.Create<AutoCommitHandler>();
-        var result = await subject.AutoCommitAsync(new Query("RETURN 1"), [], TestContext.Current.CancellationToken);
+        var subject = _fixture.Create<AutoCommitRunner>();
+        await subject.RunAsync(new Query("RETURN 1"), TestContext.Current.CancellationToken);
 
-        result.Fields.Should().BeEmpty();
-        result.Rows.Should().BeEmpty();
-        result.Bookmarks.Should().BeEmpty();
+        var body = capturedBody.Should().BeOfType<AutoCommitRunner.RequestBody>().Subject;
+        body.Bookmarks.Should().Equal("existing-bookmark");
     }
 
     [Fact]
-    public async Task Throws_WhenExecuteAsyncThrows()
+    public async Task RunAsync_Throws_WhenExecuteAsyncThrows()
     {
         var request = new HttpRequestMessage();
 
@@ -111,14 +137,14 @@ public class AutoCommitHandlerTests
             .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ServiceUnavailableException("HTTP 503"));
 
-        var subject = _fixture.Create<AutoCommitHandler>();
-        var act = () => subject.AutoCommitAsync(new Query("RETURN 1"), [], TestContext.Current.CancellationToken);
+        var subject = _fixture.Create<AutoCommitRunner>();
+        var act = () => subject.RunAsync(new Query("RETURN 1"), TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<ServiceUnavailableException>();
     }
 
     [Fact]
-    public async Task RequestBody_IncludesImpersonatedUserAndAccessMode_FromSessionContext()
+    public async Task RunAsync_RequestBody_IncludesImpersonatedUserAndAccessMode_FromSessionContext()
     {
         // Spec: impersonatedUser and accessMode must be forwarded from the session context on every request
         _fixture.Freeze<Mock<ISessionContext>>()
@@ -138,10 +164,14 @@ public class AutoCommitHandlerTests
             .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new QueryApiResult<QueryApiResultBody>(new QueryApiResultBody(), new HttpResponseMessage().Headers));
 
-        var subject = _fixture.Create<AutoCommitHandler>();
-        await subject.AutoCommitAsync(new Query("RETURN 1"), [], TestContext.Current.CancellationToken);
+        _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
+            .Setup(x => x.Build(It.IsAny<QueryApiResultSet>(), It.IsAny<Query>()))
+            .Returns(new Mock<IResultCursor>().Object);
 
-        var body = capturedBody.Should().BeOfType<AutoCommitHandler.RequestBody>().Subject;
+        var subject = _fixture.Create<AutoCommitRunner>();
+        await subject.RunAsync(new Query("RETURN 1"), TestContext.Current.CancellationToken);
+
+        var body = capturedBody.Should().BeOfType<AutoCommitRunner.RequestBody>().Subject;
         body.ImpersonatedUser.Should().Be("banana_bob");
         body.AccessMode.Should().Be("Read");
     }

@@ -16,7 +16,6 @@
 #nullable enable
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
@@ -26,16 +25,19 @@ namespace Neo4j.Driver.Internal.QueryApi;
 [AutoRegister]
 internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
 {
-    private readonly IBeginTransactionHandler _beginTransactionHandler;
+    private readonly QueryApiTransactionContextHolder _contextHolder;
     private readonly ILogger _logger;
     private readonly IResolutionScope _resolutionScope;
+    private readonly ITransactionBeginner _transactionStarter;
 
     public QueryApiTransactionFactory(
-        IBeginTransactionHandler beginTransactionHandler,
+        ITransactionBeginner transactionStarter,
+        QueryApiTransactionContextHolder contextHolder,
         IResolutionScope resolutionScope,
         ILogger logger)
     {
-        _beginTransactionHandler = beginTransactionHandler;
+        _transactionStarter = transactionStarter;
+        _contextHolder = contextHolder;
         _resolutionScope = resolutionScope;
         _logger = logger;
     }
@@ -43,17 +45,17 @@ internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
     public async Task<IInternalAsyncTransaction> BeginTransactionAsync(
         AccessMode mode,
         Action<TransactionConfigBuilder>? action,
-        IReadOnlyList<string> bookmarks,
         CancellationToken cancellationToken = default)
     {
         _logger.Debug("Opening {mode} transaction", mode);
-        var context = await _beginTransactionHandler
-            .BeginTransactionAsync(bookmarks, cancellationToken)
-            .ConfigureAwait(false);
+        await _transactionStarter.BeginAsync(cancellationToken).ConfigureAwait(false);
+
+        var context = _contextHolder.Context
+            ?? throw new InvalidOperationException("Transaction context was not set after begin.");
 
         var txScope = _resolutionScope.CreateChildScope(r => r
-          .RegisterInstance(context)
-          .RegisterType<IHttpRequestEnricher, QueryApiClusterAffinityEnricher>());
+            .RegisterInstance(context)
+            .RegisterType<IHttpRequestEnricher, QueryApiClusterAffinityEnricher>());
 
         return txScope.Resolve<IInternalAsyncTransaction>();
     }

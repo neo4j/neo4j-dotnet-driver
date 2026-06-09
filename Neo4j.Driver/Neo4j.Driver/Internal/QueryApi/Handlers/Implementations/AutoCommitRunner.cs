@@ -20,37 +20,40 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
-using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
 [AutoRegister]
-internal class AutoCommitHandler : IAutoCommitHandler
+internal class AutoCommitRunner : IAutoCommitRunner
 {
+    private readonly IBookmarkTracker _bookmarkTracker;
     private readonly IQueryApiClient _client;
+    private readonly IQueryApiResultCursorBuilder _cursorBuilder;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
     private readonly ISessionContext _sessionContext;
 
-    public AutoCommitHandler(
+    public AutoCommitRunner(
         IQueryApiRequestBuilder requestBuilder,
         IQueryApiClient client,
+        IQueryApiResultCursorBuilder cursorBuilder,
         ISessionContext sessionContext,
+        IBookmarkTracker bookmarkTracker,
         ILogger logger)
     {
         _requestBuilder = requestBuilder;
         _client = client;
+        _cursorBuilder = cursorBuilder;
         _sessionContext = sessionContext;
+        _bookmarkTracker = bookmarkTracker;
         _logger = logger;
     }
 
-    public async Task<QueryApiResultSet> AutoCommitAsync(
-        Query query,
-        IReadOnlyList<string> bookmarks,
-        CancellationToken cancellationToken = default)
+    public async Task<IResultCursor> RunAsync(Query query, CancellationToken cancellationToken = default)
     {
         _logger.Debug("Auto-commit: {query}", query.Text);
 
+        var bookmarks = _bookmarkTracker.CurrentBookmarks.Values;
         using var request = await BuildRequestAsync(query, bookmarks, cancellationToken).ConfigureAwait(false);
         var result = await _client.ExecuteAsync<QueryApiResultBody>(request, cancellationToken).ConfigureAwait(false);
 
@@ -62,12 +65,14 @@ internal class AutoCommitHandler : IAutoCommitHandler
             Bookmarks = body?.Bookmarks ?? []
         };
 
+        _bookmarkTracker.UpdateBookmarks(resultSet.Bookmarks);
+
         _logger.Debug(
             "Auto-commit complete: {fieldCount} field(s), {rowCount} row(s)",
             resultSet.Fields.Length,
             resultSet.Rows.Length);
 
-        return resultSet;
+        return _cursorBuilder.Build(resultSet, query);
     }
 
     private async Task<HttpRequestMessage> BuildRequestAsync(

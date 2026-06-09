@@ -16,7 +16,6 @@
 #nullable enable
 
 using System.Net.Http;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
@@ -32,7 +31,7 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// the <c>neo4j-cluster-affinity</c> header forwarded from BEGIN. Spec:
 /// https://neo4j.com/docs/query-api/current/#query-api-run-query-in-transaction
 /// </summary>
-public class RunInTransactionHandlerTests
+public class TransactionRunnerTests
 {
     private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
 
@@ -52,33 +51,29 @@ public class RunInTransactionHandlerTests
     }
 
     [Fact]
-    public async Task Returns_FieldsRowsAndBookmarks_FromDeserializedBody()
+    public async Task RunAsync_ReturnsCursor_BuiltFromResultSet()
     {
-        // Spec: successful response contains data.fields, data.values, and bookmarks
-        var expectedBody = new QueryApiResultBody
+        // Spec: successful response contains data.fields, data.values; these are built into an IResultCursor
+        SetupChain(new QueryApiResultBody
         {
-            Data = new QueryApiDataBody
-            {
-                Fields = ["x"],
-                Values = [[JsonDocument.Parse("42").RootElement]]
-            },
-            Bookmarks = ["neo4j:bookmark:v1:tx200"]
-        };
+            Data = new QueryApiDataBody { Fields = ["x"] }
+        });
 
-        SetupChain(expectedBody);
+        var expectedCursor = new Mock<IResultCursor>().Object;
+        _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
+            .Setup(x => x.Build(It.IsAny<QueryApiResultSet>(), It.IsAny<Query>()))
+            .Returns(expectedCursor);
 
-        var subject = _fixture.Create<RunInTransactionHandler>();
-        var result = await subject.RunInTransactionAsync(
+        var subject = _fixture.Create<TransactionRunner>();
+        var cursor = await subject.RunAsync(
             new Query("RETURN 42 AS x"),
             TestContext.Current.CancellationToken);
 
-        result.Fields.Should().Equal("x");
-        result.Rows.Should().HaveCount(1);
-        result.Bookmarks.Should().Equal("neo4j:bookmark:v1:tx200");
+        cursor.Should().BeSameAs(expectedCursor);
     }
 
     [Fact]
-    public async Task Throws_WhenExecuteAsyncThrows()
+    public async Task RunAsync_Throws_WhenExecuteAsyncThrows()
     {
         var txContext = _fixture.Freeze<QueryApiTransactionContext>();
         var request = new HttpRequestMessage();
@@ -91,8 +86,8 @@ public class RunInTransactionHandlerTests
             .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ServiceUnavailableException("HTTP 503"));
 
-        var subject = _fixture.Create<RunInTransactionHandler>();
-        var act = () => subject.RunInTransactionAsync(new Query("RETURN 1"), TestContext.Current.CancellationToken);
+        var subject = _fixture.Create<TransactionRunner>();
+        var act = () => subject.RunAsync(new Query("RETURN 1"), TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<ServiceUnavailableException>();
     }

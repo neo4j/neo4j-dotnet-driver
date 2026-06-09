@@ -35,17 +35,17 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// advertises both the Query API endpoint and a server version. No dummy query is run. Decision ref:
 /// https://neo4j.com/docs/http-api/current/discovery/
 /// </summary>
-public class VerifyConnectivityHandlerTests
+public class ConnectivityVerifierTests
 {
     private static readonly Uri BaseUri = new("https://neo4j.example.com:7474/");
 
     private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
 
-    private static VerifyConnectivityHandler.DiscoveryResponse ValidDiscovery(
+    private static ConnectivityVerifier.DiscoveryResponse ValidDiscovery(
         string? query = "http://localhost:7474/query/v2",
         string? neo4jVersion = "5.18.0")
     {
-        return new VerifyConnectivityHandler.DiscoveryResponse { Query = query, Neo4jVersion = neo4jVersion };
+        return new ConnectivityVerifier.DiscoveryResponse { Query = query, Neo4jVersion = neo4jVersion };
     }
 
     // Freezes the minimum mock chain needed to exercise the handler without crashing:
@@ -67,7 +67,7 @@ public class VerifyConnectivityHandlerTests
             .ReturnsAsync(response);
 
         _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(
+            .Setup(x => x.DeserializeAsync<ConnectivityVerifier.DiscoveryResponse>(
                 It.IsAny<Stream>(),
                 JsonNamingPolicy.SnakeCaseLower,
                 It.IsAny<CancellationToken>()))
@@ -83,14 +83,14 @@ public class VerifyConnectivityHandlerTests
         SetupChain();
 
         _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(
+            .Setup(x => x.DeserializeAsync<ConnectivityVerifier.DiscoveryResponse>(
                 It.IsAny<Stream>(),
                 JsonNamingPolicy.SnakeCaseLower,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(ValidDiscovery(neo4jVersion: "5.22.0"));
 
-        var subject = _fixture.Create<VerifyConnectivityHandler>();
-        var serverInfo = await subject.VerifyConnectivityAsync(TestContext.Current.CancellationToken);
+        var subject = _fixture.Create<ConnectivityVerifier>();
+        var serverInfo = await subject.VerifyAsync(TestContext.Current.CancellationToken);
 
         serverInfo.Address.Should().Be("neo4j.example.com:7474");
         serverInfo.Agent.Should().Be("5.22.0");
@@ -103,14 +103,14 @@ public class VerifyConnectivityHandlerTests
         SetupChain();
 
         _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(
+            .Setup(x => x.DeserializeAsync<ConnectivityVerifier.DiscoveryResponse>(
                 It.IsAny<Stream>(),
                 JsonNamingPolicy.SnakeCaseLower,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(ValidDiscovery(query: null));
 
-        var subject = _fixture.Create<VerifyConnectivityHandler>();
-        var act = () => subject.VerifyConnectivityAsync(TestContext.Current.CancellationToken);
+        var subject = _fixture.Create<ConnectivityVerifier>();
+        var act = () => subject.VerifyAsync(TestContext.Current.CancellationToken);
 
         await act.Should()
             .ThrowAsync<ServiceUnavailableException>()
@@ -123,14 +123,14 @@ public class VerifyConnectivityHandlerTests
         SetupChain();
 
         _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<VerifyConnectivityHandler.DiscoveryResponse>(
+            .Setup(x => x.DeserializeAsync<ConnectivityVerifier.DiscoveryResponse>(
                 It.IsAny<Stream>(),
                 JsonNamingPolicy.SnakeCaseLower,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(ValidDiscovery(neo4jVersion: null));
 
-        var subject = _fixture.Create<VerifyConnectivityHandler>();
-        var act = () => subject.VerifyConnectivityAsync(TestContext.Current.CancellationToken);
+        var subject = _fixture.Create<ConnectivityVerifier>();
+        var act = () => subject.VerifyAsync(TestContext.Current.CancellationToken);
 
         await act.Should()
             .ThrowAsync<ServiceUnavailableException>()
@@ -150,8 +150,8 @@ public class VerifyConnectivityHandlerTests
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ServiceUnavailableException("HTTP 404 GET https://neo4j.example.com:7474/ : "));
 
-        var subject = _fixture.Create<VerifyConnectivityHandler>();
-        var act = () => subject.VerifyConnectivityAsync(TestContext.Current.CancellationToken);
+        var subject = _fixture.Create<ConnectivityVerifier>();
+        var act = () => subject.VerifyAsync(TestContext.Current.CancellationToken);
 
         await act.Should()
             .ThrowAsync<ServiceUnavailableException>()

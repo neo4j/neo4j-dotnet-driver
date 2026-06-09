@@ -16,44 +16,47 @@
 #nullable enable
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
-using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
 [AutoRegister]
-internal class BeginTransactionHandler : IBeginTransactionHandler
+internal class TransactionBeginner : ITransactionBeginner
 {
     private readonly IClusterAffinityExtractor _affinityExtractor;
+    private readonly IBookmarkTracker _bookmarkTracker;
     private readonly IQueryApiClient _client;
+    private readonly QueryApiTransactionContextHolder _contextHolder;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
     private readonly ISessionContext _sessionContext;
 
-    public BeginTransactionHandler(
+    public TransactionBeginner(
         IQueryApiRequestBuilder requestBuilder,
         IQueryApiClient client,
         IClusterAffinityExtractor affinityExtractor,
         ISessionContext sessionContext,
+        IBookmarkTracker bookmarkTracker,
+        QueryApiTransactionContextHolder contextHolder,
         ILogger logger)
     {
         _requestBuilder = requestBuilder;
         _client = client;
         _affinityExtractor = affinityExtractor;
         _sessionContext = sessionContext;
+        _bookmarkTracker = bookmarkTracker;
+        _contextHolder = contextHolder;
         _logger = logger;
     }
 
-    public async Task<QueryApiTransactionContext> BeginTransactionAsync(
-        IReadOnlyList<string> bookmarks,
-        CancellationToken cancellationToken = default)
+    public async Task BeginAsync(CancellationToken cancellationToken = default)
     {
-        _logger.Debug("Beginning transaction with {bookmarkCount} bookmark(s)", bookmarks.Count);
+        var bookmarks = _bookmarkTracker.CurrentBookmarks.Values;
+        _logger.Debug("Beginning transaction with {bookmarkCount} bookmark(s)", bookmarks.Length);
 
         using var request = await BuildRequestAsync(bookmarks, cancellationToken).ConfigureAwait(false);
         var result = await _client.ExecuteAsync<ResponseBody>(request, cancellationToken).ConfigureAwait(false);
@@ -64,11 +67,13 @@ internal class BeginTransactionHandler : IBeginTransactionHandler
         }
 
         var context = new QueryApiTransactionContext(txId, _affinityExtractor.Extract(result.ResponseHeaders));
+        _contextHolder.Set(context);
         _logger.Debug("Transaction begun");
-        return context;
     }
 
-    private async Task<HttpRequestMessage> BuildRequestAsync(IReadOnlyList<string> bookmarks, CancellationToken cancellationToken)
+    private async Task<HttpRequestMessage> BuildRequestAsync(
+        System.Collections.Generic.IReadOnlyList<string> bookmarks,
+        CancellationToken cancellationToken)
     {
         var body = new RequestBody(bookmarks?.ToArray(), _sessionContext.ImpersonatedUser);
         var request = await _requestBuilder.PostAsync("query/v2/tx", body, cancellationToken).ConfigureAwait(false);

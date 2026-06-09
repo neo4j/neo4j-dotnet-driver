@@ -18,9 +18,9 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal;
 
-internal interface ICommitTransactionHandler
+internal interface ITransactionRunner
 {
-    Task<string[]> CommitTransactionAsync(CancellationToken cancellationToken = default);
+    Task<IResultCursor> RunAsync(Query query, CancellationToken cancellationToken = default);
 }

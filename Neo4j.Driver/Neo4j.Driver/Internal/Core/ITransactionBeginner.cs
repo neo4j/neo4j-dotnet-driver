@@ -18,10 +18,9 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal;
 
-internal interface IRollbackTransactionHandler
+internal interface ITransactionBeginner
 {
-    Task RollbackTransactionAsync(
-        CancellationToken cancellationToken = default);
+    Task BeginAsync(CancellationToken cancellationToken = default);
 }

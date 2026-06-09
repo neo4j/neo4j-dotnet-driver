@@ -25,23 +25,20 @@ namespace Neo4j.Driver.Internal.QueryApi;
 [AutoRegister]
 internal class QueryApiSession : IInternalAsyncSession
 {
-    private readonly IAutoCommitHandler _autoCommitHandler;
+    private readonly IAutoCommitRunner _autoCommitRunner;
     private readonly IBookmarkTracker _bookmarkTracker;
-    private readonly IQueryApiResultCursorBuilder _cursorBuilder;
     private readonly ILogger _logger;
     private readonly IQueryApiTransactionFactory _transactionFactory;
 
     public QueryApiSession(
         SessionConfig sessionConfig,
-        IAutoCommitHandler autoCommitHandler,
-        IQueryApiResultCursorBuilder cursorBuilder,
+        IAutoCommitRunner autoCommitRunner,
         IQueryApiTransactionFactory transactionFactory,
         IBookmarkTracker bookmarkTracker,
         ILogger logger)
     {
         SessionConfig = sessionConfig;
-        _autoCommitHandler = autoCommitHandler;
-        _cursorBuilder = cursorBuilder;
+        _autoCommitRunner = autoCommitRunner;
         _transactionFactory = transactionFactory;
         _bookmarkTracker = bookmarkTracker;
         _logger = logger;
@@ -51,15 +48,13 @@ internal class QueryApiSession : IInternalAsyncSession
 
     public SessionConfig SessionConfig { get; }
 
-    public async Task<IResultCursor> RunAsync(
+    public Task<IResultCursor> RunAsync(
         Query query,
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult)
     {
         _logger.Debug("Session auto-commit: {query}", query.Text);
-        var response = await _autoCommitHandler.AutoCommitAsync(query, _bookmarkTracker.CurrentBookmarks.Values);
-        _bookmarkTracker.UpdateBookmarks(response.Bookmarks);
-        return _cursorBuilder.Build(response, query);
+        return _autoCommitRunner.RunAsync(query);
     }
 
     public Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action) =>
@@ -99,9 +94,8 @@ internal class QueryApiSession : IInternalAsyncSession
         bool disposeUnconsumedSessionResult)
     {
         _logger.Debug("Session beginning {mode} transaction", mode);
-        var bookmarks = _bookmarkTracker.CurrentBookmarks.Values;
         return await _transactionFactory
-            .BeginTransactionAsync(mode, action, bookmarks)
+            .BeginTransactionAsync(mode, action)
             .ConfigureAwait(false);
     }
 
@@ -152,9 +146,8 @@ internal class QueryApiSession : IInternalAsyncSession
         Func<IAsyncQueryRunner, Task<TResult>> work,
         Action<TransactionConfigBuilder>? action)
     {
-        var bookmarks = _bookmarkTracker.CurrentBookmarks.Values;
         var tx = await _transactionFactory
-            .BeginTransactionAsync(mode, action, bookmarks)
+            .BeginTransactionAsync(mode, action)
             .ConfigureAwait(false);
 
         try
@@ -189,9 +182,8 @@ internal class QueryApiSession : IInternalAsyncSession
         Func<IAsyncQueryRunner, Task> work,
         Action<TransactionConfigBuilder>? action)
     {
-        var bookmarks = _bookmarkTracker.CurrentBookmarks.Values;
         var tx = await _transactionFactory
-            .BeginTransactionAsync(mode, action, bookmarks)
+            .BeginTransactionAsync(mode, action)
             .ConfigureAwait(false);
 
         try

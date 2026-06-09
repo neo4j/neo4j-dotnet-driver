@@ -16,7 +16,6 @@
 #nullable enable
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -29,8 +28,9 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 public class QueryApiTransactionFactoryTests
 {
-    private readonly Mock<IBeginTransactionHandler> _beginHandler = new();
+    private readonly QueryApiTransactionContextHolder _contextHolder = new();
     private readonly Mock<IResolutionScope> _sessionScope = new();
+    private readonly Mock<ITransactionBeginner> _transactionStarter = new();
     private readonly Mock<IResolutionScope> _txScope = new();
 
     public QueryApiTransactionFactoryTests()
@@ -41,7 +41,7 @@ public class QueryApiTransactionFactoryTests
     }
 
     private QueryApiTransactionFactory CreateFactory() =>
-        new(_beginHandler.Object, _sessionScope.Object, new Mock<ILogger>().Object);
+        new(_transactionStarter.Object, _contextHolder, _sessionScope.Object, new Mock<ILogger>().Object);
 
     [Fact]
     public async Task BeginTransactionAsync_ReturnsTransactionResolvedFromChildScope()
@@ -49,14 +49,25 @@ public class QueryApiTransactionFactoryTests
         var context = new QueryApiTransactionContext("tx-1", null);
         var expectedTx = new Mock<IInternalAsyncTransaction>().Object;
 
-        _beginHandler.Setup(h => h.BeginTransactionAsync(It.IsAny<IReadOnlyList<string>>(), default))
-            .ReturnsAsync(context);
+        _transactionStarter
+            .Setup(s => s.BeginAsync(default))
+            .Callback(() => _contextHolder.Set(context));
 
         _txScope.Setup(s => s.Resolve<IInternalAsyncTransaction>()).Returns(expectedTx);
 
-        var result = await CreateFactory().BeginTransactionAsync(AccessMode.Write, null, []);
+        var result = await CreateFactory().BeginTransactionAsync(AccessMode.Write, null);
 
         result.Should().BeSameAs(expectedTx);
     }
 
+    [Fact]
+    public async Task BeginTransactionAsync_Throws_WhenContextHolderIsEmpty()
+    {
+        _transactionStarter.Setup(s => s.BeginAsync(default));
+
+        var factory = CreateFactory();
+        var act = () => factory.BeginTransactionAsync(AccessMode.Write, null);
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*context*");
+    }
 }

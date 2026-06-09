@@ -18,13 +18,9 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal;
 
-internal interface IVerifyConnectivityHandler
+internal interface ITransactionRollback
 {
-    /// <summary>
-    /// Hits the discovery endpoint (<c>GET /</c>) unconditionally, confirms the Query API endpoint and server version
-    /// are advertised, and returns basic server information.
-    /// </summary>
-    Task<IServerInfo> VerifyConnectivityAsync(CancellationToken cancellationToken = default);
+    Task RollbackAsync(CancellationToken cancellationToken = default);
 }
