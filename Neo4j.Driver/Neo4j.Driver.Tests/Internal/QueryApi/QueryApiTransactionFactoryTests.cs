@@ -23,9 +23,6 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi;
-using Neo4j.Driver.Internal.QueryApi.Abstractions;
-using Neo4j.Driver.Internal.QueryApi.Implementations;
-using Neo4j.Driver.Internal.QueryApi.Types;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;

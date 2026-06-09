@@ -19,10 +19,9 @@ using System;
 using System.Text.Json;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Internal.QueryApi.Abstractions;
-using Neo4j.Driver.Internal.QueryApi.Implementations.JsonConverters;
+using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
-using JsonVector = Neo4j.Driver.Internal.QueryApi.Implementations.JsonConverters.VectorJsonElementConverter.JsonVector;
+using JsonVector = Neo4j.Driver.Internal.QueryApi.VectorJsonElementConverter.JsonVector;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 

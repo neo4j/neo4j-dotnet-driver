@@ -21,9 +21,7 @@ using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Internal.QueryApi.Abstractions;
-using Neo4j.Driver.Internal.QueryApi.Implementations;
-using Neo4j.Driver.Internal.QueryApi.Types;
+using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;

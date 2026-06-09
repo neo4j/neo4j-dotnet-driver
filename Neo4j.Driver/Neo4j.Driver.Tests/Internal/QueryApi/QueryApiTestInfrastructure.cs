@@ -20,8 +20,7 @@ using AutoFixture;
 using AutoFixture.AutoMoq;
 using AutoFixture.Kernel;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.QueryApi.Abstractions;
-using Neo4j.Driver.Internal.QueryApi.Implementations;
+using Neo4j.Driver.Internal.QueryApi;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 

@@ -16,7 +16,8 @@
 #nullable enable
 using System;
 using System.Text.RegularExpressions;
-using Neo4j.Driver.Internal.QueryApi.Abstractions;
+using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;

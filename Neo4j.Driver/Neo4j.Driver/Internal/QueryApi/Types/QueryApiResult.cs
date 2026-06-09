@@ -20,7 +20,7 @@ using System.Net.Http.Headers;
 namespace Neo4j.Driver.Internal.QueryApi;
 
 /// <summary>
-/// The result of a <see cref="Abstractions.IQueryApiClient.ExecuteAsync{TBody}"/> call.
+/// The result of a <see cref="IQueryApiClient.ExecuteAsync{TBody}"/> call.
 /// <para>
 /// <see cref="ResponseHeaders"/> is captured before the <see cref="System.Net.Http.HttpResponseMessage"/> is
 /// disposed — header objects survive disposal and are safe to hold.

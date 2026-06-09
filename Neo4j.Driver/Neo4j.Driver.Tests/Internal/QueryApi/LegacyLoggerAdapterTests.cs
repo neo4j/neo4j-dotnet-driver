@@ -18,7 +18,8 @@
 using System;
 using Moq;
 using Moq.AutoMock;
-using Neo4j.Driver.Internal.QueryApi.Implementations;
+using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
