@@ -14,7 +14,6 @@
 // limitations under the License.
 
 using Neo4j.Driver.Internal.DependencyInjection;
-using Neo4j.Driver.Internal.QueryApi.Abstractions;
 
 namespace Neo4j.Driver.Internal.QueryApi.Implementations;
 

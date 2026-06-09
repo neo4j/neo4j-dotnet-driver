@@ -15,7 +15,7 @@
 
 #nullable enable
 
-namespace Neo4j.Driver.Internal.QueryApi.Abstractions;
+namespace Neo4j.Driver.Internal;
 
 internal interface IBookmarkTracker
 {
