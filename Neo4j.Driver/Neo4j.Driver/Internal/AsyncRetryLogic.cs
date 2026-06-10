@@ -90,6 +90,6 @@ internal class AsyncRetryLogic : IAsyncRetryLogic
     private double ComputeDelayWithJitter(double delayMs)
     {
         var jitter = delayMs * _jitterFactor;
-        return delayMs - jitter + 2 * jitter * new Random(Guid.NewGuid().GetHashCode()).NextDouble();
+        return delayMs - jitter + 2 * jitter * Random.Shared.NextDouble();
     }
 }
