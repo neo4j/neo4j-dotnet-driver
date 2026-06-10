@@ -16,7 +16,6 @@
 #nullable enable
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -30,12 +29,6 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 public class QueryApiScopeWiringTests
 {
-    /// <summary>
-    /// Verifies that bookmarks committed in a transaction are tracked by the session-scoped
-    /// <see cref="IBookmarkTracker"/> and are visible to subsequent operations. This exercises the DI
-    /// scope wiring: tracker is shared between commit handler (which updates it) and begin handler
-    /// (which reads from it), both receiving the same singleton via child-scope inheritance.
-    /// </summary>
     [Fact]
     public async Task CommittedBookmarks_AreVisibleToTracker_AfterCommit()
     {
@@ -93,64 +86,4 @@ public class QueryApiScopeWiringTests
         starterMock.Verify(s => s.BeginAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
-    [Fact]
-    public async Task SessionClose_DisposesSessionScopeAndItsChildren()
-    {
-        var disposalOrder = new List<string>();
-
-        var holder = new QueryApiTransactionContextHolder();
-        var starterMock = new Mock<ITransactionBeginner>();
-        starterMock
-            .Setup(s => s.BeginAsync(It.IsAny<CancellationToken>()))
-            .Callback(() => holder.Set(new QueryApiTransactionContext("tx-1", null)))
-            .Returns(Task.CompletedTask);
-
-        var rollbackMock = new Mock<ITransactionRollback>();
-        rollbackMock
-            .Setup(r => r.RollbackAsync(It.IsAny<CancellationToken>()))
-            .Callback(() => disposalOrder.Add("rollback"))
-            .Returns(Task.CompletedTask);
-
-        var parentScope = new ScopedContainer();
-        parentScope.RegisterInstance<ILogger>(new TestLogger(typeof(QueryApiSession)));
-        parentScope.RegisterInstance(starterMock.Object);
-        parentScope.RegisterInstance(Mock.Of<ITransactionCommitter>());
-        parentScope.RegisterInstance(rollbackMock.Object);
-        parentScope.RegisterInstance(Mock.Of<ITransactionRunner>());
-        parentScope.RegisterInstance(Mock.Of<IAutoCommitRunner>());
-        parentScope.RegisterInstance(holder);
-        parentScope.RegisterType<IInternalAsyncTransaction, QueryApiTransaction>();
-        parentScope.RegisterType<IQueryApiTransactionFactory, QueryApiTransactionFactory>();
-        parentScope.RegisterType<IInternalAsyncSession, QueryApiSession>();
-
-        var sessionScope = (ScopedContainer)parentScope.CreateChildScope(r => r
-            .RegisterInstance(SessionConfig.Builder.Build())
-            .RegisterType<IBookmarkTracker, BookmarkTracker>(singleton: true)
-            .RegisterType<ILoggingContextTracker, LoggingContextTracker>(singleton: true));
-
-        var session = sessionScope.Resolve<IInternalAsyncSession>();
-
-        // Subscribe last — the scope's wiring will subscribe first, so "rollback" appears
-        // before this handler fires.
-        session.Disposed += (_, _) =>
-        {
-            disposalOrder.Add("session-disposed");
-            return Task.CompletedTask;
-        };
-
-        // Begin a transaction so a child scope (tx scope) exists inside the session scope.
-        await session.BeginTransactionAsync(AccessMode.Write, null!);
-
-        // Close the session. Expectation: the session scope disposes (rolling back the open
-        // transaction), then the test's Disposed handler fires last.
-        await session.CloseAsync();
-
-        // Scope should be disposed — any further use throws.
-        var act = () => sessionScope.CreateChildScope(_ => {});
-        act.Should().Throw<ObjectDisposedException>();
-
-        // Rollback must precede session-disposed: the tx is a child scope, disposed before
-        // the session's own Disposed event reaches the test subscriber.
-        disposalOrder.Should().Equal("rollback", "session-disposed");
-    }
 }

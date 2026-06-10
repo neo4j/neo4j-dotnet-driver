@@ -14,6 +14,8 @@
 // limitations under the License.
 
 #nullable enable
+using System;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
@@ -56,6 +58,17 @@ internal class QueryApiSessionFactory : IQueryApiSessionFactory
         sessionScope.Resolve<ILoggingContextTracker>().Add("sn", sessionId);
 
         var session = sessionScope.Resolve<IInternalAsyncSession>();
+        session.Disposed += GetSessionDisposedHandler(sessionScope);
         return session;
+    }
+
+    private static AsyncEventHandler GetSessionDisposedHandler(IAsyncDisposable sessionScope)
+    {
+        return SessionDisposed;
+
+        async Task SessionDisposed(object? o, EventArgs eventArgs)
+        {
+            await sessionScope.DisposeAsync().ConfigureAwait(false);
+        }
     }
 }
