@@ -103,4 +103,42 @@ public class QueryApiSessionTests
 
         result.Should().Be(42);
     }
+
+    [Fact]
+    public async Task ExecuteWriteAsync_DelegatesToRetryLogic()
+    {
+        var retryMock = _fixture.Freeze<Mock<IAsyncRetryLogic>>();
+        retryMock
+            .Setup(r => r.RetryAsync(It.IsAny<Func<Task<int>>>()))
+            .ReturnsAsync(99);
+
+        var sut = _fixture.Create<QueryApiSession>();
+        await sut.ExecuteWriteAsync<int>(_ => Task.FromResult(42));
+
+        retryMock.Verify(r => r.RetryAsync(It.IsAny<Func<Task<int>>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CloseAsync_DisposesSessionLifetime()
+    {
+        var lifetimeMock = _fixture.Freeze<Mock<ISessionLifetime>>();
+        lifetimeMock.Setup(l => l.DisposeAsync()).Returns(ValueTask.CompletedTask);
+
+        var sut = _fixture.Create<QueryApiSession>();
+        await sut.CloseAsync();
+
+        lifetimeMock.Verify(l => l.DisposeAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_DisposesSessionLifetime()
+    {
+        var lifetimeMock = _fixture.Freeze<Mock<ISessionLifetime>>();
+        lifetimeMock.Setup(l => l.DisposeAsync()).Returns(ValueTask.CompletedTask);
+
+        var sut = _fixture.Create<QueryApiSession>();
+        await sut.DisposeAsync();
+
+        lifetimeMock.Verify(l => l.DisposeAsync(), Times.Once);
+    }
 }
