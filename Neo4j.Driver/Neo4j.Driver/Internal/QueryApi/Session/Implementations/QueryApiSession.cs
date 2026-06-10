@@ -30,6 +30,8 @@ internal class QueryApiSession : IInternalAsyncSession
     private readonly ILogger _logger;
     private readonly IQueryApiTransactionFactory _transactionFactory;
 
+    private bool _closed;
+
     public QueryApiSession(
         SessionConfig sessionConfig,
         IAutoCommitRunner autoCommitRunner,
@@ -48,6 +50,8 @@ internal class QueryApiSession : IInternalAsyncSession
 
     public SessionConfig SessionConfig { get; }
 
+    public event AsyncEventHandler? Disposed;
+
     public Task<IResultCursor> RunAsync(
         Query query,
         Action<TransactionConfigBuilder> action,
@@ -57,29 +61,43 @@ internal class QueryApiSession : IInternalAsyncSession
         return _autoCommitRunner.RunAsync(query);
     }
 
-    public Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action) =>
-        RunAsync(query, action, false);
+    public Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action)
+    {
+        return RunAsync(query, action, false);
+    }
 
-    public Task<IResultCursor> RunAsync(Query query) =>
-        RunAsync(query, null!);
+    public Task<IResultCursor> RunAsync(Query query)
+    {
+        return RunAsync(query, null!);
+    }
 
-    public Task<IResultCursor> RunAsync(string query, Action<TransactionConfigBuilder> action) =>
-        RunAsync(new Query(query), action);
+    public Task<IResultCursor> RunAsync(string query, Action<TransactionConfigBuilder> action)
+    {
+        return RunAsync(new Query(query), action);
+    }
 
     public Task<IResultCursor> RunAsync(
         string query,
         IDictionary<string, object> parameters,
-        Action<TransactionConfigBuilder> action) =>
-        RunAsync(new Query(query, parameters), action);
+        Action<TransactionConfigBuilder> action)
+    {
+        return RunAsync(new Query(query, parameters), action);
+    }
 
-    public Task<IResultCursor> RunAsync(string query) =>
-        RunAsync(new Query(query));
+    public Task<IResultCursor> RunAsync(string query)
+    {
+        return RunAsync(new Query(query));
+    }
 
-    public Task<IResultCursor> RunAsync(string query, object parameters) =>
-        RunAsync(new Query(query, parameters));
+    public Task<IResultCursor> RunAsync(string query, object parameters)
+    {
+        return RunAsync(new Query(query, parameters));
+    }
 
-    public Task<IResultCursor> RunAsync(string query, IDictionary<string, object> parameters) =>
-        RunAsync(new Query(query, parameters));
+    public Task<IResultCursor> RunAsync(string query, IDictionary<string, object> parameters)
+    {
+        return RunAsync(new Query(query, parameters));
+    }
 
     public Task<IAsyncTransaction> BeginTransactionAsync(
         Action<TransactionConfigBuilder> action,
@@ -99,47 +117,85 @@ internal class QueryApiSession : IInternalAsyncSession
             .ConfigureAwait(false);
     }
 
-    public Task<IAsyncTransaction> BeginTransactionAsync() =>
-        BeginTransactionAsync(null!);
+    public Task<IAsyncTransaction> BeginTransactionAsync()
+    {
+        return BeginTransactionAsync(null!);
+    }
 
-    public Task<IAsyncTransaction> BeginTransactionAsync(Action<TransactionConfigBuilder> action) =>
-        BeginTransactionAsync(action, false);
+    public Task<IAsyncTransaction> BeginTransactionAsync(Action<TransactionConfigBuilder> action)
+    {
+        return BeginTransactionAsync(action, false);
+    }
 
-    public Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode) =>
-        BeginTransactionAsync(mode, null!);
+    public Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode)
+    {
+        return BeginTransactionAsync(mode, null!);
+    }
 
-    public Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode, Action<TransactionConfigBuilder> action) =>
-        BeginTransactionAsync(mode, action, false);
+    public Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode, Action<TransactionConfigBuilder> action)
+    {
+        return BeginTransactionAsync(mode, action, false);
+    }
 
     public Task<TResult> ExecuteReadAsync<TResult>(
         Func<IAsyncQueryRunner, Task<TResult>> work,
-        Action<TransactionConfigBuilder>? action = null) =>
-        RunManagedTransactionAsync(AccessMode.Read, work, action);
+        Action<TransactionConfigBuilder>? action = null)
+    {
+        return RunManagedTransactionAsync(AccessMode.Read, work, action);
+    }
 
     public Task ExecuteReadAsync(
         Func<IAsyncQueryRunner, Task> work,
-        Action<TransactionConfigBuilder>? action = null) =>
-        RunManagedTransactionAsync(AccessMode.Read, work, action);
+        Action<TransactionConfigBuilder>? action = null)
+    {
+        return RunManagedTransactionAsync(AccessMode.Read, work, action);
+    }
 
     public Task<TResult> ExecuteWriteAsync<TResult>(
         Func<IAsyncQueryRunner, Task<TResult>> work,
-        Action<TransactionConfigBuilder>? action = null) =>
-        RunManagedTransactionAsync(AccessMode.Write, work, action);
+        Action<TransactionConfigBuilder>? action = null)
+    {
+        return RunManagedTransactionAsync(AccessMode.Write, work, action);
+    }
 
     public Task ExecuteWriteAsync(
         Func<IAsyncQueryRunner, Task> work,
-        Action<TransactionConfigBuilder>? action = null) =>
-        RunManagedTransactionAsync(AccessMode.Write, work, action);
+        Action<TransactionConfigBuilder>? action = null)
+    {
+        return RunManagedTransactionAsync(AccessMode.Write, work, action);
+    }
 
     public Task<EagerResult<T>> PipelinedExecuteReadAsync<T>(
         Func<IAsyncQueryRunner, Task<EagerResult<T>>> func,
-        TransactionConfig config) =>
-        RunManagedTransactionAsync(AccessMode.Read, func, null);
+        TransactionConfig config)
+    {
+        return RunManagedTransactionAsync(AccessMode.Read, func, null);
+    }
 
     public Task<EagerResult<T>> PipelinedExecuteWriteAsync<T>(
         Func<IAsyncQueryRunner, Task<EagerResult<T>>> func,
-        TransactionConfig config) =>
-        RunManagedTransactionAsync(AccessMode.Write, func, null);
+        TransactionConfig config)
+    {
+        return RunManagedTransactionAsync(AccessMode.Write, func, null);
+    }
+
+    public Task CloseAsync() => DisposeAsync().AsTask();
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_closed)
+        {
+            return;
+        }
+
+        _closed = true;
+        await Disposed.FireAsync().ConfigureAwait(false);
+    }
+
+    public void Dispose()
+    {
+        DisposeAsync().AsTask().GetAwaiter().GetResult();
+    }
 
     private async Task<TResult> RunManagedTransactionAsync<TResult>(
         AccessMode mode,
@@ -207,13 +263,5 @@ internal class QueryApiSession : IInternalAsyncSession
 
             throw;
         }
-    }
-
-    public Task CloseAsync() => Task.CompletedTask;
-
-    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
-
-    public void Dispose()
-    {
     }
 }

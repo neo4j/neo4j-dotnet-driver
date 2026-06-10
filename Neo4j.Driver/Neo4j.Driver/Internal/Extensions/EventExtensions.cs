@@ -13,15 +13,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#nullable enable
+
 using System;
+using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.DependencyInjection;
+namespace Neo4j.Driver.Internal;
 
-internal interface IServiceRegistry
+internal static class EventExtensions
 {
-    IServiceRegistry RegisterInstance<TService>(TService instance, bool transferOwnership = false);
-    IServiceRegistry RegisterType<TService, TImplementation>(bool singleton = false) where TImplementation : TService;
-    IServiceRegistry RegisterType(Type service, Type implementation, bool singleton = false);
-    IServiceRegistry RegisterType<TService>(bool singleton = false);
-    IServiceRegistry RegisterInterceptor(IResolutionInterceptor interceptor);
+    extension(AsyncEventHandler? eventHandler)
+    {
+        public async Task FireAsync(object? sender = null, EventArgs? e = null)
+        {
+            if (eventHandler == null)
+            {
+                return;
+            }
+
+            var eventArgs = e ?? EventArgs.Empty;
+            await eventHandler(sender, eventArgs).ConfigureAwait(false);
+        }
+    }
 }

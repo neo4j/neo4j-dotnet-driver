@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
@@ -103,6 +104,25 @@ public class ScopedContainerTests
     {
         public bool IsDisposed { get; private set; }
         public void Dispose() => IsDisposed = true;
+    }
+
+    private class AsyncDisposableService : IAsyncDisposable
+    {
+        public bool IsDisposed { get; private set; }
+        public ValueTask DisposeAsync()
+        {
+            IsDisposed = true;
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    private class OrderedDisposable(List<string> order, string name) : IAsyncDisposable
+    {
+        public ValueTask DisposeAsync()
+        {
+            order.Add(name);
+            return ValueTask.CompletedTask;
+        }
     }
 
     [Fact]
@@ -361,6 +381,7 @@ public class ScopedContainerTests
     [Fact]
     public void Dispose_DoesNotDisposeRegisteredInstances()
     {
+        // Default: caller retains ownership; scope does not dispose.
         var container = new ScopedContainer();
         var instance = new DisposableService();
 
@@ -368,6 +389,18 @@ public class ScopedContainerTests
         container.Dispose();
 
         instance.IsDisposed.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DisposeAsync_DisposesOwnedRegisteredInstances()
+    {
+        var container = new ScopedContainer();
+        var instance = new AsyncDisposableService();
+
+        container.RegisterInstance(instance, transferOwnership: true);
+        await container.DisposeAsync();
+
+        instance.IsDisposed.Should().BeTrue();
     }
 
     [Theory]
@@ -642,6 +675,51 @@ public class ScopedContainerTests
         results.Should().HaveCount(1);
         results[0].Should().BeOfType<ServiceA_NeedsB>();
         ((ServiceA_NeedsB)results[0]).B.Should().BeSameAs(childB);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_DisposesAsyncDisposableInstances()
+    {
+        var container = new ScopedContainer();
+        container.RegisterType<AsyncDisposableService>();
+
+        var resolved = container.Resolve<AsyncDisposableService>();
+        await container.DisposeAsync();
+
+        resolved.IsDisposed.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DisposeAsync_DisposesChildScopeWhenParentIsDisposed()
+    {
+        var container = new ScopedContainer();
+
+        var child = container.CreateChildScope(r => r.RegisterType<AsyncDisposableService>());
+        var childResolved = child.Resolve<AsyncDisposableService>();
+
+        await container.DisposeAsync();
+
+        childResolved!.IsDisposed.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DisposeAsync_DisposesInReverseCreationOrder()
+    {
+        var order = new List<string>();
+        var container = new ScopedContainer();
+
+        // Owned instances added to _disposables in creation order
+        container.RegisterInstance(new OrderedDisposable(order, "first"), transferOwnership: true);
+        container.RegisterInstance(new OrderedDisposable(order, "second"), transferOwnership: true);
+
+        // Child scope created last — appended to parent _disposables after both parent instances
+        container.CreateChildScope(r =>
+            r.RegisterInstance(new OrderedDisposable(order, "child"), transferOwnership: true));
+
+        await container.DisposeAsync();
+
+        // Reverse creation order: child (last added) disposed first
+        order.Should().Equal("child", "second", "first");
     }
 
     [Fact]

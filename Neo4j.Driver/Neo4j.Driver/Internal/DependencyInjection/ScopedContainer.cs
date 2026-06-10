@@ -18,6 +18,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -25,9 +26,9 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.DependencyInjection;
 
-internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
+internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable, IAsyncDisposable
 {
-    private readonly HashSet<object> _disposables = [];
+    private readonly Stack<IAsyncDisposable> _disposables = new();
     private readonly List<IResolutionInterceptor> _interceptors = [];
     private readonly ScopedContainer? _parent;
     private readonly Dictionary<Type, List<Registration>> _registrations = new();
@@ -44,7 +45,9 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         RegisterInstance<IResolutionScope>(this);
     }
 
-    public void Dispose()
+    public void Dispose() => DisposeAsync().AsTask().GetAwaiter().GetResult();
+
+    public async ValueTask DisposeAsync()
     {
         if (_disposed)
         {
@@ -53,22 +56,12 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 
         _disposed = true;
 
-        foreach (var disposable in _disposables)
+        while (_disposables.TryPop(out var disposable))
         {
-            if (disposable is IDisposable d)
-            {
-                d.Dispose();
-            }
+            await disposable.DisposeAsync().ConfigureAwait(false);
         }
 
-        _disposables.Clear();
         _resolutionStack.Dispose();
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        Dispose();
-        return ValueTask.CompletedTask;
     }
 
     public TService Resolve<TService>()
@@ -117,10 +110,11 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         var newScope = new ScopedContainer(this);
         registrations(newScope);
+        TrackInstanceForDisposal(newScope);
         return newScope;
     }
 
-    public IServiceRegistry RegisterInstance<TService>(TService instance)
+    public IServiceRegistry RegisterInstance<TService>(TService instance, bool transferOwnership = false)
     {
         if (instance == null)
         {
@@ -135,7 +129,22 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         }
 
         registrations.Add(new Registration(instance));
+
+        if (transferOwnership)
+        {
+            TrackInstanceForDisposal(instance);
+        }
+
         return this;
+    }
+
+    private void TrackInstanceForDisposal<TService>([DisallowNull] TService instance)
+    {
+        switch (instance)
+        {
+            case IAsyncDisposable ad: _disposables.Push(ad); break;
+            case IDisposable d: _disposables.Push(new AsyncDisposalWrapper(d)); break;
+        }
     }
 
     public IServiceRegistry RegisterType<TService, TImplementation>(bool singleton = false)
@@ -377,10 +386,7 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             throw new InvalidOperationException($"Failed to create instance of type {implementationType}.");
         }
 
-        if (instance is IDisposable)
-        {
-            _disposables.Add(instance);
-        }
+        TrackInstanceForDisposal(instance);
 
         return instance;
     }
@@ -422,5 +428,14 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         public object? Instance { get; }
         public Type ImplementationType { get; }
         public bool Singleton { get; }
+    }
+
+    private class AsyncDisposalWrapper(IDisposable disposable) : IAsyncDisposable
+    {
+        public ValueTask DisposeAsync()
+        {
+            disposable.Dispose();
+            return ValueTask.CompletedTask;
+        }
     }
 }

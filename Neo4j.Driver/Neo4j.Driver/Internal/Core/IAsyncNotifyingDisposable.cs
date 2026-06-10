@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -13,15 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#nullable enable
+
 using System;
+using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.DependencyInjection;
+namespace Neo4j.Driver.Internal;
 
-internal interface IServiceRegistry
+internal delegate Task AsyncEventHandler(object? sender, EventArgs e);
+
+// allows subscribers to be notified when the object is disposed
+internal interface IAsyncNotifyingDisposable : IAsyncDisposable
 {
-    IServiceRegistry RegisterInstance<TService>(TService instance, bool transferOwnership = false);
-    IServiceRegistry RegisterType<TService, TImplementation>(bool singleton = false) where TImplementation : TService;
-    IServiceRegistry RegisterType(Type service, Type implementation, bool singleton = false);
-    IServiceRegistry RegisterType<TService>(bool singleton = false);
-    IServiceRegistry RegisterInterceptor(IResolutionInterceptor interceptor);
+    event AsyncEventHandler? Disposed;
 }
