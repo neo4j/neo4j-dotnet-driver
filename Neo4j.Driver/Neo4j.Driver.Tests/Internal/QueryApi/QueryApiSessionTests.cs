@@ -57,6 +57,7 @@ public class QueryApiSessionTests
                 It.IsAny<Action<TransactionConfigBuilder>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(tx);
+
         var sut = _fixture.Create<QueryApiSession>();
 
         var result = await sut.BeginTransactionAsync(AccessMode.Read);
@@ -67,6 +68,7 @@ public class QueryApiSessionTests
     [Fact]
     public async Task ExecuteWriteAsync_WhenCommitFails_ThrowsOriginalExceptionEvenIfRollbackAlsoFails()
     {
+        _fixture.AddPassThroughRetryLogic();
         var commitError = new ServiceUnavailableException("HTTP 500");
         var tx = new Mock<IInternalAsyncTransaction>();
         tx.SetupGet(t => t.IsOpen).Returns(true);
@@ -78,9 +80,10 @@ public class QueryApiSessionTests
                 It.IsAny<Action<TransactionConfigBuilder>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(tx.Object);
+
         var sut = _fixture.Create<QueryApiSession>();
 
-        var act = () => sut.ExecuteWriteAsync<int>(_ => Task.FromResult(0));
+        var act = () => sut.ExecuteWriteAsync(_ => Task.FromResult(0));
 
         await act.Should().ThrowAsync<ServiceUnavailableException>().WithMessage("HTTP 500");
     }
@@ -88,6 +91,7 @@ public class QueryApiSessionTests
     [Fact]
     public async Task ExecuteReadAsync_PassesTransactionToWorkAndReturnsResult()
     {
+        _fixture.AddPassThroughRetryLogic();
         var tx = new Mock<IInternalAsyncTransaction>();
         tx.Setup(t => t.CommitAsync()).Returns(Task.CompletedTask);
         _fixture.Freeze<Mock<IQueryApiTransactionFactory>>()
@@ -96,26 +100,23 @@ public class QueryApiSessionTests
                 It.IsAny<Action<TransactionConfigBuilder>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(tx.Object);
+
         var sut = _fixture.Create<QueryApiSession>();
 
-        var result = await sut.ExecuteReadAsync<int>(
-            runner => Task.FromResult(ReferenceEquals(runner, tx.Object) ? 42 : -1));
+        var result =
+            await sut.ExecuteReadAsync(runner => Task.FromResult(ReferenceEquals(runner, tx.Object) ? 42 : -1));
 
         result.Should().Be(42);
     }
 
     [Fact]
-    public async Task ExecuteWriteAsync_DelegatesToRetryLogic()
+    public async Task ExecuteWriteAsync_PropagatesExceptionFromRetryLogic()
     {
-        var retryMock = _fixture.Freeze<Mock<IAsyncRetryLogic>>();
-        retryMock
-            .Setup(r => r.RetryAsync(It.IsAny<Func<Task<int>>>()))
-            .ReturnsAsync(99);
+        _fixture.AddThrowingRetryLogic();
 
         var sut = _fixture.Create<QueryApiSession>();
-        await sut.ExecuteWriteAsync<int>(_ => Task.FromResult(42));
+        var act = () => sut.ExecuteWriteAsync(_ => Task.FromResult(42));
 
-        retryMock.Verify(r => r.RetryAsync(It.IsAny<Func<Task<int>>>()), Times.Once);
+        await act.Should().ThrowAsync<QueryApiTestException>().WithMessage("Retry failed");
     }
-
 }

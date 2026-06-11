@@ -27,6 +27,7 @@ internal class QueryApiContainerBuilder : IQueryApiContainerBuilder
         
         container.RegisterInstance(driverContext);
         container.RegisterInstance(driverContext.AuthTokenManager);
+        container.RegisterType<IAsyncRetryLogic, AsyncRetryLogic>();
 
         var loggerFactory = new LoggerFactory(driverContext.Neo4JLogger);
         container.RegisterInterceptor(new LoggingInterceptor(loggerFactory));

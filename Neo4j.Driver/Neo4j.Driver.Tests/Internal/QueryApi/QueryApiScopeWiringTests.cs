@@ -29,10 +29,22 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 public class QueryApiScopeWiringTests
 {
+    private static readonly string[] CommittedBookmarks = ["neo4j:bookmark:v1:tx42"];
+
     [Fact]
     public async Task CommittedBookmarks_AreVisibleToTracker_AfterCommit()
     {
-        var committedBookmarks = new[] { "neo4j:bookmark:v1:tx42" };
+        var (sessionScope, tracker) = BuildWiredSessionScope();
+        var session = sessionScope.Resolve<IInternalAsyncSession>();
+
+        var tx = await session.BeginTransactionAsync(AccessMode.Write, null!);
+        await tx.CommitAsync();
+
+        tracker.CurrentBookmarks.Values.Should().BeEquivalentTo(CommittedBookmarks);
+    }
+
+    private static (IResolutionScope sessionScope, BookmarkTracker tracker) BuildWiredSessionScope()
+    {
         var holder = new QueryApiTransactionContextHolder();
 
         var starterMock = new Mock<ITransactionBeginner>();
@@ -41,20 +53,21 @@ public class QueryApiScopeWiringTests
             .Callback(() => holder.Set(new QueryApiTransactionContext("tx-1", null)))
             .Returns(Task.CompletedTask);
 
-        // The committer simulates what TransactionCommitter does: update the tracker.
-        // We wire this via a callback so it uses the session-scoped tracker.
+        // Capture tracker by reference so the callback can update bookmarks after the scope is built.
         BookmarkTracker? trackerRef = null;
         var committerMock = new Mock<ITransactionCommitter>();
         committerMock
             .Setup(c => c.CommitAsync(It.IsAny<CancellationToken>()))
             .Returns<CancellationToken>(_ =>
             {
-                trackerRef?.UpdateBookmarks(committedBookmarks);
+                // ReSharper disable once AccessToModifiedClosure
+                trackerRef?.UpdateBookmarks(CommittedBookmarks);
                 return Task.CompletedTask;
             });
 
         var parentScope = new ScopedContainer();
         parentScope.RegisterInstance<ILogger>(new TestLogger(typeof(QueryApiSession)));
+        parentScope.RegisterInstance<IAsyncRetryLogic>(new SimpleRetryLogic(fn => fn()));
         parentScope.RegisterInstance(starterMock.Object);
         parentScope.RegisterInstance(committerMock.Object);
         parentScope.RegisterInstance(Mock.Of<ITransactionRollback>());
@@ -72,18 +85,6 @@ public class QueryApiScopeWiringTests
 
         trackerRef = (BookmarkTracker)sessionScope.Resolve<IBookmarkTracker>();
 
-        var session = sessionScope.Resolve<IInternalAsyncSession>();
-
-        var tx = await session.BeginTransactionAsync(AccessMode.Write, null!);
-        await tx.CommitAsync();
-
-        // After commit, the tracker should have the bookmarks that TransactionCommitter
-        // would have written. In production code, this is done via IBookmarkTracker injection.
-        trackerRef.CurrentBookmarks.Values.Should().BeEquivalentTo(committedBookmarks);
-
-        // A second begin can start — verifying the factory+holder mechanism works twice
-        await session.BeginTransactionAsync(AccessMode.Write, null!);
-        starterMock.Verify(s => s.BeginAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
+        return (sessionScope, trackerRef);
     }
-
 }

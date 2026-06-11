@@ -68,6 +68,12 @@ internal class LegacyLoggerAdapter : ILogger
         _legacyLogger.Warn(null, format, args);
     }
 
+    public void Warn(Exception exception, string messageTemplate, params object?[] args)
+    {
+        var format = GetModifiedFormat(messageTemplate);
+        _legacyLogger.Warn(exception, format, args);
+    }
+
     public void Error(string messageTemplate, params object?[] args)
     {
         var format = GetModifiedFormat(messageTemplate);

@@ -64,6 +64,9 @@ internal class TestLogger(Type subjectType) : ILogger
     public void Warn(string messageTemplate, params object?[] args) =>
         WriteFormatted("WRN", messageTemplate, args);
 
+    public void Warn(Exception exception, string messageTemplate, params object?[] args) =>
+        WriteFormatted("WRN", messageTemplate, args, exception);
+
     public void Error(string messageTemplate, params object?[] args) =>
         WriteFormatted("ERR", messageTemplate, args);
 

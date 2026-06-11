@@ -34,14 +34,24 @@ internal class AsyncRetryLogic : IAsyncRetryLogic
     private readonly double _initialRetryDelayMs;
     private readonly double _jitterFactor;
 
-    private readonly INeo4jLogger _neo4JLogger;
+    private readonly ILogger _logger;
+    private readonly INeo4jLogger _legacyLogger;
     private readonly double _maxRetryTimeMs;
     private readonly double _multiplier;
 
-    public AsyncRetryLogic(TimeSpan maxRetryTimeout, INeo4jLogger neo4JLogger)
+    internal AsyncRetryLogic(TimeSpan maxRetryTimeout, INeo4jLogger neo4JLogger)
     {
         _maxRetryTimeMs = maxRetryTimeout.TotalMilliseconds;
-        _neo4JLogger = neo4JLogger;
+        _legacyLogger = neo4JLogger;
+        _initialRetryDelayMs = InitialRetryDelayMs;
+        _multiplier = RetryDelayMultiplier;
+        _jitterFactor = RetryDelayJitterFactor;
+    }
+
+    public AsyncRetryLogic(DriverContext driverContext, ILogger logger)
+    {
+        _maxRetryTimeMs = driverContext.Config.MaxTransactionRetryTime.TotalMilliseconds;
+        _logger = logger;
         _initialRetryDelayMs = InitialRetryDelayMs;
         _multiplier = RetryDelayMultiplier;
         _jitterFactor = RetryDelayJitterFactor;
@@ -73,7 +83,7 @@ internal class AsyncRetryLogic : IAsyncRetryLogic
                 if (shouldRetry)
                 {
                     delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
-                    _neo4JLogger.Warn(e, $"Transaction failed and will be retried in {delay} ms.");
+                    LogWarn(e, $"Transaction failed and will be retried in {delay} ms.");
                     await Task.Delay(delay).ConfigureAwait(false); // blocking for this delay
                     delayMs *= _multiplier;
                 }
@@ -85,6 +95,18 @@ internal class AsyncRetryLogic : IAsyncRetryLogic
             $"Failed after retried for {retryCount} times in {_maxRetryTimeMs} ms. " +
             "Make sure that your database is online and retry again.",
             new AggregateException(exceptions));
+    }
+
+    private void LogWarn(Exception e, string message)
+    {
+        if (_logger != null)
+        {
+            _logger.Warn(e, message);
+        }
+        else
+        {
+            _legacyLogger?.Warn(e, message);
+        }
     }
 
     private double ComputeDelayWithJitter(double delayMs)

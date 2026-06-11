@@ -74,6 +74,12 @@ internal class ContextualLogger : ILogger
         _downstream.Warn(messageTemplate, args);
     }
 
+    public void Warn(Exception exception, string messageTemplate, params object[] args)
+    {
+        (messageTemplate, args) = Contextualise(messageTemplate, args);
+        _downstream.Warn(exception, messageTemplate, args);
+    }
+
     public void Error(string messageTemplate, params object[] args)
     {
         (messageTemplate, args) = Contextualise(messageTemplate, args);

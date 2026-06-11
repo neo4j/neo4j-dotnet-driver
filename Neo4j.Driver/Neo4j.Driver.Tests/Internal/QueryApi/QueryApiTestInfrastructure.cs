@@ -13,14 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#nullable enable
-
+using System;
 using System.Reflection;
+using System.Threading.Tasks;
 using AutoFixture;
 using AutoFixture.AutoMoq;
 using AutoFixture.Kernel;
+using Moq;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.QueryApi;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
@@ -40,6 +40,22 @@ internal class QueryApiSpecimenBuilder : ISpecimenBuilder
     }
 }
 
+internal class SimpleRetryLogic : IAsyncRetryLogic
+{
+    private Func<Func<Task<object>>, Task<object>> _funcRunner;
+
+    public SimpleRetryLogic(Func<Func<Task<object>>, Task<object>> funcRunner)
+    {
+        _funcRunner = funcRunner;
+    }
+
+    public async Task<T> RetryAsync<T>(Func<Task<T>> runTxAsyncFunc)
+    {
+        var obj = await _funcRunner(async () => await runTxAsyncFunc());
+        return (T)obj;
+    }
+}
+
 internal class QueryApiCustomization : ICustomization
 {
     public void Customize(IFixture fixture)
@@ -50,3 +66,22 @@ internal class QueryApiCustomization : ICustomization
         fixture.Register<IBookmarkTracker>(() => new BookmarkTracker(SessionConfig.Builder.Build()));
     }
 }
+
+internal static class FixtureExtensions
+{
+    public static IFixture AddPassThroughRetryLogic(this IFixture fixture)
+    {
+        fixture.Register<IAsyncRetryLogic>(() => new SimpleRetryLogic(fn => fn()));
+        return fixture;
+    }
+
+    public static IFixture AddThrowingRetryLogic(this IFixture fixture)
+    {
+        fixture.Register<IAsyncRetryLogic>(
+            () => new SimpleRetryLogic(fn => throw new QueryApiTestException("Retry failed")));
+
+        return fixture;
+    }
+}
+
+internal class QueryApiTestException(string message) : Exception(message);
