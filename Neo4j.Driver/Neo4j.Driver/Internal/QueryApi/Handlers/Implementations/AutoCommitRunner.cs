@@ -51,7 +51,7 @@ internal class AutoCommitRunner : IAutoCommitRunner
 
     public async Task<IResultCursor> RunAsync(Query query, CancellationToken cancellationToken = default)
     {
-        _logger.Debug("Auto-commit: {query}", query.Text);
+        _logger.LogDebug("Auto-commit: {query}", query.Text);
 
         var bookmarks = _bookmarkTracker.CurrentBookmarks.Values;
         using var request = await BuildRequestAsync(query, bookmarks, cancellationToken).ConfigureAwait(false);
@@ -60,14 +60,14 @@ internal class AutoCommitRunner : IAutoCommitRunner
         var body = result.Body;
         var resultSet = new QueryApiResultSet
         {
-            Fields = body?.Data?.Fields ?? [],
-            Rows = body?.Data?.Values ?? [],
-            Bookmarks = body?.Bookmarks ?? []
+            Fields = body.Data?.Fields ?? [],
+            Rows = body.Data?.Values ?? [],
+            Bookmarks = body.Bookmarks ?? []
         };
 
         _bookmarkTracker.UpdateBookmarks(resultSet.Bookmarks);
 
-        _logger.Debug(
+        _logger.LogDebug(
             "Auto-commit complete: {fieldCount} field(s), {rowCount} row(s)",
             resultSet.Fields.Length,
             resultSet.Rows.Length);

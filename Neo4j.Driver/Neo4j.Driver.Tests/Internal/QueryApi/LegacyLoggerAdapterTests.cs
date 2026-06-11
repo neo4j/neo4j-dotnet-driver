@@ -17,9 +17,7 @@
 
 using System;
 using Moq;
-using Moq.AutoMock;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
@@ -33,13 +31,17 @@ public class LegacyLoggerAdapterTests
     public LegacyLoggerAdapterTests()
     {
         _mockLegacyLogger = new Mock<INeo4jLogger>();
+        _mockLegacyLogger
+            .Setup(x => x.IsDebugEnabled())
+            .Returns(true);
+
         _subject = new LegacyLoggerAdapter(_mockLegacyLogger.Object, typeof(LegacyLoggerAdapterTests));
     }
 
     [Fact]
     public void Debug_TranslatesNamedPlaceholdersAndDelegates()
     {
-        _subject.Debug("tx {txId} query {query}", "tx-1", "RETURN 1");
+        _subject.LogDebug("tx {txId} query {query}", "tx-1", "RETURN 1");
 
         _mockLegacyLogger
             .Verify(l => l.Debug(
@@ -50,7 +52,7 @@ public class LegacyLoggerAdapterTests
     [Fact]
     public void Info_TranslatesNamedPlaceholdersAndDelegates()
     {
-        _subject.Info("version {version}", "5.0");
+        _subject.LogInformation("version {version}", "5.0");
 
         _mockLegacyLogger
             .Verify(l => l.Info(
@@ -61,7 +63,7 @@ public class LegacyLoggerAdapterTests
     [Fact]
     public void Warn_TranslatesNamedPlaceholdersAndDelegatesWithNullException()
     {
-        _subject.Warn("status {code}", 404);
+        _subject.LogWarning("status {code}", 404);
 
         _mockLegacyLogger
             .Verify(l => l.Warn(
@@ -73,7 +75,7 @@ public class LegacyLoggerAdapterTests
     [Fact]
     public void Error_WithoutException_TranslatesAndDelegatesWithNullException()
     {
-        _subject.Error("failed {reason}", "timeout");
+        _subject.LogError("failed {reason}", "timeout");
 
         _mockLegacyLogger
             .Verify(l => l.Error(
@@ -87,7 +89,7 @@ public class LegacyLoggerAdapterTests
     {
         var ex = new Exception("boom");
 
-        _subject.Error(ex, "failed {reason}", "timeout");
+        _subject.LogError(ex, "failed {reason}", "timeout");
 
         _mockLegacyLogger
             .Verify(l => l.Error(
@@ -99,7 +101,7 @@ public class LegacyLoggerAdapterTests
     [Fact]
     public void Debug_TemplateWithNoPlaceholders_PassesThroughUnchanged()
     {
-        _subject.Debug("no placeholders here");
+        _subject.LogDebug("no placeholders here");
 
         _mockLegacyLogger
             .Verify(l => l.Debug(

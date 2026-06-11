@@ -41,9 +41,9 @@ internal class QueryApiHttpTransport : IQueryApiHttpTransport
         HttpRequestMessage request,
         CancellationToken cancellationToken = default)
     {
-        _logger.Debug("Sending {method} request to {uri}", request.Method, request.RequestUri);
+        _logger.LogDebug("Sending {method} request to {uri}", request.Method, request.RequestUri);
         var response = await _client.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        _logger.Debug(
+        _logger.LogDebug(
             "{method} {uri} returned {statusCode}", request.Method, request.RequestUri, (int)response.StatusCode);
 
         await _errorChecker.EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);

@@ -47,7 +47,7 @@ internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
         Action<TransactionConfigBuilder>? action,
         CancellationToken cancellationToken = default)
     {
-        _logger.Debug("Opening {mode} transaction", mode);
+        _logger.LogDebug("Opening {mode} transaction", mode);
         await _transactionStarter.BeginAsync(cancellationToken).ConfigureAwait(false);
 
         var context = _contextHolder.Context

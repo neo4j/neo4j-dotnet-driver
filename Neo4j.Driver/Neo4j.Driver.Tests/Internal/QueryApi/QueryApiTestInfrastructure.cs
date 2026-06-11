@@ -19,7 +19,6 @@ using System.Threading.Tasks;
 using AutoFixture;
 using AutoFixture.AutoMoq;
 using AutoFixture.Kernel;
-using Moq;
 using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
@@ -78,7 +77,7 @@ internal static class FixtureExtensions
     public static IFixture AddThrowingRetryLogic(this IFixture fixture)
     {
         fixture.Register<IAsyncRetryLogic>(
-            () => new SimpleRetryLogic(fn => throw new QueryApiTestException("Retry failed")));
+            () => new SimpleRetryLogic(_ => throw new QueryApiTestException("Retry failed")));
 
         return fixture;
     }

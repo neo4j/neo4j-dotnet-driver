@@ -17,7 +17,6 @@
 using System;
 using System.Text.RegularExpressions;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
@@ -52,24 +51,31 @@ internal class TestLogger(Type subjectType) : ILogger
             output.WriteLine($"{exception}");
     }
 
-    public void Trace(string messageTemplate, params object?[] args) =>
-        WriteFormatted("TRC", messageTemplate, args);
+    public void Log<TState>(
+        LogLevel logLevel,
+        EventId eventId,
+        TState state,
+        Exception? exception,
+        Func<TState, Exception?, string> formatter)
+    {
+        var level = logLevel switch
+        {
+            LogLevel.Trace => "TRC",
+            LogLevel.Debug => "DBG",
+            LogLevel.Information => "INF",
+            LogLevel.Warning => "WRN",
+            LogLevel.Error => "ERR",
+            LogLevel.Critical => "CRT",
+            _ => "???"
+        };
 
-    public void Debug(string messageTemplate, params object?[] args) =>
-        WriteFormatted("DBG", messageTemplate, args);
+        if (LoggingHelpers.ExtractFormatAndArguments(state, out var template, out var args))
+            WriteFormatted(level, template, args, exception);
+        else
+            WriteFormatted(level, formatter(state, exception), [], exception);
+    }
 
-    public void Info(string messageTemplate, params object?[] args) =>
-        WriteFormatted("INF", messageTemplate, args);
+    public bool IsEnabled(LogLevel logLevel) => true;
 
-    public void Warn(string messageTemplate, params object?[] args) =>
-        WriteFormatted("WRN", messageTemplate, args);
-
-    public void Warn(Exception exception, string messageTemplate, params object?[] args) =>
-        WriteFormatted("WRN", messageTemplate, args, exception);
-
-    public void Error(string messageTemplate, params object?[] args) =>
-        WriteFormatted("ERR", messageTemplate, args);
-
-    public void Error(Exception exception, string messageTemplate, params object?[] args) =>
-        WriteFormatted("ERR", messageTemplate, args, exception);
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 }

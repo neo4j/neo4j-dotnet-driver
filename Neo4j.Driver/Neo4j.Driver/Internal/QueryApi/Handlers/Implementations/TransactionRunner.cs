@@ -48,7 +48,7 @@ internal class TransactionRunner : ITransactionRunner
 
     public async Task<IResultCursor> RunAsync(Query query, CancellationToken cancellationToken = default)
     {
-        _logger.Debug("Running query in tx {txId}: {query}", _txContext.TxId, query.Text);
+        _logger.LogDebug("Running query in tx {txId}: {query}", _txContext.TxId, query.Text);
 
         using var request = await BuildRequestAsync(query, cancellationToken).ConfigureAwait(false);
         var result = await _client.ExecuteAsync<QueryApiResultBody>(request, cancellationToken).ConfigureAwait(false);
@@ -56,12 +56,12 @@ internal class TransactionRunner : ITransactionRunner
         var body = result.Body;
         var resultSet = new QueryApiResultSet
         {
-            Fields = body?.Data?.Fields ?? [],
-            Rows = body?.Data?.Values ?? [],
-            Bookmarks = body?.Bookmarks ?? []
+            Fields = body.Data?.Fields ?? [],
+            Rows = body.Data?.Values ?? [],
+            Bookmarks = body.Bookmarks ?? []
         };
 
-        _logger.Debug(
+        _logger.LogDebug(
             "Run complete: {fieldCount} field(s), {rowCount} row(s)",
             resultSet.Fields.Length,
             resultSet.Rows.Length);

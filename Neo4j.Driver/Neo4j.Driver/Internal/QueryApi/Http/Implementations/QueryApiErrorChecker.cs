@@ -68,7 +68,7 @@ internal class QueryApiErrorChecker : IQueryApiErrorChecker
             var uri = response.RequestMessage?.RequestUri;
             var message = $"HTTP {(int)response.StatusCode} {method} {uri}: {responseText}";
 
-            _logger.Debug(message);
+            _logger.LogDebug(message);
             throw new ServiceUnavailableException(message);
         }
     }

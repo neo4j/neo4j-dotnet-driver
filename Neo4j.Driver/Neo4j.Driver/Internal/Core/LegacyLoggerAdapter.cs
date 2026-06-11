@@ -36,53 +36,69 @@ internal class LegacyLoggerAdapter : ILogger
         // replace "{id}, {name}" with "{0}, {1}""
         var index = 0;
         var indexedFormat = Regex.Replace(messageTemplate, @"\{[^}]+\}", _ => $"{{{index++}}}");
-        
+
         // add the name of the type that's doing the logging
-        var typeName = _loggingType?.Name ?? "Unknown";
+        var typeName = _loggingType.Name;
         var finalFormat = $"[{typeName}] {indexedFormat}";
-        
+
         return finalFormat;
     }
 
-    public void Trace(string messageTemplate, params object?[] args)
+    public void Log<TState>(
+        LogLevel logLevel,
+        EventId eventId,
+        TState state,
+        Exception? exception,
+        Func<TState, Exception?, string> formatter)
     {
-        var format = GetModifiedFormat(messageTemplate);
-        _legacyLogger.Trace(format, args);
+        if(!IsEnabled(logLevel))
+        {
+            return;
+        }
+
+        if (!LoggingHelpers.ExtractFormatAndArguments(state, out var format, out var args))
+        {
+            return;
+        }
+
+        var template = GetModifiedFormat(format);
+        switch (logLevel)
+        {
+            case LogLevel.Trace:
+                _legacyLogger.Trace(template, args);
+                break;
+
+            case LogLevel.Debug:
+                _legacyLogger.Debug(template, args);
+                break;
+
+            case LogLevel.Information:
+                _legacyLogger.Info(template, args);
+                break;
+
+            case LogLevel.Warning:
+                _legacyLogger.Warn(exception, template, args);
+                break;
+
+            case LogLevel.Error:
+            case LogLevel.Critical:
+                _legacyLogger.Error(exception, template, args);
+                break;
+        }
     }
 
-    public void Debug(string messageTemplate, params object?[] args)
+    public bool IsEnabled(LogLevel logLevel)
     {
-        var format = GetModifiedFormat(messageTemplate);
-        _legacyLogger.Debug(format, args);
+        return logLevel switch
+        {
+            LogLevel.Trace => _legacyLogger.IsTraceEnabled(),
+            LogLevel.Debug => _legacyLogger.IsDebugEnabled(),
+            _ => true
+        };
     }
 
-    public void Info(string messageTemplate, params object?[] args)
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull
     {
-        var format = GetModifiedFormat(messageTemplate);
-        _legacyLogger.Info(format, args);
-    }
-
-    public void Warn(string messageTemplate, params object?[] args)
-    {
-        var format = GetModifiedFormat(messageTemplate);
-        _legacyLogger.Warn(null, format, args);
-    }
-
-    public void Warn(Exception exception, string messageTemplate, params object?[] args)
-    {
-        var format = GetModifiedFormat(messageTemplate);
-        _legacyLogger.Warn(exception, format, args);
-    }
-
-    public void Error(string messageTemplate, params object?[] args)
-    {
-        var format = GetModifiedFormat(messageTemplate);
-        _legacyLogger.Error(null, format, args);
-    }
-
-    public void Error(Exception exception, string messageTemplate, params object?[] args)
-    {
-        var format = GetModifiedFormat(messageTemplate);
-        _legacyLogger.Error(exception, format, args);
+        return null;
     }
 }

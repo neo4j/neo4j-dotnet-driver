@@ -54,7 +54,7 @@ internal class ConnectivityVerifier : IConnectivityVerifier
 
     public async Task<IServerInfo> VerifyAsync(CancellationToken cancellationToken = default)
     {
-        _logger.Debug("Verifying connectivity via discovery endpoint at {address}", _serverInfo.Address);
+        _logger.LogDebug("Verifying connectivity via discovery endpoint at {address}", _serverInfo.Address);
         using var request = new HttpRequestMessage(HttpMethod.Get, _urlBuilder.Build(string.Empty));
         using var response = await _httpTransport.SendAsync(request, cancellationToken).ConfigureAwait(false);
         var responseContent = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
@@ -75,7 +75,7 @@ internal class ConnectivityVerifier : IConnectivityVerifier
         }
 
         _serverInfo.UpdateAgent(body.Neo4jVersion);
-        _logger.Debug("Connectivity verified; server version {version}", body.Neo4jVersion);
+        _logger.LogDebug("Connectivity verified; server version {version}", body.Neo4jVersion);
         return _serverInfo;
     }
 

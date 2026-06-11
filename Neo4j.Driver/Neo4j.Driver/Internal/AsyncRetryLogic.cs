@@ -101,7 +101,7 @@ internal class AsyncRetryLogic : IAsyncRetryLogic
     {
         if (_logger != null)
         {
-            _logger.Warn(e, message);
+            _logger.LogWarning(e, message);
         }
         else
         {

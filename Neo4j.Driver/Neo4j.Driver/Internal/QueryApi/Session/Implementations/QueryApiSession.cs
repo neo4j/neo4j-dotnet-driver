@@ -60,7 +60,7 @@ internal class QueryApiSession : IInternalAsyncSession
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult)
     {
-        _logger.Debug("Session auto-commit: {query}", query.Text);
+        _logger.LogDebug("Session auto-commit: {query}", query.Text);
         return _autoCommitRunner.RunAsync(query);
     }
 
@@ -114,7 +114,7 @@ internal class QueryApiSession : IInternalAsyncSession
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult)
     {
-        _logger.Debug("Session beginning {mode} transaction", mode);
+        _logger.LogDebug("Session beginning {mode} transaction", mode);
         return await _transactionFactory
             .BeginTransactionAsync(mode, action)
             .ConfigureAwait(false);
@@ -230,7 +230,7 @@ internal class QueryApiSession : IInternalAsyncSession
 
         try
         {
-            _logger.Debug("Session beginning work", mode);
+            _logger.LogDebug("Session beginning work", mode);
             var result = await txFuncAsync(tx).ConfigureAwait(false);
             await tx.CommitAsync().ConfigureAwait(false);
             return result;

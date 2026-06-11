@@ -43,7 +43,7 @@ internal class QueryApiSessionFactory : IQueryApiSessionFactory
     public IInternalAsyncSession CreateSession(SessionConfig config, bool telemetryEnabled)
     {
         var sessionId = _sessionIdGenerator.Generate();
-        _logger.Debug("Building session scope {sessionId}", sessionId);
+        _logger.LogDebug("Building session scope {sessionId}", sessionId);
 
         var authTokenManager = config.AuthToken is {}
             ? AuthTokenManagers.Static(config.AuthToken)

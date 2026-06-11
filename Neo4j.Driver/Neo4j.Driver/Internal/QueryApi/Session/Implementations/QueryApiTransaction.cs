@@ -60,7 +60,7 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
     public async Task CommitAsync()
     {
         EnsureOpen();
-        _logger.Debug("Committing transaction");
+        _logger.LogDebug("Committing transaction");
         await _committer.CommitAsync().ConfigureAwait(false);
         IsOpen = false;
     }
@@ -68,7 +68,7 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
     public async Task RollbackAsync()
     {
         EnsureOpen();
-        _logger.Debug("Rolling back transaction");
+        _logger.LogDebug("Rolling back transaction");
         await _rollback.RollbackAsync().ConfigureAwait(false);
         IsOpen = false;
     }
@@ -92,7 +92,7 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
         if (IsOpen)
         {
             IsOpen = false;
-            _logger.Debug("Disposing open transaction — rolling back");
+            _logger.LogDebug("Disposing open transaction — rolling back");
             await _rollback.RollbackAsync().ConfigureAwait(false);
         }
 

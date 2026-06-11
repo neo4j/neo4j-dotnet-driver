@@ -50,45 +50,27 @@ internal class ContextualLogger : ILogger
         return (message, allArgs);
     }
 
-    public void Trace(string messageTemplate, params object[] args)
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
     {
-        (messageTemplate, args) = Contextualise(messageTemplate, args);
-        _downstream.Trace(messageTemplate, args);
+        if (LoggingHelpers.ExtractFormatAndArguments(state, out var messageTemplate, out var args))
+        {
+            var (contextualisedMessage, contextualisedArgs) = Contextualise(messageTemplate, args);
+            _downstream.Log(logLevel, eventId, state, exception, (s, e) => string.Format(contextualisedMessage, contextualisedArgs));
+        }
+        else
+        {
+            _downstream.Log(logLevel, eventId, state, exception, formatter);
+        }
     }
 
-    public void Debug(string messageTemplate, params object[] args)
+    public bool IsEnabled(LogLevel logLevel)
     {
-        (messageTemplate, args) = Contextualise(messageTemplate, args);
-        _downstream.Debug(messageTemplate, args);
+        return _downstream.IsEnabled(logLevel);
     }
 
-    public void Info(string messageTemplate, params object[] args)
+    public IDisposable BeginScope<TState>(TState state) where TState : notnull
     {
-        (messageTemplate, args) = Contextualise(messageTemplate, args);
-        _downstream.Info(messageTemplate, args);
-    }
-
-    public void Warn(string messageTemplate, params object[] args)
-    {
-        (messageTemplate, args) = Contextualise(messageTemplate, args);
-        _downstream.Warn(messageTemplate, args);
-    }
-
-    public void Warn(Exception exception, string messageTemplate, params object[] args)
-    {
-        (messageTemplate, args) = Contextualise(messageTemplate, args);
-        _downstream.Warn(exception, messageTemplate, args);
-    }
-
-    public void Error(string messageTemplate, params object[] args)
-    {
-        (messageTemplate, args) = Contextualise(messageTemplate, args);
-        _downstream.Error(messageTemplate, args);
-    }
-
-    public void Error(Exception exception, string messageTemplate, params object[] args)
-    {
-        (messageTemplate, args) = Contextualise(messageTemplate, args);
-        _downstream.Error(exception, messageTemplate, args);
+        return _downstream.BeginScope(state);
     }
 }
+

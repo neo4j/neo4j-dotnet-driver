@@ -46,18 +46,18 @@ internal class TransactionCommitter : ITransactionCommitter
 
     public async Task CommitAsync(CancellationToken cancellationToken = default)
     {
-        _logger.Debug("Committing transaction {txId}", _txContext.TxId);
+        _logger.LogDebug("Committing transaction {txId}", _txContext.TxId);
         using var request = await _requestBuilder
             .PostAsync($"query/v2/tx/{_txContext.TxId}/commit", null, cancellationToken)
             .ConfigureAwait(false);
 
         var result = await _client.ExecuteAsync<ResponseBody>(request, cancellationToken).ConfigureAwait(false);
 
-        var bookmarks = result.Body?.Bookmarks ?? [];
+        var bookmarks = result.Body.Bookmarks ?? [];
         _bookmarkTracker.UpdateBookmarks(bookmarks);
 
         var len = bookmarks.Length;
-        _logger.Debug("Committed transaction" + (len == 0 ? "" : $" and got {len} bookmarks"));
+        _logger.LogDebug("Committed transaction" + (len == 0 ? "" : $" and got {len} bookmarks"));
     }
 
     internal record ResponseBody : QueryApiResponse

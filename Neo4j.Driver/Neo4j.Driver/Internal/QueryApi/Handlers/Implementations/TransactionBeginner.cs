@@ -56,26 +56,26 @@ internal class TransactionBeginner : ITransactionBeginner
     public async Task BeginAsync(CancellationToken cancellationToken = default)
     {
         var bookmarks = _bookmarkTracker.CurrentBookmarks.Values;
-        _logger.Debug("Beginning transaction with {bookmarkCount} bookmark(s)", bookmarks.Length);
+        _logger.LogDebug("Beginning transaction with {bookmarkCount} bookmark(s)", bookmarks.Length);
 
         using var request = await BuildRequestAsync(bookmarks, cancellationToken).ConfigureAwait(false);
         var result = await _client.ExecuteAsync<ResponseBody>(request, cancellationToken).ConfigureAwait(false);
 
-        if (result.Body?.Transaction?.Id is not {} txId)
+        if (result.Body.Transaction?.Id is not {} txId)
         {
             throw new InvalidOperationException("Server did not return a transaction ID.");
         }
 
         var context = new QueryApiTransactionContext(txId, _affinityExtractor.Extract(result.ResponseHeaders));
         _contextHolder.Set(context);
-        _logger.Debug("Transaction begun");
+        _logger.LogDebug("Transaction begun");
     }
 
     private async Task<HttpRequestMessage> BuildRequestAsync(
         System.Collections.Generic.IReadOnlyList<string> bookmarks,
         CancellationToken cancellationToken)
     {
-        var body = new RequestBody(bookmarks?.ToArray(), _sessionContext.ImpersonatedUser);
+        var body = new RequestBody(bookmarks.ToArray(), _sessionContext.ImpersonatedUser);
         var request = await _requestBuilder.PostAsync("query/v2/tx", body, cancellationToken).ConfigureAwait(false);
         return request;
     }
