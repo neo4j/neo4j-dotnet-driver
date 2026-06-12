@@ -40,7 +40,7 @@ internal static class SummaryJsonSerializer
                     database = summary.Database?.Name,
                     serverInfo = GetServerInfo(summary),
                     counters = GetCountersFromSummary(summary.Counters),
-                    profile = MapToProfilePlan(summary.QueryProfile),
+                    profile = MapToProfile(summary.QueryProfile),
                     resultAvailableAfter = GetTotalMilliseconds(summary.ResultAvailableAfter),
                     resultConsumedAfter = GetTotalMilliseconds(summary.ResultConsumedAfter),
                     gqlStatusObjects = MapGqlStatusObjects(summary.GqlStatusObjects)
@@ -112,7 +112,7 @@ internal static class SummaryJsonSerializer
         };
     }
 
-    private static object MapToProfilePlan(IProfile plan)
+    private static object MapToProfile(IQueryProfile plan)
     {
         if (plan == null)
         {
@@ -123,7 +123,7 @@ internal static class SummaryJsonSerializer
         {
             ["args"] = plan.Arguments,
             ["operatorType"] = plan.OperatorType,
-            ["children"] = plan.Children.Select(MapToProfilePlan).ToList(),
+            ["children"] = plan.Children.Select(MapToProfile).ToList(),
             ["identifiers"] = plan.Identifiers
         };
 

@@ -66,7 +66,7 @@ public interface IResultSummary
     /// was profiled), the query plan will contain detailed information about what each step of the plan did. That more
     /// in-depth version of the query plan becomes available here.
     /// </remarks>
-    IProfile QueryProfile { get; }
+    IQueryProfile QueryProfile { get; }
 
     /// <summary>
     /// Gets a list of notifications produced while executing the query. The list will be empty if no notifications

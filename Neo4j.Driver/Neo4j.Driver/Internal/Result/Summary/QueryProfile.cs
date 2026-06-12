@@ -18,13 +18,13 @@ using System.Linq;
 
 namespace Neo4j.Driver.Internal.Result;
 
-internal class Profile : IProfile
+internal class QueryProfile : IQueryProfile
 {
-    public Profile(
+    public QueryProfile(
         string operatorType,
         IDictionary<string, object> arguments,
         IList<string> identifiers,
-        IList<IProfile> children,
+        IList<IQueryProfile> children,
         long? dbHits,
         long? rows,
         long? pageCacheHits,
@@ -52,7 +52,7 @@ internal class Profile : IProfile
 
     IList<IPlan> IPlan.Children => Children.Cast<IPlan>().ToList();
 
-    public IList<IProfile> Children { get; }
+    public IList<IQueryProfile> Children { get; }
 
     public long? DbHits { get; }
 

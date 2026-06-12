@@ -21,7 +21,7 @@ namespace Neo4j.Driver;
 /// This is the same as a regular <see cref="IPlan"/> - except this plan has been executed, meaning it also
 /// contains detailed information about how much work each step of the plan incurred on the database.
 /// </summary>
-public interface IProfile : IPlan
+public interface IQueryProfile : IPlan
 {
     /// <summary>Gets the number of times this part of the plan touched the underlying data stores if it was recorded.</summary>
     long? DbHits { get; }
@@ -46,5 +46,5 @@ public interface IProfile : IPlan
     /// The children are where this part of the plan gets its input records - unless this is an
     /// <see cref="IPlan.OperatorType"/> that introduces new records on its own.
     /// </summary>
-    new IList<IProfile> Children { get; }
+    new IList<IQueryProfile> Children { get; }
 }

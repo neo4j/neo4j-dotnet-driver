@@ -36,7 +36,7 @@ internal sealed class SummaryBuilder
 #pragma warning disable CS0618 // Type or member is obsolete
     public IProfiledPlan Profile { get; set; }
 #pragma warning restore CS0618 // Type or member is obsolete
-    public IProfile QueryProfile { get; set; }
+    public IQueryProfile QueryProfile { get; set; }
     public GqlStatusObjectsAndNotifications StatusAndNotifications { get; set; }
     public long ResultAvailableAfter { get; set; } = -1L;
     public long ResultConsumedAfter { get; set; } = -1L;
@@ -79,7 +79,7 @@ internal sealed class SummaryBuilder
 #pragma warning disable CS0618 // Type or member is obsolete
         public IProfiledPlan Profile { get; }
 #pragma warning restore CS0618 // Type or member is obsolete
-        public IProfile QueryProfile { get; }
+        public IQueryProfile QueryProfile { get; }
         
         [Obsolete("This API is deprecated and will be removed in a future release. Use GqlStatusObjects instead.")]
         public IList<INotification> Notifications { get; }

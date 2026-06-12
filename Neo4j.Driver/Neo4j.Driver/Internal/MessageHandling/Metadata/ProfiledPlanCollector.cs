@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
 #pragma warning disable CS0618 // Type or member is obsolete
 internal class ProfiledPlanCollector : IMetadataCollector<IProfiledPlan>
 {
-    internal const string ProfiledPlanKey = ProfileCollector.ProfileKey;
+    internal const string ProfiledPlanKey = QueryProfileCollector.ProfileKey;
 
     object IMetadataCollector.Collected => Collected;
 

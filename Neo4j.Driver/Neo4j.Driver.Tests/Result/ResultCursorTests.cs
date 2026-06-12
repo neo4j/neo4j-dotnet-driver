@@ -493,7 +493,7 @@ public class ResultCursorTests
         public bool HasProfile { get; }
         public IPlan Plan { get; }
         public IProfiledPlan Profile { get; }
-        public IProfile QueryProfile { get; }
+        public IQueryProfile QueryProfile { get; }
         public IList<INotification> Notifications { get; }
         public IList<IGqlStatusObject> GqlStatusObjects { get; }
         public TimeSpan ResultAvailableAfter { get; }

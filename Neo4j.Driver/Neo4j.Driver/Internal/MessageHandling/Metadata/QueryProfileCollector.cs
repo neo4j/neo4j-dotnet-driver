@@ -19,13 +19,13 @@ using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
 
-internal class ProfileCollector : IMetadataCollector<IProfile>
+internal class QueryProfileCollector : IMetadataCollector<IQueryProfile>
 {
     internal const string ProfileKey = "profile";
 
     object IMetadataCollector.Collected => Collected;
 
-    public IProfile Collected { get; private set; }
+    public IQueryProfile Collected { get; private set; }
 
     public void Collect(IDictionary<string, object> metadata)
     {
@@ -48,7 +48,7 @@ internal class ProfileCollector : IMetadataCollector<IProfile>
         }
     }
 
-    private static IProfile CollectProfile(IDictionary<string, object> profileDictionary)
+    private static IQueryProfile CollectProfile(IDictionary<string, object> profileDictionary)
     {
         if (profileDictionary.Count == 0)
         {
@@ -75,7 +75,7 @@ internal class ProfileCollector : IMetadataCollector<IProfile>
             .Where(childProfile => childProfile != null)
             .ToList();
 
-        return new Profile(
+        return new QueryProfile(
             operationType,
             args,
             identifiers.ToList(),
