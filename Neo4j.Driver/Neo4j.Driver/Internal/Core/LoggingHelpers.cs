@@ -21,8 +21,10 @@ using System.Linq;
 
 namespace Neo4j.Driver.Internal;
 
-internal class LoggingHelpers
+internal static class LoggingHelpers
 {
+    private const string OriginalFormatStringKey = "{OriginalFormat}";
+
     public static bool ExtractFormatAndArguments<TState>(
         TState state, 
         [NotNullWhen(true)] out string? format, 
@@ -36,8 +38,8 @@ internal class LoggingHelpers
         }
 
         var dict = list.ToDictionary(kv => kv.Key, object? (kv) => kv.Value);
-        args = list.Where(kv => kv.Key != "{OriginalFormat}").Select(kv => kv.Value).ToArray();
-        format = dict.GetValueOrDefault("{OriginalFormat}")?.ToString() ?? "";
+        args = list.Where(kv => kv.Key != OriginalFormatStringKey).Select(kv => kv.Value).ToArray();
+        format = dict.GetValueOrDefault(OriginalFormatStringKey)?.ToString() ?? "";
         return true;
     }
 }

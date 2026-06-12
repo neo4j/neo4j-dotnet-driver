@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 internal class TestLogger(Type subjectType) : ILogger
 {
     private readonly string _prefix = $"[{subjectType.Name}]";
-    private static readonly Regex Placeholders = new(@"\{[^}]+\}");
+    private static readonly Regex Placeholders = new(@"\{[^}]+\}"); // {...}
 
     private void WriteFormatted(string level, string messageTemplate, object?[] args, Exception? exception = null)
     {
