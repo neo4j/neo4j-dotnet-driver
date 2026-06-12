@@ -25,19 +25,13 @@ namespace Neo4j.Driver.Internal.QueryApi;
 [AutoRegister]
 internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
 {
-    private readonly QueryApiTransactionContextHolder _contextHolder;
     private readonly ILogger _logger;
     private readonly IResolutionScope _resolutionScope;
-    private readonly ITransactionBeginner _transactionStarter;
 
     public QueryApiTransactionFactory(
-        ITransactionBeginner transactionStarter,
-        QueryApiTransactionContextHolder contextHolder,
         IResolutionScope resolutionScope,
         ILogger logger)
     {
-        _transactionStarter = transactionStarter;
-        _contextHolder = contextHolder;
         _resolutionScope = resolutionScope;
         _logger = logger;
     }
@@ -48,14 +42,14 @@ internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
         CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("Opening {mode} transaction", mode);
-        await _transactionStarter.BeginAsync(cancellationToken).ConfigureAwait(false);
-
-        var context = _contextHolder.Context
-            ?? throw new InvalidOperationException("Transaction context was not set after begin.");
 
         var txScope = _resolutionScope.CreateChildScope(r => r
-            .RegisterInstance(context)
+            .RegisterType<IQueryApiTransactionContextTracker, QueryApiTransactionContextTracker>(singleton: true)
+            .RegisterType<ITransactionBeginner, TransactionBeginner>()
             .RegisterType<IHttpRequestEnricher, QueryApiClusterAffinityEnricher>());
+
+        var beginner = txScope.Resolve<ITransactionBeginner>(); 
+        await beginner.BeginAsync(cancellationToken).ConfigureAwait(false);
 
         return txScope.Resolve<IInternalAsyncTransaction>();
     }

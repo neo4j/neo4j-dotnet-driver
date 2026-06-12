@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 public class QueryApiTransactionFactoryTests
 {
-    private readonly QueryApiTransactionContextHolder _contextHolder = new();
+    private readonly QueryApiTransactionContextTracker _contextTracker = new();
     private readonly Mock<IResolutionScope> _sessionScope = new();
     private readonly Mock<ITransactionBeginner> _transactionStarter = new();
     private readonly Mock<IResolutionScope> _txScope = new();
@@ -41,7 +41,7 @@ public class QueryApiTransactionFactoryTests
     }
 
     private QueryApiTransactionFactory CreateFactory() =>
-        new(_transactionStarter.Object, _contextHolder, _sessionScope.Object, new Mock<ILogger>().Object);
+        new(_transactionStarter.Object, _contextTracker, _sessionScope.Object, new Mock<ILogger>().Object);
 
     [Fact]
     public async Task BeginTransactionAsync_ReturnsTransactionResolvedFromChildScope()
@@ -51,7 +51,7 @@ public class QueryApiTransactionFactoryTests
 
         _transactionStarter
             .Setup(s => s.BeginAsync(default))
-            .Callback(() => _contextHolder.Set(context));
+            .Callback(() => _contextTracker.Set(context));
 
         _txScope.Setup(s => s.Resolve<IInternalAsyncTransaction>()).Returns(expectedTx);
 

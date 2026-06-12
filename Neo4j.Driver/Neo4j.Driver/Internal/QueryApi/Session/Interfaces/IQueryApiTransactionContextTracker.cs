@@ -16,7 +16,7 @@
 #nullable enable
 namespace Neo4j.Driver.Internal.QueryApi;
 
-internal interface IQueryApiTransactionContextHolder
+internal interface IQueryApiTransactionContextTracker
 {
     QueryApiTransactionContext? Context { get; }
     void Set(QueryApiTransactionContext context);

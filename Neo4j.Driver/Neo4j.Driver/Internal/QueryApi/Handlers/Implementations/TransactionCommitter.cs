@@ -28,27 +28,27 @@ internal class TransactionCommitter : ITransactionCommitter
     private readonly IQueryApiClient _client;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
-    private readonly QueryApiTransactionContext _txContext;
+    private readonly IQueryApiTransactionContextTracker _txContextTracker;
 
     public TransactionCommitter(
         IQueryApiRequestBuilder requestBuilder,
         IQueryApiClient client,
-        QueryApiTransactionContext txContext,
+        IQueryApiTransactionContextTracker txContextTracker,
         IBookmarkTracker bookmarkTracker,
         ILogger logger)
     {
         _requestBuilder = requestBuilder;
         _client = client;
-        _txContext = txContext;
+        _txContextTracker = txContextTracker;
         _bookmarkTracker = bookmarkTracker;
         _logger = logger;
     }
 
     public async Task CommitAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Committing transaction {txId}", _txContext.TxId);
+        _logger.LogDebug("Committing transaction {txId}", _txContextTracker.Context!.TxId);
         using var request = await _requestBuilder
-            .PostAsync($"query/v2/tx/{_txContext.TxId}/commit", null, cancellationToken)
+            .PostAsync($"query/v2/tx/{_txContextTracker.Context!.TxId}/commit", null, cancellationToken)
             .ConfigureAwait(false);
 
         var result = await _client.ExecuteAsync<ResponseBody>(request, cancellationToken).ConfigureAwait(false);

@@ -30,7 +30,7 @@ internal static class LoggingHelpers
         [NotNullWhen(true)] out string? format, 
         [NotNullWhen(true)] out object?[]? args)
     {
-        if (state is not IReadOnlyList<KeyValuePair<string, object>> list)
+        if (state is not IEnumerable<KeyValuePair<string, object>> list)
         {
             format = null;
             args = null;
@@ -38,7 +38,7 @@ internal static class LoggingHelpers
         }
 
         var dict = list.ToDictionary(kv => kv.Key, object? (kv) => kv.Value);
-        args = list.Where(kv => kv.Key != OriginalFormatStringKey).Select(kv => kv.Value).ToArray();
+        args = dict.Where(kv => kv.Key != OriginalFormatStringKey).Select(kv => kv.Value).ToArray();
         format = dict.GetValueOrDefault(OriginalFormatStringKey)?.ToString() ?? "";
         return true;
     }

@@ -30,25 +30,25 @@ internal class TransactionRunner : ITransactionRunner
     private readonly IQueryApiResultCursorBuilder _cursorBuilder;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
-    private readonly QueryApiTransactionContext _txContext;
+    private readonly IQueryApiTransactionContextTracker _txContextTracker;
 
     public TransactionRunner(
         IQueryApiRequestBuilder requestBuilder,
         IQueryApiClient client,
         IQueryApiResultCursorBuilder cursorBuilder,
-        QueryApiTransactionContext txContext,
+        IQueryApiTransactionContextTracker txContextTracker,
         ILogger logger)
     {
         _requestBuilder = requestBuilder;
         _client = client;
         _cursorBuilder = cursorBuilder;
-        _txContext = txContext;
+        _txContextTracker = txContextTracker;
         _logger = logger;
     }
 
     public async Task<IResultCursor> RunAsync(Query query, CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Running query in tx {txId}: {query}", _txContext.TxId, query.Text);
+        _logger.LogDebug("Running query in tx {txId}: {query}", _txContextTracker.Context?.TxId, query.Text);
 
         using var request = await BuildRequestAsync(query, cancellationToken).ConfigureAwait(false);
         var result = await _client.ExecuteAsync<QueryApiResultBody>(request, cancellationToken).ConfigureAwait(false);
@@ -77,7 +77,8 @@ internal class TransactionRunner : ITransactionRunner
             Parameters = query.Parameters.Count > 0 ? query.Parameters : null
         };
 
-        var request = await _requestBuilder.PostAsync($"query/v2/tx/{_txContext.TxId}", body, cancellationToken)
+        var request = await _requestBuilder
+            .PostAsync($"query/v2/tx/{_txContextTracker.Context?.TxId ?? ""}", body, cancellationToken)
             .ConfigureAwait(false);
 
         return request;

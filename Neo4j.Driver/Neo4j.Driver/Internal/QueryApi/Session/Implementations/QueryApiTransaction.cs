@@ -35,14 +35,14 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
         ITransactionRunner runner,
         ITransactionCommitter committer,
         ITransactionRollback rollback,
-        ILoggingContextTracker contextTracker,
-        QueryApiTransactionContext transactionContext,
+        ILoggingContextTracker logContextTracker,
+        IQueryApiTransactionContextTracker txContextTracker,
         ILogger logger)
     {
         _runner = runner;
         _committer = committer;
         _rollback = rollback;
-        _loggingContext = contextTracker.Add("tx", transactionContext);
+        _loggingContext = logContextTracker.Add("tx", txContextTracker.Context);
         _logger = logger;
     }
 

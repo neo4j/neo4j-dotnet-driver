@@ -15,6 +15,8 @@
 
 #nullable enable
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Neo4j.Driver.Internal;
 using Xunit;
@@ -25,6 +27,7 @@ internal class TestLogger(Type subjectType) : ILogger
 {
     private readonly string _prefix = $"[{subjectType.Name}]";
     private static readonly Regex Placeholders = new(@"\{[^}]+\}"); // {...}
+    private string _scopePrefix = "";
 
     private void WriteFormatted(string level, string messageTemplate, object?[] args, Exception? exception = null)
     {
@@ -38,13 +41,13 @@ internal class TestLogger(Type subjectType) : ILogger
         {
             var message = args.Length > 0
                 ? string.Format(indexed, args)
-                : indexed;
+                : messageTemplate;
 
-            output.WriteLine($"{level} {_prefix} {message}");
+            output.WriteLine($"{level} {_prefix} [{_scopePrefix}]{message}");
         }
         catch
         {
-            output.WriteLine($"{level} {_prefix} {indexed} [{string.Join(", ", args)}]");
+            output.WriteLine($"{level} {_prefix} {_scopePrefix}{indexed} [{string.Join(", ", args)}]");
         }
 
         if (exception != null)
@@ -77,5 +80,18 @@ internal class TestLogger(Type subjectType) : ILogger
 
     public bool IsEnabled(LogLevel logLevel) => true;
 
-    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull
+    {
+        if (state is not IEnumerable<KeyValuePair<string, object?>> contexts)
+            return null;
+
+        var previous = _scopePrefix;
+        _scopePrefix = string.Concat(contexts.Select(kvp => $"[{kvp.Key}:{kvp.Value}] "));
+        return new Restore(() => _scopePrefix = previous);
+    }
+
+    private sealed class Restore(Action onDispose) : IDisposable
+    {
+        public void Dispose() => onDispose();
+    }
 }

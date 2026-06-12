@@ -24,13 +24,12 @@ using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class TransactionBeginner : ITransactionBeginner
 {
     private readonly IClusterAffinityExtractor _affinityExtractor;
     private readonly IBookmarkTracker _bookmarkTracker;
     private readonly IQueryApiClient _client;
-    private readonly QueryApiTransactionContextHolder _contextHolder;
+    private readonly IQueryApiTransactionContextTracker _contextTracker;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
     private readonly ISessionContext _sessionContext;
@@ -41,7 +40,7 @@ internal class TransactionBeginner : ITransactionBeginner
         IClusterAffinityExtractor affinityExtractor,
         ISessionContext sessionContext,
         IBookmarkTracker bookmarkTracker,
-        QueryApiTransactionContextHolder contextHolder,
+        IQueryApiTransactionContextTracker contextTracker,
         ILogger logger)
     {
         _requestBuilder = requestBuilder;
@@ -49,7 +48,7 @@ internal class TransactionBeginner : ITransactionBeginner
         _affinityExtractor = affinityExtractor;
         _sessionContext = sessionContext;
         _bookmarkTracker = bookmarkTracker;
-        _contextHolder = contextHolder;
+        _contextTracker = contextTracker;
         _logger = logger;
     }
 
@@ -67,7 +66,7 @@ internal class TransactionBeginner : ITransactionBeginner
         }
 
         var context = new QueryApiTransactionContext(txId, _affinityExtractor.Extract(result.ResponseHeaders));
-        _contextHolder.Set(context);
+        _contextTracker.Set(context);
         _logger.LogDebug("Transaction begun");
     }
 

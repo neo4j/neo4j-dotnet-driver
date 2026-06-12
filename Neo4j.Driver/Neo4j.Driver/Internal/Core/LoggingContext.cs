@@ -13,6 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#nullable enable
+
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Neo4j.Driver.Internal;
 
@@ -28,3 +32,16 @@ internal class LoggingContext : ILoggingContext
     public object Value { get; }
 }
 
+internal static class LoggingContextExtensions
+{
+    public static KeyValuePair<string, object?> AsMicrosoftStateItem(this ILoggingContext loggingContext)
+    {
+        return new KeyValuePair<string, object?>(loggingContext.Key, loggingContext.Value);
+    }
+
+    public static IEnumerable<KeyValuePair<string, object?>> AsMicrosoftStateItems(
+        this IEnumerable<ILoggingContext> loggingContexts)
+    {
+        return loggingContexts.Select(AsMicrosoftStateItem);
+    }
+}

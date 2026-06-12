@@ -27,24 +27,24 @@ internal class TransactionRollbacker : ITransactionRollback
     private readonly IQueryApiHttpTransport _httpTransport;
     private readonly ILogger _logger;
     private readonly IQueryApiRequestBuilder _requestBuilder;
-    private readonly QueryApiTransactionContext _txContext;
+    private readonly IQueryApiTransactionContextTracker _txContextTracker;
 
     public TransactionRollbacker(
         IQueryApiRequestBuilder requestBuilder,
         IQueryApiHttpTransport httpTransport,
-        QueryApiTransactionContext txContext,
+        IQueryApiTransactionContextTracker txContextTracker,
         ILogger logger)
     {
         _requestBuilder = requestBuilder;
         _httpTransport = httpTransport;
-        _txContext = txContext;
+        _txContextTracker = txContextTracker;
         _logger = logger;
     }
 
     public async Task RollbackAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Rolling back transaction {txId}", _txContext.TxId);
-        using var request = await _requestBuilder.DeleteAsync($"query/v2/tx/{_txContext.TxId}", cancellationToken).ConfigureAwait(false);
+        _logger.LogDebug("Rolling back transaction {txId}", _txContextTracker.Context!.TxId);
+        using var request = await _requestBuilder.DeleteAsync($"query/v2/tx/{_txContextTracker.Context!.TxId}", cancellationToken).ConfigureAwait(false);
         using var response = await _httpTransport.SendAsync(request, cancellationToken).ConfigureAwait(false);
     }
 }

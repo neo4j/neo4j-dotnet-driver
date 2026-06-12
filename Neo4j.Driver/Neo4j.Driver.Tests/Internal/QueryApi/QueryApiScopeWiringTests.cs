@@ -44,7 +44,7 @@ public class QueryApiScopeWiringTests
 
     private static (IResolutionScope sessionScope, BookmarkTracker tracker) BuildWiredSessionScope()
     {
-        var holder = new QueryApiTransactionContextHolder();
+        var holder = new QueryApiTransactionContextTracker();
 
         var starterMock = new Mock<ITransactionBeginner>();
         starterMock
