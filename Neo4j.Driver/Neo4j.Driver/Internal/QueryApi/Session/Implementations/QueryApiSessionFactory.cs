@@ -56,7 +56,7 @@ internal class QueryApiSessionFactory : IQueryApiSessionFactory
             .RegisterType<ISessionContext, QueryApiSessionContext>()
             .RegisterType<IQueryApiTransactionContextTracker, QueryApiTransactionContextTracker>(singleton: true));
 
-        sessionScope.Resolve<ILoggingContextTracker>().Add("sn", sessionId);
+        sessionScope.Resolve<ILoggingContextTracker>().Add("session", sessionId);
 
         var session = sessionScope.Resolve<IInternalAsyncSession>();
         session.Disposed += GetSessionDisposedHandler(sessionScope);

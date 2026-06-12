@@ -42,7 +42,7 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
         _runner = runner;
         _committer = committer;
         _rollback = rollback;
-        _loggingContext = logContextTracker.Add("tx", txContextTracker.Context);
+        _loggingContext = logContextTracker.Add("transaction", txContextTracker.Context);
         _logger = logger;
     }
 
