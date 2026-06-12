@@ -17,6 +17,7 @@
 
 using System;
 using System.Text.RegularExpressions;
+using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal;
 
@@ -24,6 +25,7 @@ internal class LegacyLoggerAdapter : ILogger
 {
     private readonly INeo4jLogger _legacyLogger;
     private readonly Type _loggingType;
+    private string _scopePrefix = "";
 
     public LegacyLoggerAdapter(INeo4jLogger legacyLogger, Type loggingType)
     {
@@ -39,7 +41,7 @@ internal class LegacyLoggerAdapter : ILogger
 
         // add the name of the type that's doing the logging
         var typeName = _loggingType.Name;
-        var finalFormat = $"[{typeName}] {indexedFormat}";
+        var finalFormat = $"[{typeName}] {_scopePrefix}{indexedFormat}";
 
         return finalFormat;
     }
@@ -99,6 +101,13 @@ internal class LegacyLoggerAdapter : ILogger
 
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull
     {
-        return null;
+        if (!LoggingHelpers.TryBuildScopePrefix(state, out var prefix))
+        {
+            return null;
+        }
+
+        var previous = _scopePrefix;
+        _scopePrefix = prefix;
+        return new ActionDisposable(() => _scopePrefix = previous);
     }
 }

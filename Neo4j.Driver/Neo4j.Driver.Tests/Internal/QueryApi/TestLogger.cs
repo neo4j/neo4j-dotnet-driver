@@ -15,10 +15,9 @@
 
 #nullable enable
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Util;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
@@ -43,7 +42,7 @@ internal class TestLogger(Type subjectType) : ILogger
                 ? string.Format(indexed, args)
                 : messageTemplate;
 
-            output.WriteLine($"{level} {_prefix} [{_scopePrefix}]{message}");
+            output.WriteLine($"{level} {_prefix} {_scopePrefix}{message}");
         }
         catch
         {
@@ -82,16 +81,13 @@ internal class TestLogger(Type subjectType) : ILogger
 
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull
     {
-        if (state is not IEnumerable<KeyValuePair<string, object?>> contexts)
+        if (!LoggingHelpers.TryBuildScopePrefix(state, out var prefix))
+        {
             return null;
+        }
 
         var previous = _scopePrefix;
-        _scopePrefix = string.Concat(contexts.Select(kvp => $"[{kvp.Key}:{kvp.Value}] "));
-        return new Restore(() => _scopePrefix = previous);
-    }
-
-    private sealed class Restore(Action onDispose) : IDisposable
-    {
-        public void Dispose() => onDispose();
+        _scopePrefix = prefix;
+        return new ActionDisposable(() => _scopePrefix = previous);
     }
 }

@@ -25,6 +25,19 @@ internal static class LoggingHelpers
 {
     private const string OriginalFormatStringKey = "{OriginalFormat}";
 
+    public static bool TryBuildScopePrefix<TState>(TState state, [NotNullWhen(true)] out string? prefix)
+        where TState : notnull
+    {
+        if (state is not IEnumerable<KeyValuePair<string, object?>> contexts)
+        {
+            prefix = null;
+            return false;
+        }
+
+        prefix = string.Concat(contexts.Select(kvp => $"[{kvp.Key}:{kvp.Value}] "));
+        return true;
+    }
+
     public static bool ExtractFormatAndArguments<TState>(
         TState state, 
         [NotNullWhen(true)] out string? format, 
