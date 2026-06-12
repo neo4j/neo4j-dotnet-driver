@@ -32,6 +32,7 @@ internal class QueryApiSession : IInternalAsyncSession
     private readonly IQueryApiTransactionFactory _transactionFactory;
 
     private bool _closed;
+    private IInternalAsyncTransaction? _openTransaction;
 
     public QueryApiSession(
         SessionConfig sessionConfig,
@@ -114,10 +115,23 @@ internal class QueryApiSession : IInternalAsyncSession
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult)
     {
+        EnsureNoOpenTransaction();
         _logger.LogDebug("Session beginning {mode} transaction", mode);
-        return await _transactionFactory
+        var tx = await _transactionFactory
             .BeginTransactionAsync(mode, action)
             .ConfigureAwait(false);
+        _openTransaction = tx;
+        return tx;
+    }
+
+    private void EnsureNoOpenTransaction()
+    {
+        if (_openTransaction?.IsOpen == true)
+        {
+            throw new TransactionNestingException(
+                "Attempting to nest transactions. A session can only have a single " +
+                "transaction open at a time. Commit or rollback the previous transaction before opening the next.");
+        }
     }
 
     public Task<IAsyncTransaction> BeginTransactionAsync()

@@ -26,29 +26,44 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 public class QueryApiClusterAffinityEnricherTests
 {
-    public class Apply
+    private static IQueryApiTransactionContextTracker TrackerWith(string txId, string? affinity)
     {
-        [Fact]
-        public async Task AddsClusterAffinityHeader_WhenContextCarriesAffinityValue()
-        {
-            var request = new HttpRequestMessage();
-            var subject = new QueryApiClusterAffinityEnricher(new QueryApiTransactionContext("tx-1", "shard-42"));
+        var tracker = new QueryApiTransactionContextTracker();
+        tracker.Set(new QueryApiTransactionContext(txId, affinity));
+        return tracker;
+    }
 
-            await subject.Enrich(request, TestContext.Current.CancellationToken);
+    [Fact]
+    public async Task AddsClusterAffinityHeader_WhenContextCarriesAffinityValue()
+    {
+        var request = new HttpRequestMessage();
+        var subject = new QueryApiClusterAffinityEnricher(TrackerWith("tx-1", "shard-42"));
 
-            request.Headers.TryGetValues("neo4j-cluster-affinity", out var values).Should().BeTrue();
-            values!.First().Should().Be("shard-42");
-        }
+        await subject.Enrich(request, TestContext.Current.CancellationToken);
 
-        [Fact]
-        public async Task DoesNotAddHeader_WhenContextHasNoClusterAffinity()
-        {
-            var request = new HttpRequestMessage();
-            var subject = new QueryApiClusterAffinityEnricher(new QueryApiTransactionContext("tx-1", null));
+        request.Headers.TryGetValues("neo4j-cluster-affinity", out var values).Should().BeTrue();
+        values!.First().Should().Be("shard-42");
+    }
 
-            await subject.Enrich(request, TestContext.Current.CancellationToken);
+    [Fact]
+    public async Task DoesNotAddHeader_WhenContextHasNoClusterAffinity()
+    {
+        var request = new HttpRequestMessage();
+        var subject = new QueryApiClusterAffinityEnricher(TrackerWith("tx-1", null));
 
-            request.Headers.Contains("neo4j-cluster-affinity").Should().BeFalse();
-        }
+        await subject.Enrich(request, TestContext.Current.CancellationToken);
+
+        request.Headers.Contains("neo4j-cluster-affinity").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DoesNotAddHeader_WhenContextNotYetSet()
+    {
+        var request = new HttpRequestMessage();
+        var subject = new QueryApiClusterAffinityEnricher(new QueryApiTransactionContextTracker());
+
+        await subject.Enrich(request, TestContext.Current.CancellationToken);
+
+        request.Headers.Contains("neo4j-cluster-affinity").Should().BeFalse();
     }
 }

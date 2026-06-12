@@ -48,7 +48,7 @@ internal class TransactionRunner : ITransactionRunner
 
     public async Task<IResultCursor> RunAsync(Query query, CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Running query in tx {txId}: {query}", _txContextTracker.Context?.TxId, query.Text);
+        _logger.LogDebug("Running query in tx {txId}: {query}", _txContextTracker.Context!.TxId, query.Text);
 
         using var request = await BuildRequestAsync(query, cancellationToken).ConfigureAwait(false);
         var result = await _client.ExecuteAsync<QueryApiResultBody>(request, cancellationToken).ConfigureAwait(false);
@@ -78,7 +78,7 @@ internal class TransactionRunner : ITransactionRunner
         };
 
         var request = await _requestBuilder
-            .PostAsync($"query/v2/tx/{_txContextTracker.Context?.TxId ?? ""}", body, cancellationToken)
+            .PostAsync($"query/v2/tx/{_txContextTracker.Context!.TxId}", body, cancellationToken)
             .ConfigureAwait(false);
 
         return request;

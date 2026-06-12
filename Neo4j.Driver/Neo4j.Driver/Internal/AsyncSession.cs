@@ -71,7 +71,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         _neo4JLogger = neo4JLogger;
         _retryLogic = retryLogic;
         _reactive = reactive;
-        _driverContext = config.DriverContext;;
+        _driverContext = config.DriverContext;
 
         _database = config.Database;
         _defaultMode = config.DefaultAccessMode;
@@ -469,9 +469,6 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
 
         if (disposing)
         {
-            //Dispose managed resources
-
-            //call it synchronously
             CloseAsync().GetAwaiter().GetResult();
         }
 

@@ -72,13 +72,13 @@ public class QueryApiScopeWiringTests
         parentScope.RegisterInstance(Mock.Of<ITransactionRollback>());
         parentScope.RegisterInstance(Mock.Of<ITransactionRunner>());
         parentScope.RegisterInstance(Mock.Of<IAutoCommitRunner>());
-        parentScope.RegisterInstance(holder);
         parentScope.RegisterType<IInternalAsyncTransaction, QueryApiTransaction>();
         parentScope.RegisterType<IQueryApiTransactionFactory, QueryApiTransactionFactory>();
         parentScope.RegisterType<IInternalAsyncSession, QueryApiSession>();
 
         var sessionScope = parentScope.CreateChildScope(r => r
             .RegisterInstance(SessionConfig.Builder.Build())
+            .RegisterInstance<IQueryApiTransactionContextTracker>(holder)
             .RegisterType<IBookmarkTracker, BookmarkTracker>(singleton: true)
             .RegisterType<ILoggingContextTracker, LoggingContextTracker>(singleton: true));
 

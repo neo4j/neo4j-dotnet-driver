@@ -18,27 +18,29 @@
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
+[AutoRegister]
 internal class QueryApiClusterAffinityEnricher : IHttpRequestEnricher
 {
     private const string HeaderName = "neo4j-cluster-affinity";
 
-    private readonly QueryApiTransactionContext _txContext;
+    private readonly IQueryApiTransactionContextTracker _contextTracker;
 
-    public QueryApiClusterAffinityEnricher(QueryApiTransactionContext txContext)
+    public QueryApiClusterAffinityEnricher(IQueryApiTransactionContextTracker contextTracker)
     {
-        _txContext = txContext;
+        _contextTracker = contextTracker;
     }
 
     public ValueTask Enrich(HttpRequestMessage request, CancellationToken cancellationToken = default)
     {
-        if (_txContext.ClusterAffinity is not null)
+        if (_contextTracker.Context?.ClusterAffinity is { } affinity)
         {
-            request.Headers.TryAddWithoutValidation(HeaderName, _txContext.ClusterAffinity);
+            request.Headers.TryAddWithoutValidation(HeaderName, affinity);
         }
-        
+
         return ValueTask.CompletedTask;
     }
 }

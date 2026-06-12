@@ -15,11 +15,8 @@
 
 #nullable enable
 
-using Neo4j.Driver.Internal.DependencyInjection;
-
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class QueryApiTransactionContextTracker : IQueryApiTransactionContextTracker
 {
     public QueryApiTransactionContext? Context { get; private set; }

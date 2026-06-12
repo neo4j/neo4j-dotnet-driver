@@ -65,7 +65,8 @@ public class TransactionBeginnerTests
         // Spec: response body contains transaction.id — the handle for subsequent requests
         SetupChain(txId: "tx-abc-123");
 
-        var holder = _fixture.Freeze<QueryApiTransactionContextTracker>();
+        var holder = new QueryApiTransactionContextTracker();
+        _fixture.Inject<IQueryApiTransactionContextTracker>(holder);
         var subject = _fixture.Create<TransactionBeginner>();
         await subject.BeginAsync(TestContext.Current.CancellationToken);
 
@@ -81,7 +82,8 @@ public class TransactionBeginnerTests
         _fixture.Freeze<Mock<IClusterAffinityExtractor>>()
             .Setup(x => x.Extract(It.IsAny<HttpResponseHeaders>())).Returns("shard-99");
 
-        var holder = _fixture.Freeze<QueryApiTransactionContextTracker>();
+        var holder = new QueryApiTransactionContextTracker();
+        _fixture.Inject<IQueryApiTransactionContextTracker>(holder);
         var subject = _fixture.Create<TransactionBeginner>();
         await subject.BeginAsync(TestContext.Current.CancellationToken);
 
@@ -96,7 +98,8 @@ public class TransactionBeginnerTests
         _fixture.Freeze<Mock<IClusterAffinityExtractor>>()
             .Setup(x => x.Extract(It.IsAny<HttpResponseHeaders>())).Returns((string?)null);
 
-        var holder = _fixture.Freeze<QueryApiTransactionContextTracker>();
+        var holder = new QueryApiTransactionContextTracker();
+        _fixture.Inject<IQueryApiTransactionContextTracker>(holder);
         var subject = _fixture.Create<TransactionBeginner>();
         await subject.BeginAsync(TestContext.Current.CancellationToken);
 
@@ -138,7 +141,7 @@ public class TransactionBeginnerTests
         var tracker = new BookmarkTracker(SessionConfig.Builder.Build());
         tracker.UpdateBookmarks(["session-bookmark"]);
         _fixture.Inject<IBookmarkTracker>(tracker);
-        _fixture.Freeze<QueryApiTransactionContextTracker>();
+        _fixture.Inject<IQueryApiTransactionContextTracker>(new QueryApiTransactionContextTracker());
 
         object? capturedBody = null;
         var request = new HttpRequestMessage();
@@ -189,7 +192,7 @@ public class TransactionBeginnerTests
                 },
                 new HttpResponseMessage().Headers));
 
-        _fixture.Freeze<QueryApiTransactionContextTracker>();
+        _fixture.Inject<IQueryApiTransactionContextTracker>(new QueryApiTransactionContextTracker());
         var subject = _fixture.Create<TransactionBeginner>();
         await subject.BeginAsync(TestContext.Current.CancellationToken);
 
