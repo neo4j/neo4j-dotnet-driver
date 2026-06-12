@@ -31,7 +31,7 @@ internal class MappingBindingProvider : IMappingBindingProvider
             _ => throw new NotSupportedException("Only properties and parameters are supported")
         };
 
-        var mappingBinding = new MappingBinding(path, MappingSource.Property);
+        var mappingBinding = new MappingBinding(path, EntityMappingSource.Property);
         foreach (var attr in target.GetCustomAttributes(false).OfType<IMappingBindingMutator>())
         {
             attr.Mutate(mappingBinding);

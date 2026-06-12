@@ -18,9 +18,14 @@ using System;
 namespace Neo4j.Driver.Mapping;
 
 /// <summary>
-/// Instructs the default object mapper not to attempt to map any value to this property. This attribute does not
-/// affect custom-defined mappers.
+/// Instructs the default mapper to skip this property entirely. No value will be read from the record or
+/// assigned to this property. This attribute does not affect custom-defined mappers.
 /// </summary>
+/// <remarks>
+/// Use this when a property should retain its default or constructor-assigned value regardless of what is
+/// present in the record. This is useful for computed properties, properties populated by other means, or
+/// properties whose names happen to clash with record field names.
+/// </remarks>
 [AttributeUsage(AttributeTargets.Property)]
 public class MappingIgnoredAttribute : Attribute
 {

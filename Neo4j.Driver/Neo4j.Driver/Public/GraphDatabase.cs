@@ -264,11 +264,7 @@ public static class GraphDatabase
                 connectionFactory,
                 context);
 
-        var retryLogic = new AsyncRetryLogic(context.Config.MaxTransactionRetryTime, context.Config.Neo4JLogger);
-        return new Internal.Driver(
-            parsedUri,
-            connectionProvider,
-            retryLogic,
-            context);
+        var server = new BoltProtocolAdapter(connectionProvider, context);
+        return new Internal.Driver(parsedUri, server, context);
     }
 }

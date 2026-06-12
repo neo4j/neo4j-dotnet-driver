@@ -156,6 +156,12 @@ public sealed class SessionConfig
     /// <seealso cref="IResultSummary.Notifications"/>
     public INotificationsConfig NotificationsConfig { get; internal set; }
 
+    /// <summary>
+    /// Session-level override for <see cref="Config.DisableAutoCommitRetries"/>.
+    /// When <c>null</c> (the default), the driver-level setting is used.
+    /// </summary>
+    public bool? DisableAutoCommitRetries { get; internal set; }
+
     internal DriverContext DriverContext { get; set; }
 
     internal Action<string> OnPinDatabase { get; set; }
@@ -379,6 +385,18 @@ public sealed class SessionConfigBuilder
     public SessionConfigBuilder WithNotificationsDisabled()
     {
         _config.NotificationsConfig = new NotificationsDisabledConfig();
+        return this;
+    }
+
+    /// <summary>
+    /// Session-level override for <see cref="Config.DisableAutoCommitRetries"/>.
+    /// </summary>
+    /// <param name="disable">Pass <c>true</c> to disable, <c>false</c> to enable, or omit to inherit the driver setting.</param>
+    /// <returns>This <see cref="SessionConfigBuilder"/> instance.</returns>
+    /// <seealso cref="ConfigBuilder.WithDisableAutoCommitRetries"/>
+    public SessionConfigBuilder WithDisableAutoCommitRetries(bool disable)
+    {
+        _config.DisableAutoCommitRetries = disable;
         return this;
     }
 }

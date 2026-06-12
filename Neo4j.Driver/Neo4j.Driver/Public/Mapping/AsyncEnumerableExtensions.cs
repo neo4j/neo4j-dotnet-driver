@@ -20,7 +20,36 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Mapping;
 
-/// <summary>Contains extension methods for <see cref="IAsyncEnumerable{T}"/>.</summary>
+/// <summary>
+/// Contains extension methods for mapping <see cref="IAsyncEnumerable{T}">IAsyncEnumerable&lt;IRecord&gt;</see>
+/// streams to C# objects.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Use these extensions when consuming records from a session or transaction cursor — that is, when you are
+/// iterating the result of <c>RunAsync</c> or a transaction function. For the simpler
+/// <see cref="IDriver.ExecutableQuery(string)"/> API, use
+/// <see cref="ExecutableQueryMappingExtensions"/> instead.
+/// </para>
+/// <para>
+/// Two materialisation styles are available:
+/// </para>
+/// <list type="bullet">
+/// <item><description>
+/// <see cref="ToListAsync{T}"/> / <see cref="ToListFromBlueprintAsync{T}"/> — buffers all records into a
+/// <c>IReadOnlyList&lt;T&gt;</c>.
+/// </description></item>
+/// <item><description>
+/// <see cref="AsObjectsAsync{T}"/> / <see cref="AsObjectsFromBlueprintAsync{T}"/> — returns a lazy
+/// <see cref="IAsyncEnumerable{T}"/> that maps each record on demand, without buffering the entire result set.
+/// </description></item>
+/// </list>
+/// <para>
+/// See
+/// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+/// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+/// </para>
+/// </remarks>
 public static class AsyncEnumerableExtensions
 {
     /// <summary>
@@ -29,6 +58,13 @@ public static class AsyncEnumerableExtensions
     /// the default mapper will be used.
     /// </summary>
     /// <seealso cref="RecordObjectMapping.Map{T}"/>
+    /// <remarks>
+    /// <para>
+    /// See
+    /// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+    /// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+    /// </para>
+    /// </remarks>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <typeparam name="T">The type of object to map to.</typeparam>
@@ -49,10 +85,17 @@ public static class AsyncEnumerableExtensions
     /// <summary>
     /// Materializes the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type <typeparamref name="T"/>, by
     /// mapping each record in the enumerable to an object of the same type as <paramref name="blueprint"/>. This object could
-    /// be anononymously typed. If no custom mapper is defined for type <typeparamref name="T"/>, the default mapper will be
+    /// be anonymously typed. If no custom mapper is defined for type <typeparamref name="T"/>, the default mapper will be
     /// used.
     /// </summary>
     /// <seealso cref="RecordObjectMapping.Map{T}"/>
+    /// <remarks>
+    /// <para>
+    /// See
+    /// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+    /// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+    /// </para>
+    /// </remarks>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
     /// <param name="blueprint">An object of type <typeparamref name="T"/> to use as a blueprint for mapping.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
@@ -77,6 +120,13 @@ public static class AsyncEnumerableExtensions
     /// type <typeparamref name="T"/>, by mapping each record in the enumerable to an object. If no custom mapper is defined
     /// for type <typeparamref name="T"/>, the default mapper will be used.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// See
+    /// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+    /// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+    /// </para>
+    /// </remarks>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <typeparam name="T">The type of object to map to.</typeparam>
@@ -97,6 +147,13 @@ public static class AsyncEnumerableExtensions
     /// <paramref name="blueprint"/>. This object could be anonymously typed. If no custom mapper is defined for type
     /// <typeparamref name="T"/>, the default mapper will be used.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// See
+    /// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+    /// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+    /// </para>
+    /// </remarks>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
     /// <param name="blueprint">An object of type <typeparamref name="T"/> to use as a blueprint for mapping.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>

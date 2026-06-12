@@ -114,6 +114,11 @@ internal class ListBasedRecordCursor : IInternalResultCursor, IAsyncEnumerator<I
     {
     }
 
+    public Task<Exception> GetRunCompletionErrorAsync()
+    {
+        return Task.FromResult<Exception>(null);
+    }
+
     public IAsyncEnumerator<IRecord> GetAsyncEnumerator(CancellationToken cancellationToken = new())
     {
         return this;

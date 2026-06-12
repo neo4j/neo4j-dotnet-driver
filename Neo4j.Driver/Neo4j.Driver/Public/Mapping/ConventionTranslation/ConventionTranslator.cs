@@ -16,11 +16,23 @@
 namespace Neo4j.Driver.Mapping.ConventionTranslation;
 
 /// <summary>
-/// Translates a string from one naming convention to another.
+/// Translates C# identifier names to database field names by combining a parser and a formatter.
 /// </summary>
-/// <param name="objectIdentifierParser">The object identifier parser.</param>
-/// <param name="recordFieldFormatter">The record field formatter.</param>
-/// <typeparam name="T">The type of data that is parsed and formatted.</typeparam>
+/// <remarks>
+/// <para>
+/// This is the standard implementation of <see cref="IConventionTranslator"/>. It first calls
+/// <see cref="IIdentifierParser{T}.ParseIdentifier"/> on the input to break it into tokens, then passes those
+/// tokens to <see cref="IFieldFormatter{T}.Format"/> to produce the output field name.
+/// </para>
+/// <para>
+/// Use <see cref="StandardCaseParser"/> and <see cref="StandardCaseFormatter"/> for the built-in naming
+/// conventions, or supply custom implementations for advanced scenarios. Pass the resulting translator to
+/// <see cref="RecordObjectMapping.TranslateIdentifiers{TParseResult}(IIdentifierParser{TParseResult},IFieldFormatter{TParseResult},bool)"/>.
+/// </para>
+/// </remarks>
+/// <param name="objectIdentifierParser">Parses C# identifiers into an intermediate representation.</param>
+/// <param name="recordFieldFormatter">Formats the intermediate representation into a database field name.</param>
+/// <typeparam name="T">The type of the intermediate representation shared between parser and formatter.</typeparam>
 public class ConventionTranslator<T>(IIdentifierParser<T> objectIdentifierParser, IFieldFormatter<T> recordFieldFormatter)
     : IConventionTranslator
 {

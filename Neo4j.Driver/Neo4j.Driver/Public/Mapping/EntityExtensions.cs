@@ -20,9 +20,36 @@ namespace Neo4j.Driver.Mapping;
 /// <summary>Contains extensions for entities such as nodes and relationships.</summary>
 public static class EntityExtensions
 {
-    /// <summary>Converts the entity to a record.</summary>
-    /// <param name="entity">The entity to convert.</param>
-    /// <returns>The record.</returns>
+    /// <summary>
+    /// Wraps the entity's properties in an <see cref="IRecord"/> so that it can be mapped to a C# object
+    /// using the standard mapping API.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Use this when you have a standalone <see cref="INode"/> or <see cref="IRelationship"/> — for example,
+    /// retrieved from an <see cref="IPath"/> or a result column — and you want to map it to a typed C# object
+    /// without going through a full record. After calling <c>AsRecord()</c>, you can call
+    /// <see cref="RecordExtensions.AsObject{T}"/> on the result:
+    /// </para>
+    /// <code language="csharp">
+    /// INode node = ...; // obtained from a path or similar
+    /// var person = node.AsRecord().AsObject&lt;Person&gt;();
+    /// </code>
+    /// <para>
+    /// The fields of the virtual record are only the entity's properties. Node labels and relationship types are
+    /// not exposed through the <see cref="IRecord"/> returned by <c>AsRecord()</c>. If you need to map labels or
+    /// relationship types, use <see cref="EntityMappingSource.NodeLabel"/> or
+    /// <see cref="EntityMappingSource.RelationshipType"/> when mapping directly from a query result column whose value is
+    /// an <see cref="INode"/> or <see cref="IRelationship"/>, rather than from <c>entity.AsRecord()</c>.
+    /// </para>
+    /// <para>
+    /// See
+    /// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+    /// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+    /// </para>
+    /// </remarks>
+    /// <param name="entity">The node or relationship to wrap.</param>
+    /// <returns>An <see cref="IRecord"/> backed by the entity's properties.</returns>
     public static IRecord AsRecord(this IEntity entity)
     {
         return new DictAsRecord(entity, null);

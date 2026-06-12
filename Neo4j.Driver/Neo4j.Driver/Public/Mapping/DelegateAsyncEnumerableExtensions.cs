@@ -26,6 +26,13 @@ namespace Neo4j.Driver.Mapping;
 /// Provides extension methods for materializing <see cref="IAsyncEnumerable{T}"/> into lists of objects by
 /// mapping each record in the enumerable to an object using provided delegates.
 /// </summary>
+/// <remarks>
+/// <para>
+/// See
+/// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+/// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+/// </para>
+/// </remarks>
 public static class DelegateAsyncEnumerableExtensions
 {
     private static async ValueTask<IReadOnlyList<TResult>> ToListAsyncImpl<TResult>(

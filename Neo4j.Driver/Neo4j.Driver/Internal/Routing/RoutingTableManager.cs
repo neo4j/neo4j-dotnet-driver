@@ -249,13 +249,15 @@ internal class RoutingTableManager : IRoutingTableManager
         }
 
         var triedUris = new HashSet<Uri>();
+        var routerExceptions = new List<Exception>();
         var newRoutingTable = await UpdateRoutingTableAsync(
                 existingTable,
                 mode,
                 database,
                 sessionConfig,
                 bookmarks,
-                triedUris)
+                triedUris,
+                routerExceptions)
             .ConfigureAwait(false);
 
         if (newRoutingTable != null)
@@ -275,7 +277,8 @@ internal class RoutingTableManager : IRoutingTableManager
                         mode,
                         database,
                         sessionConfig,
-                        bookmarks)
+                        bookmarks,
+                        collectedExceptions: routerExceptions)
                     .ConfigureAwait(false);
 
                 if (newRoutingTable != null)
@@ -287,9 +290,11 @@ internal class RoutingTableManager : IRoutingTableManager
 
         // We tried our best however there is just no cluster.
         // This is the ultimate place we will inform the user that a new driver to be created.
+        var inner = routerExceptions.Count > 0 ? new AggregateException(routerExceptions) : null;
         throw new ServiceUnavailableException(
             "Failed to connect to any routing server. " +
-            "Please make sure that the cluster is up and can be accessed by the driver and retry.");
+            "Please make sure that the cluster is up and can be accessed by the driver and retry.",
+            inner);
     }
 
     internal async Task<IRoutingTable> UpdateRoutingTableAsync(
@@ -298,7 +303,8 @@ internal class RoutingTableManager : IRoutingTableManager
         string database,
         SessionConfig sessionConfig,
         Bookmarks bookmarks,
-        ISet<Uri> triedUris = null)
+        ISet<Uri> triedUris = null,
+        List<Exception> collectedExceptions = null)
     {
         if (database == null)
         {
@@ -372,6 +378,9 @@ internal class RoutingTableManager : IRoutingTableManager
                 {
                     throw;
                 }
+
+                routingTable.Remove(router);
+                collectedExceptions?.Add(ex);
             }
         }
 

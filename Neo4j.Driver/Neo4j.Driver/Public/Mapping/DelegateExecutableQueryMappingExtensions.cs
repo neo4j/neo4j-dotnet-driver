@@ -25,6 +25,13 @@ namespace Neo4j.Driver.Mapping;
 /// Contains extensions for using delegate mapping with the driver's <see cref="ExecutableQuery{TIn,TOut}"/>
 /// methods.
 /// </summary>
+/// <remarks>
+/// <para>
+/// See
+/// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+/// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+/// </para>
+/// </remarks>
 public static class DelegateExecutableQueryMappingExtensions
 {
     /// <summary>
@@ -32,6 +39,13 @@ public static class DelegateExecutableQueryMappingExtensions
     /// a delegate as part of the query execution.
     /// </summary>
     /// <seealso cref="RecordObjectMapping.Map{T}"/>
+    /// <remarks>
+    /// <para>
+    /// See
+    /// <a href="~/articles/mapping-overview.md">Mapping query results to objects</a> and
+    /// <a href="~/articles/mapping-configuration.md">Configuring the mapping system</a>.
+    /// </para>
+    /// </remarks>
     /// <param name="recordsTask">The task that will return the records.</param>
     /// <param name="map">The delegate to use to map the records to objects.</param>
     /// <typeparam name="TResult">The type to map to.</typeparam>

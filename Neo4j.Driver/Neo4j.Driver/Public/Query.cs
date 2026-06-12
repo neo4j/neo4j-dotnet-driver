@@ -27,9 +27,37 @@ public class Query
     {
     }
 
-    /// <summary>Create a query with parameters specified as anonymous objects</summary>
-    /// <param name="text">The query's text</param>
-    /// <param name="parameters">The query parameters, specified as an object which is then converted into key-value pairs.</param>
+    /// <summary>Create a query with parameters as an object.</summary>
+    /// <param name="text">The query's text.</param>
+    /// <param name="parameters">
+    /// The query parameters. The driver converts this object to a Cypher parameter map as follows:
+    /// <list type="bullet">
+    ///   <item><description>
+    ///     <b>Anonymous types and POCOs:</b> each public property becomes a Cypher parameter, with
+    ///     the property name used as the key. Nested objects become Cypher maps; collections and
+    ///     arrays become Cypher lists.
+    ///   </description></item>
+    ///   <item><description>
+    ///     <b>Dictionary types</b> (<see cref="IDictionary{TKey,TValue}"/> with string keys,
+    ///     <see cref="IReadOnlyDictionary{TKey,TValue}"/>, or <see cref="IEnumerable{T}"/> of
+    ///     <see cref="KeyValuePair{TKey,TValue}"/>): treated as the parameter map.
+    ///   </description></item>
+    /// </list>
+    /// <para>
+    ///   <b>Renaming parameters:</b> decorate a property with
+    ///   <see cref="Mapping.CypherParameterMappingAttribute"/> to override the key used in the
+    ///   Cypher parameter map. For full control, implement
+    ///   <see cref="Mapping.IMappingBindingMutator"/> on a custom attribute.
+    /// </para>
+    /// <para>
+    ///   <b>Global name translation:</b> if
+    ///   <see cref="Mapping.RecordObjectMapping"/><c>.TranslateIdentifiers</c> has been called with
+    ///   <c>translateCypherParameters: true</c>, the configured
+    ///   <see cref="Mapping.ConventionTranslation.IConventionTranslator"/> is applied to top-level
+    ///   property names that do not carry an explicit
+    ///   <see cref="Mapping.CypherParameterMappingAttribute"/>.
+    /// </para>
+    /// </param>
     public Query(string text, object parameters)
         : this(text, parameters.ToCypherParameterDictionary())
     {

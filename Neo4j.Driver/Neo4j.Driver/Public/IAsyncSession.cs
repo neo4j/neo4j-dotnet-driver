@@ -111,6 +111,17 @@ public interface IAsyncSession : IAsyncQueryRunner
         Func<IAsyncQueryRunner, Task<TResult>> work,
         Action<TransactionConfigBuilder> action = null);
 
+    /// <inheritdoc cref="ExecuteReadAsync{TResult}(Func{IAsyncQueryRunner,Task{TResult}},Action{TransactionConfigBuilder})"/>
+    [Obsolete(
+        "Do not return IResultCursor from a transaction function. The cursor is backed by the transaction, " +
+        "which is committed and closed before the caller can use it. " +
+        "Consume results inside the delegate instead, e.g. return await cursor.ToListAsync().",
+        error: false)]
+    Task<IResultCursor> ExecuteReadAsync(
+        Func<IAsyncQueryRunner, Task<IResultCursor>> work,
+        Action<TransactionConfigBuilder> action = null) =>
+        ExecuteReadAsync<IResultCursor>(work, action);
+
     /// <summary>Asynchronously execute given unit of work as a transaction with a specific <see cref="TransactionConfig"/>.</summary>
     /// <param name="work">The <see cref="Func{IAsyncQueryRunner, Task}"/> to be applied to a new read transaction.</param>
     /// <param name="action">
@@ -133,6 +144,17 @@ public interface IAsyncSession : IAsyncQueryRunner
     Task<TResult> ExecuteWriteAsync<TResult>(
         Func<IAsyncQueryRunner, Task<TResult>> work,
         Action<TransactionConfigBuilder> action = null);
+
+    /// <inheritdoc cref="ExecuteWriteAsync{TResult}(Func{IAsyncQueryRunner,Task{TResult}},Action{TransactionConfigBuilder})"/>
+    [Obsolete(
+        "Do not return IResultCursor from a transaction function. The cursor is backed by the transaction, " +
+        "which is committed and closed before the caller can use it. " +
+        "Consume results inside the delegate instead, e.g. return await cursor.ToListAsync().",
+        error: false)]
+    Task<IResultCursor> ExecuteWriteAsync(
+        Func<IAsyncQueryRunner, Task<IResultCursor>> work,
+        Action<TransactionConfigBuilder> action = null) =>
+        ExecuteWriteAsync<IResultCursor>(work, action);
 
     /// <summary>Asynchronously execute given unit of work as a transaction with a specific <see cref="TransactionConfig"/>.</summary>
     /// <param name="work">The <see cref="Func{IAsyncQueryRunner, Task}"/> to be applied to a new write transaction.</param>
@@ -164,6 +186,29 @@ public interface IAsyncSession : IAsyncQueryRunner
     /// </param>
     /// <returns>A task of a stream of result values and associated metadata.</returns>
     Task<IResultCursor> RunAsync(string query, Action<TransactionConfigBuilder> action = null);
+
+    /// <summary>
+    /// Asynchronously run a query within an AutoCommit transaction. Uses the specific <see cref="TransactionConfig"/>
+    /// and returns a task of result stream. This method accepts a String representing a Cypher query which will be
+    /// compiled into a query object that can be used to efficiently execute this query multiple times. This method
+    /// optionally accepts a set of parameters which will be injected into the query object by Neo4j.
+    /// </summary>
+    /// <param name="query">A Cypher query.</param>
+    /// <param name="parameters">
+    /// The query parameters. See <see cref="Query(string, object)"/> for a full description of how
+    /// objects are converted to Cypher parameter maps, including support for anonymous types, POCOs,
+    /// dictionaries, nested objects, property renaming with
+    /// <see cref="Mapping.CypherParameterMappingAttribute"/>, and global name translation.
+    /// </param>
+    /// <param name="action">
+    /// Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new
+    /// transaction.
+    /// </param>
+    /// <returns>A task of a stream of result values and associated metadata.</returns>
+    Task<IResultCursor> RunAsync(string query, object parameters, Action<TransactionConfigBuilder> action = null)
+    {
+        return RunAsync(new Query(query, parameters), action);
+    }
 
     /// <summary>
     /// Asynchronously run a query within an AutoCommit transaction. Uses the specific <see cref="TransactionConfig"/>

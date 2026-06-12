@@ -78,7 +78,7 @@ internal class ObjectToCypherParameterDictionaryConverter(
                 RecordObjectMapping.Instance.GetTranslatedCypherParameterName(propInfo.Name);
 
             var value = propInfo.GetValue(o);
-            var valueTransformed = _cypherParameterValueTransformer.Transform(value);
+            var valueTransformed = _cypherParameterValueTransformer.Transform(value, FillDictionary);
 
             dict.Add(name, valueTransformed);
         }

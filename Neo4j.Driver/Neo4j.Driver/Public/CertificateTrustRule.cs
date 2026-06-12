@@ -15,15 +15,33 @@
 
 namespace Neo4j.Driver;
 
-/// <summary>Rules for how to validate a server certificate.</summary>
+/// <summary>
+/// Controls which server certificates the driver will accept when establishing a TLS connection.
+/// Used with <see cref="ConfigBuilder.WithCertificateTrustRule(CertificateTrustRule, System.Collections.Generic.IReadOnlyList{System.Security.Cryptography.X509Certificates.X509Certificate2})"/>.
+/// </summary>
 public enum CertificateTrustRule
 {
-    /// <summary>Trust only certificates that can build a chain against system's CA stores</summary>
+    /// <summary>
+    /// Accept only certificates that can be verified against the operating system's trusted CA stores.
+    /// This is the recommended option for production environments where the server has a certificate
+    /// issued by a well-known CA.
+    /// </summary>
     TrustSystem = 0,
 
-    /// <summary>Trust certificates that can build an x509Chain against list of specified certificates.</summary>
+    /// <summary>
+    /// Accept only certificates that chain to one of a provided list of trusted CA certificates.
+    /// Use this when connecting to a server with a certificate issued by a private or self-managed CA.
+    /// The list of trusted certificates must be supplied via
+    /// <see cref="ConfigBuilder.WithCertificateTrustRule(CertificateTrustRule, System.Collections.Generic.IReadOnlyList{System.Security.Cryptography.X509Certificates.X509Certificate2})"/>.
+    /// </summary>
     TrustList = 1,
 
-    /// <summary>Trust any certificate</summary>
+    /// <summary>
+    /// Accept any certificate without validation.
+    /// <para>
+    /// <b>Warning:</b> this disables all certificate trust checks and makes the connection vulnerable
+    /// to man-in-the-middle attacks. Do not use in production.
+    /// </para>
+    /// </summary>
     TrustAny = 2
 }

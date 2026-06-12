@@ -28,13 +28,13 @@ internal class MappingBuilder<T> : IMappingBuilder<T>
     public IMappingBuilder<T> Map<TProperty>(
         Expression<Func<T, TProperty>> destination,
         string path,
-        MappingSource mappingSource = MappingSource.Property,
+        EntityMappingSource entityMappingSource = EntityMappingSource.Property,
         Func<object, TProperty> converter = null,
         bool optional = false)
     {
         _builtMapper.AddMappingBySetter(
             GetPropertySetter(destination),
-            new MappingBinding(path, mappingSource, optional),
+            new MappingBinding(path, entityMappingSource, optional),
             converter is null ? null : o => converter.Invoke(o));
 
         return this;
