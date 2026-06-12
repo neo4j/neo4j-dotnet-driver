@@ -14,18 +14,10 @@
 // limitations under the License.
 
 #nullable enable
-
 namespace Neo4j.Driver.Internal.QueryApi;
 
-/// <summary>
-/// Session-scoped pass-through that carries the <see cref="QueryApiTransactionContext"/> produced by
-/// <see cref="TransactionBeginner"/> back to <see cref="QueryApiTransactionFactory"/> so the factory can
-/// register it in the transaction child scope. Sequential use within a session is safe; the value is
-/// overwritten on each begin.
-/// </summary>
-internal class QueryApiTransactionContextHolder
+internal interface IQueryApiTransactionContextHolder
 {
-    public QueryApiTransactionContext? Context { get; private set; }
-
-    public void Set(QueryApiTransactionContext context) => Context = context;
+    QueryApiTransactionContext? Context { get; }
+    void Set(QueryApiTransactionContext context);
 }

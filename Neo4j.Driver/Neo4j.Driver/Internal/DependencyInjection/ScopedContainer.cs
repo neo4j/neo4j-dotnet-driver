@@ -26,7 +26,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.DependencyInjection;
 
-internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable, IAsyncDisposable
+internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 {
     private readonly Stack<IAsyncDisposable> _disposables = new();
     private readonly List<IResolutionInterceptor> _interceptors = [];
@@ -191,7 +191,9 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         ScopedContainer? childScope = null)
     {
         return TryResolveCore(serviceType, requestingType, extraRegistrations, childScope) ??
-            throw new InvalidOperationException($"Service of type {serviceType} is not registered.");
+            throw new InvalidOperationException(
+                $"Service of type {serviceType} required by {requestingType} is not registered. " +
+                $"Resolution chain: {GetResolutionStackString()}");
     }
 
     // All resolution logic lives here. Returns null only when the service is not registered.
@@ -213,7 +215,7 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         {
             throw new InvalidOperationException(
                 $"Circular dependency detected while resolving {serviceType}. " +
-                $"Resolution chain: {string.Join(" -> ", _resolutionStack.Value.Select(t => t.Name))}");
+                $"Resolution chain: {GetResolutionStackString()}");
         }
 
         try
@@ -296,6 +298,11 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         {
             _resolutionStack.Value?.Remove(serviceType);
         }
+    }
+
+    private string GetResolutionStackString()
+    {
+        return string.Join(" -> ", _resolutionStack.Value?.Select(t => t.Name) ?? []);
     }
 
     private Array ResolveEnumerable(

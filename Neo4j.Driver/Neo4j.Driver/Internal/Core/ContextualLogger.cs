@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System;
+using System.Linq;
 
 namespace Neo4j.Driver.Internal;
 
@@ -55,6 +56,7 @@ internal class ContextualLogger : ILogger
         if (LoggingHelpers.ExtractFormatAndArguments(state, out var messageTemplate, out var args))
         {
             var (contextualisedMessage, contextualisedArgs) = Contextualise(messageTemplate, args);
+            using var scope = _downstream.BeginScope(_tracker.Contexts.AsMicrosoftStateItems().ToList());
             _downstream.Log(logLevel, eventId, state, exception, (s, e) => string.Format(contextualisedMessage, contextualisedArgs));
         }
         else
