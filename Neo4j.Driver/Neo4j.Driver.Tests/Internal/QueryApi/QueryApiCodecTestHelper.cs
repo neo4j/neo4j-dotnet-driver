@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -13,13 +13,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#nullable enable
+using System.Buffers;
+using System.Text;
+using System.Text.Json;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
-internal interface IBase64Encoder
+public class QueryApiCodecTestHelper
 {
-    string Encode(string input);
+    private ArrayBufferWriter<byte> _buffer;
 
-    string Encode(byte[] input);
+    public QueryApiCodecTestHelper()
+    {
+        _buffer = new ArrayBufferWriter<byte>();
+        Writer = new Utf8JsonWriter(_buffer);
+    }
+
+    public Utf8JsonWriter Writer { get; }
+
+    public string WrittenJson
+    {
+        get
+        {
+            Writer.Flush();
+            return Encoding.UTF8.GetString(_buffer.WrittenSpan);
+        }
+    }
 }

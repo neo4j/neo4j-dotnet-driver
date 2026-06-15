@@ -24,9 +24,11 @@ namespace Neo4j.Driver.Internal.QueryApi;
 [AutoRegister]
 internal class Base64Codec : IBase64Encoder, IBase64Decoder
 {
-    public string Encode(string input)
+    public string Encode(string input) => Encode(Encoding.UTF8.GetBytes(input));
+
+    public string Encode(byte[] input)
     {
-        return Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
+        return Convert.ToBase64String(input);
     }
 
     public byte[] Decode(string input)
