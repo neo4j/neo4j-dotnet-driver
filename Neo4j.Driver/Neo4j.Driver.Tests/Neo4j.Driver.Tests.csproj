@@ -41,7 +41,6 @@
         <PackageReference Include="Moq.AutoMock" Version="3.5.0" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
         <PackageReference Include="System.Linq.Async" Version="7.0.0" />
-        <PackageReference Include="TeamCity.VSTest.TestAdapter" Version="1.0.23" Condition="'$(Configuration)' == 'CI'" />
         <PackageReference Include="xunit.v3" Version="3.2.2" />
         <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
             <PrivateAssets>all</PrivateAssets>

@@ -15,7 +15,6 @@
 
 #nullable enable
 
-using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -46,8 +45,8 @@ public class QueryApiClientTests
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Accepted) { Content = new ByteArrayContent([]) });
 
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<TestBody>(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+        _fixture.Freeze<Mock<IJsonObjectDeserializer>>()
+            .Setup(x => x.DeserializeAsync<TestBody>(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
 
         var subject = _fixture.Create<QueryApiClient>();
@@ -68,8 +67,8 @@ public class QueryApiClientTests
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<TestBody>(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+        _fixture.Freeze<Mock<IJsonObjectDeserializer>>()
+            .Setup(x => x.DeserializeAsync<TestBody>(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TestBody());
 
         var subject = _fixture.Create<QueryApiClient>();
@@ -101,8 +100,8 @@ public class QueryApiClientTests
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Accepted) { Content = new ByteArrayContent([]) });
 
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<TestBody>(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+        _fixture.Freeze<Mock<IJsonObjectDeserializer>>()
+            .Setup(x => x.DeserializeAsync<TestBody>(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 new TestBody { Errors = [new QueryApiErrorBody("Neo.ClientError.General.Unknown", "error")] });
 

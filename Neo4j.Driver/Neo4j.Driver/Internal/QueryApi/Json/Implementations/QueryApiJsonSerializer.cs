@@ -15,7 +15,6 @@
 
 #nullable enable
 
-using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Text.Json;
@@ -27,7 +26,7 @@ using Neo4j.Driver.Internal.DependencyInjection;
 namespace Neo4j.Driver.Internal.QueryApi;
 
 [AutoRegister]
-internal class QueryApiJsonSerializer : IJsonDeserializer, IJsonSerializer
+internal class QueryApiJsonSerializer : IJsonDeserializer, IJsonObjectDeserializer, IJsonSerializer
 {
     private static readonly JsonNamingPolicy DefaultNamingPolicy = JsonNamingPolicy.CamelCase;
 
@@ -40,11 +39,12 @@ internal class QueryApiJsonSerializer : IJsonDeserializer, IJsonSerializer
         }
     };
 
-    private static readonly JsonSerializerOptions Options = new()
+    private readonly IJsonObjectSerializer _serializer;
+
+    public QueryApiJsonSerializer(IJsonObjectSerializer serializer)
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-    };
+        _serializer = serializer;
+    }
 
     public ValueTask<T?> DeserializeAsync<T>(
         Stream utf8Json,
@@ -75,8 +75,11 @@ internal class QueryApiJsonSerializer : IJsonDeserializer, IJsonSerializer
             });
     }
 
-    public string Serialize<T>(T value)
+    public ValueTask<T?> DeserializeAsync<T>(string json, CancellationToken cancellationToken = default)
     {
-        return JsonSerializer.Serialize(value, Options);
+        var options = GetOptions(null);
+        return ValueTask.FromResult(JsonSerializer.Deserialize<T>(json, options));
     }
+
+    public string Serialize<T>(T value) => _serializer.Serialize(value);
 }

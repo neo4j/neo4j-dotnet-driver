@@ -14,6 +14,7 @@
 // limitations under the License.
 
 #nullable enable
+
 using System;
 using System.Text.RegularExpressions;
 using Neo4j.Driver.Internal;

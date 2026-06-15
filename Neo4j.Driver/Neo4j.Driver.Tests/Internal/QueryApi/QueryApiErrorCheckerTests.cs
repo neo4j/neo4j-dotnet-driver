@@ -17,7 +17,8 @@
 
 using System.Net;
 using System.Net.Http;
-using System.Text;
+using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -34,94 +35,85 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// </summary>
 public class QueryApiErrorCheckerTests
 {
-    private static QueryApiErrorChecker Checker => new(new QueryApiJsonSerializer(), new Mock<ILogger>().Object);
+    private static QueryApiErrorChecker BuildChecker(IJsonObjectDeserializer? deserializer = null) =>
+        new(deserializer ?? new Mock<IJsonObjectDeserializer>().Object, new Mock<ILogger>().Object);
 
-    private static HttpResponseMessage JsonResponse(HttpStatusCode status, object body)
-    {
-        return new HttpResponseMessage(status)
-        {
-            Content = new System.Net.Http.StringContent(
-                new QueryApiJsonSerializer().Serialize(body),
-                System.Text.Encoding.UTF8,
-                "application/json")
-        };
-    }
+    private static HttpResponseMessage StringResponse(HttpStatusCode status, string body = "") =>
+        new(status) { Content = new StringContent(body) };
 
     public class EnsureSuccessAsync
     {
         [Fact]
         public async Task DoesNotThrow_WhenStatusIs202Accepted()
         {
-            // 202 Accepted: server processed the request but outcome is in the body (query endpoints)
             var response = new HttpResponseMessage(HttpStatusCode.Accepted);
-
-            var act = () => Checker.EnsureSuccessAsync(response);
-
-            await act.Should().NotThrowAsync();
+            await BuildChecker().Invoking(x => x.EnsureSuccessAsync(response)).Should().NotThrowAsync();
         }
 
         [Fact]
         public async Task DoesNotThrow_WhenStatusIs200Ok()
         {
-            // 200 OK: server confirmed the operation immediately (e.g. rollback/DELETE)
             var response = new HttpResponseMessage(HttpStatusCode.OK);
-
-            var act = () => Checker.EnsureSuccessAsync(response);
-
-            await act.Should().NotThrowAsync();
+            await BuildChecker().Invoking(x => x.EnsureSuccessAsync(response)).Should().NotThrowAsync();
         }
 
         [Fact]
         public async Task ThrowsAuthenticationException_WhenStatusIs401_AndBodyContainsErrorCode()
         {
-            // 401 with a structured error body: Neo.ClientError.Security.Unauthorized maps to AuthenticationException
-            // Spec: https://neo4j.com/docs/query-api/current/#_authentication_errors
-            var response = JsonResponse(
-                HttpStatusCode.Unauthorized,
-                new
-                {
-                    errors = new[]
+            const string responseBody = "test-response-body";
+            var errorBody = new QueryApiErrorChecker.ErrorResponseBody
+            {
+                Errors =
+                [
+                    new QueryApiErrorChecker.ErrorBody
                     {
-                        new
-                        {
-                            code = "Neo.ClientError.Security.Unauthorized",
-                            message = "No authentication was supplied."
-                        }
+                        Code = "Neo.ClientError.Security.Unauthorized",
+                        Message = "No authentication was supplied."
                     }
-                });
+                ]
+            };
 
-            var act = () => Checker.EnsureSuccessAsync(response);
+            var mockDeserializer = new Mock<IJsonObjectDeserializer>();
+            mockDeserializer
+                .Setup(x => x.DeserializeAsync<QueryApiErrorChecker.ErrorResponseBody>(
+                    responseBody, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(errorBody);
 
-            await act.Should()
-                .ThrowAsync<AuthenticationException>()
+            var response = StringResponse(HttpStatusCode.Unauthorized, responseBody);
+
+            await BuildChecker(mockDeserializer.Object)
+                .Invoking(x => x.EnsureSuccessAsync(response))
+                .Should().ThrowAsync<AuthenticationException>()
                 .WithMessage("*No authentication was supplied.*");
         }
 
         [Fact]
         public async Task ThrowsAuthenticationException_WhenStatusIs401_AndBodyIsUnparseable()
         {
-            // When the 401 body cannot be parsed, we fall back to a generic Unauthorized error
-            var response = new HttpResponseMessage(HttpStatusCode.Unauthorized)
-            {
-                Content = new StringContent("not json", Encoding.UTF8, "text/plain"),
-                ReasonPhrase = "Unauthorized"
-            };
+            const string responseBody = "not json";
 
-            var act = () => Checker.EnsureSuccessAsync(response);
+            var mockDeserializer = new Mock<IJsonObjectDeserializer>();
+            mockDeserializer
+                .Setup(x => x.DeserializeAsync<QueryApiErrorChecker.ErrorResponseBody>(
+                    responseBody, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new JsonException("Invalid JSON"));
 
-            await act.Should().ThrowAsync<AuthenticationException>();
+            var response = StringResponse(HttpStatusCode.Unauthorized, responseBody);
+            response.ReasonPhrase = "Unauthorized";
+
+            await BuildChecker(mockDeserializer.Object)
+                .Invoking(x => x.EnsureSuccessAsync(response))
+                .Should().ThrowAsync<AuthenticationException>();
         }
 
         [Fact]
         public async Task ThrowsServiceUnavailableException_WhenStatusIsUnexpected()
         {
-            // Any status other than 202 or 401 is treated as a service-level failure
             var response = new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
 
-            var act = () => Checker.EnsureSuccessAsync(response);
-
-            await act.Should()
-                .ThrowAsync<ServiceUnavailableException>()
+            await BuildChecker()
+                .Invoking(x => x.EnsureSuccessAsync(response))
+                .Should().ThrowAsync<ServiceUnavailableException>()
                 .WithMessage("*503*");
         }
 
@@ -130,10 +122,9 @@ public class QueryApiErrorCheckerTests
         {
             var response = new HttpResponseMessage(HttpStatusCode.InternalServerError);
 
-            var act = () => Checker.EnsureSuccessAsync(response);
-
-            await act.Should()
-                .ThrowAsync<ServiceUnavailableException>()
+            await BuildChecker()
+                .Invoking(x => x.EnsureSuccessAsync(response))
+                .Should().ThrowAsync<ServiceUnavailableException>()
                 .WithMessage("*500*");
         }
     }
@@ -143,20 +134,16 @@ public class QueryApiErrorCheckerTests
         [Fact]
         public void ThrowsClientException_ForSyntaxError()
         {
-            // Application-level errors from the response body are mapped to the correct exception type
-            // Spec: https://neo4j.com/docs/query-api/current/#_errors
-            var act = () => Checker.ThrowIfErrors(
+            var act = () => BuildChecker().ThrowIfErrors(
                 [new QueryApiErrorBody("Neo.ClientError.Statement.SyntaxError", "Invalid input 'RETUN': expected 'RETURN'")]);
 
-            act.Should()
-                .Throw<ClientException>()
-                .WithMessage("*Invalid input*");
+            act.Should().Throw<ClientException>().WithMessage("*Invalid input*");
         }
 
         [Fact]
         public void ThrowsTransientException_ForTransientDatabaseUnavailable()
         {
-            var act = () => Checker.ThrowIfErrors(
+            var act = () => BuildChecker().ThrowIfErrors(
                 [new QueryApiErrorBody("Neo.TransientError.General.DatabaseUnavailable", "Database is temporarily unavailable.")]);
 
             act.Should().Throw<TransientException>();
@@ -165,15 +152,13 @@ public class QueryApiErrorCheckerTests
         [Fact]
         public void DoesNotThrow_WhenErrorsIsNull()
         {
-            var act = () => Checker.ThrowIfErrors(null);
-            act.Should().NotThrow();
+            BuildChecker().Invoking(x => x.ThrowIfErrors(null)).Should().NotThrow();
         }
 
         [Fact]
         public void DoesNotThrow_WhenErrorsIsEmpty()
         {
-            var act = () => Checker.ThrowIfErrors([]);
-            act.Should().NotThrow();
+            BuildChecker().Invoking(x => x.ThrowIfErrors([])).Should().NotThrow();
         }
     }
 }

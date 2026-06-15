@@ -27,11 +27,11 @@ internal class QueryApiClient : IQueryApiClient
 {
     private readonly IQueryApiErrorChecker _errorChecker;
     private readonly IQueryApiHttpTransport _httpTransport;
-    private readonly IJsonDeserializer _jsonDeserializer;
+    private readonly IJsonObjectDeserializer _jsonDeserializer;
 
     public QueryApiClient(
         IQueryApiHttpTransport httpTransport,
-        IJsonDeserializer jsonDeserializer,
+        IJsonObjectDeserializer jsonDeserializer,
         IQueryApiErrorChecker errorChecker)
     {
         _httpTransport = httpTransport;
@@ -47,10 +47,9 @@ internal class QueryApiClient : IQueryApiClient
         using var response = await _httpTransport.SendAsync(request, cancellationToken).ConfigureAwait(false);
         var headers = response.Headers;
 
+        var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         var body = await _jsonDeserializer
-            .DeserializeAsync<TBody>(
-                await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false),
-                cancellationToken)
+            .DeserializeAsync<TBody>(json, cancellationToken)
             .ConfigureAwait(false);
 
         _errorChecker.ThrowIfErrors(body?.Errors);

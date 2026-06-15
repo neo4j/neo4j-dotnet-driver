@@ -27,10 +27,10 @@ namespace Neo4j.Driver.Internal.QueryApi;
 [AutoRegister]
 internal class QueryApiErrorChecker : IQueryApiErrorChecker
 {
-    private readonly IJsonDeserializer _jsonDeserializer;
+    private readonly IJsonObjectDeserializer _jsonDeserializer;
     private readonly ILogger _logger;
 
-    public QueryApiErrorChecker(IJsonDeserializer jsonDeserializer, ILogger logger)
+    public QueryApiErrorChecker(IJsonObjectDeserializer jsonDeserializer, ILogger logger)
     {
         _jsonDeserializer = jsonDeserializer;
         _logger = logger;
@@ -43,10 +43,9 @@ internal class QueryApiErrorChecker : IQueryApiErrorChecker
             ErrorResponseBody? parsed = null;
             try
             {
+                var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
                 parsed = await _jsonDeserializer
-                    .DeserializeAsync<ErrorResponseBody>(
-                        await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false),
-                        cancellationToken)
+                    .DeserializeAsync<ErrorResponseBody>(json, cancellationToken)
                     .ConfigureAwait(false);
             }
             catch
@@ -81,12 +80,12 @@ internal class QueryApiErrorChecker : IQueryApiErrorChecker
         }
     }
 
-    private class ErrorResponseBody
+    internal class ErrorResponseBody
     {
         public ErrorBody[]? Errors { get; init; }
     }
 
-    private class ErrorBody
+    internal class ErrorBody
     {
         public string Code { get; init; } = string.Empty;
         public string Message { get; init; } = string.Empty;
