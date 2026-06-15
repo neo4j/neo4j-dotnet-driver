@@ -167,7 +167,7 @@ public class QueryApiResultCursorBuilderTests
         var typedValue = new Dictionary<string, object> { ["$type"] = "Node", ["_value"] = new {} };
         await Builder.Invoking(_ => FetchSingle(typedValue))
             .Should()
-            .ThrowAsync<NotSupportedException>()
+            .ThrowAsync<ProtocolException>()
             .WithMessage("*Node*");
     }
 }

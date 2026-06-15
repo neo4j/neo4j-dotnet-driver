@@ -26,11 +26,11 @@ namespace Neo4j.Driver.Internal.QueryApi;
 [AutoRegister]
 internal class JsonValueConverter : IJsonValueConverter
 {
-    private readonly IEnumerable<ITypedJsonElementConverter> _typedConverters;
+    private readonly IEnumerable<IQueryApiTypeCodec> _codecs;
 
-    public JsonValueConverter(IEnumerable<ITypedJsonElementConverter> typedConverters)
+    public JsonValueConverter(IEnumerable<IQueryApiTypeCodec> codecs)
     {
-        _typedConverters = typedConverters;
+        _codecs = codecs;
     }
 
     public object? Convert(JsonElement jsonElement)
@@ -43,11 +43,11 @@ internal class JsonValueConverter : IJsonValueConverter
             JsonValueKind.String => jsonElement.GetString(),
             JsonValueKind.Array => jsonElement.EnumerateArray().Select(Convert).ToList(),
             JsonValueKind.Object => ConvertObject(jsonElement),
-            
+
             // the cast to object is necessary to force the return type of the ternary expression to be `object` -
             // otherwise, the compiler will use double, potentially losing precision for large integers
             JsonValueKind.Number => jsonElement.TryGetInt64(out var l) ? (object)l : jsonElement.GetDouble(),
-            
+
             _ => throw new ArgumentOutOfRangeException(
                 nameof(jsonElement),
                 jsonElement.ValueKind,
@@ -61,22 +61,18 @@ internal class JsonValueConverter : IJsonValueConverter
         {
             var typeName = typeElement.GetString() ?? "unknown";
 
-            foreach (var converter in _typedConverters)
+            foreach (var codec in _codecs)
             {
-                if (converter.CanConvert(typeName))
-                {
-                    return converter.Convert(jsonElement);
-                }
+                if (codec.CanRead(typeName))
+                    return codec.Read(jsonElement, this);
             }
 
-            throw new NotSupportedException($"Unsupported Neo4j type: {typeName}");
+            throw new ProtocolException($"Unsupported Neo4j type: {typeName}");
         }
 
         var dict = new Dictionary<string, object?>();
         foreach (var prop in jsonElement.EnumerateObject())
-        {
             dict[prop.Name] = Convert(prop.Value);
-        }
 
         return dict;
     }
