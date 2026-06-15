@@ -64,7 +64,7 @@ internal class QueryApiJsonSerializer : IJsonDeserializer, IJsonObjectDeserializ
          ?? throw new JsonException($"Failed to deserialize JSON element to type '{typeof(T)}'.");
     }
 
-    private static JsonSerializerOptions GetOptions(JsonNamingPolicy? namingPolicy)
+    private static JsonSerializerOptions GetOptions(JsonNamingPolicy? namingPolicy = null)
     {
         return OptionsByNamingPolicy.GetOrAdd(
             namingPolicy ?? DefaultNamingPolicy,
@@ -77,7 +77,7 @@ internal class QueryApiJsonSerializer : IJsonDeserializer, IJsonObjectDeserializ
 
     public ValueTask<T?> DeserializeAsync<T>(string json, CancellationToken cancellationToken = default)
     {
-        var options = GetOptions(null);
+        var options = GetOptions();
         return ValueTask.FromResult(JsonSerializer.Deserialize<T>(json, options));
     }
 
