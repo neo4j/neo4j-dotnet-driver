@@ -16,19 +16,20 @@
 #nullable enable
 
 using System;
-using System.Threading;
+using System.Text.Json;
+using Neo4j.Driver.Internal.DependencyInjection;
+using Neo4j.Driver.Internal.Util;
 
-namespace Neo4j.Driver.Internal.Util;
+namespace Neo4j.Driver.Internal.QueryApi;
 
-internal sealed class ActionDisposable(Action onDispose) : IDisposable
+[AutoRegister]
+internal sealed class JsonEnvelopeWriter : IJsonEnvelopeWriter
 {
-    private int _disposed;
-
-    public void Dispose()
+    public IDisposable OpenTypedEnvelope(Utf8JsonWriter writer, string typeDescriptor)
     {
-        if (Interlocked.Exchange(ref _disposed, 1) == 0)
-        {
-            onDispose();
-        }
+        writer.WriteStartObject();
+        writer.WriteString("$type", typeDescriptor);
+        writer.WritePropertyName("_value");
+        return new ActionDisposable(writer.WriteEndObject);
     }
 }
