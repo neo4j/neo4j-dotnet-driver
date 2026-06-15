@@ -60,8 +60,8 @@ internal class QueryApiJsonSerializer : IJsonDeserializer, IJsonObjectDeserializ
         JsonNamingPolicy? namingPolicy)
     {
         var options = GetOptions(namingPolicy);
-        return json.Deserialize<T>(options) 
-         ?? throw new JsonException($"Failed to deserialize JSON element to type '{typeof(T)}'.");
+        return json.Deserialize<T>(options)
+            ?? throw new JsonException($"Failed to deserialize JSON element to type '{typeof(T)}'.");
     }
 
     private static JsonSerializerOptions GetOptions(JsonNamingPolicy? namingPolicy = null)
