@@ -95,7 +95,7 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
     {
         return new ResultCursorBuilder(
             summaryBuilder,
-            connection.ReceiveOneAsync,
+            () => connection.ReceiveOneAsync(),
             requestMore?.Invoke(connection, summaryBuilder, bookmarksTracker),
             cancelRequest?.Invoke(connection, summaryBuilder, bookmarksTracker),
             resultResourceHandler,

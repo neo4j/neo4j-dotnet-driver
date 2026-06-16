@@ -171,6 +171,62 @@ public class ConnectionPoolTests
         }
 
         [Fact]
+        public async Task ShouldNotLeakPoolSizeWhenLivenessProbeHangsDuringAcquisitionTimeout()
+        {
+            var connectionMock = new Mock<IPooledConnection>();
+            connectionMock
+                .Setup(x => x.InitAsync(It.IsAny<SessionConfig>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            connectionMock
+                .Setup(x => x.ResetAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            // calling SyncAsync hangs indefinitely
+            connectionMock
+                .Setup(x => x.SyncAsync(It.IsAny<CancellationToken>()))
+                .Returns<CancellationToken>(ct => Task.Delay(Timeout.Infinite, ct));
+
+            var connectionDestroyed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            
+            // this setup is called by the subject to destroy its connection
+            connectionMock
+                .Setup(x => x.DestroyAsync())
+                .Returns(() =>
+                {
+                    connectionDestroyed.TrySetResult(true);
+                    return Task.CompletedTask;
+                });
+
+            var factoryMock = new Mock<IPooledConnectionFactory>();
+            factoryMock
+                .Setup(x => x.Create(It.IsAny<Uri>(), It.IsAny<IConnectionReleaseManager>(), It.IsAny<IAuthToken>()))
+                .Returns(connectionMock.Object);
+
+            var pool = new ConnectionPool(
+                factoryMock.Object,
+                driverContext: TestDriverContext.With(
+                    config: x => x
+                        .WithMaxConnectionPoolSize(1)
+                        .WithConnectionAcquisitionTimeout(TimeSpan.FromMilliseconds(200))),
+                validator: new LivenessProbeValidator());
+
+            var act = () => pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
+
+            // probe hangs, so acquisition times out with ClientException.
+            await act.Should().ThrowAsync<ClientException>();
+
+            // await the task marked completed in the mock's Destroy setup
+            // (i.e. the subject destroyed its connection)
+            // or 1-second timeout
+            var completed = await Task.WhenAny(connectionDestroyed.Task, Task.Delay(TimeSpan.FromSeconds(1)));
+            completed.Should().BeSameAs(connectionDestroyed.Task);
+            
+            // pool slot was released
+            pool.PoolSize.Should().Be(0);
+        }
+
+        [Fact]
         public async Task ShouldNotExceedIdleLimit()
         {
             var pool = NewConnectionPool(
@@ -1724,6 +1780,12 @@ public class ConnectionPoolTests
             idleConnections.Count.Should().Be(0);
             VerifyDestroyAsyncCalledOnce(idleMocks);
         }
+    }
+
+    private sealed class LivenessProbeValidator : IConnectionValidator
+    {
+        public Task<bool> OnReleaseAsync(IPooledConnection connection) => Task.FromResult(true);
+        public AcquireStatus GetConnectionLifetimeStatus(IPooledConnection connection) => AcquireStatus.RequiresLivenessProbe;
     }
 
     private class TestConnectionValidator : IConnectionValidator

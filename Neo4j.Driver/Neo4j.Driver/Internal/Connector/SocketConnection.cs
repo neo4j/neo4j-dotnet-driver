@@ -219,13 +219,13 @@ internal sealed class SocketConnection : IConnection
         return AuthTokenManager.HandleSecurityExceptionAsync(AuthToken, exception);
     }
 
-    public async Task SyncAsync()
+    public async Task SyncAsync(CancellationToken cancellationToken = default)
     {
-        await SendAsync().ConfigureAwait(false);
-        await ReceiveAsync().ConfigureAwait(false);
+        await SendAsync(cancellationToken).ConfigureAwait(false);
+        await ReceiveAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task SendAsync()
+    public async Task SendAsync(CancellationToken cancellationToken = default)
     {
         if (_messages.Count == 0)
             // nothing to send
@@ -233,11 +233,11 @@ internal sealed class SocketConnection : IConnection
             return;
         }
 
-        await _sendLock.WaitAsync().ConfigureAwait(false);
+        await _sendLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             // send
-            await _client.SendAsync(_messages).ConfigureAwait(false);
+            await _client.SendAsync(_messages, cancellationToken).ConfigureAwait(false);
 
             _messages.Clear();
         }
@@ -247,9 +247,9 @@ internal sealed class SocketConnection : IConnection
         }
     }
 
-    public async Task ReceiveOneAsync()
+    public async Task ReceiveOneAsync(CancellationToken cancellationToken = default)
     {
-        await _recvLock.WaitAsync().ConfigureAwait(false);
+        await _recvLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             if (_responsePipeline.HasNoPendingMessages)
@@ -257,7 +257,7 @@ internal sealed class SocketConnection : IConnection
                 return;
             }
 
-            await _client.ReceiveOneAsync(_responsePipeline).ConfigureAwait(false);
+            await _client.ReceiveOneAsync(_responsePipeline, cancellationToken).ConfigureAwait(false);
 
             await HandleAuthErrorAsync(_responsePipeline).ConfigureAwait(false);
             _responsePipeline.AssertNoFailure();
@@ -289,9 +289,9 @@ internal sealed class SocketConnection : IConnection
         }
     }
 
-    public Task ResetAsync()
+    public Task ResetAsync(CancellationToken cancellationToken = default)
     {
-        return BoltProtocol.ResetAsync(this);
+        return BoltProtocol.ResetAsync(this, cancellationToken);
     }
 
     public bool IsOpen => _client.IsOpen;
@@ -530,9 +530,9 @@ internal sealed class SocketConnection : IConnection
         }
     }
 
-    private async Task ReceiveAsync()
+    private async Task ReceiveAsync(CancellationToken cancellationToken = default)
     {
-        await _recvLock.WaitAsync().ConfigureAwait(false);
+        await _recvLock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -541,7 +541,7 @@ internal sealed class SocketConnection : IConnection
                 return;
             }
 
-            await _client.ReceiveAsync(_responsePipeline).ConfigureAwait(false);
+            await _client.ReceiveAsync(_responsePipeline, cancellationToken).ConfigureAwait(false);
 
             await HandleAuthErrorAsync(_responsePipeline).ConfigureAwait(false);
             _responsePipeline.AssertNoFailure();

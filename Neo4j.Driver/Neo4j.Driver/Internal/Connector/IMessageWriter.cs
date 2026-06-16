@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging;
@@ -22,5 +23,5 @@ namespace Neo4j.Driver.Internal.Connector;
 internal interface IMessageWriter
 {
     void Write(IRequestMessage message, PackStreamWriter writer);
-    Task FlushAsync();
+    Task FlushAsync(CancellationToken cancellationToken = default);
 }

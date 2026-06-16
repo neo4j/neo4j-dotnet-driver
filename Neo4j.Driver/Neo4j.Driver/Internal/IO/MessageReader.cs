@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -43,9 +44,9 @@ internal sealed class MessageReader : IMessageReader
 
     public MemoryStream BufferStream { get; }
 
-    public async ValueTask ReadAsync(IResponsePipeline pipeline, MessageFormat format)
+    public async ValueTask ReadAsync(IResponsePipeline pipeline, MessageFormat format, CancellationToken cancellationToken = default)
     {
-        var messageCount = await _chunkReader.ReadMessageChunksToBufferStreamAsync(BufferStream).ConfigureAwait(false);
+        var messageCount = await _chunkReader.ReadMessageChunksToBufferStreamAsync(BufferStream, cancellationToken).ConfigureAwait(false);
         var psr = new PackStreamReader(format, BufferStream, _readerBuffers);
         ConsumeMessages(pipeline, messageCount, psr);
     }

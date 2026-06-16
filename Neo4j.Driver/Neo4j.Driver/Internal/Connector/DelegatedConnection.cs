@@ -43,11 +43,11 @@ internal abstract class DelegatedConnection : IConnection
         return Delegate.NotifySecurityExceptionAsync(exception);
     }
 
-    public async Task SyncAsync()
+    public async Task SyncAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            await Delegate.SyncAsync().ConfigureAwait(false);
+            await Delegate.SyncAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -55,11 +55,11 @@ internal abstract class DelegatedConnection : IConnection
         }
     }
 
-    public async Task SendAsync()
+    public async Task SendAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            await Delegate.SendAsync().ConfigureAwait(false);
+            await Delegate.SendAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -67,11 +67,11 @@ internal abstract class DelegatedConnection : IConnection
         }
     }
 
-    public async Task ReceiveOneAsync()
+    public async Task ReceiveOneAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            await Delegate.ReceiveOneAsync().ConfigureAwait(false);
+            await Delegate.ReceiveOneAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -230,9 +230,9 @@ internal abstract class DelegatedConnection : IConnection
         return BoltProtocol.LogoutAsync(this);
     }
 
-    public Task ResetAsync()
+    public Task ResetAsync(CancellationToken cancellationToken = default)
     {
-        return BoltProtocol.ResetAsync(this);
+        return BoltProtocol.ResetAsync(this, cancellationToken);
     }
 
     public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(

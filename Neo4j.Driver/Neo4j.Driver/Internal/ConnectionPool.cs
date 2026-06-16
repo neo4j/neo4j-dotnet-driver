@@ -507,8 +507,8 @@ internal sealed class ConnectionPool : IConnectionPool
             {
                 try
                 {
-                    await connection.ResetAsync().ConfigureAwait(false);
-                    await connection.SyncAsync().ConfigureAwait(false);
+                    await connection.ResetAsync(cancellationToken).ConfigureAwait(false);
+                    await connection.SyncAsync(cancellationToken).ConfigureAwait(false);
                 }
                 catch
                 {

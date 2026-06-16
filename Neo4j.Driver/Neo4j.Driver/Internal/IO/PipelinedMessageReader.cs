@@ -58,11 +58,11 @@ internal sealed class PipelinedMessageReader : IMessageReader
         return _pipeReader.CompleteAsync();
     }
 
-    public async ValueTask ReadAsync(IResponsePipeline pipeline, MessageFormat format)
+    public async ValueTask ReadAsync(IResponsePipeline pipeline, MessageFormat format, CancellationToken cancellationToken = default)
     {
         try
         {
-            var message = await ReadNextMessage(format, _pipeReader).ConfigureAwait(false);
+            var message = await ReadNextMessage(format, _pipeReader, cancellationToken).ConfigureAwait(false);
             message.Dispatch(pipeline);
         }
         catch (IOException)
@@ -70,9 +70,9 @@ internal sealed class PipelinedMessageReader : IMessageReader
             await _pipeReader.CompleteAsync().ConfigureAwait(false);
             throw;
         }
-        catch (OperationCanceledException canceledException)
+        catch (OperationCanceledException canceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            // A timeout has occurred, close the connection.
+            // A timeout has occurred (internal timeout source fired), close the connection.
             await _pipeReader.CompleteAsync(canceledException).ConfigureAwait(false);
             _stream.Close();
             throw new ConnectionReadTimeoutException(
@@ -106,15 +106,22 @@ internal sealed class PipelinedMessageReader : IMessageReader
         _source.CancelAfter(_timeoutInMs);
     }
 
-    private async ValueTask<IResponseMessage> ReadNextMessage(MessageFormat format, PipeReader pipeReader)
+    private async ValueTask<IResponseMessage> ReadNextMessage(
+        MessageFormat format,
+        PipeReader pipeReader,
+        CancellationToken cancellationToken = default)
     {
         ReadResult readResult;
         ushort size;
         do
         {
             ResetCancellation();
+            using var linked = cancellationToken.CanBeCanceled
+                ? CancellationTokenSource.CreateLinkedTokenSource(_source.Token, cancellationToken)
+                : null;
+            var readToken = linked?.Token ?? _source.Token;
             // Read Bolt protocol chunk header
-            readResult = await pipeReader.ReadAtLeastAsync(2, _source.Token).ConfigureAwait(false);
+            readResult = await pipeReader.ReadAtLeastAsync(2, readToken).ConfigureAwait(false);
             if (readResult is { IsCompleted: true, Buffer.Length: < 2 })
             {
                 throw new IOException(
@@ -161,7 +168,10 @@ internal sealed class PipelinedMessageReader : IMessageReader
             if (readResult.Buffer.Length < minimumRead)
             {
                 ResetCancellation();
-                readResult = await pipeReader.ReadAtLeastAsync(minimumRead, _source.Token).ConfigureAwait(false);
+                using var linkedInner = cancellationToken.CanBeCanceled
+                    ? CancellationTokenSource.CreateLinkedTokenSource(_source.Token, cancellationToken)
+                    : null;
+                readResult = await pipeReader.ReadAtLeastAsync(minimumRead, linkedInner?.Token ?? _source.Token).ConfigureAwait(false);
                 if (readResult.IsCompleted && readResult.Buffer.Length < minimumRead)
                 {
                     throw new IOException(

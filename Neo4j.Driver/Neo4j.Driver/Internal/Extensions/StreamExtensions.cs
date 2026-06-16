@@ -31,48 +31,61 @@ internal static class StreamExtensions
     /// <param name="offset">Offset from which to begin writing data from the stream</param>
     /// <param name="count">The maximum number of bytes to read</param>
     /// <param name="timeoutMs">The timeout in milliseconds that the stream will close after if there is no activity.</param>
+    /// <param name="cancellationToken">Token that can cancel the read independently of the timeout.</param>
     /// <returns>The number of bytes read</returns>
     public static async Task<int> ReadWithTimeoutAsync(
         this Stream stream,
         byte[] buffer,
         int offset,
         int count,
-        int timeoutMs)
+        int timeoutMs,
+        CancellationToken cancellationToken = default)
     {
         if (timeoutMs <= 0)
         {
             // no timeout and high traffic code, so avoid allocation Cancellation token source.
-            return await ReadWithoutTimeoutAsync(stream, buffer, offset, count).ConfigureAwait(false);
+            return await ReadWithoutTimeoutAsync(stream, buffer, offset, count, cancellationToken).ConfigureAwait(false);
         }
 
-        using var source = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs));
+        using var timeoutSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs));
+
+        using var linked = cancellationToken.CanBeCanceled
+            ? CancellationTokenSource.CreateLinkedTokenSource(timeoutSource.Token, cancellationToken)
+            : null;
+
+        var readToken = linked?.Token ?? timeoutSource.Token;
 
         try
         {
             // .netcore 3.0+ network streams support cancellation tokens.
-            return await stream.ReadAsync(buffer.AsMemory(offset, count), source.Token).ConfigureAwait(false);
+            return await stream.ReadAsync(buffer.AsMemory(offset, count), readToken).ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (IsCancellationException(ex))
         {
-            //if the exception relates to cancellation we should throw a timeout.
-            if (source.IsCancellationRequested && IsCancellationException(ex))
-            {
-                // close the stream, the stream will be fully disposed later by SocketClient Dispose.
-                stream.Close();
+            // close the stream, the stream will be fully disposed later by SocketClient Dispose.
+            stream.Close();
 
+            if (timeoutSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
                 throw new ConnectionReadTimeoutException(
                     $"Socket/Stream timed out after {timeoutMs}ms, socket closed.",
                     ex);
             }
 
+            // External cancellation — rethrow as-is so callers can distinguish it from a timeout.
             throw;
         }
     }
 
-    private static Task<int> ReadWithoutTimeoutAsync(Stream stream, byte[] buffer, int offset, int count)
+    private static Task<int> ReadWithoutTimeoutAsync(
+        Stream stream,
+        byte[] buffer,
+        int offset,
+        int count,
+        CancellationToken cancellationToken = default)
     {
         // .netcore 3.0+ network streams support cancellation tokens.
-        return stream.ReadAsync(buffer.AsMemory(offset, count)).AsTask();
+        return stream.ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
     }
 
     private static bool IsCancellationException(Exception ex)

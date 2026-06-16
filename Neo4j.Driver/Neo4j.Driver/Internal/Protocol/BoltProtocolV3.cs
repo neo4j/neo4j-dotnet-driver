@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.HomeDbCaching;
@@ -75,8 +76,10 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         await connection.SendAsync().ConfigureAwait(false);
     }
 
-    public Task ResetAsync(IConnection connection)
+    public Task ResetAsync(IConnection connection, CancellationToken cancellationToken = default)
     {
+        // cancellation token not used - enqueuing doesn't take any time in which to cancel it
+        // - the real cancellable work is in SyncAsync
         return connection.EnqueueAsync(ResetMessage.Instance, NoOpResponseHandler.Instance);
     }
 
