@@ -71,7 +71,9 @@ internal class ObjectToCypherParameterDictionaryConverter(
 
     private IDictionary<string, object> FillDictionary(object o, IDictionary<string, object> dict)
     {
-        foreach (var propInfo in o.GetType().GetRuntimeProperties())
+        foreach (var propInfo in o.GetType()
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.CanRead && p.GetIndexParameters().Length == 0))
         {
             var mappingBinding = _mappingBindingProvider.GetMappingBinding(propInfo);
             var name = mappingBinding.CypherParameterName ??
