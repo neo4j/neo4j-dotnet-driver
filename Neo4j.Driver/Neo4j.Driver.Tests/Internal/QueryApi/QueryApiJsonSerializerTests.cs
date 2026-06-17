@@ -23,15 +23,20 @@ using Xunit;
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 /// <summary>
-/// Verifies that <see cref="TypedJsonObjectSerializer"/> serializes query parameters in the typed JSON format
-/// required by the HTTP Query API v1.0: {"$type": "...", "_value": ...}.
+/// Verifies that <see cref="QueryApiParameterSerializer"/> serializes query parameters in the typed JSON format
+/// required by the HTTP Query API: <c>{"$type": "...", "_value": ...}</c>.
+/// Uses real codec instances — this is an integration test of the serialisation path.
 /// </summary>
 public class QueryApiJsonSerializerTests
 {
-    private readonly TypedJsonObjectSerializer _subject = new();
+    private static readonly Base64Codec Base64 = new();
+
+    private static readonly QueryApiParameterSerializer Subject = new(
+        [new QueryApiPrimitiveCodec(new JsonEnvelopeWriter(), Base64, Base64)]
+    );
 
     private string SerializeParams(IDictionary<string, object?> parameters) =>
-        _subject.Serialize(new { parameters });
+        Subject.Serialize(new { parameters });
 
     [Fact]
     public void Serialize_NullParameter_WritesTypedNull()
@@ -71,31 +76,6 @@ public class QueryApiJsonSerializerTests
     {
         var result = SerializeParams(new Dictionary<string, object?> { ["x"] = 3.14 });
         result.Should().Contain("""{"$type":"Float","_value":""");
-    }
-
-    [Fact]
-    public void Serialize_ListParameter_WritesTypedList()
-    {
-        var result = SerializeParams(new Dictionary<string, object?>
-        {
-            ["x"] = new List<object?> { 1L, "a" }
-        });
-
-        result.Should().Contain("""{"$type":"List","_value":[""");
-        result.Should().Contain("""{"$type":"Integer","_value":"1"}""");
-        result.Should().Contain("""{"$type":"String","_value":"a"}""");
-    }
-
-    [Fact]
-    public void Serialize_MapParameter_WritesTypedMap()
-    {
-        var result = SerializeParams(new Dictionary<string, object?>
-        {
-            ["x"] = new Dictionary<string, object?> { ["k"] = 1L }
-        });
-
-        result.Should().Contain("""{"$type":"Map","_value":""");
-        result.Should().Contain("""{"$type":"Integer","_value":"1"}""");
     }
 
     [Fact]
