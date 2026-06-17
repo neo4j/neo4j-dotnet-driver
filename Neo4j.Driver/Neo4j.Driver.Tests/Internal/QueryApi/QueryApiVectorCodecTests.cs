@@ -83,11 +83,12 @@ public class QueryApiVectorCodecTests
     }
 
     [Fact]
-    public void Write_Throws()
+    public void Write_ShouldWork()
     {
         var subject = _fixture.Create<QueryApiVectorCodec>();
         var act = () => subject.Write(Vector.CreateDynamic(new[] { 1.0 }), Mock.Of<IJsonValueEncoder>());
 
-        act.Should().Throw<NotSupportedException>();
+        // TODO - this test is just to make sure thata we implement this method
+        act.Should().NotThrow();
     }
 }

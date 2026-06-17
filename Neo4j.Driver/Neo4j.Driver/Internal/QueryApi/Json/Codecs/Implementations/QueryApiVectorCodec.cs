@@ -71,5 +71,5 @@ internal sealed class QueryApiVectorCodec : IQueryApiTypeCodec
     public bool CanWrite(object? value) => false;
 
     public JsonNode? Write(object? value, IJsonValueEncoder recurse) =>
-        throw new NotSupportedException("Vector parameters are not supported as query parameters.");
+        throw new NotImplementedException("Vector parameters are not yet implemented as query parameters.");
 }
