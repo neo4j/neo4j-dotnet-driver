@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.HomeDbCaching;
@@ -30,7 +31,7 @@ internal interface IBoltProtocol
         INotificationsConfig notificationsConfig);
 
     Task LogoutAsync(IConnection connection);
-    Task ResetAsync(IConnection connection);
+    Task ResetAsync(IConnection connection, CancellationToken cancellationToken = default);
     Task ReAuthAsync(IConnection connection, IAuthToken newAuthToken);
 
     Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(

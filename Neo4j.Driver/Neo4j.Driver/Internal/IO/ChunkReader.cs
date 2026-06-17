@@ -15,6 +15,7 @@
 
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Helpers;
 
@@ -37,7 +38,9 @@ internal sealed class ChunkReader : IChunkReader
     private MemoryStream ChunkBuffer { get; set; }
     private long ChunkBufferRemaining => ChunkBuffer.Length - ChunkBuffer.Position;
 
-    public async Task<int> ReadMessageChunksToBufferStreamAsync(Stream bufferStream)
+    public async Task<int> ReadMessageChunksToBufferStreamAsync(
+        Stream bufferStream,
+        CancellationToken cancellationToken = default)
     {
         var messageCount = 0;
         //store output streams state, and ensure we add to the end of it.
@@ -52,7 +55,7 @@ internal sealed class ChunkReader : IChunkReader
             //We have not finished parsing the chunk buffer, so further messages to de-chunk
             while (chunkBufferPosition < ChunkBuffer.Length)
             {
-                if (await ConstructMessageAsync(bufferStream).ConfigureAwait(false))
+                if (await ConstructMessageAsync(bufferStream, cancellationToken).ConfigureAwait(false))
                 {
                     messageCount++;
                 }
@@ -80,7 +83,9 @@ internal sealed class ChunkReader : IChunkReader
         ChunkBuffer.Position = 0;
     }
 
-    private async Task PopulateChunkBufferAsync(int requiredSize = Constants.ChunkBufferSize)
+    private async Task PopulateChunkBufferAsync(
+        int requiredSize = Constants.ChunkBufferSize,
+        CancellationToken cancellationToken = default)
     {
         if (ChunkBufferRemaining >= requiredSize)
         {
@@ -99,7 +104,7 @@ internal sealed class ChunkReader : IChunkReader
         while (requiredSize > 0)
         {
             var numBytesRead = await NetworkStream
-                .ReadWithTimeoutAsync(data, 0, bufferSize, _readTimeoutMs)
+                .ReadWithTimeoutAsync(data, 0, bufferSize, _readTimeoutMs, cancellationToken)
                 .ConfigureAwait(false);
 
             if (numBytesRead <= 0)
@@ -121,9 +126,9 @@ internal sealed class ChunkReader : IChunkReader
         }
     }
 
-    private async Task<byte[]> ReadDataOfSizeAsync(int requiredSize)
+    private async Task<byte[]> ReadDataOfSizeAsync(int requiredSize, CancellationToken cancellationToken = default)
     {
-        await PopulateChunkBufferAsync(requiredSize).ConfigureAwait(false);
+        await PopulateChunkBufferAsync(requiredSize, cancellationToken).ConfigureAwait(false);
 
         var data = new byte[requiredSize];
         var readSize = ChunkBuffer.Read(data, 0, requiredSize);
@@ -136,13 +141,13 @@ internal sealed class ChunkReader : IChunkReader
         return data;
     }
 
-    private async Task<bool> ConstructMessageAsync(Stream outputMessageStream)
+    private async Task<bool> ConstructMessageAsync(Stream outputMessageStream, CancellationToken cancellationToken = default)
     {
         var dataRead = false;
 
         while (true)
         {
-            var chunkHeader = await ReadDataOfSizeAsync(ChunkHeaderSize).ConfigureAwait(false);
+            var chunkHeader = await ReadDataOfSizeAsync(ChunkHeaderSize, cancellationToken).ConfigureAwait(false);
             var chunkSize = PackStreamBitConverter.ToUInt16(chunkHeader);
 
             //NOOP or end of message
@@ -159,7 +164,7 @@ internal sealed class ChunkReader : IChunkReader
                 continue;
             }
 
-            var rawChunkData = await ReadDataOfSizeAsync(chunkSize).ConfigureAwait(false);
+            var rawChunkData = await ReadDataOfSizeAsync(chunkSize, cancellationToken).ConfigureAwait(false);
             dataRead = true;
             //Put the raw chunk data into the output stream
             outputMessageStream.Write(rawChunkData, 0, chunkSize);
