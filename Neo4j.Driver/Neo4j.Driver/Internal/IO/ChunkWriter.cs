@@ -27,7 +27,7 @@ internal interface IChunkWriter
     void OpenChunk();
     void Write(byte[] buffer, int offset, int count);
     void CloseChunk();
-    Task SendAsync();
+    Task SendAsync(CancellationToken cancellationToken = default);
 }
 
 internal sealed class ChunkWriter : Stream, IChunkWriter
@@ -133,14 +133,14 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
         }
     }
 
-    public async Task SendAsync()
+    public async Task SendAsync(CancellationToken cancellationToken = default)
     {
         LogStream(_chunkStream);
 
         _chunkStream.Position = 0;
         try
         {
-            await _chunkStream.CopyToAsync(_downStream).ConfigureAwait(false);
+            await _chunkStream.CopyToAsync(_downStream, cancellationToken).ConfigureAwait(false);
         }
         finally
         {

@@ -77,13 +77,13 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     ValueTask<bool> NotifySecurityExceptionAsync(SecurityException exception);
 
     // send all and receive all
-    Task SyncAsync();
+    Task SyncAsync(CancellationToken cancellationToken = default);
 
     // send all
-    Task SendAsync();
+    Task SendAsync(CancellationToken cancellationToken = default);
 
     // receive one
-    Task ReceiveOneAsync();
+    Task ReceiveOneAsync(CancellationToken cancellationToken = default);
 
     Task EnqueueAsync(IRequestMessage message, IResponseHandler handler);
 
@@ -95,7 +95,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     );
 
     // Enqueue a reset message
-    Task ResetAsync();
+    Task ResetAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Close and release related resources</summary>
     Task DestroyAsync();

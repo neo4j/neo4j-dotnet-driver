@@ -14,12 +14,13 @@
 // limitations under the License.
 
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.IO;
 
 internal interface IChunkReader
 {
-    Task<int> ReadMessageChunksToBufferStreamAsync(Stream bufferStream);
+    Task<int> ReadMessageChunksToBufferStreamAsync(Stream bufferStream, CancellationToken cancellationToken = default);
     void SetTimeoutInMs(int ms);
 }
