@@ -341,7 +341,7 @@ internal sealed class PackStreamReader
 
     public long ReadMapHeader()
     {
-        var markerByte = Stream.ReadByte();
+        var markerByte = NextByte();
         var markerHighNibble = (byte)(markerByte & 0xF0);
         var markerLowNibble = (byte)(markerByte & 0x0F);
 
@@ -368,7 +368,7 @@ internal sealed class PackStreamReader
 
     public long ReadListHeader()
     {
-        var markerByte = Stream.ReadByte();
+        var markerByte = NextByte();
         var markerHighNibble = (byte)(markerByte & 0xF0);
         var markerLowNibble = (byte)(markerByte & 0x0F);
 
@@ -400,7 +400,7 @@ internal sealed class PackStreamReader
 
     public long ReadStructHeader()
     {
-        var markerByte = Stream.ReadByte();
+        var markerByte = NextByte();
         var markerHighNibble = (byte)(markerByte & 0xF0);
         var markerLowNibble = (byte)(markerByte & 0x0F);
 

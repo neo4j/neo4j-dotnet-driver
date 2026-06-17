@@ -164,6 +164,60 @@ public class UuidMappingTests
     }
 
     [Fact]
+    public void Record_TypedGet_NullableGuid_FromNativeGuid_ReturnsValue()
+    {
+        var guid = Guid.NewGuid();
+        var record = TestRecord.Create(["id"], [guid]);
+
+        record.Get<Guid?>("id").Should().Be(guid);
+    }
+
+    [Fact]
+    public void Record_TryGet_NativeGuid_ReturnsTrueAndValue()
+    {
+        var guid = Guid.NewGuid();
+        var record = TestRecord.Create(["id"], [guid]);
+
+        record.TryGet<Guid>("id", out var value).Should().BeTrue();
+        value.Should().Be(guid);
+    }
+
+    [Fact]
+    public void Record_TryGet_NullableNativeGuid_ReturnsTrueAndValue()
+    {
+        var guid = Guid.NewGuid();
+        var record = TestRecord.Create(["id"], [guid]);
+
+        record.TryGet<Guid?>("id", out var value).Should().BeTrue();
+        value.Should().Be(guid);
+    }
+
+    [Fact]
+    public void Record_GetCaseInsensitive_NativeGuid_ReturnsValue()
+    {
+        var guid = Guid.NewGuid();
+        var record = TestRecord.Create(["id"], [guid]);
+
+        record.GetCaseInsensitive<Guid>("ID").Should().Be(guid);
+    }
+
+    [Fact]
+    public void Record_GetCaseInsensitive_NullableNativeGuid_ReturnsValue()
+    {
+        var guid = Guid.NewGuid();
+        var record = TestRecord.Create(["id"], [guid]);
+
+        record.GetCaseInsensitive<Guid?>("ID").Should().Be(guid);
+    }
+
+    [Fact]
+    public void AsNullableGuid_FromString_ParsesSuccessfully()
+    {
+        var guid = Guid.NewGuid();
+        guid.ToString().As<Guid?>().Should().Be(guid);
+    }
+
+    [Fact]
     public void StringGuidMapping_StillWorksAfterNativeGuidMappingHasBeenUsed()
     {
         var nativeGuid = Guid.NewGuid();
