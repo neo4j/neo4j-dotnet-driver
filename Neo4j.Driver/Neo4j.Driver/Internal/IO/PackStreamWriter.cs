@@ -90,6 +90,10 @@ internal sealed class PackStreamWriter
                 WriteString(stringValue);
                 break;
 
+            case Guid guidValue:
+                WriteUuid(guidValue);
+                break;
+
             case var _ when _format.TryGetWriteStructHandler(value.GetType(), out var structHandler):
                 structHandler.Serialize(_format.Version, this, value);
                 break;
@@ -202,6 +206,18 @@ internal sealed class PackStreamWriter
             WriteStringHeader(bytes.Length);
             _stream.Write(bytes);
         }
+    }
+
+    public void WriteUuid(Guid value)
+    {
+        if (_format.Version < BoltProtocolVersion.V6_1)
+        {
+            throw new ProtocolException(
+                $"UUID type requires Bolt 6.1, but the negotiated version is {_format.Version}.");
+        }
+
+        _stream.WriteByte(PackStream.Uuid);
+        _stream.Write(value.ToByteArray(bigEndian: true));
     }
 
     public void WriteByteArray(byte[] values)
