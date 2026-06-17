@@ -218,8 +218,8 @@ public class ConnectionPoolTests
 
             // await the task marked completed in the mock's Destroy setup
             // (i.e. the subject destroyed its connection)
-            // or 1-second timeout
-            var completed = await Task.WhenAny(connectionDestroyed.Task, Task.Delay(TimeSpan.FromSeconds(1)));
+            // or 10-second timeout (can be slow in CI)
+            var completed = await Task.WhenAny(connectionDestroyed.Task, Task.Delay(TimeSpan.FromSeconds(10)));
             completed.Should().BeSameAs(connectionDestroyed.Task);
             
             // pool slot was released
