@@ -31,7 +31,9 @@ internal interface IJsonDeserializer
         Stream utf8Json,
         JsonNamingPolicy? namingPolicy,
         CancellationToken cancellationToken = default);
-    
+
+    ValueTask<T?> DeserializeAsync<T>(string json, CancellationToken cancellationToken = default);
+
     T MapObject<T>(JsonElement json) => MapObject<T>(json, null);
     
     T MapObject<T>(

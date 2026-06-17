@@ -26,7 +26,7 @@ using Neo4j.Driver.Internal.DependencyInjection;
 namespace Neo4j.Driver.Internal.QueryApi;
 
 [AutoRegister]
-internal class QueryApiJsonSerializer : IJsonDeserializer, IJsonObjectDeserializer, IJsonSerializer
+internal class QueryApiJsonDeserializer : IJsonDeserializer
 {
     private static readonly JsonNamingPolicy DefaultNamingPolicy = JsonNamingPolicy.CamelCase;
 
@@ -38,13 +38,6 @@ internal class QueryApiJsonSerializer : IJsonDeserializer, IJsonObjectDeserializ
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         }
     };
-
-    private readonly IJsonObjectSerializer _serializer;
-
-    public QueryApiJsonSerializer(IJsonObjectSerializer serializer)
-    {
-        _serializer = serializer;
-    }
 
     public ValueTask<T?> DeserializeAsync<T>(
         Stream utf8Json,
@@ -80,6 +73,4 @@ internal class QueryApiJsonSerializer : IJsonDeserializer, IJsonObjectDeserializ
         var options = GetOptions();
         return ValueTask.FromResult(JsonSerializer.Deserialize<T>(json, options));
     }
-
-    public string Serialize<T>(T value) => _serializer.Serialize(value);
 }

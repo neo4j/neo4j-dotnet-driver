@@ -25,7 +25,7 @@ using Neo4j.Driver.Internal.DependencyInjection;
 namespace Neo4j.Driver.Internal.QueryApi;
 
 [AutoRegister]
-internal sealed class QueryApiParameterSerializer : JsonConverter<object?>, IJsonObjectSerializer
+internal sealed class QueryApiParameterSerializer : JsonConverter<object?>, IJsonSerializer
 {
     private readonly JsonSerializerOptions _options;
     private readonly IEnumerable<IQueryApiTypeCodec> _codecs;

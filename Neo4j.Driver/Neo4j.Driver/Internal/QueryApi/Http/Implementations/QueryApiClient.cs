@@ -27,11 +27,11 @@ internal class QueryApiClient : IQueryApiClient
 {
     private readonly IQueryApiErrorChecker _errorChecker;
     private readonly IQueryApiHttpTransport _httpTransport;
-    private readonly IJsonObjectDeserializer _jsonDeserializer;
+    private readonly IJsonDeserializer _jsonDeserializer;
 
     public QueryApiClient(
         IQueryApiHttpTransport httpTransport,
-        IJsonObjectDeserializer jsonDeserializer,
+        IJsonDeserializer jsonDeserializer,
         IQueryApiErrorChecker errorChecker)
     {
         _httpTransport = httpTransport;

@@ -27,10 +27,10 @@ namespace Neo4j.Driver.Internal.QueryApi;
 [AutoRegister]
 internal class QueryApiErrorChecker : IQueryApiErrorChecker
 {
-    private readonly IJsonObjectDeserializer _jsonDeserializer;
+    private readonly IJsonDeserializer _jsonDeserializer;
     private readonly ILogger _logger;
 
-    public QueryApiErrorChecker(IJsonObjectDeserializer jsonDeserializer, ILogger logger)
+    public QueryApiErrorChecker(IJsonDeserializer jsonDeserializer, ILogger logger)
     {
         _jsonDeserializer = jsonDeserializer;
         _logger = logger;

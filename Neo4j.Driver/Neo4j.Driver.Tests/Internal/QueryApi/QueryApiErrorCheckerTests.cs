@@ -35,8 +35,8 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// </summary>
 public class QueryApiErrorCheckerTests
 {
-    private static QueryApiErrorChecker BuildChecker(IJsonObjectDeserializer? deserializer = null) =>
-        new(deserializer ?? new Mock<IJsonObjectDeserializer>().Object, new Mock<ILogger>().Object);
+    private static QueryApiErrorChecker BuildChecker(IJsonDeserializer? deserializer = null) =>
+        new(deserializer ?? new Mock<IJsonDeserializer>().Object, new Mock<ILogger>().Object);
 
     private static HttpResponseMessage StringResponse(HttpStatusCode status, string body = "") =>
         new(status) { Content = new StringContent(body) };
@@ -73,7 +73,7 @@ public class QueryApiErrorCheckerTests
                 ]
             };
 
-            var mockDeserializer = new Mock<IJsonObjectDeserializer>();
+            var mockDeserializer = new Mock<IJsonDeserializer>();
             mockDeserializer
                 .Setup(x => x.DeserializeAsync<QueryApiErrorChecker.ErrorResponseBody>(
                     responseBody, It.IsAny<CancellationToken>()))
@@ -92,7 +92,7 @@ public class QueryApiErrorCheckerTests
         {
             const string responseBody = "not json";
 
-            var mockDeserializer = new Mock<IJsonObjectDeserializer>();
+            var mockDeserializer = new Mock<IJsonDeserializer>();
             mockDeserializer
                 .Setup(x => x.DeserializeAsync<QueryApiErrorChecker.ErrorResponseBody>(
                     responseBody, It.IsAny<CancellationToken>()))

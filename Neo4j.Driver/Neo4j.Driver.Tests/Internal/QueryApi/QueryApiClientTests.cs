@@ -45,7 +45,7 @@ public class QueryApiClientTests
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Accepted) { Content = new ByteArrayContent([]) });
 
-        _fixture.Freeze<Mock<IJsonObjectDeserializer>>()
+        _fixture.Freeze<Mock<IJsonDeserializer>>()
             .Setup(x => x.DeserializeAsync<TestBody>(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
 
@@ -67,7 +67,7 @@ public class QueryApiClientTests
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
-        _fixture.Freeze<Mock<IJsonObjectDeserializer>>()
+        _fixture.Freeze<Mock<IJsonDeserializer>>()
             .Setup(x => x.DeserializeAsync<TestBody>(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TestBody());
 
@@ -100,7 +100,7 @@ public class QueryApiClientTests
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Accepted) { Content = new ByteArrayContent([]) });
 
-        _fixture.Freeze<Mock<IJsonObjectDeserializer>>()
+        _fixture.Freeze<Mock<IJsonDeserializer>>()
             .Setup(x => x.DeserializeAsync<TestBody>(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 new TestBody { Errors = [new QueryApiErrorBody("Neo.ClientError.General.Unknown", "error")] });
