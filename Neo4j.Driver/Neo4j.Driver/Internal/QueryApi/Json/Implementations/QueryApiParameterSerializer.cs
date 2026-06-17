@@ -29,10 +29,12 @@ internal sealed class QueryApiParameterSerializer : JsonConverter<object?>, IJso
 {
     private readonly JsonSerializerOptions _options;
     private readonly IEnumerable<IQueryApiTypeCodec> _codecs;
+    private readonly IJsonValueEncoder _encoder;
 
-    public QueryApiParameterSerializer(IEnumerable<IQueryApiTypeCodec> codecs)
+    public QueryApiParameterSerializer(IEnumerable<IQueryApiTypeCodec> codecs, IJsonValueEncoder encoder)
     {
         _codecs = codecs;
+        _encoder = encoder;
         _options = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -53,10 +55,11 @@ internal sealed class QueryApiParameterSerializer : JsonConverter<object?>, IJso
 
     public override void Write(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
     {
-        var cdc = _codecs.FirstOrDefault(c => c.CanWrite(value)) ?? 
+        var cdc = _codecs.FirstOrDefault(c => c.CanWrite(value)) ??
             throw new NotSupportedException(
                 $"Query parameter type '{value?.GetType().Name}' is not supported by the HTTP Query API.");
 
-        cdc.Write(writer, value, options);
+        var node = cdc.Write(value, _encoder);
+        node?.WriteTo(writer);
     }
 }

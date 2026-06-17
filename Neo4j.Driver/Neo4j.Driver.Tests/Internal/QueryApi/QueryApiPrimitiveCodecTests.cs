@@ -15,7 +15,6 @@
 
 #nullable enable
 
-using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using AutoFixture;
@@ -27,74 +26,61 @@ using Xunit;
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 /// <summary>
-/// Round-trips the HTTP Query API primitive types through <see cref="QueryApiPrimitiveCodec"/>. The codec delegates
-/// envelope framing to a mocked <see cref="IJsonEnvelopeWriter"/>, so the Write tests assert the body the codec
-/// emits and check that the codec opened the envelope with the right <c>$type</c> and disposed the returned scope.
-/// Integers and floats travel as JSON strings on the wire; bytes are written via <see cref="IBase64Encoder"/> and
-/// read via <see cref="IBase64Decoder"/>.
+/// Round-trips the HTTP Query API primitive types through <see cref="QueryApiPrimitiveCodec"/>.
+/// Write tests assert the returned <see cref="System.Text.Json.Nodes.JsonNode"/> has the expected
+/// <c>{"$type":"...","_value":...}</c> shape. Integers and floats travel as JSON strings; bytes are
+/// written via <see cref="IBase64Encoder"/> and read via <see cref="IBase64Decoder"/>.
 /// </summary>
 public class QueryApiPrimitiveCodecTests
 {
-    private static readonly JsonSerializerOptions Options = new();
     private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
+
+    private QueryApiPrimitiveCodec Subject() => _fixture.Create<QueryApiPrimitiveCodec>();
 
     public static IEnumerable<object?[]> WriteCases() =>
     [
-        [null, "Null", "null"],
-        [true, "Boolean", "true"],
-        [42L, "Integer", "\"42\""],
-        [7, "Integer", "\"7\""],
-        [3.5, "Float", "\"3.5\""],
-        ["hi", "String", "\"hi\""]
+        [null,  "Null",    "null"],
+        [true,  "Boolean", "true"],
+        [42L,   "Integer", "\"42\""],
+        [7,     "Integer", "\"7\""],
+        [3.5,   "Float",   "\"3.5\""],
+        ["hi",  "String",  "\"hi\""]
     ];
 
     [Theory]
     [MemberData(nameof(WriteCases))]
-    public void Write_EmitsBody_WithinTypedEnvelope(object? value, string expectedType, string expectedBody)
+    public void Write_ReturnsTypedEnvelope(object? value, string expectedType, string expectedValueJson)
     {
-        var helper = new QueryApiCodecTestHelper();
+        var result = Subject().Write(value, Mock.Of<IJsonValueEncoder>())!;
 
-        var scope = _fixture.Freeze<Mock<IDisposable>>();
-        _fixture.Freeze<Mock<IJsonEnvelopeWriter>>()
-            .Setup(e => e.OpenTypedEnvelope(helper.Writer, expectedType))
-            .Returns(scope.Object);
-
-        var subject = _fixture.Create<QueryApiPrimitiveCodec>();
-        subject.Write(helper.Writer, value, Options);
-
-        helper.WrittenJson.Should().Be(expectedBody);
-        scope.Verify(d => d.Dispose());
+        result["$type"]!.GetValue<string>().Should().Be(expectedType);
+        // JsonNode? is null for JSON null; convert to "null" string for comparison
+        var valueJson = result["_value"]?.ToJsonString() ?? "null";
+        valueJson.Should().Be(expectedValueJson);
     }
 
     [Fact]
     public void Write_Bytes_AsBase64()
     {
         var bytes = new byte[] { 1, 2, 3 };
-        var helper = new QueryApiCodecTestHelper();
-
-        var scope = _fixture.Freeze<Mock<IDisposable>>();
-        _fixture.Freeze<Mock<IJsonEnvelopeWriter>>()
-            .Setup(e => e.OpenTypedEnvelope(helper.Writer, "Base64"))
-            .Returns(scope.Object);
 
         _fixture.Freeze<Mock<IBase64Encoder>>()
             .Setup(e => e.Encode(bytes))
             .Returns("AQID");
 
-        var subject = _fixture.Create<QueryApiPrimitiveCodec>();
-        subject.Write(helper.Writer, bytes, Options);
+        var result = Subject().Write(bytes, Mock.Of<IJsonValueEncoder>())!;
 
-        helper.WrittenJson.Should().Be("\"AQID\"");
-        scope.Verify(d => d.Dispose());
+        result["$type"]!.GetValue<string>().Should().Be("Base64");
+        result["_value"]!.GetValue<string>().Should().Be("AQID");
     }
 
     public static IEnumerable<object?[]> ReadCases() =>
     [
-        ["""{"$type":"Null","_value":null}""", null],
-        ["""{"$type":"Boolean","_value":false}""", false],
-        ["""{"$type":"Integer","_value":"42"}""", 42L],
-        ["""{"$type":"Float","_value":"3.5"}""", 3.5],
-        ["""{"$type":"String","_value":"hi"}""", "hi"]
+        ["""{"$type":"Null","_value":null}""",      null],
+        ["""{"$type":"Boolean","_value":false}""",  false],
+        ["""{"$type":"Integer","_value":"42"}""",   42L],
+        ["""{"$type":"Float","_value":"3.5"}""",    3.5],
+        ["""{"$type":"String","_value":"hi"}""",    "hi"]
     ];
 
     [Theory]
@@ -102,10 +88,7 @@ public class QueryApiPrimitiveCodecTests
     public void Read_ReturnsClrValue(string json, object? expected)
     {
         using var document = JsonDocument.Parse(json);
-        var subject = _fixture.Create<QueryApiPrimitiveCodec>();
-
-        var result = subject.Read(document.RootElement, Mock.Of<IJsonValueConverter>());
-
+        var result = Subject().Read(document.RootElement, Mock.Of<IJsonValueDecoder>());
         result.Should().Be(expected);
     }
 
@@ -119,14 +102,8 @@ public class QueryApiPrimitiveCodecTests
             .Returns(bytes);
 
         using var document = JsonDocument.Parse("""{"$type":"Base64","_value":"AQID"}""");
-        var subject = _fixture.Create<QueryApiPrimitiveCodec>();
-
-        var result = subject.Read(document.RootElement, Mock.Of<IJsonValueConverter>());
-
-        result.Should().BeSameAs(bytes);
+        Subject().Read(document.RootElement, Mock.Of<IJsonValueDecoder>()).Should().BeSameAs(bytes);
     }
-
-    // --- Selection ---
 
     [Theory]
     [InlineData("Null")]
@@ -135,18 +112,12 @@ public class QueryApiPrimitiveCodecTests
     [InlineData("Float")]
     [InlineData("String")]
     [InlineData("Base64")]
-    public void CanRead_TrueForPrimitives(string typeName)
-    {
-        var subject = _fixture.Create<QueryApiPrimitiveCodec>();
-        subject.CanRead(typeName).Should().BeTrue();
-    }
+    public void CanRead_TrueForPrimitives(string typeName) =>
+        Subject().CanRead(typeName).Should().BeTrue();
 
     [Fact]
-    public void CanRead_FalseForVector()
-    {
-        var subject = _fixture.Create<QueryApiPrimitiveCodec>();
-        subject.CanRead("Vector").Should().BeFalse();
-    }
+    public void CanRead_FalseForVector() =>
+        Subject().CanRead("Vector").Should().BeFalse();
 
     public static IEnumerable<object?[]> WritablePrimitives() =>
     [
@@ -164,16 +135,10 @@ public class QueryApiPrimitiveCodecTests
 
     [Theory]
     [MemberData(nameof(WritablePrimitives))]
-    public void CanWrite_TrueForPrimitives(object? value)
-    {
-        var subject = _fixture.Create<QueryApiPrimitiveCodec>();
-        subject.CanWrite(value).Should().BeTrue();
-    }
+    public void CanWrite_TrueForPrimitives(object? value) =>
+        Subject().CanWrite(value).Should().BeTrue();
 
     [Fact]
-    public void CanWrite_FalseForUnknownType()
-    {
-        var subject = _fixture.Create<QueryApiPrimitiveCodec>();
-        subject.CanWrite(new object()).Should().BeFalse();
-    }
+    public void CanWrite_FalseForUnknownType() =>
+        Subject().CanWrite(new object()).Should().BeFalse();
 }

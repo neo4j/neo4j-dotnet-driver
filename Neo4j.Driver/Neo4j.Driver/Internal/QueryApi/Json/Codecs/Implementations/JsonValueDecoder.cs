@@ -24,16 +24,16 @@ using Neo4j.Driver.Internal.DependencyInjection;
 namespace Neo4j.Driver.Internal.QueryApi;
 
 [AutoRegister]
-internal class JsonValueConverter : IJsonValueConverter
+internal class JsonValueDecoder : IJsonValueDecoder
 {
     private readonly IEnumerable<IQueryApiTypeCodec> _codecs;
 
-    public JsonValueConverter(IEnumerable<IQueryApiTypeCodec> codecs)
+    public JsonValueDecoder(IEnumerable<IQueryApiTypeCodec> codecs)
     {
         _codecs = codecs;
     }
 
-    public object? Convert(JsonElement jsonElement)
+    public object? Decode(JsonElement jsonElement)
     {
         return jsonElement.ValueKind switch
         {
@@ -41,7 +41,7 @@ internal class JsonValueConverter : IJsonValueConverter
             JsonValueKind.True => true,
             JsonValueKind.False => false,
             JsonValueKind.String => jsonElement.GetString(),
-            JsonValueKind.Array => jsonElement.EnumerateArray().Select(Convert).ToList(),
+            JsonValueKind.Array => jsonElement.EnumerateArray().Select(Decode).ToList(),
             JsonValueKind.Object => ConvertObject(jsonElement),
 
             // the cast to object is necessary to force the return type of the ternary expression to be `object` -
@@ -72,7 +72,7 @@ internal class JsonValueConverter : IJsonValueConverter
 
         var dict = new Dictionary<string, object?>();
         foreach (var prop in jsonElement.EnumerateObject())
-            dict[prop.Name] = Convert(prop.Value);
+            dict[prop.Name] = Decode(prop.Value);
 
         return dict;
     }

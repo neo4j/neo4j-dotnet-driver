@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.QueryApi;
@@ -33,6 +34,8 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// </summary>
 public class QueryApiParameterSerializerTests
 {
+    private static readonly IJsonValueEncoder Encoder = Mock.Of<IJsonValueEncoder>();
+
     private static Mock<IQueryApiTypeCodec> Codec(object? value, bool canWrite, string? body = null)
     {
         var codec = new Mock<IQueryApiTypeCodec>();
@@ -40,8 +43,8 @@ public class QueryApiParameterSerializerTests
 
         if (body is not null)
         {
-            codec.Setup(c => c.Write(It.IsAny<Utf8JsonWriter>(), value, It.IsAny<JsonSerializerOptions>()))
-                .Callback<Utf8JsonWriter, object?, JsonSerializerOptions>((w, _, _) => w.WriteStringValue(body));
+            codec.Setup(c => c.Write(value, It.IsAny<IJsonValueEncoder>()))
+                .Returns(JsonValue.Create(body));
         }
 
         return codec;
@@ -51,7 +54,7 @@ public class QueryApiParameterSerializerTests
     public void Write_DelegatesToCodec_ThatCanWriteValue()
     {
         var value = new object();
-        var subject = new QueryApiParameterSerializer([Codec(value, canWrite: true, body: "DISPATCHED").Object]);
+        var subject = new QueryApiParameterSerializer([Codec(value, canWrite: true, body: "DISPATCHED").Object], Encoder);
 
         subject.GetWrittenJson(value).Should().Be("\"DISPATCHED\"");
     }
@@ -62,9 +65,8 @@ public class QueryApiParameterSerializerTests
         var value = new object();
         var first = Codec(value, canWrite: true, body: "FIRST");
         var second = Codec(value, canWrite: true, body: "SECOND");
-        var subject = new QueryApiParameterSerializer([first.Object, second.Object]);
+        var subject = new QueryApiParameterSerializer([first.Object, second.Object], Encoder);
 
-        // The exact result proves only the first codec wrote — a second write would append another token.
         subject.GetWrittenJson(value).Should().Be("\"FIRST\"");
     }
 
@@ -74,7 +76,7 @@ public class QueryApiParameterSerializerTests
         var value = new object();
         var skipped = Codec(value, canWrite: false, body: "SKIPPED");
         var chosen = Codec(value, canWrite: true, body: "CHOSEN");
-        var subject = new QueryApiParameterSerializer([skipped.Object, chosen.Object]);
+        var subject = new QueryApiParameterSerializer([skipped.Object, chosen.Object], Encoder);
 
         subject.GetWrittenJson(value).Should().Be("\"CHOSEN\"");
     }
@@ -83,7 +85,7 @@ public class QueryApiParameterSerializerTests
     public void Write_Throws_WhenNoCodecCanWriteValue()
     {
         var value = new object();
-        var subject = new QueryApiParameterSerializer([Codec(value, canWrite: false).Object]);
+        var subject = new QueryApiParameterSerializer([Codec(value, canWrite: false).Object], Encoder);
 
         var act = () => subject.GetWrittenJson(value);
 
@@ -94,7 +96,7 @@ public class QueryApiParameterSerializerTests
     public void Write_Throws_WhenNoCodecsEvenExist()
     {
         var value = new object();
-        var subject = new QueryApiParameterSerializer([]);
+        var subject = new QueryApiParameterSerializer([], Encoder);
 
         var act = () => subject.GetWrittenJson(value);
 
@@ -105,7 +107,7 @@ public class QueryApiParameterSerializerTests
     public void Serialize_RoutesParameterValues_ThroughSelectedCodec()
     {
         var value = new object();
-        var subject = new QueryApiParameterSerializer([Codec(value, canWrite: true, body: "ENCODED").Object]);
+        var subject = new QueryApiParameterSerializer([Codec(value, canWrite: true, body: "ENCODED").Object], Encoder);
 
         var result = subject.Serialize(new Dictionary<string, object?> { ["x"] = value });
 

@@ -32,7 +32,7 @@ public class QueryApiResultCursorBuilderTests
 
     private static readonly IQueryApiResultCursorBuilder Builder = new QueryApiResultCursorBuilder(
         new QueryApiResultSummaryFactory(new Mock<IServerInfo>().Object),
-        new JsonValueConverter([]),
+        new JsonValueDecoder([]),
         Mock.Of<ISessionContext>(ctx => ctx.Database == "neo4j"));
 
     /// <summary>Builds a response with a single row and single column, then fetches that record.</summary>

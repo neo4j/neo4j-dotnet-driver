@@ -18,6 +18,7 @@
 using System;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
@@ -45,7 +46,7 @@ internal sealed class QueryApiVectorCodec : IQueryApiTypeCodec
 
     public bool CanRead(string typeName) => typeName == "Vector";
 
-    public object? Read(JsonElement element, IJsonValueConverter recurse)
+    public object? Read(JsonElement element, IJsonValueDecoder recurse)
     {
         var vector = _jsonDeserializer.MapObject<JsonVector>(element);
 
@@ -69,6 +70,6 @@ internal sealed class QueryApiVectorCodec : IQueryApiTypeCodec
 
     public bool CanWrite(object? value) => false;
 
-    public void Write(Utf8JsonWriter writer, object? value, JsonSerializerOptions options) =>
-        throw new NotSupportedException("TODO: Vector parameters not yet implemented in dotnet driver.");
+    public JsonNode? Write(object? value, IJsonValueEncoder recurse) =>
+        throw new NotSupportedException("Vector parameters are not supported as query parameters.");
 }

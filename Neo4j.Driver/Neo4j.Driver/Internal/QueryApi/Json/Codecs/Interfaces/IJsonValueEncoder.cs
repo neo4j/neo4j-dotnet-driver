@@ -15,11 +15,15 @@
 
 #nullable enable
 
-using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-internal interface IJsonValueConverter
+/// <summary>
+/// Encodes a CLR value to its HTTP Query API typed JSON envelope node
+/// (<c>{"$type":"...","_value":...}</c>). The dual of <see cref="IJsonValueDecoder"/>.
+/// </summary>
+internal interface IJsonValueEncoder
 {
-    object? Convert(JsonElement jsonElement);
+    JsonNode? Encode(object? value);
 }

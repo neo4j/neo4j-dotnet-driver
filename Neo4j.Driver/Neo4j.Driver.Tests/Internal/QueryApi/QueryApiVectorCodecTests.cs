@@ -70,7 +70,7 @@ public class QueryApiVectorCodecTests
     {
         var subject = SubjectDecoding(new() { CoordinatesType = coordinatesType, Coordinates = coordinates });
 
-        var result = subject.Read(default, Mock.Of<IJsonValueConverter>());
+        var result = subject.Read(default, Mock.Of<IJsonValueDecoder>());
 
         result.Should().BeAssignableTo(expectedVectorType);
     }
@@ -86,7 +86,7 @@ public class QueryApiVectorCodecTests
     public void Write_Throws()
     {
         var subject = _fixture.Create<QueryApiVectorCodec>();
-        var act = () => subject.Write(default!, Vector.CreateDynamic(new[] { 1.0 }), new JsonSerializerOptions());
+        var act = () => subject.Write(Vector.CreateDynamic(new[] { 1.0 }), Mock.Of<IJsonValueEncoder>());
 
         act.Should().Throw<NotSupportedException>();
     }
