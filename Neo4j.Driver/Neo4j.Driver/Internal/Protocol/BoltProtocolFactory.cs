@@ -60,6 +60,7 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
         ,BoltProtocolVersion.V5_7
         ,BoltProtocolVersion.V5_8
         ,BoltProtocolVersion.V6_0
+        ,BoltProtocolVersion.V6_1
     };
 
     private static readonly Lazy<byte[]> HandshakeBytesLazy =
@@ -107,9 +108,9 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
             //NOTE: CHANGE WHEN ADDING A BOLT PROTOCOL VERSION
             { MajorVersion: 0, MinorVersion: 0 } => throw new NotSupportedException(NoAgreedVersion),
             { MajorVersion: 3, MinorVersion: 0 } => BoltProtocolV3.Instance,
-            { MajorVersion: 4, MinorVersion: <= 4, MinorVersion: >= 1 } => BoltProtocol.Instance,
-            { MajorVersion: 5, MinorVersion: <= 8, MinorVersion: >= 0 } => BoltProtocol.Instance,
-            { MajorVersion: 6, MinorVersion: >= 0, MinorVersion: <= 0 } => BoltProtocol.Instance,
+            { MajorVersion: 4, MinorVersion: >= 1 and <= 4 } => BoltProtocol.Instance,
+            { MajorVersion: 5, MinorVersion: <= 8 } => BoltProtocol.Instance,
+            { MajorVersion: 6, MinorVersion: <= 1 } => BoltProtocol.Instance,
             _ => throw new NotSupportedException(
                 $"Protocol error, server suggested unexpected protocol version: {version}")
         };

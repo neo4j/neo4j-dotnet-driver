@@ -59,6 +59,7 @@ internal ref struct SpanPackStreamReader
             PackStreamType.Map => ReadMap(),
             PackStreamType.List => ReadList(),
             PackStreamType.Struct => ReadStruct(),
+            PackStreamType.Uuid => ReadUuid(),
             _ => throw new ArgumentOutOfRangeException(
                 nameof(streamType),
                 streamType,
@@ -95,6 +96,7 @@ internal ref struct SpanPackStreamReader
             PackStream.Map8 or PackStream.Map16 or PackStream.Map32 => PackStreamType.Map,
             PackStream.Struct8 or PackStream.Struct16 => PackStreamType.Struct,
             PackStream.Int8 or PackStream.Int16 or PackStream.Int32 or PackStream.Int64 => PackStreamType.Integer,
+            PackStream.Uuid => PackStreamType.Uuid,
             _ => throw new ProtocolException($"Unknown type 0x{markerByte:X2}")
         };
     }
@@ -175,7 +177,7 @@ internal ref struct SpanPackStreamReader
             return null;
         }
 
-        throw new ProtocolException($"Expected a null, but got: 0x{marker & 0xFF:X2}");
+        throw new ProtocolException($"Expected a null, but got: 0x{marker:X2}");
     }
 
     public bool ReadBoolean()
@@ -369,7 +371,7 @@ internal ref struct SpanPackStreamReader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int ReadUint8AsInt32()
     {
-        return NextByte() & 0xFF;
+        return NextByte();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -432,5 +434,25 @@ internal ref struct SpanPackStreamReader
     public byte PeekByte()
     {
         return _reader[Index];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private Guid ReadUuid()
+    {
+        if (_format.Version < BoltProtocolVersion.V6_1)
+        {
+            throw new ProtocolException(
+                $"UUID type requires Bolt 6.1, but the negotiated version is {_format.Version}.");
+        }
+
+        var markerByte = NextByte();
+        if (markerByte != PackStream.Uuid)
+        {
+            throw new ProtocolException($"Expected a UUID, but got: 0x{markerByte:X2}");
+        }
+
+        var slice = _reader.Slice(Index, 16);
+        Index += 16;
+        return new Guid(slice, bigEndian: true);
     }
 }

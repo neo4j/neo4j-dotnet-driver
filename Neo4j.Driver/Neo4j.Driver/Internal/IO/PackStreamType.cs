@@ -25,5 +25,6 @@ internal enum PackStreamType
     String,
     List,
     Map,
-    Struct
+    Struct,
+    Uuid
 }

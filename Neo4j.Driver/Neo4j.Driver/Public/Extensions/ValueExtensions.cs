@@ -37,9 +37,9 @@ public static class ValueExtensions
     /// Supports for the following types (or nullable version of the following types if applies):
     /// <see cref="short"/>, <see cref="int"/>, <see cref="long"/>, <see cref="float"/>, <see cref="double"/>,
     /// <see cref="sbyte"/>, <see cref="ushort"/>, <see cref="uint"/>, <see cref="ulong"/>, <see cref="byte"/>,
-    /// <see cref="char"/>, <see cref="bool"/>, <see cref="string"/>, <see cref="List{T}"/>, <see cref="INode"/>,
-    /// <see cref="IRelationship"/>, <see cref="IPath"/>. Undefined support for other types that are not listed above. No
-    /// support for user-defined types, e.g. Person, Movie.
+    /// <see cref="char"/>, <see cref="bool"/>, <see cref="string"/>, <see cref="Guid"/>, <see cref="List{T}"/>,
+    /// <see cref="INode"/>, <see cref="IRelationship"/>, <see cref="IPath"/>. Undefined support for other types that
+    /// are not listed above. No support for user-defined types, e.g. Person, Movie.
     /// </typeparam>
     /// <returns>The value of specified return type.</returns>
     /// <remarks>Throws <see cref="InvalidCastException"/> if the specified cast is not possible.</remarks>
@@ -53,9 +53,9 @@ public static class ValueExtensions
     /// Supports for the following types (or nullable version of the following types if applies):
     /// <see cref="short"/>, <see cref="int"/>, <see cref="long"/>, <see cref="float"/>, <see cref="double"/>,
     /// <see cref="sbyte"/>, <see cref="ushort"/>, <see cref="uint"/>, <see cref="ulong"/>, <see cref="byte"/>,
-    /// <see cref="char"/>, <see cref="bool"/>, <see cref="string"/>, <see cref="List{T}"/>, <see cref="INode"/>,
-    /// <see cref="IRelationship"/>, <see cref="IPath"/>. Undefined support for other types that are not listed above. No
-    /// support for user-defined types, e.g. Person, Movie.
+    /// <see cref="char"/>, <see cref="bool"/>, <see cref="string"/>, <see cref="Guid"/>, <see cref="List{T}"/>,
+    /// <see cref="INode"/>, <see cref="IRelationship"/>, <see cref="IPath"/>. Undefined support for other types that
+    /// are not listed above. No support for user-defined types, e.g. Person, Movie.
     /// </typeparam>
     /// <param name="value">The value that streamed back via Bolt protocol, e.g.<see cref="IEntity.Properties"/>.</param>
     /// <returns>The value of specified return type.</returns>
@@ -143,6 +143,16 @@ public static class ValueExtensions
         if (targetType == typeof(bool))
         {
             return Convert.ToBoolean(value).AsItIs<T>();
+        }
+
+        if (targetType == typeof(Guid))
+        {
+            if (value is string s && Guid.TryParse(s, out var parsed))
+            {
+                return parsed.AsItIs<T>();
+            }
+
+            throw new InvalidCastException($"Unable to cast object of type `{sourceType}` to `{typeof(T)}`.");
         }
 
         if (value is IConvertible)
