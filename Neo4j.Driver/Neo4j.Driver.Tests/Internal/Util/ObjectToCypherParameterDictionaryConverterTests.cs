@@ -595,4 +595,67 @@ public class ObjectToCypherParameterDictionaryConverterTests : MappingTestWithGl
         public IEnumerator<T> GetEnumerator() => _values.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
+
+    [Fact]
+    public void ShouldHandleRecordTypes()
+    {
+        SetupDefaultMocks();
+        var result = GetSubject().Convert(new TestRecord { Id = "abc" });
+        result.Should().HaveCount(1);
+        result.Should().ContainKey("Id");
+        result["Id"].Should().Be("abc");
+    }
+
+    [Fact]
+    public void ShouldSkipWriteOnlyProperties()
+    {
+        SetupDefaultMocks();
+        var result = GetSubject().Convert(new WithWriteOnlyProperty { ReadableProperty = "readable" });
+        result.Should().HaveCount(1);
+        result.Should().ContainKey("ReadableProperty");
+        result.Should().NotContainKey("WriteOnly");
+    }
+
+    [Fact]
+    public void ShouldSkipIndexerProperties()
+    {
+        SetupDefaultMocks();
+        var result = GetSubject().Convert(new WithIndexer { Name = "test" });
+        result.Should().HaveCount(1);
+        result.Should().ContainKey("Name");
+    }
+
+    [Fact]
+    public void ShouldSkipStaticProperties()
+    {
+        SetupDefaultMocks();
+        var result = GetSubject().Convert(new WithStaticProperty { InstanceProperty = "instance" });
+        result.Should().HaveCount(1);
+        result.Should().ContainKey("InstanceProperty");
+        result.Should().NotContainKey("StaticProperty");
+    }
+
+    private record TestRecord
+    {
+        public string Id { get; init; }
+    }
+
+    private class WithWriteOnlyProperty
+    {
+        public string ReadableProperty { get; set; }
+        public string WriteOnly { set { } }
+    }
+
+    private class WithIndexer
+    {
+        private readonly Dictionary<string, string> _data = new();
+        public string Name { get; set; }
+        public string this[string key] { get => _data[key]; set => _data[key] = value; }
+    }
+
+    private class WithStaticProperty
+    {
+        public string InstanceProperty { get; set; }
+        public static string StaticProperty => "static";
+    }
 }
