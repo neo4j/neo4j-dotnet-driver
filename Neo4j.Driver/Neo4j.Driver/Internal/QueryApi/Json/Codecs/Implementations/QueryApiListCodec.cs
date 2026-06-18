@@ -13,31 +13,66 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#nullable enable
+
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
+[AutoRegister]
 internal class QueryApiListCodec : IQueryApiTypeCodec
 {
     public bool CanRead(string typeName)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(typeName);
+        return typeName == "List";
     }
 
-    public object Read(JsonElement element, IJsonValueDecoder recurse)
+    public object? Read(JsonElement element, IJsonValueDecoder recurse)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(recurse);
+
+        return element
+            .GetProperty("_value")
+            .EnumerateArray()
+            .Select(recurse.Decode)
+            .ToList();
     }
 
-    public bool CanWrite(object value)
+    public bool CanWrite(object? value)
     {
-        throw new NotImplementedException();
+        return TryGetEnumerable(value, out _);
     }
 
-    public JsonNode Write(object value, IJsonValueEncoder recurse)
+    private bool TryGetEnumerable(object? value, [NotNullWhen(true)] out IEnumerable? enumerable)
     {
-        throw new NotImplementedException();
+        enumerable = value as IEnumerable;
+        return enumerable is not null and not string and not IDictionary;
+    }
+
+    public JsonNode? Write(object? value, IJsonValueEncoder recurse)
+    {
+        if (!TryGetEnumerable(value, out var enumerable))
+        {
+            throw new ArgumentException("Value must be an enumerable.", nameof(value));
+        }
+
+        ArgumentNullException.ThrowIfNull(recurse);
+
+        var array = new JsonArray();
+
+        foreach (var item in enumerable)
+        {
+            array.Add(recurse.Encode(item));
+        }
+
+        return new JsonObject { ["$type"] = "List", ["_value"] = array };
     }
 }
