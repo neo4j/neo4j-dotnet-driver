@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Neo4j.Driver.Bolt.TestHarne
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Neo4j.Driver.Bolt.Tests", "Neo4j.Driver.Bolt.Tests\Neo4j.Driver.Bolt.Tests.csproj", "{B0D4BA87-F1F8-456C-9477-AC8A38F92730}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Neo4j.Driver.Tests.TestBackend.Tests", "Neo4j.Driver.Tests.TestBackend.Tests\Neo4j.Driver.Tests.TestBackend.Tests.csproj", "{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -226,6 +228,24 @@ Global
 		{B0D4BA87-F1F8-456C-9477-AC8A38F92730}.CI|x64.Build.0 = Debug|Any CPU
 		{B0D4BA87-F1F8-456C-9477-AC8A38F92730}.CI|x86.ActiveCfg = Debug|Any CPU
 		{B0D4BA87-F1F8-456C-9477-AC8A38F92730}.CI|x86.Build.0 = Debug|Any CPU
+		{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}.Debug|x64.Build.0 = Debug|Any CPU
+		{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}.Debug|x86.Build.0 = Debug|Any CPU
+		{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}.Release|x64.ActiveCfg = Release|Any CPU
+		{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}.Release|x64.Build.0 = Release|Any CPU
+		{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}.Release|x86.ActiveCfg = Release|Any CPU
+		{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}.Release|x86.Build.0 = Release|Any CPU
+		{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}.CI|Any CPU.ActiveCfg = CI|Any CPU
+		{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}.CI|Any CPU.Build.0 = CI|Any CPU
+		{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}.CI|x64.ActiveCfg = CI|Any CPU
+		{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}.CI|x64.Build.0 = CI|Any CPU
+		{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}.CI|x86.ActiveCfg = CI|Any CPU
+		{4785FCC2-1F7A-4D3E-B771-B6F2268812A4}.CI|x86.Build.0 = CI|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
