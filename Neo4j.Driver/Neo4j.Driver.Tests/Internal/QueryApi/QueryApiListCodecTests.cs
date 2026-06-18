@@ -23,13 +23,15 @@ using Moq;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
 
+using static Neo4j.Driver.Tests.Internal.QueryApi.QueryApiCodecAssert;
+
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 /// <summary>
 /// Unit tests for <see cref="QueryApiListCodec"/>.
 ///
 /// Wire format (HTTP Query API v1.0):
-/// <code>{"$type":"List","_value":[&lt;item&gt;, ...]}</code>
+/// <code>{"$type":"List", "_value":[&lt;item&gt;, ...]}</code>
 /// where each item is itself a complete typed envelope (e.g. <c>{"$type":"Integer","_value":"1"}</c>).
 /// Elements are encoded/decoded via the injected <see cref="IJsonValueEncoder"/>/<see cref="IJsonValueDecoder"/>
 /// so that nested lists and maps are handled recursively.
@@ -38,47 +40,11 @@ public class QueryApiListCodecTests
 {
     private readonly QueryApiListCodec _subject = new();
 
-    // --- CanRead ---
+    [Fact]
+    public void CanRead_CorrectTypes() => CanRead(_subject, "List");
 
     [Fact]
-    public void CanRead_TrueForList() =>
-        _subject.CanRead("List").Should().BeTrue();
-
-    [Theory]
-    [InlineData("Integer")]
-    [InlineData("String")]
-    [InlineData("Map")]
-    [InlineData("Null")]
-    public void CanRead_FalseForNonList(string typeName) =>
-        _subject.CanRead(typeName).Should().BeFalse();
-
-    // --- CanWrite ---
-
-    [Fact]
-    public void CanWrite_TrueForList() =>
-        _subject.CanWrite(new List<object?>()).Should().BeTrue();
-
-    [Fact]
-    public void CanWrite_TrueForArray() =>
-        _subject.CanWrite(new object?[] { 1, 2 }).Should().BeTrue();
-
-    [Fact]
-    public void CanWrite_FalseForString() =>
-        _subject.CanWrite("not a list").Should().BeFalse();
-
-    [Fact]
-    public void CanWrite_FalseForDictionary() =>
-        _subject.CanWrite(new Dictionary<string, object?>()).Should().BeFalse();
-
-    [Fact]
-    public void CanWrite_FalseForNull() =>
-        _subject.CanWrite(null).Should().BeFalse();
-
-    [Fact]
-    public void CanWrite_FalseForPrimitive() =>
-        _subject.CanWrite(42L).Should().BeFalse();
-
-    // --- Write ---
+    public void CanWrite_CorrectTypes() => CanWrite(_subject, typeof(List<object?>), typeof(object[]));
 
     [Fact]
     public void Write_EmptyList_ReturnsTypedEnvelopeWithEmptyArray()
@@ -106,8 +72,8 @@ public class QueryApiListCodecTests
         var array = result["_value"]!.AsArray();
 
         array.Should().HaveCount(2);
-        array[0]!.ToJsonString().Should().Be("""{"$type":"Integer","_value":"1"}""");
-        array[1]!.ToJsonString().Should().Be("""{"$type":"String","_value":"hello"}""");
+        array[0]!.Should().BeTypedEnvelope("Integer", "1");
+        array[1]!.Should().BeTypedEnvelope("String", "hello");
     }
 
     [Fact]
@@ -128,10 +94,8 @@ public class QueryApiListCodecTests
         var array = result["_value"]!.AsArray();
 
         array.Should().HaveCount(1);
-        array[0]!["$type"]!.GetValue<string>().Should().Be("List");
+        array[0].Should().BeSameAs(innerNode);
     }
-
-    // --- Read ---
 
     [Fact]
     public void Read_EmptyList_ReturnsEmptyList()

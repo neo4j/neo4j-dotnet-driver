@@ -21,6 +21,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Neo4j.Driver.Internal.DependencyInjection;
+using static Neo4j.Driver.Internal.QueryApi.QueryApiCodecHelper;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
@@ -87,15 +88,6 @@ internal sealed class QueryApiPrimitiveCodec : IQueryApiTypeCodec
             string s => CreateTypedEnvelope("String", JsonValue.Create(s)),
             byte[] bytes => CreateTypedEnvelope("Base64", JsonValue.Create(_encoder.Encode(bytes))),
             _ => throw new InvalidOperationException($"Unsupported type: {value.GetType().Name}")
-        };
-    }
-
-    private static JsonNode CreateTypedEnvelope(string type, JsonNode? valueNode)
-    {
-        return new JsonObject
-        {
-            ["$type"] = type, 
-            ["_value"] = valueNode
         };
     }
 

@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -16,10 +16,7 @@
 #nullable enable
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Neo4j.Driver.Internal.DependencyInjection;
@@ -28,52 +25,40 @@ using static Neo4j.Driver.Internal.QueryApi.QueryApiCodecHelper;
 namespace Neo4j.Driver.Internal.QueryApi;
 
 [AutoRegister]
-internal class QueryApiListCodec : IQueryApiTypeCodec
+internal class QueryApiMapCodec : IQueryApiTypeCodec
 {
     public bool CanRead(string typeName)
     {
         ArgumentNullException.ThrowIfNull(typeName);
-        return typeName == "List";
+        return typeName == "Map";
     }
 
     public object? Read(JsonElement element, IJsonValueDecoder recurse)
     {
         ArgumentNullException.ThrowIfNull(recurse);
-
-        return element
-            .GetProperty("_value")
-            .EnumerateArray()
-            .Select(recurse.Decode)
-            .ToList();
+        var result = new Dictionary<string, object?>();
+        foreach (var prop in element.GetProperty("_value").EnumerateObject())
+            result[prop.Name] = recurse.Decode(prop.Value);
+        return result;
     }
 
-    public bool CanWrite(object? value)
-    {
-        return TryGetEnumerable(value, out _);
-    }
-
-    private bool TryGetEnumerable(object? value, [NotNullWhen(true)] out IEnumerable? enumerable)
-    {
-        enumerable = value as IEnumerable;
-        return enumerable is not null and not string and not IDictionary and not byte[];
-    }
+    public bool CanWrite(object? value) => value is IDictionary<string, object?>;
 
     public JsonNode? Write(object? value, IJsonValueEncoder recurse)
     {
-        if (!TryGetEnumerable(value, out var enumerable))
+        if (value is not IDictionary<string, object?> dict)
         {
-            throw new ArgumentException("Value must be an enumerable.", nameof(value));
+            throw new ArgumentException("Value must be an IDictionary<string, object?>.", nameof(value));
         }
 
         ArgumentNullException.ThrowIfNull(recurse);
 
-        var array = new JsonArray();
-
-        foreach (var item in enumerable)
+        var obj = new JsonObject();
+        foreach (var (key, val) in dict)
         {
-            array.Add(recurse.Encode(item));
+            obj[key] = recurse.Encode(val);
         }
 
-        return CreateTypedEnvelope("List", array);
+        return CreateTypedEnvelope("Map", obj);
     }
 }

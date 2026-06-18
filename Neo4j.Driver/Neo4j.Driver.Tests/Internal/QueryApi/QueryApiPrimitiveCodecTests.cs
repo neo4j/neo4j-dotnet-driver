@@ -22,6 +22,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
+using static Neo4j.Driver.Tests.Internal.QueryApi.QueryApiCodecAssert;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
@@ -39,12 +40,12 @@ public class QueryApiPrimitiveCodecTests
 
     public static IEnumerable<object?[]> WriteCases() =>
     [
-        [null,  "Null",    "null"],
-        [true,  "Boolean", "true"],
-        [42L,   "Integer", "\"42\""],
-        [7,     "Integer", "\"7\""],
-        [3.5,   "Float",   "\"3.5\""],
-        ["hi",  "String",  "\"hi\""]
+        [null, "Null", "null"],
+        [true, "Boolean", "true"],
+        [42L, "Integer", "\"42\""],
+        [7, "Integer", "\"7\""],
+        [3.5, "Float", "\"3.5\""],
+        ["hi", "String", "\"hi\""]
     ];
 
     [Theory]
@@ -72,15 +73,17 @@ public class QueryApiPrimitiveCodecTests
 
         result["$type"]!.GetValue<string>().Should().Be("Base64");
         result["_value"]!.GetValue<string>().Should().Be("AQID");
+
+        result.Should().NotBeSameAs(bytes);
     }
 
     public static IEnumerable<object?[]> ReadCases() =>
     [
-        ["""{"$type":"Null","_value":null}""",      null],
-        ["""{"$type":"Boolean","_value":false}""",  false],
-        ["""{"$type":"Integer","_value":"42"}""",   42L],
-        ["""{"$type":"Float","_value":"3.5"}""",    3.5],
-        ["""{"$type":"String","_value":"hi"}""",    "hi"]
+        ["""{"$type":"Null","_value":null}""", null],
+        ["""{"$type":"Boolean","_value":false}""", false],
+        ["""{"$type":"Integer","_value":"42"}""", 42L],
+        ["""{"$type":"Float","_value":"3.5"}""", 3.5],
+        ["""{"$type":"String","_value":"hi"}""", "hi"]
     ];
 
     [Theory]
@@ -105,40 +108,34 @@ public class QueryApiPrimitiveCodecTests
         Subject().Read(document.RootElement, Mock.Of<IJsonValueDecoder>()).Should().BeSameAs(bytes);
     }
 
-    [Theory]
-    [InlineData("Null")]
-    [InlineData("Boolean")]
-    [InlineData("Integer")]
-    [InlineData("Float")]
-    [InlineData("String")]
-    [InlineData("Base64")]
-    public void CanRead_TrueForPrimitives(string typeName) =>
-        Subject().CanRead(typeName).Should().BeTrue();
+    [Fact]
+    public void CanRead_CorrectTypes()
+    {
+        CanRead(
+            Subject(),
+            "Null",
+            "Boolean",
+            "Integer",
+            "Float",
+            "String",
+            "Base64",
+            "Unsupported");
+    }
 
     [Fact]
-    public void CanRead_FalseForVector() =>
-        Subject().CanRead("Vector").Should().BeFalse();
-
-    public static IEnumerable<object?[]> WritablePrimitives() =>
-    [
-        [null],
-        [true],
-        [42L],
-        [7],
-        [(short)1],
-        [(sbyte)1],
-        [3.14],
-        [1.5f],
-        ["hi"],
-        [new byte[] { 1, 2, 3 }]
-    ];
-
-    [Theory]
-    [MemberData(nameof(WritablePrimitives))]
-    public void CanWrite_TrueForPrimitives(object? value) =>
-        Subject().CanWrite(value).Should().BeTrue();
-
-    [Fact]
-    public void CanWrite_FalseForUnknownType() =>
-        Subject().CanWrite(new object()).Should().BeFalse();
+    public void CanWrite_CorrectTypes()
+    {
+        CanWrite(
+            Subject(),
+            typeof(NullValue),
+            typeof(bool),
+            typeof(long),
+            typeof(int),
+            typeof(short),
+            typeof(sbyte),
+            typeof(double),
+            typeof(float),
+            typeof(string),
+            typeof(byte[]));
+    }
 }
