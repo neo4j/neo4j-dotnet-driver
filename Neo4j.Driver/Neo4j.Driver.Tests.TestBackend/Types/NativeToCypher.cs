@@ -49,7 +49,7 @@ internal static class NativeToCypher
         { typeof(long), CypherSimple },
         { typeof(double), CypherSimple },
         { typeof(string), CypherSimple },
-        { typeof(byte[]), CypherSimple },
+        { typeof(byte[]), CypherBytes },
 
         { typeof(LocalDate), CypherDateTime },
         { typeof(OffsetTime), CypherDateTime },
@@ -118,7 +118,7 @@ internal static class NativeToCypher
 
         if (sourceObject is byte[])
         {
-            return FunctionMap[typeof(byte[])]("CypherBytes", sourceObject);
+            return CypherBytes("CypherBytes", sourceObject);
         }
 
         if (sourceObject as LocalDate != null)
@@ -178,6 +178,12 @@ internal static class NativeToCypher
     public static NativeToCypherObject CypherSimple(string cypherType, object obj)
     {
         return new NativeToCypherObject { name = cypherType, data = new NativeToCypherObject.DataType { value = obj } };
+    }
+
+    public static NativeToCypherObject CypherBytes(string cypherType, object obj)
+    {
+        var hex = string.Join(" ", ((byte[])obj).Select(b => b.ToString("x2")));
+        return new NativeToCypherObject { name = cypherType, data = new NativeToCypherObject.DataType { value = hex } };
     }
 
     public static NativeToCypherObject CypherMap(string cypherType, object obj)
