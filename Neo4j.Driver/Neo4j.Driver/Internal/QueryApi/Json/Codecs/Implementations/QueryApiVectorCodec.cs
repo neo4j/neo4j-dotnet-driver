@@ -30,12 +30,10 @@ namespace Neo4j.Driver.Internal.QueryApi;
 [AutoRegister]
 internal sealed class QueryApiVectorCodec : IQueryApiTypeCodec
 {
-    private readonly IJsonDeserializer _jsonDeserializer;
-
-    public QueryApiVectorCodec(IJsonDeserializer jsonDeserializer)
+    private static readonly JsonSerializerOptions CamelCaseOptions = new()
     {
-        _jsonDeserializer = jsonDeserializer;
-    }
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
 
     public class JsonVector
     {
@@ -48,7 +46,8 @@ internal sealed class QueryApiVectorCodec : IQueryApiTypeCodec
 
     public object? Read(JsonElement element, IJsonValueDecoder recurse)
     {
-        var vector = _jsonDeserializer.MapObject<JsonVector>(element);
+        var vector = element.Deserialize<JsonVector>(CamelCaseOptions)
+            ?? throw new ProtocolException("Vector element could not be deserialized.");
 
         var coords = vector.Coordinates
             ?? throw new ProtocolException("Vector coordinates are missing.");

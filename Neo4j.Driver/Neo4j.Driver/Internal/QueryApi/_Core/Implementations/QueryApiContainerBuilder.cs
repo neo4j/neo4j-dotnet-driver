@@ -50,8 +50,7 @@ internal class QueryApiContainerBuilder : IQueryApiContainerBuilder
         {
             var attr = (AutoRegisterAttribute)type.GetCustomAttributes(typeof(AutoRegisterAttribute), false)[0];
             var singleton = attr.Singleton;
-            var interfaces = type.GetInterfaces();
-            foreach (var ifc in interfaces)
+            foreach (var ifc in type.GetInterfaces())
             {
                 container.RegisterType(ifc, type, singleton);
             }

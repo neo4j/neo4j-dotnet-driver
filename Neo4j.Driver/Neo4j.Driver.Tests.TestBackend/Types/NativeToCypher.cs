@@ -118,7 +118,7 @@ internal static class NativeToCypher
 
         if (sourceObject is byte[])
         {
-            return FunctionMap[typeof(byte[])]("CypherByteArray", sourceObject);
+            return FunctionMap[typeof(byte[])]("CypherBytes", sourceObject);
         }
 
         if (sourceObject as LocalDate != null)

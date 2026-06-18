@@ -74,7 +74,7 @@ internal class TransactionRunner : ITransactionRunner
         var body = new RequestBody
         {
             Statement = query.Text,
-            Parameters = query.Parameters.Count > 0 ? query.Parameters : null
+            Parameters = query.Parameters.Count > 0 ? new QueryApiParameterDictionary(query.Parameters) : null
         };
 
         var request = await _requestBuilder
@@ -87,6 +87,6 @@ internal class TransactionRunner : ITransactionRunner
     internal record RequestBody
     {
         public string? Statement { get; init; }
-        public IDictionary<string, object>? Parameters { get; init; }
+        public QueryApiParameterDictionary? Parameters { get; init; }
     }
 }

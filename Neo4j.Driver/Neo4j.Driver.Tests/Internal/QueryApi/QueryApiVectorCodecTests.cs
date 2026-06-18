@@ -17,42 +17,30 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
-using AutoFixture;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
-using JsonVector = Neo4j.Driver.Internal.QueryApi.QueryApiVectorCodec.JsonVector;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 public class QueryApiVectorCodecTests
 {
-    private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
+    private readonly QueryApiVectorCodec _subject = new();
 
-    private QueryApiVectorCodec SubjectDecoding(JsonVector vector)
+    private static JsonElement VectorElement(string coordinatesType, string[] coordinates)
     {
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(d => d.MapObject<JsonVector>(It.IsAny<JsonElement>()))
-            .Returns(vector);
-
-        return _fixture.Create<QueryApiVectorCodec>();
+        var json = $$"""{"coordinatesType":"{{coordinatesType}}","coordinates":[{{string.Join(",", coordinates.Select(c => $"\"{c}\""))}}]}""";
+        return JsonDocument.Parse(json).RootElement;
     }
 
     [Fact]
-    public void CanRead_TrueForVector()
-    {
-        var subject = _fixture.Create<QueryApiVectorCodec>();
-        subject.CanRead("Vector").Should().BeTrue();
-    }
+    public void CanRead_TrueForVector() => _subject.CanRead("Vector").Should().BeTrue();
 
     [Fact]
-    public void CanRead_FalseForOtherTypes()
-    {
-        var subject = _fixture.Create<QueryApiVectorCodec>();
-        subject.CanRead("String").Should().BeFalse();
-    }
+    public void CanRead_FalseForOtherTypes() => _subject.CanRead("String").Should().BeFalse();
 
     public static IEnumerable<object[]> VectorCoordinateTypes() =>
     [
@@ -68,27 +56,20 @@ public class QueryApiVectorCodecTests
     [MemberData(nameof(VectorCoordinateTypes))]
     public void Read_ReturnsTypedVector(string coordinatesType, string[] coordinates, Type expectedVectorType)
     {
-        var subject = SubjectDecoding(new() { CoordinatesType = coordinatesType, Coordinates = coordinates });
-
-        var result = subject.Read(default, Mock.Of<IJsonValueDecoder>());
-
+        var element = VectorElement(coordinatesType, coordinates);
+        var result = _subject.Read(element, Mock.Of<IJsonValueDecoder>());
         result.Should().BeAssignableTo(expectedVectorType);
     }
 
     [Fact]
-    public void CanWrite_FalseForVector()
-    {
-        var subject = _fixture.Create<QueryApiVectorCodec>();
-        subject.CanWrite(Vector.CreateDynamic(new[] { 1.0 })).Should().BeFalse();
-    }
+    public void CanWrite_FalseForVector() =>
+        _subject.CanWrite(Vector.CreateDynamic(new[] { 1.0 })).Should().BeFalse();
 
     [Fact]
     public void Write_ShouldWork()
     {
-        var subject = _fixture.Create<QueryApiVectorCodec>();
-        var act = () => subject.Write(Vector.CreateDynamic(new[] { 1.0 }), Mock.Of<IJsonValueEncoder>());
-
-        // TODO - this test is just to make sure thata we implement this method
+        var act = () => _subject.Write(Vector.CreateDynamic(new[] { 1.0 }), Mock.Of<IJsonValueEncoder>());
+        // TODO - this test is just to make sure that we implement this method
         act.Should().NotThrow();
     }
 }

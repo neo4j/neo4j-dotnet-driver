@@ -80,13 +80,10 @@ internal class AutoCommitRunner : IAutoCommitRunner
         IReadOnlyList<string> bookmarks,
         CancellationToken cancellationToken)
     {
-        // TODO: parameters are serialised using each value's runtime type. This works for .NET
-        // primitives but not for Neo4j-specific types (LocalDate, Duration, Point, INode, etc.).
-        // A custom JsonConverter is needed for those types.
         var body = new RequestBody
         {
             Statement = query.Text,
-            Parameters = query.Parameters.Count > 0 ? query.Parameters : null,
+            Parameters = query.Parameters.Count > 0 ? new QueryApiParameterDictionary(query.Parameters) : null,
             Bookmarks = bookmarks.Count > 0 ? [.. bookmarks] : null,
             ImpersonatedUser = _sessionContext.ImpersonatedUser,
             AccessMode = _sessionContext.AccessMode == AccessMode.Read ? "Read" : "Write"
@@ -99,7 +96,7 @@ internal class AutoCommitRunner : IAutoCommitRunner
     internal record RequestBody
     {
         public string? Statement { get; init; }
-        public IDictionary<string, object>? Parameters { get; init; }
+        public QueryApiParameterDictionary? Parameters { get; init; }
         public string[]? Bookmarks { get; init; }
         public string? ImpersonatedUser { get; init; }
         public string? AccessMode { get; init; }

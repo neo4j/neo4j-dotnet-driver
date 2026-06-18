@@ -93,7 +93,7 @@ internal class CypherToNative
         { "CypherInt", typeof(long) },
         { "CypherFloat", typeof(double) },
         { "CypherString", typeof(string) },
-        { "CypherByteArray", typeof(byte[]) },
+        { "CypherBytes", typeof(byte[]) },
 
         { "CypherDate", typeof(LocalDate) },
         { "CypherTime", typeof(OffsetTime) },
@@ -118,9 +118,9 @@ internal class CypherToNative
 
         { typeof(bool), CypherSimple },
         { typeof(long), CypherSimple },
-        { typeof(double), CypherSimple },
+        { typeof(double), CypherDouble },
         { typeof(string), CypherSimple },
-        { typeof(byte[]), CypherSimple },
+        { typeof(byte[]), CypherBytesConvert },
 
         { typeof(LocalDate), CypherDateTime },
         { typeof(OffsetTime), CypherDateTime },
@@ -161,6 +161,37 @@ internal class CypherToNative
     public static object CypherSimple(Type objectType, CypherToNativeObject cypherObject)
     {
         return ((SimpleValue)cypherObject.data).value;
+    }
+
+    public static object CypherDouble(Type objectType, CypherToNativeObject cypherObject)
+    {
+        var raw = ((SimpleValue)cypherObject.data).value;
+        return raw switch
+        {
+            double d => d,
+            string s => s switch
+            {
+                "NaN" => double.NaN,
+                "Infinity" or "+Infinity" => double.PositiveInfinity,
+                "-Infinity" => double.NegativeInfinity,
+                _ => double.Parse(s, System.Globalization.CultureInfo.InvariantCulture)
+            },
+            _ => System.Convert.ToDouble(raw)
+        };
+    }
+
+    public static object CypherBytesConvert(Type objectType, CypherToNativeObject cypherObject)
+    {
+        var hex = (string)((SimpleValue)cypherObject.data).value;
+        if (string.IsNullOrEmpty(hex))
+            return Array.Empty<byte>();
+
+        var parts = hex.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+        var bytes = new byte[parts.Length];
+        for (var i = 0; i < parts.Length; i++)
+            bytes[i] = System.Convert.ToByte(parts[i], 16);
+
+        return bytes;
     }
 
     public static object CypherTODO(Type objectType, CypherToNativeObject cypherObject)
