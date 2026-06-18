@@ -27,15 +27,6 @@ using static Neo4j.Driver.Tests.Internal.QueryApi.QueryApiCodecAssert;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
-/// <summary>
-/// Unit tests for <see cref="QueryApiListCodec"/>.
-///
-/// Wire format (HTTP Query API v1.0):
-/// <code>{"$type":"List", "_value":[&lt;item&gt;, ...]}</code>
-/// where each item is itself a complete typed envelope (e.g. <c>{"$type":"Integer","_value":"1"}</c>).
-/// Elements are encoded/decoded via the injected <see cref="IJsonValueEncoder"/>/<see cref="IJsonValueDecoder"/>
-/// so that nested lists and maps are handled recursively.
-/// </summary>
 public class QueryApiListCodecTests
 {
     private readonly QueryApiListCodec _subject = new();
