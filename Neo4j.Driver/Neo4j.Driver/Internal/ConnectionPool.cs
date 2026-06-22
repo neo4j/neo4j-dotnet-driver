@@ -37,6 +37,8 @@ internal sealed class ConnectionPool : IConnectionPool
 
     private readonly IConnectionValidator _connectionValidator;
 
+    private readonly Func<TimeSpan, CancellationTokenSource> _acquisitionTimeoutSourceFactory;
+
     private readonly string _id;
 
     private readonly BlockingCollection<IPooledConnection> _idleConnections = new();
@@ -67,6 +69,7 @@ internal sealed class ConnectionPool : IConnectionPool
         _neo4JLogger = new PrefixNeo4JLogger(driverContext.Neo4JLogger, $"[{_id}]");
 
         _connectionFactory = connectionFactory;
+        _acquisitionTimeoutSourceFactory = timeout => new CancellationTokenSource(timeout);
         DriverContext = driverContext;
         _connectionValidator = new ConnectionValidator(
             driverContext.Config.ConnectionIdleTimeout,
@@ -82,7 +85,8 @@ internal sealed class ConnectionPool : IConnectionPool
         BlockingCollection<IPooledConnection> idleConnections = null,
         ConcurrentHashSet<IPooledConnection> inUseConnections = null,
         DriverContext driverContext = null,
-        IConnectionValidator validator = null)
+        IConnectionValidator validator = null,
+        Func<TimeSpan, CancellationTokenSource> acquisitionTimeoutSourceFactory = null)
         : this(
             new Uri("bolt://localhost:7687"),
             connectionFactory,
@@ -93,6 +97,11 @@ internal sealed class ConnectionPool : IConnectionPool
         if (validator != null)
         {
             _connectionValidator = validator;
+        }
+
+        if (acquisitionTimeoutSourceFactory != null)
+        {
+            _acquisitionTimeoutSourceFactory = acquisitionTimeoutSourceFactory;
         }
     }
 
@@ -450,24 +459,19 @@ internal sealed class ConnectionPool : IConnectionPool
         AccessMode mode,
         TimeSpan timeout)
     {
-        using var cts = new CancellationTokenSource(timeout);
+        using var cts = _acquisitionTimeoutSourceFactory(timeout);
 
         try
         {
             return await AcquireAsync(mode, database, sessionConfig, cts.Token)
-                .Timeout(timeout, cts.Token)
+                .Timeout(timeout, cts.Token, () => cts.Cancel())
                 .ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is OperationCanceledException or TimeoutException)
         {
             _poolMetricsListener?.PoolTimedOutToAcquire();
-            if (cts.Token.IsCancellationRequested)
-            {
-                throw new ClientException(
-                    $"Failed to obtain a connection from pool within {ConnectionAcquisitionTimeout}");
-            }
-
-            throw new ClientException("Failed to obtain a connection from pool");
+            throw new ClientException(
+                $"Failed to obtain a connection from pool within {ConnectionAcquisitionTimeout}");
         }
     }
 
