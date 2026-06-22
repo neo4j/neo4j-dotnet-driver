@@ -103,6 +103,7 @@ internal class CypherToNative
         { "CypherDuration", typeof(Duration) },
         { "CypherPoint", typeof(Point) },
         { "CypherVector", typeof(Vector) },
+        { "CypherUUID", typeof(Guid) },
 
         { "CypherNode", typeof(INode) },
         { "CypherRelationship", typeof(IRelationship) },
@@ -129,6 +130,7 @@ internal class CypherToNative
         { typeof(Duration), CypherDuration },
         { typeof(Point), CypherTODO },
         { typeof(Vector), CypherVector },
+        { typeof(Guid), CypherUuid },
 
         { typeof(INode), CypherTODO },
         { typeof(IRelationship), CypherTODO },
@@ -286,6 +288,11 @@ internal class CypherToNative
         ["f32"] = typeof(float),
         ["f64"] = typeof(double)
     };
+
+    private static object CypherUuid(Type objectType, CypherToNativeObject obj)
+    {
+        return Guid.Parse((string)((SimpleValue)obj.data).value);
+    }
 
     private static object CypherDuration(Type objectType, CypherToNativeObject obj)
     {

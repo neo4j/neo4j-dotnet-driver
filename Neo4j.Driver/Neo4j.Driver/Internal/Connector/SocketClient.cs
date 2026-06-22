@@ -85,7 +85,7 @@ internal sealed class SocketClient : ISocketClient
 
     public BoltProtocolVersion Version { get; private set; }
 
-    public async Task SendAsync(IEnumerable<IRequestMessage> messages)
+    public async Task SendAsync(IEnumerable<IRequestMessage> messages, CancellationToken cancellationToken = default)
     {
         var writer = _packstreamFactory.BuildWriter(_format, _chunkWriter);
         try
@@ -96,7 +96,7 @@ internal sealed class SocketClient : ISocketClient
                 _neo4JLogger.Debug(MessagePattern, message);
             }
 
-            await _chunkWriter.SendAsync().ConfigureAwait(false);
+            await _chunkWriter.SendAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -106,19 +106,19 @@ internal sealed class SocketClient : ISocketClient
         }
     }
 
-    public async Task ReceiveAsync(IResponsePipeline responsePipeline)
+    public async Task ReceiveAsync(IResponsePipeline responsePipeline, CancellationToken cancellationToken = default)
     {
         while (!responsePipeline.HasNoPendingMessages)
         {
-            await ReceiveOneAsync(responsePipeline).ConfigureAwait(false);
+            await ReceiveOneAsync(responsePipeline, cancellationToken).ConfigureAwait(false);
         }
     }
 
-    public async Task ReceiveOneAsync(IResponsePipeline responsePipeline)
+    public async Task ReceiveOneAsync(IResponsePipeline responsePipeline, CancellationToken cancellationToken = default)
     {
         try
         {
-            await _messageReader.ReadAsync(responsePipeline, _format).ConfigureAwait(false);
+            await _messageReader.ReadAsync(responsePipeline, _format, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {

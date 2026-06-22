@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.HomeDbCaching;
@@ -60,9 +61,9 @@ internal sealed class BoltProtocol : IBoltProtocol
         return _boltProtocolV3.LogoutAsync(connection);
     }
 
-    public Task ResetAsync(IConnection connection)
+    public Task ResetAsync(IConnection connection, CancellationToken cancellationToken = default)
     {
-        return _boltProtocolV3.ResetAsync(connection);
+        return _boltProtocolV3.ResetAsync(connection, cancellationToken);
     }
 
     public Task ReAuthAsync(IConnection connection, IAuthToken newAuthToken)

@@ -43,6 +43,7 @@ internal static class NativeToCypher
         { typeof(Dictionary<string, object>), CypherMap },
         { typeof(IVector), CypherVector },
         { typeof(UnsupportedType), CypherUnsupportedType },
+        { typeof(Guid), CypherUuid },
 
         { typeof(bool), CypherSimple },
         { typeof(long), CypherSimple },
@@ -75,6 +76,11 @@ internal static class NativeToCypher
             return FunctionMap[typeof(IVector)]("CypherVector", sourceObject);
         }
         
+        if (sourceObject is Guid)
+        {
+            return FunctionMap[typeof(Guid)]("CypherUUID", sourceObject);
+        }
+
         if(sourceObject is UnsupportedType)
         {
             return FunctionMap[typeof(UnsupportedType)]("CypherUnsupportedType", sourceObject);
@@ -250,6 +256,15 @@ internal static class NativeToCypher
     private static string ByteStreamToHexString(byte[] byteStream)
     {
         return string.Join(" ", byteStream.Select(b => b.ToString("x2")));
+    }
+
+    public static NativeToCypherObject CypherUuid(string cypherType, object obj)
+    {
+        return new NativeToCypherObject
+        {
+            name = "CypherUUID",
+            data = new NativeToCypherObject.DataType { value = ((Guid)obj).ToString() }
+        };
     }
 
     public static NativeToCypherObject CypherTODO(string name, object obj)

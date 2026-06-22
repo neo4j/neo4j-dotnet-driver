@@ -23,6 +23,7 @@ internal static class SupportedFeatures
     {
         FeaturesList = new List<string>
         {
+            // keep this list sorted alphabetically
             "Backend:MockTime",
             "ConfHint:connection.recv_timeout_seconds",
             "AuthorizationExpiredTreatment",
@@ -51,8 +52,9 @@ internal static class SupportedFeatures
             "Feature:API:Summary:GqlStatusObjects",
             "Feature:API:Summary:Profile:OptionalStats",
             "Feature:API:Type.Temporal",
-            "Feature:API:Type.Vector",
             "Feature:API:Type.UnsupportedType",
+            "Feature:API:Type.UUID",
+            "Feature:API:Type.Vector",
             "Feature:Auth:Bearer",
             "Feature:Auth:Custom",
             "Feature:Auth:Kerberos",
@@ -72,6 +74,7 @@ internal static class SupportedFeatures
             "Feature:Bolt:5.7",
             "Feature:Bolt:5.8",
             "Feature:Bolt:6.0",
+            "Feature:Bolt:6.1",
             "Feature:Bolt:Patch:UTC",
             "Feature:Bolt:HandshakeManifestV1",
             "Feature:IdempotentRetries",
