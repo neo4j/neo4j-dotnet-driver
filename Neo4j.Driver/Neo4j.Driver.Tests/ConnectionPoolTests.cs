@@ -181,19 +181,16 @@ public class ConnectionPoolTests
                 .Setup(x => x.ResetAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
-            // calling SyncAsync hangs indefinitely
             connectionMock
                 .Setup(x => x.SyncAsync(It.IsAny<CancellationToken>()))
                 .Returns<CancellationToken>(ct => Task.Delay(Timeout.Infinite, ct));
 
-            var connectionDestroyed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            
-            // this setup is called by the subject to destroy its connection
+            var connectionDestroyed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             connectionMock
                 .Setup(x => x.DestroyAsync())
                 .Returns(() =>
                 {
-                    connectionDestroyed.TrySetResult(true);
+                    connectionDestroyed.TrySetResult();
                     return Task.CompletedTask;
                 });
 
@@ -202,26 +199,23 @@ public class ConnectionPoolTests
                 .Setup(x => x.Create(It.IsAny<Uri>(), It.IsAny<IConnectionReleaseManager>(), It.IsAny<IAuthToken>()))
                 .Returns(connectionMock.Object);
 
+            CancellationTokenSource acquisitionTimeoutSource = null;
             var pool = new ConnectionPool(
                 factoryMock.Object,
                 driverContext: TestDriverContext.With(
                     config: x => x
                         .WithMaxConnectionPoolSize(1)
                         .WithConnectionAcquisitionTimeout(TimeSpan.FromMilliseconds(200))),
-                validator: new LivenessProbeValidator());
+                validator: new LivenessProbeValidator(),
+                acquisitionTimeoutSourceFactory: _ => acquisitionTimeoutSource = new CancellationTokenSource());
 
             var act = () => pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
 
-            // probe hangs, so acquisition times out with ClientException.
             await act.Should().ThrowAsync<ClientException>();
 
-            // await the task marked completed in the mock's Destroy setup
-            // (i.e. the subject destroyed its connection)
-            // or 10-second timeout (can be slow in CI)
-            var completed = await Task.WhenAny(connectionDestroyed.Task, Task.Delay(TimeSpan.FromSeconds(10)));
-            completed.Should().BeSameAs(connectionDestroyed.Task);
-            
-            // pool slot was released
+            acquisitionTimeoutSource.IsCancellationRequested.Should().BeTrue();
+
+            await connectionDestroyed.Task.WaitAsync(TimeSpan.FromSeconds(3));
             pool.PoolSize.Should().Be(0);
         }
 
