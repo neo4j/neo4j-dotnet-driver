@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -62,6 +63,8 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
 
     public SessionConfig SessionConfig { get; set; }
     bool TelemetryEnabled { get; set; }
+
+    TimeSpan? ConnectionReadTimeoutCap { get; }
 
     bool SsrEnabled { get; set; }
 

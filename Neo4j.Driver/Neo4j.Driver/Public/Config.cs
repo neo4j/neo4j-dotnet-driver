@@ -31,7 +31,7 @@ namespace Neo4j.Driver;
 /// <list type="bullet">
 ///     <item><see cref="EncryptionLevel"/> : <c><see cref="EncryptionLevel"/> Encrypted</c> </item>
 ///     <item><see cref="TrustManager"/> : <c><see cref="TrustManager"/>CreateChainTrust()</c> </item>
-///     <item><see cref="ConnectionTimeout"/>: <c>30s</c> </item> <item><see cref="SocketKeepAlive"/>: <c>true</c></item>
+///     <item><see cref="ConnectionTimeout"/>: <c>30s</c> </item> <item><see cref="ConnectionReadTimeoutCap"/>: <c>null</c> </item> <item><see cref="SocketKeepAlive"/>: <c>true</c></item>
 ///     <item><see cref="MaxConnectionPoolSize"/> : <c>100</c> </item>
 ///     <item><see cref="ConnectionAcquisitionTimeout"/> : <c>1mins</c> </item>
 ///     <item><see cref="ConnectionIdleTimeout"/>: <see cref="InfiniteInterval"/></item>
@@ -141,6 +141,11 @@ public class Config
 
     /// <summary>The connection timeout when establishing a connection with a server.</summary>
     public TimeSpan ConnectionTimeout { get; internal set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Optional upper bound for the server-provided socket read timeout.
+    /// </summary>
+    public TimeSpan? ConnectionReadTimeoutCap { get; internal set; }
 
     /// <summary>The socket keep alive option.</summary>
     public bool SocketKeepAlive { get; internal set; } = true;

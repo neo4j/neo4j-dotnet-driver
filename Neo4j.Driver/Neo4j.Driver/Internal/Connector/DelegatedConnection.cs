@@ -165,6 +165,7 @@ internal abstract class DelegatedConnection : IConnection
 
     public bool UtcEncodedDateTime => Delegate.UtcEncodedDateTime;
     public IAuthToken AuthToken => Delegate.AuthToken;
+    public TimeSpan? ConnectionReadTimeoutCap => Delegate.ConnectionReadTimeoutCap;
 
     public void UpdateId(string newConnId)
     {

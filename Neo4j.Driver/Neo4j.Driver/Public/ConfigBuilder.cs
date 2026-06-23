@@ -164,6 +164,25 @@ public sealed class ConfigBuilder
     }
 
     /// <summary>
+    /// Sets an optional upper bound for server-provided socket read timeout hints.
+    /// </summary>
+    /// <param name="timeSpan">The maximum socket read timeout to apply.</param>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    public ConfigBuilder WithConnectionReadTimeoutCap(TimeSpan timeSpan)
+    {
+        if (timeSpan <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(timeSpan),
+                timeSpan,
+                "must be > 0");
+        }
+
+        _config.ConnectionReadTimeoutCap = timeSpan;
+        return this;
+    }
+
+    /// <summary>
     /// Enable socket to send keep alive pings on TCP level to prevent pooled socket connections from getting killed
     /// after leaving client idle for a long time. The interval of keep alive pings are internal set via your OS system.
     /// </summary>

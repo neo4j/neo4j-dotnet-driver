@@ -113,6 +113,8 @@ internal sealed class SocketConnection : IConnection
 
     public IDictionary<string, string> RoutingContext => _routingContext ?? Context.RoutingContext;
 
+    public TimeSpan? ConnectionReadTimeoutCap => Context.Config.ConnectionReadTimeoutCap;
+
     public BoltProtocolVersion Version => _client.Version;
 
     /// <summary>Internal Set used for tests.</summary>

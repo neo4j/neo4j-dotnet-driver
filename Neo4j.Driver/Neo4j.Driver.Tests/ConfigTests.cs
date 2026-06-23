@@ -40,6 +40,7 @@ public class ConfigTests
             config.Neo4JLogger.Should().BeOfType<NullNeo4JLogger>();
             config.MaxIdleConnectionPoolSize.Should().Be(100);
             config.ConnectionTimeout.Should().Be(TimeSpan.FromSeconds(30));
+            config.ConnectionReadTimeoutCap.Should().BeNull();
             config.TlsVersion.Should().Be(SslProtocols.Tls12);
             config.TlsNegotiator.Should().BeNull();
         }
@@ -142,6 +143,25 @@ public class ConfigTests
             config.TrustManager.Should().BeNull();
             config.Neo4JLogger.Should().BeOfType<NullNeo4JLogger>();
             config.MaxIdleConnectionPoolSize.Should().Be(3);
+        }
+
+        [Fact]
+        public void WithConnectionReadTimeoutCapShouldModifyTheSingleValue()
+        {
+            var config = Config.Builder.WithConnectionReadTimeoutCap(TimeSpan.FromSeconds(10)).Build();
+            config.ConnectionReadTimeoutCap.Should().Be(TimeSpan.FromSeconds(10));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public void WithConnectionReadTimeoutCapShouldRejectNonPositiveValues(int seconds)
+        {
+            var configBuilder = new ConfigBuilder(new Config());
+
+            var ex = Record.Exception(() => configBuilder.WithConnectionReadTimeoutCap(TimeSpan.FromSeconds(seconds)));
+
+            ex.Should().BeOfType<ArgumentOutOfRangeException>();
         }
 
         [Fact]
