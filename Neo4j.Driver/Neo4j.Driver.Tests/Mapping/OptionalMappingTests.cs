@@ -69,6 +69,45 @@ public class OptionalMappingTests
     }
 
     [Fact]
+    public void ShouldUseParameterDefaultWhenRecordParameterIsAbsent()
+    {
+        var record = TestRecord.Create(["Value"], [69]);
+        var mapped = record.AsObject<RecordWithDefaultParameter>();
+
+        mapped.Value.Should().Be(69);
+        mapped.Extra.Should().Be("implicit");
+    }
+
+    [Fact]
+    public void ShouldUseParameterDefaultWhenConstructorParameterIsAbsent()
+    {
+        var record = TestRecord.Create(["value"], [69]);
+        var mapped = record.AsObject<ClassWithDefaultConstructorParameter>();
+
+        mapped.Value.Should().Be(69);
+        mapped.Extra.Should().Be("implicit");
+    }
+
+    [Fact]
+    public void ShouldUseAttributeDefaultWhenRecordParameterIsAbsent()
+    {
+        var record = TestRecord.Create(["Value"], [69]);
+        var mapped = record.AsObject<RecordWithAttributeDefaultParameter>();
+
+        mapped.Value.Should().Be(69);
+        mapped.Extra.Should().Be(7);
+    }
+
+    [Fact]
+    public void ShouldThrowWhenConstructorParameterWithoutDefaultIsAbsent()
+    {
+        var record = TestRecord.Create(["value"], [69]);
+        var act = () => { _ = record.AsObject<ClassWithRequiredConstructorParameter>(); };
+
+        act.Should().Throw<MappingFailedException>();
+    }
+
+    [Fact]
     public void ShouldFailToCreateObject()
     {
         var record = TestRecord.Create(["NotTheValue"], [69]);
@@ -117,5 +156,37 @@ public class OptionalMappingTests
     private class ClassWithPropertyWithoutDefaultValue
     {
         public int Value { get; set; }
+    }
+
+    private record RecordWithDefaultParameter(int Value, string Extra = "implicit");
+
+    private class ClassWithDefaultConstructorParameter
+    {
+        public ClassWithDefaultConstructorParameter(int value, string extra = "implicit")
+        {
+            Value = value;
+            Extra = extra;
+        }
+
+        public int Value { get; }
+
+        public string Extra { get; }
+    }
+
+    private record RecordWithAttributeDefaultParameter(
+        int Value,
+        [MappingDefaultValue(7)] int Extra);
+
+    private class ClassWithRequiredConstructorParameter
+    {
+        public ClassWithRequiredConstructorParameter(int value, string extra)
+        {
+            Value = value;
+            Extra = extra;
+        }
+
+        public int Value { get; }
+
+        public string Extra { get; }
     }
 }
