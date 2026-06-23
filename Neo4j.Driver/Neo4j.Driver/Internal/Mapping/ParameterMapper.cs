@@ -56,14 +56,21 @@ internal class ParameterMapper : IParameterMapper
                     p.parameter.ParameterType,
                     out var mappable);
 
-                if (!success)
+                if (success)
                 {
-                    throw new MappingFailedException(
-                        $"Cannot map record to type {typeof(T).Name} because the record does not " +
-                        $"contain a value for the parameter '{p.parameter.Name}'.");
+                    args.Add(mappable);
+                    continue;
                 }
 
-                args.Add(mappable);
+                if (p.parameter.HasDefaultValue)
+                {
+                    args.Add(p.parameter.DefaultValue);
+                    continue;
+                }
+
+                throw new MappingFailedException(
+                    $"Cannot map record to type {typeof(T).Name} because the record does not " +
+                    $"contain a value for the parameter '{p.parameter.Name}'.");
             }
 
             try

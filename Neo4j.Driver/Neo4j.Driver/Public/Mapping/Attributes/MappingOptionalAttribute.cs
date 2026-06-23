@@ -14,12 +14,11 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver.Internal.Mapping;
 
 namespace Neo4j.Driver.Mapping;
 
 /// <summary>
-/// If a property or is decorated with this attribute, it will be considered optional. The mapper will not throw
+/// If a property is decorated with this attribute, it will be considered optional. The mapper will not throw
 /// an exception if it cannot find the named value in the record. This attribute will have no effect when using
 /// custom-defined mappers.
 /// </summary>
