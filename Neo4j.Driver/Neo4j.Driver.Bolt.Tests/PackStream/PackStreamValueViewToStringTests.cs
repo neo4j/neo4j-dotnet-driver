@@ -64,7 +64,7 @@ internal class PackStreamValueViewToStringTests
     public void ToStringString()
     {
         var utf8 = new ReadOnlySequence<byte>([0x68, 0x69]); // "hi"
-        PackStreamValueView.String(utf8).ToString().Should().Contain("STRING[2]");
+        PackStreamValueView.String(utf8).ToString().Should().Contain("""STRING["hi"]""");
     }
 
     [Test]
