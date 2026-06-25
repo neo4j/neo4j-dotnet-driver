@@ -146,4 +146,31 @@ public class TranslationEndToEndTests : MappingTestWithGlobalState
 
         result.Name.Should().Be("Bob");
     }
+
+    public class ExplicitParamMember
+    {
+        [MappingConstructor]
+        public ExplicitParamMember([MappingSource("title_field")] string titleField = "from-ctor")
+        {
+            TitleField = titleField;
+        }
+
+        public string TitleField { get; set; }
+    }
+
+    [Fact]
+    public void ShouldRebuildDefaultMapperWhenTranslationConfigChanges()
+    {
+        RecordObjectMapping.TranslateIdentifiers(FieldCaseConvention.SnakeCase);
+        var underSnake = TestRecord.Create(("title_field", "snake"), ("title-field", "kebab"))
+        .AsObject<ExplicitParamMember>();
+
+        underSnake.TitleField.Should().Be("snake");
+
+        RecordObjectMapping.TranslateIdentifiers(FieldCaseConvention.KebabCase);
+        var underKebab = TestRecord.Create(("title_field", "snake"), ("title-field", "kebab"))
+            .AsObject<ExplicitParamMember>();
+            
+        underKebab.TitleField.Should().Be("kebab");
+    }
 }

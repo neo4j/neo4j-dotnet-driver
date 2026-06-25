@@ -207,6 +207,10 @@ public class RecordObjectMapping : IRecordObjectMapping
     {
         _conventionTranslator = conventionTranslator;
         _translateCypherParameterNames = translateCypherParameters;
+
+        // default mappers bake the translation config into their used-source dedup keys at build time and are
+        // cached per type, so if translation config changes the whole cache is invalidated.
+        DefaultMapper.Reset();
     }
 
     private static void TranslateIdentifiers(IConventionTranslator conventionTranslator, bool translateCypherParameters)
