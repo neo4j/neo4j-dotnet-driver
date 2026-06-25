@@ -51,7 +51,7 @@ public sealed class UuidIT : DirectDriverTestBase
         {
             Guid.Empty,
             new("ffffffff-ffff-ffff-ffff-ffffffffffff"),
-            Guid.NewGuid(),
+            new("01020304-0506-0708-090a-0b0c0d0e0f12"),
             Guid.NewGuid()
         };
 
@@ -125,6 +125,33 @@ public sealed class UuidIT : DirectDriverTestBase
 
             record[0].Should().BeOfType<Guid>();
             record[0].As<Guid>().Should().NotBe(Guid.Empty);
+        }
+        finally
+        {
+            await session.CloseAsync();
+        }
+    }
+
+    [RequireServerFact(MinUuidServerVersion, GreaterThanOrEqualTo)]
+    public async Task ShouldReceiveServerCreatedUuid()
+    {
+        // Construct UUIDs server-side from known strings so we verify the
+        // driver decodes the wire format (16 big-endian bytes) to the exact
+        // expected value, independent of the driver's own encoding.
+        await TestServerCreatedUuid("00000000-0000-0000-0000-000000000000");
+        await TestServerCreatedUuid("ffffffff-ffff-ffff-ffff-ffffffffffff");
+        await TestServerCreatedUuid("01020304-0506-0708-090a-0b0c0d0e0f12");
+    }
+
+    private async Task TestServerCreatedUuid(string uuidString)
+    {
+        var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
+        try
+        {
+            var cursor = await session.RunAsync("RETURN uuid($s)", new { s = uuidString });
+            var record = await cursor.SingleAsync();
+
+            record[0].As<Guid>().Should().Be(new Guid(uuidString));
         }
         finally
         {
