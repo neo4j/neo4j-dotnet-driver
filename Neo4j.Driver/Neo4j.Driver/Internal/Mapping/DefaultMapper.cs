@@ -54,11 +54,12 @@ internal static class DefaultMapper
         var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
         foreach (var property in properties)
         {
-            // ignore properties without a setter or with MappingIgnoredAttribute, or compiler generated,
-            // or if the setter has already been mapped elsewhere (e.g. custom mapping config)
-            if (property.SetMethod is null ||
+            // only public setters are mapped. Also ignore properties with MappingIgnoredAttribute
+            // or whose setter has already been mapped elsewhere (e.g. custom mapping config).
+            var setter = property.GetSetMethod();
+            if (setter is null ||
                 property.GetCustomAttribute<MappingIgnoredAttribute>() is not null ||
-                mappedSetters.Contains(property.SetMethod))
+                mappedSetters.Contains(setter))
             {
                 continue;
             }
@@ -68,7 +69,7 @@ internal static class DefaultMapper
             // don't re-map any fields that were already mapped by the constructor
             if (!usedEntitySources.Contains(mappingBinding.Path))
             {
-                mappingBuilder.Map(property.SetMethod, mappingBinding);
+                mappingBuilder.Map(setter, mappingBinding);
             }
         }
 

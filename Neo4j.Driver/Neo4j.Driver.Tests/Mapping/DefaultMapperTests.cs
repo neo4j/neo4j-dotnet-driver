@@ -222,6 +222,35 @@ public class DefaultMapperTests
         act.Should().Throw<InvalidOperationException>();
     }
 
+    [Fact]
+    public void ShouldNotPopulatePropertiesWithNonPublicSetters()
+    {
+        // a property with a non-public setter must be left at its default: the mapper should not
+        // reflectively invoke private setters, even when the record contains a matching field.
+        var record = TestRecord.Create(new[] { "Name", "Secret" }, new object[] { "Foo", "shh" });
+
+        var mapper = DefaultMapper.Get<ClassWithPrivateSetter>();
+        var result = mapper.Map(record);
+
+        result.Name.Should().Be("Foo");
+        result.Secret.Should().BeNull();
+    }
+
+    [Fact]
+    public void ShouldNotReMapOptionalConstructorParametersWithPrivateSetters()
+    {
+        // the record omits "age", so the optional constructor parameter falls back to its default.
+        // the corresponding property has a private setter, so it must not be re-mapped via the setter
+        // (which would fail because the value is absent from the record).
+        var record = TestRecord.Create(["name"], ["Foo"]);
+
+        var mapper = DefaultMapper.Get<OptionalConstructorParamWithPrivateSetters>();
+        var result = mapper.Map(record);
+
+        result.Name.Should().Be("Foo");
+        result.Age.Should().Be(99);
+    }
+
     private class SimpleClass
     {
         public int Id { get; set; }
@@ -358,5 +387,24 @@ public class DefaultMapperTests
         private NoConstructors()
         {
         }
+    }
+
+    private class ClassWithPrivateSetter
+    {
+        public string Name { get; set; }
+        public string Secret { get; private set; }
+    }
+
+    private class OptionalConstructorParamWithPrivateSetters
+    {
+        [MappingConstructor]
+        public OptionalConstructorParamWithPrivateSetters(string name, int age = 99)
+        {
+            Name = name;
+            Age = age;
+        }
+
+        public string Name { get; private set; }
+        public int Age { get; private set; }
     }
 }
