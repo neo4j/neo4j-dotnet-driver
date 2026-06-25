@@ -107,4 +107,25 @@ public class TranslationEndToEndTests : MappingTestWithGlobalState
         flightCrew.CoPilot.NumberOfMiddleNames.Should().Be(2);
         flightCrew.CoPilot.FavouriteColor.Should().Be("blue");
     }
+
+    public class CrewMember(string personName, int yearsOfService = 10)
+    {
+        public string PersonName { get; set; } = personName;
+        public int YearsOfService { get; set; } = yearsOfService;
+    }
+
+    [Fact]
+    public void ShouldNotReMapOptionalConstructorParametersWhenTranslating()
+    {
+        // "years_of_service" is absent, so the optional constructor parameter falls back to its default.
+        // under identifier translation the public property resolves to the same record field as the parameter,
+        // so it must not be re-mapped via its setter (which would fail because the field is absent).
+        var record = TestRecord.Create(["person_name"], ["Bob"]);
+        RecordObjectMapping.TranslateIdentifiers(FieldCaseConvention.SnakeCase);
+
+        var crewMember = record.AsObject<CrewMember>();
+
+        crewMember.PersonName.Should().Be("Bob");
+        crewMember.YearsOfService.Should().Be(10);
+    }
 }
