@@ -103,7 +103,7 @@ internal static class DefaultMapper
     // field), while members with [MappingSource] use their path verbatim.
     private static string ResolveRecordField(string path, bool isExplicit)
     {
-        return isExplicit ? path : RecordObjectMapping.Instance.GetTranslatedRecordIdentifier(path);
+        return isExplicit ? path : RecordObjectMapping.Instance.GetTranslatedRecordPath(path);
     }
 
     private static bool IsRecord(Type type)

@@ -169,6 +169,22 @@ public class RecordObjectMapping : IRecordObjectMapping
         return _conventionTranslator.Translate(objectIdentifier);
     }
 
+    internal string GetTranslatedRecordPath(string path)
+    {
+        if (path is null || path.IndexOf('.') < 0)
+        {
+            return GetTranslatedRecordIdentifier(path);
+        }
+
+        var segments = path.Split('.');
+        for (var i = 0; i < segments.Length; i++)
+        {
+            segments[i] = GetTranslatedRecordIdentifier(segments[i]);
+        }
+
+        return string.Join(".", segments);
+    }
+
     internal string GetTranslatedCypherParameterName(string propertyName)
     {
         return _translateCypherParameterNames 

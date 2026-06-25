@@ -128,4 +128,22 @@ public class TranslationEndToEndTests : MappingTestWithGlobalState
         crewMember.PersonName.Should().Be("Bob");
         crewMember.YearsOfService.Should().Be(10);
     }
+
+    public class NestedDottedMember
+    {
+        [MappingBindings(Path = "mainPerson.fullName")]
+        public string Name { get; set; }
+    }
+
+    [Fact]
+    public void ShouldTranslateEachSegmentOfDotSeparatedNonExplicitPath()
+    {
+        var personNode = new Node(0, [], new Dictionary<string, object> { ["full_name"] = "Bob" });
+        var record = TestRecord.Create(("main_person", personNode));
+        RecordObjectMapping.TranslateIdentifiers(FieldCaseConvention.SnakeCase);
+
+        var result = record.AsObject<NestedDottedMember>();
+
+        result.Name.Should().Be("Bob");
+    }
 }
