@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Util;
 using Org.BouncyCastle.Pkcs;
 using static Neo4j.Driver.IntegrationTests.Internals.DefaultInstallation;
 using static Neo4j.Driver.IntegrationTests.Internals.SettingsHelper;
@@ -73,7 +74,30 @@ public class ExternalBoltkitInstaller : IInstaller
             DefaultConfig[ListenAddr] = Ipv6EnabledAddr;
         }
 
+        // TODO: remove once UUID / Bolt 6.1 is GA (DRIVERS-476)
+        // [uuid-preview] search tag for removal of UUID preview workarounds
+        if (ServerSupportsUuidPreview())
+        {
+            DefaultConfig["internal.dbms.bolt.max_protocol_version"] = "6.1";
+            DefaultConfig["internal.cypher.uuid_type_enabled"] = "true";
+            DefaultConfig["internal.dbms.latest_runtime_version"] = "2147483647";
+            DefaultConfig["internal.dbms.latest_kernel_version"] = "254";
+        }
+
         UpdateSettings(DefaultConfig);
+    }
+
+    // [uuid-preview] search tag for removal of UUID preview workarounds
+    private static bool ServerSupportsUuidPreview()
+    {
+        try
+        {
+            return ServerVersion.From(BoltkitHelper.ServerVersion()) >= ServerVersion.From("2026.5.0");
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public ISet<ISingleInstance> Start()
