@@ -19,10 +19,6 @@ using System.Text.Json.Nodes;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-/// <summary>
-/// Encodes a CLR value to its HTTP Query API typed JSON envelope node
-/// (<c>{"$type":"...","_value":...}</c>). The dual of <see cref="IJsonValueDecoder"/>.
-/// </summary>
 internal interface IJsonValueEncoder
 {
     JsonNode? Encode(object? value);

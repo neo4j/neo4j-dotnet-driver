@@ -24,11 +24,6 @@ using static Neo4j.Driver.Internal.QueryApi.QueryApiTemporalCodecHelper;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-/// <summary>
-/// Bidirectional codec for the HTTP Query API <c>Date</c> type. The value travels as an ISO-8601 date string
-/// (<c>"yyyy-MM-dd"</c>), with an expanded year representation outside the 0..9999 range: years above 9999 are
-/// prefixed with <c>+</c>, negative years carry a <c>-</c>, and all others are zero-padded to four digits.
-/// </summary>
 [AutoRegister]
 internal sealed class QueryApiDateCodec : IQueryApiTypeCodec
 {

@@ -24,12 +24,6 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
-/// <summary>
-/// Unit tests for the write dispatch in <see cref="JsonValueEncoder"/>: it selects the first codec whose
-/// <see cref="IQueryApiTypeCodec.CanWrite"/> accepts the value, delegates to that codec's Write, and returns
-/// the resulting <see cref="JsonNode"/>. The codecs are mocked — only the encoder's selection logic is under
-/// test here; per-type encoding is covered by the codec tests.
-/// </summary>
 public class JsonValueEncoderTests
 {
     private static readonly JsonNode SentinelNode = JsonValue.Create("ENCODED")!;

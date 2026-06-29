@@ -25,11 +25,6 @@ using static Neo4j.Driver.Internal.QueryApi.QueryApiCodecHelper;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-/// <summary>
-/// Bidirectional codec for the HTTP Query API primitive types: <c>Null</c>, <c>Boolean</c>, <c>Integer</c>,
-/// <c>Float</c>, <c>String</c> and <c>Base64</c>. Integers and floats travel as JSON strings; bytes as Base64.
-/// <c>Unsupported</c> is read-only (the server emits it for values the API cannot represent).
-/// </summary>
 [AutoRegister]
 internal sealed class QueryApiPrimitiveCodec : IQueryApiTypeCodec
 {

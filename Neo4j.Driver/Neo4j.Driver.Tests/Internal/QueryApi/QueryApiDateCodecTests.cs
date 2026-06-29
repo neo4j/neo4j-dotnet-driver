@@ -25,11 +25,6 @@ using static Neo4j.Driver.Tests.Internal.QueryApi.QueryApiCodecAssert;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
-/// <summary>
-/// Round-trips the HTTP Query API <c>Date</c> type through <see cref="QueryApiDateCodec"/>. The wire value is an
-/// ISO-8601 date string; years 0..9999 are zero-padded to four digits, negative years carry a sign, and years
-/// above 9999 are prefixed with <c>+</c> (the expanded-year representation the API requires).
-/// </summary>
 public class QueryApiDateCodecTests
 {
     private readonly QueryApiDateCodec _subject = new();

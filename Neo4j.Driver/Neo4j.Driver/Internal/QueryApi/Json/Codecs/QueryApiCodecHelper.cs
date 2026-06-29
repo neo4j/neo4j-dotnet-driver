@@ -21,10 +21,6 @@ namespace Neo4j.Driver.Internal.QueryApi;
 
 internal static class QueryApiCodecHelper
 {
-    /// <summary>
-    /// Builds the standard HTTP Query API typed envelope:
-    /// <c>{"$type":"&lt;type&gt;","_value":&lt;value&gt;}</c>.
-    /// </summary>
     internal static JsonObject CreateTypedEnvelope(string type, JsonNode? valueNode) =>
         new() { ["$type"] = type, ["_value"] = valueNode };
 }

@@ -33,19 +33,10 @@ internal static class QueryApiCodecAssert
 
     private static readonly string[] AllTypeNames =
     [
-        // Primitives
         "Null", "Boolean", "Integer", "Float", "String", "Base64", "Unsupported",
-
-        // Collections
         "List", "Map",
-
-        // Specialised
         "Vector",
-
-        // Temporal 
         "Date", "Time", "LocalTime", "ZonedDateTime", "LocalDateTime", "Duration",
-
-        // Spatial / graph 
         "Point", "Node", "Relationship", "Path"
     ];
 

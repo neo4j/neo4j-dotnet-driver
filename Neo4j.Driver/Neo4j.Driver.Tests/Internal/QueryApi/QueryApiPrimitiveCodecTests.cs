@@ -26,12 +26,6 @@ using static Neo4j.Driver.Tests.Internal.QueryApi.QueryApiCodecAssert;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
-/// <summary>
-/// Round-trips the HTTP Query API primitive types through <see cref="QueryApiPrimitiveCodec"/>.
-/// Write tests assert the returned <see cref="System.Text.Json.Nodes.JsonNode"/> has the expected
-/// <c>{"$type":"...","_value":...}</c> shape. Integers and floats travel as JSON strings; bytes are
-/// written via <see cref="IBase64Encoder"/> and read via <see cref="IBase64Decoder"/>.
-/// </summary>
 public class QueryApiPrimitiveCodecTests
 {
     private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
@@ -55,7 +49,6 @@ public class QueryApiPrimitiveCodecTests
         var result = Subject().Write(value, Mock.Of<IJsonValueEncoder>())!;
 
         result["$type"]!.GetValue<string>().Should().Be(expectedType);
-        // JsonNode? is null for JSON null; convert to "null" string for comparison
         var valueJson = result["_value"]?.ToJsonString() ?? "null";
         valueJson.Should().Be(expectedValueJson);
     }

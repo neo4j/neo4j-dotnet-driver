@@ -20,30 +20,13 @@ using System.Text.Json.Nodes;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-/// <summary>
-/// Reads and writes a Neo4j value type to/from the HTTP Query API typed JSON envelope
-/// (<c>{"$type":"...", "_value":...}</c>). Each codec owns its full envelope in both directions; the
-/// dispatchers (<see cref="IJsonValueDecoder"/> for reads, <see cref="IJsonValueEncoder"/> for writes) only
-/// select the codec that claims a given wire type name or CLR value. A codec may support only one direction
-/// (e.g. result-only types are read-only).
-/// </summary>
 internal interface IQueryApiTypeCodec
 {
-    /// <summary>Whether this codec can read the given wire <c>$type</c> name.</summary>
     bool CanRead(string typeName);
 
-    /// <summary>
-    /// Reads a typed envelope element to a CLR value. <paramref name="element"/> is the full
-    /// <c>{"$type":..., "_value":...}</c> object. <paramref name="recurse"/> converts nested values (lists/maps).
-    /// </summary>
     object? Read(JsonElement element, IJsonValueDecoder recurse);
 
-    /// <summary>Whether this codec can write the given CLR value.</summary>
     bool CanWrite(object? value);
 
-    /// <summary>
-    /// Encodes the value as a complete typed envelope node (<c>{"$type":"...","_value":...}</c>).
-    /// <paramref name="recurse"/> encodes nested values (lists/maps).
-    /// </summary>
     JsonNode? Write(object? value, IJsonValueEncoder recurse);
 }

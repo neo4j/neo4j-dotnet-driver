@@ -24,11 +24,6 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
-/// <summary>
-/// Verifies that <see cref="JsonEnvelopeWriter"/> frames a value in the HTTP Query API typed JSON envelope
-/// {"$type": "...", "_value": ...}: the opening object and "$type"/"_value" keys when the envelope is opened,
-/// the closing brace when the returned scope is disposed.
-/// </summary>
 public class JsonEnvelopeWriterTests
 {
     private readonly JsonEnvelopeWriter _subject = new();

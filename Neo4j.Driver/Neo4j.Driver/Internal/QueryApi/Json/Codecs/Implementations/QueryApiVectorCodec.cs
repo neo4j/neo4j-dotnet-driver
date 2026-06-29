@@ -23,10 +23,6 @@ using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-/// <summary>
-/// Read-only codec for the HTTP Query API <c>Vector</c> type. Vectors only ever appear in results, never as
-/// query parameters, so the write side is unsupported.
-/// </summary>
 [AutoRegister]
 internal sealed class QueryApiVectorCodec : IQueryApiTypeCodec
 {
