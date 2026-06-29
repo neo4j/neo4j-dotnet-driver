@@ -25,37 +25,44 @@ using static Neo4j.Driver.Internal.QueryApi.QueryApiTemporalCodecHelper;
 namespace Neo4j.Driver.Internal.QueryApi;
 
 [AutoRegister]
-internal sealed class QueryApiLocalTimeCodec : IQueryApiTypeCodec
+internal sealed class QueryApiLocalDateTimeCodec : IQueryApiTypeCodec
 {
-    private static readonly Regex LocalTimeRegex =
-        new("^" + TimePattern + "$", RegexOptions.Compiled);
+    private static readonly Regex LocalDateTimeRegex =
+        new("^" + DatePattern + "T" + TimePattern + "$", RegexOptions.Compiled);
 
-    public bool CanRead(string typeName) => typeName == "LocalTime";
+    public bool CanRead(string typeName)
+    {
+        return typeName == "LocalDateTime";
+    }
 
     public object? Read(JsonElement element, IJsonValueDecoder recurse)
     {
         var value = element.GetProperty("_value").GetString()
-            ?? throw new ProtocolException("LocalTime value was null.");
+            ?? throw new ProtocolException("LocalDateTime value was null.");
 
-        var match = LocalTimeRegex.Match(value);
+        var match = LocalDateTimeRegex.Match(value);
         if (!match.Success)
         {
-            throw new ProtocolException($"LocalTime value '{value}' is not a valid ISO-8601 time.");
+            throw new ProtocolException($"LocalDateTime value '{value}' is not a valid ISO-8601 date-time.");
         }
 
-        return new LocalTime(
+        return new LocalDateTime(
+            ParseInt(match.Groups["year"]),
+            ParseInt(match.Groups["month"]),
+            ParseInt(match.Groups["day"]),
             ParseInt(match.Groups["hour"]),
             ParseInt(match.Groups["minute"]),
             ParseOptionalInt(match.Groups["second"]),
             ParseFractionAsNanoseconds(match.Groups["fraction"]));
     }
 
-    public bool CanWrite(object? value) => value is LocalTime;
+    public bool CanWrite(object? value) => value is LocalDateTime;
 
     public JsonNode? Write(object? value, IJsonValueEncoder recurse)
     {
-        var time = (LocalTime)value!;
-        var text = FormatTime(time.Hour, time.Minute, time.Second, time.Nanosecond);
-        return CreateTypedEnvelope("LocalTime", JsonValue.Create(text));
+        var dateTime = (LocalDateTime)value!;
+        var date = FormatDate(dateTime.Year, dateTime.Month, dateTime.Day);
+        var time = FormatTime(dateTime.Hour, dateTime.Minute, dateTime.Second, dateTime.Nanosecond);
+        return CreateTypedEnvelope("LocalDateTime", JsonValue.Create($"{date}T{time}"));
     }
 }

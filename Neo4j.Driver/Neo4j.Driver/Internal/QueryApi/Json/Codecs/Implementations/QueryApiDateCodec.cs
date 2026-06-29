@@ -15,13 +15,12 @@
 
 #nullable enable
 
-using System;
-using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Neo4j.Driver.Internal.DependencyInjection;
 using static Neo4j.Driver.Internal.QueryApi.QueryApiCodecHelper;
+using static Neo4j.Driver.Internal.QueryApi.QueryApiTemporalCodecHelper;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
@@ -34,7 +33,7 @@ namespace Neo4j.Driver.Internal.QueryApi;
 internal sealed class QueryApiDateCodec : IQueryApiTypeCodec
 {
     private static readonly Regex DateRegex =
-        new(@"^(?<year>[+-]?\d+)-(?<month>\d{2})-(?<day>\d{2})$", RegexOptions.Compiled);
+        new("^" + DatePattern + "$", RegexOptions.Compiled);
 
     public bool CanRead(string typeName) => typeName == "Date";
 
@@ -49,29 +48,17 @@ internal sealed class QueryApiDateCodec : IQueryApiTypeCodec
             throw new ProtocolException($"Date value '{value}' is not a valid ISO-8601 date.");
         }
 
-        var year = int.Parse(match.Groups["year"].Value, CultureInfo.InvariantCulture);
-        var month = int.Parse(match.Groups["month"].Value, CultureInfo.InvariantCulture);
-        var day = int.Parse(match.Groups["day"].Value, CultureInfo.InvariantCulture);
-
-        return new LocalDate(year, month, day);
+        return new LocalDate(
+            ParseInt(match.Groups["year"]),
+            ParseInt(match.Groups["month"]),
+            ParseInt(match.Groups["day"]));
     }
 
-    public bool CanWrite(object? value)
-    {
-        return value is LocalDate;
-    }
+    public bool CanWrite(object? value) => value is LocalDate;
 
     public JsonNode? Write(object? value, IJsonValueEncoder recurse)
     {
         var date = (LocalDate)value!;
-        var text = $"{FormatYear(date.Year)}-{date.Month:D2}-{date.Day:D2}";
-        return CreateTypedEnvelope("Date", JsonValue.Create(text));
-    }
-
-    private static string FormatYear(int year)
-    {
-        var prefix = year > 9999 ? "+" : string.Empty;
-        var yearString = year.ToString("D4", CultureInfo.InvariantCulture);
-        return $"{prefix}{yearString}";
+        return CreateTypedEnvelope("Date", JsonValue.Create(FormatDate(date.Year, date.Month, date.Day)));
     }
 }
