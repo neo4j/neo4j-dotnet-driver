@@ -35,11 +35,15 @@ internal class RecordPathFinder : IRecordPathFinder
             return false;
         }
 
+        if (translate)
+        {
+            path = RecordObjectMapping.Instance.GetTranslatedRecordPath(path);
+        }
+
         var dotIndex = path.IndexOf('.');
         if (dotIndex == -1)
         {
             // if the path matches a field name, we can return the value directly
-            path = translate ? RecordObjectMapping.Instance.GetTranslatedRecordIdentifier(path) : path;
             if (record.TryGet(path, out value))
             {
                 return true;
@@ -50,10 +54,7 @@ internal class RecordPathFinder : IRecordPathFinder
             // if there's a dot in the path, we can try to split it and check if the first part
             // matches a field name and the second part matches a property name
             var field = path.Substring(0, dotIndex);
-            field = translate ? RecordObjectMapping.Instance.GetTranslatedRecordIdentifier(field) : field;
-            
             var property = path.Substring(dotIndex + 1);
-            property = translate ? RecordObjectMapping.Instance.GetTranslatedRecordIdentifier(property) : property;
 
             if (!record.TryGetCaseInsensitive(field, out object fieldValue))
             {

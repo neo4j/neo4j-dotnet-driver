@@ -54,11 +54,12 @@ internal static class DefaultMapper
         var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
         foreach (var property in properties)
         {
-            // ignore properties without a setter or with MappingIgnoredAttribute, or compiler generated,
-            // or if the setter has already been mapped elsewhere (e.g. custom mapping config)
-            if (property.SetMethod is null ||
+            // only public setters are mapped. Also ignore properties with MappingIgnoredAttribute
+            // or whose setter has already been mapped elsewhere (e.g. custom mapping config).
+            var setter = property.GetSetMethod();
+            if (setter is null ||
                 property.GetCustomAttribute<MappingIgnoredAttribute>() is not null ||
-                mappedSetters.Contains(property.SetMethod))
+                mappedSetters.Contains(setter))
             {
                 continue;
             }
@@ -66,9 +67,9 @@ internal static class DefaultMapper
             var mappingBinding = MappingBindingProvider.GetMappingBinding(property);
 
             // don't re-map any fields that were already mapped by the constructor
-            if (!usedEntitySources.Contains(mappingBinding.Path))
+            if (!usedEntitySources.Contains(ResolveRecordField(mappingBinding.Path, mappingBinding.Explicit)))
             {
-                mappingBuilder.Map(property.SetMethod, mappingBinding);
+                mappingBuilder.Map(setter, mappingBinding);
             }
         }
 
@@ -83,16 +84,26 @@ internal static class DefaultMapper
         foreach (var parameter in constructor.GetParameters())
         {
             var mappingBinding = MappingBindingProvider.GetMappingBinding(parameter);
-            var key = mappingBinding?.Path;
-            if (key == null || isRecordType)
-            {
-                key = parameter.Name;
-            }
 
-            usedEntitySources.Add(key);
+            // for record types the positional parameter and its generated property share a name, and the property
+            // is mapped by that name rather than by any [MappingSource] on the parameter, so key on the name.
+            var (path, isExplicit) = isRecordType
+                ? (parameter.Name, false)
+                : (mappingBinding.Path, mappingBinding.Explicit);
+
+            usedEntitySources.Add(ResolveRecordField(path, isExplicit));
         }
 
         return usedEntitySources;
+    }
+
+    // resolves a binding's path to the record field it actually reads, so that the used-source comparison matches
+    // on the database field rather than the raw C# name. Non-explicit members are subject to identifier
+    // translation (e.g. a ctor param 'yearsOfService' and a property 'YearsOfService' both resolve to the same
+    // field), while members with [MappingSource] use their path verbatim.
+    private static string ResolveRecordField(string path, bool isExplicit)
+    {
+        return isExplicit ? path : RecordObjectMapping.Instance.GetTranslatedRecordPath(path);
     }
 
     private static bool IsRecord(Type type)
