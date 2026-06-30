@@ -13,9 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Dynamic;
-using Neo4j.Driver.Internal.Protocol;
-
 namespace Neo4j.Driver;
 
 /// <summary>

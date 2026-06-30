@@ -17,7 +17,6 @@ using System;
 using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Neo4j.Driver.Internal.Messaging;
