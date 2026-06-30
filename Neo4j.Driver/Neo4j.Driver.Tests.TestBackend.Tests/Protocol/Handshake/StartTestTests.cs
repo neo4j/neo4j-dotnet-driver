@@ -27,4 +27,18 @@ public class StartTestTests
 
         response["name"].Value<string>().Should().Be("RunTest");
     }
+
+    [Fact]
+    public void Respond_RequestsSubtests_ForZonedTime()
+    {
+        var startTest = new StartTest
+        {
+            data = new StartTest.StartTestType
+            {
+                testName = "tests.stub.http_query.datatypes.test_temporal.TestTemporal.test_zoned_time"
+            }
+        };
+
+        JObject.Parse(startTest.Respond())["name"].Value<string>().Should().Be("RunSubTests");
+    }
 }
