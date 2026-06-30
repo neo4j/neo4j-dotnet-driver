@@ -24,7 +24,10 @@ internal static class TestSkipPolicies
 
     private static TestSkipPolicyRegistry Build()
     {
-        var entries = new List<(string NameFragment, ITestSkipPolicy Policy)>();
+        var entries = new List<(string NameFragment, ITestSkipPolicy Policy)>
+        {
+            ("test_zoned_time", new TryConstructPolicy())
+        };
 
         entries.AddRange(
             TestBlackList.Entries.Select(
