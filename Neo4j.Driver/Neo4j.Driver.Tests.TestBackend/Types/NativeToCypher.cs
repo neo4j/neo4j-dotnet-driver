@@ -47,9 +47,9 @@ internal static class NativeToCypher
 
         { typeof(bool), CypherSimple },
         { typeof(long), CypherSimple },
-        { typeof(double), CypherSimple },
+        { typeof(double), CypherDouble },
         { typeof(string), CypherSimple },
-        { typeof(byte[]), CypherSimple },
+        { typeof(byte[]), CypherBytes },
 
         { typeof(LocalDate), CypherDateTime },
         { typeof(OffsetTime), CypherDateTime },
@@ -108,7 +108,7 @@ internal static class NativeToCypher
 
         if (sourceObject is double)
         {
-            return FunctionMap[typeof(double)]("CypherFloat", sourceObject);
+            return CypherDouble("CypherFloat", sourceObject);
         }
 
         if (sourceObject is string)
@@ -118,7 +118,7 @@ internal static class NativeToCypher
 
         if (sourceObject is byte[])
         {
-            return FunctionMap[typeof(byte[])]("CypherByteArray", sourceObject);
+            return CypherBytes("CypherBytes", sourceObject);
         }
 
         if (sourceObject as LocalDate != null)
@@ -178,6 +178,25 @@ internal static class NativeToCypher
     public static NativeToCypherObject CypherSimple(string cypherType, object obj)
     {
         return new NativeToCypherObject { name = cypherType, data = new NativeToCypherObject.DataType { value = obj } };
+    }
+
+    public static NativeToCypherObject CypherDouble(string cypherType, object obj)
+    {
+        var d = (double)obj;
+        object value = d switch
+        {
+            double.NaN => "NaN",
+            double.PositiveInfinity => "+Infinity",
+            double.NegativeInfinity => "-Infinity",
+            _ => d
+        };
+        return new NativeToCypherObject { name = cypherType, data = new NativeToCypherObject.DataType { value = value } };
+    }
+
+    public static NativeToCypherObject CypherBytes(string cypherType, object obj)
+    {
+        var hex = string.Join(" ", ((byte[])obj).Select(b => b.ToString("x2")));
+        return new NativeToCypherObject { name = cypherType, data = new NativeToCypherObject.DataType { value = hex } };
     }
 
     public static NativeToCypherObject CypherMap(string cypherType, object obj)

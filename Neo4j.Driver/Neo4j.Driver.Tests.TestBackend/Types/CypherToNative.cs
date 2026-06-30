@@ -15,7 +15,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Neo4j.Driver.Internal.Util;
 using Neo4j.Driver.Tests.TestBackend.Protocol.Session;
@@ -93,7 +92,7 @@ internal class CypherToNative
         { "CypherInt", typeof(long) },
         { "CypherFloat", typeof(double) },
         { "CypherString", typeof(string) },
-        { "CypherByteArray", typeof(byte[]) },
+        { "CypherBytes", typeof(byte[]) },
 
         { "CypherDate", typeof(LocalDate) },
         { "CypherTime", typeof(OffsetTime) },
@@ -118,9 +117,9 @@ internal class CypherToNative
 
         { typeof(bool), CypherSimple },
         { typeof(long), CypherSimple },
-        { typeof(double), CypherSimple },
+        { typeof(double), CypherDouble },
         { typeof(string), CypherSimple },
-        { typeof(byte[]), CypherSimple },
+        { typeof(byte[]), CypherBytesConvert },
 
         { typeof(LocalDate), CypherDateTime },
         { typeof(OffsetTime), CypherDateTime },
@@ -144,23 +143,53 @@ internal class CypherToNative
             return null;
         }
 
-        try
+        if (!TypeMap.TryGetValue(sourceObject.name, out var objectType))
         {
-            var objectType = TypeMap[sourceObject.name];
-            var function = FunctionMap[objectType];
+            throw new ArgumentException($"Unsupported Cypher type: {sourceObject.name}");
+        }
 
-            return function(objectType, sourceObject);
-        }
-        catch
+        if(!FunctionMap.TryGetValue(objectType, out var function))
         {
-            throw new IOException(
-                $"Attempting to convert an unsupported object type to a CypherType: {sourceObject.GetType()}");
+            throw new ArgumentException($"Missing conversion function for: {objectType}");
         }
+
+        return function(objectType, sourceObject);
     }
 
     public static object CypherSimple(Type objectType, CypherToNativeObject cypherObject)
     {
         return ((SimpleValue)cypherObject.data).value;
+    }
+
+    public static object CypherDouble(Type objectType, CypherToNativeObject cypherObject)
+    {
+        var raw = ((SimpleValue)cypherObject.data).value;
+        return raw switch
+        {
+            double d => d,
+            string s => s switch
+            {
+                "NaN" => double.NaN,
+                "Infinity" or "+Infinity" => double.PositiveInfinity,
+                "-Infinity" => double.NegativeInfinity,
+                _ => double.Parse(s, System.Globalization.CultureInfo.InvariantCulture)
+            },
+            _ => System.Convert.ToDouble(raw)
+        };
+    }
+
+    public static object CypherBytesConvert(Type objectType, CypherToNativeObject cypherObject)
+    {
+        var hex = (string)((SimpleValue)cypherObject.data).value;
+        if (string.IsNullOrEmpty(hex))
+            return Array.Empty<byte>();
+
+        var parts = hex.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+        var bytes = new byte[parts.Length];
+        for (var i = 0; i < parts.Length; i++)
+            bytes[i] = System.Convert.ToByte(parts[i], 16);
+
+        return bytes;
     }
 
     public static object CypherTODO(Type objectType, CypherToNativeObject cypherObject)
