@@ -174,6 +174,7 @@ internal class CypherToNative
                 "-Infinity" => double.NegativeInfinity,
                 _ => double.Parse(s, System.Globalization.CultureInfo.InvariantCulture)
             },
+            System.Numerics.BigInteger big => (double)big,
             _ => System.Convert.ToDouble(raw)
         };
     }
