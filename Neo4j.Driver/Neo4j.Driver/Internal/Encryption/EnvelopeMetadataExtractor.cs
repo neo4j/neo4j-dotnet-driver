@@ -25,19 +25,17 @@ namespace Neo4j.Driver.Internal.Encryption;
 [DriverAutoRegister(singleton: true)]
 internal class EnvelopeMetadataExtractor : IEnvelopeMetadataExtractor
 {
-    private const string OptionsPrefix = "opt.";
-
     private const int DefaultAadProtocolMajor = 6;
     private const int DefaultAadProtocolMinor = 0;
 
     public EnvelopeMetadata Extract(IDictionary<string, object> metadata)
     {
-        var aad = metadata.TryGetValue("aad", out byte[]? aadValue) ? aadValue : [];
+        var aad = metadata.TryGetValue(EnvelopeMetadataKeys.Aad, out byte[]? aadValue) ? aadValue : [];
         var options = ExtractEncapsulationOptions(metadata);
-        var keyId = metadata.GetMandatoryValue<string>("key_id", m => new MetadataExtractionException(m));
-        var iv = metadata.GetMandatoryValue<byte[]>("iv", m => new MetadataExtractionException(m));
-        var aadProtocolMajor = metadata.TryGetValue("aad_protocol_major", out int major) ? major : DefaultAadProtocolMajor;
-        var aadProtocolMinor = metadata.TryGetValue("aad_protocol_minor", out int minor) ? minor : DefaultAadProtocolMinor;
+        var keyId = metadata.GetMandatoryValue<string>(EnvelopeMetadataKeys.KeyId, m => new MetadataExtractionException(m));
+        var iv = metadata.GetMandatoryValue<byte[]>(EnvelopeMetadataKeys.Iv, m => new MetadataExtractionException(m));
+        var aadProtocolMajor = metadata.TryGetValue(EnvelopeMetadataKeys.AadProtocolMajor, out int major) ? major : DefaultAadProtocolMajor;
+        var aadProtocolMinor = metadata.TryGetValue(EnvelopeMetadataKeys.AadProtocolMinor, out int minor) ? minor : DefaultAadProtocolMinor;
         return new EnvelopeMetadata(keyId, iv, aad, aadProtocolMajor, aadProtocolMinor, options);
     }
 
@@ -46,9 +44,9 @@ internal class EnvelopeMetadataExtractor : IEnvelopeMetadataExtractor
         var options = new Dictionary<string, object>();
         foreach (var pair in metadata)
         {
-            if (pair.Key.StartsWith(OptionsPrefix, StringComparison.Ordinal))
+            if (pair.Key.StartsWith(EnvelopeMetadataKeys.OptionsPrefix, StringComparison.Ordinal))
             {
-                options[pair.Key[OptionsPrefix.Length..]] = pair.Value;
+                options[pair.Key[EnvelopeMetadataKeys.OptionsPrefix.Length..]] = pair.Value;
             }
         }
 

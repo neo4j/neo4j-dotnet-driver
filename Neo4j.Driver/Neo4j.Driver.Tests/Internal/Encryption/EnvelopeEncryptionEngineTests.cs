@@ -1,0 +1,147 @@
+// Copyright (c) "Neo4j"
+// Neo4j Sweden AB [https://neo4j.com]
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#nullable enable
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using AutoFixture;
+using FluentAssertions;
+using Moq;
+using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Encryption;
+using Xunit;
+
+namespace Neo4j.Driver.Tests.Internal.Encryption;
+
+public class EnvelopeEncryptionEngineTests : UnitTestBase
+{
+    private const string ProfileName = "profile-a";
+
+    private readonly Mock<IKeyEncapsulationService> _kes = new();
+    private readonly Mock<IEncapsulatedKeyRepository> _repository = new();
+
+    // SequentialRandom fills each buffer with 0,1,2,... so the generated IV is known.
+    private static readonly byte[] Iv = Sequence(12);
+
+    private class SequentialRandom : ICryptoRandomProvider
+    {
+        public void Fill(Span<byte> buffer)
+        {
+            for (var i = 0; i < buffer.Length; i++)
+            {
+                buffer[i] = (byte)i;
+            }
+        }
+    }
+
+    public EnvelopeEncryptionEngineTests()
+    {
+        Fixture.Inject<ICryptoRandomProvider>(new SequentialRandom());
+    }
+
+    private IEnvelopeProfile Profile(KeyReference defaultKeyReference)
+    {
+        var profile = new Mock<IEnvelopeProfile>();
+        profile.SetupGet(p => p.Name).Returns(ProfileName);
+        profile.SetupGet(p => p.DefaultKeyReference).Returns(defaultKeyReference);
+        profile.SetupGet(p => p.KeyEncapsulationService).Returns(_kes.Object);
+        profile.SetupGet(p => p.KeyRepository).Returns(_repository.Object);
+        return profile.Object;
+    }
+
+    [Fact]
+    public async Task EncryptAsync_WithDefaultKeyAlias_EncryptsAndEncodesTheStructure()
+    {
+        const long value = 5L;
+        var plaintext = new byte[] { 0x10, 0x11 };
+        var encapsulation = new byte[] { 0xBB };
+        var options = new Dictionary<string, string> { ["iv"] = "wrap-iv" };
+        var dek = Sequence(32, seed: 0x30);
+        var dataKey = Sequence(32, seed: 0x40);
+        var cipher = new CipherResult(new byte[] { 0xC0 }, new byte[] { 0xD0 });
+        var encoded = new byte[] { 0xEE };
+
+        var key = new EncapsulatedKey("key-1", new HashSet<string> { "main" }, encapsulation, options);
+
+        Freeze<IPlaintextSerializer>().Setup(s => s.Serialize(value)).Returns(plaintext);
+        Freeze<IPropertyTypeNamer>().Setup(n => n.GetTypeName(value)).Returns("INTEGER");
+        _repository.Setup(r => r.FindAsync(
+                new KeyReference("main", KeyReferenceType.Alias),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(key);
+
+        byte[]? cacheMiss = null;
+        Freeze<IEncryptionKeyCache>()
+            .Setup(c => c.TryGet(ProfileName, "key-1", out cacheMiss))
+            .Returns(false);
+
+        _kes.Setup(k => k.DecapsulateAsync(
+                Matches(encapsulation),
+                It.IsAny<IReadOnlyDictionary<string, string>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(dek);
+
+        Freeze<IKeyDerivation>().Setup(d => d.Derive(Matches(dek), 32)).Returns(dataKey);
+        Freeze<IAeadCipher>()
+            .Setup(c => c.Encrypt(Matches(dataKey), Matches(Iv), Matches(plaintext), Empty()))
+            .Returns(cipher);
+
+        Freeze<IEncryptedStructureCodec>()
+            .Setup(c => c.Encode(It.Is<EncryptedStructure>(s => IsExpectedStructure(s, cipher.Combined))))
+            .Returns(encoded);
+
+        var subject = CreateSubject<EnvelopeEncryptionEngine>();
+        var result = await subject.EncryptAsync(
+            Profile(new KeyReference("main", KeyReferenceType.Alias)),
+            value,
+            keyRef: null,
+            aad: null);
+
+        result.Should().Equal(encoded);
+    }
+
+    private static bool IsExpectedStructure(EncryptedStructure s, byte[] expectedCipherOutput)
+    {
+        return s.ProfileName == ProfileName &&
+            s.TypeName == "INTEGER" &&
+            s.TypeProtocolMajor == 6 &&
+            s.TypeProtocolMinor == 0 &&
+            s.CipherOutput.SequenceEqual(expectedCipherOutput) &&
+            (string)s.Metadata["key_id"] == "key-1" &&
+            ((byte[])s.Metadata["iv"]).SequenceEqual(Iv) &&
+            ((byte[])s.Metadata["aad"]).Length == 0 &&
+            (int)s.Metadata["aad_protocol_major"] == 6 &&
+            (int)s.Metadata["aad_protocol_minor"] == 0;
+    }
+
+    private static byte[] Matches(byte[] expected)
+    {
+        return It.Is<byte[]>(actual => actual.AsEnumerable().SequenceEqual(expected));
+    }
+
+    private static byte[] Empty()
+    {
+        return It.Is<byte[]>(actual => actual.Length == 0);
+    }
+
+    private static byte[] Sequence(byte length, byte seed = 0)
+    {
+        return Enumerable.TypedRange(seed, length).ToArray();
+    }
+}

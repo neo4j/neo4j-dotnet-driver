@@ -20,7 +20,9 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
+using Moq.Language;
 using Neo4j.Driver.Internal.Encryption;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.Encryption;
@@ -41,11 +43,10 @@ public class InMemoryEncapsulatedKeyRepositoryTests
 
     private void SetGeneratedIds(params string[] ids)
     {
-        var setup = _autoMock.GetMock<IKeyIdGenerator>().SetupSequence(g => g.Get());
-        foreach (var id in ids)
-        {
-            setup = setup.Returns(id);
-        }
+        _autoMock
+            .GetMock<IKeyIdGenerator>()
+            .SetupSequence(g => g.Get())
+            .ReturnsSequence(ids);
     }
 
     [Fact]
@@ -89,7 +90,7 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         HashSet<string> aliasSet = ["primary"];
         var saved = await subject.SaveAsync(aliasSet, Encapsulation, Metadata);
 
-        var found = await subject.FindByIdAsync("key-1");
+        var found = await subject.FindAsync(new KeyReference("key-1", KeyReferenceType.Id));
 
         found.Should().BeEquivalentTo(saved);
     }
@@ -103,8 +104,8 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         HashSet<string> aliasSet = ["primary", "secondary"];
         await subject.SaveAsync(aliasSet, Encapsulation, Metadata);
 
-        var byFirst = await subject.FindByAliasAsync("primary");
-        var bySecond = await subject.FindByAliasAsync("secondary");
+        var byFirst = await subject.FindAsync(new KeyReference("primary", KeyReferenceType.Alias));
+        var bySecond = await subject.FindAsync(new KeyReference("secondary", KeyReferenceType.Alias));
 
         byFirst.Id.Should().Be("key-1");
         bySecond.Id.Should().Be("key-1");
@@ -115,7 +116,7 @@ public class InMemoryEncapsulatedKeyRepositoryTests
     {
         var subject = CreateSubject();
 
-        var act = () => subject.FindByIdAsync("missing");
+        var act = () => subject.FindAsync(new KeyReference("missing", KeyReferenceType.Id));
 
         await act.Should().ThrowAsync<EncapsulatedKeyNotFoundException>();
     }
@@ -125,7 +126,7 @@ public class InMemoryEncapsulatedKeyRepositoryTests
     {
         var subject = CreateSubject();
 
-        var act = () => subject.FindByAliasAsync("missing");
+        var act = () => subject.FindAsync(new KeyReference("missing", KeyReferenceType.Alias));
 
         await act.Should().ThrowAsync<EncapsulatedAliasNotFoundException>();
     }
@@ -141,7 +142,7 @@ public class InMemoryEncapsulatedKeyRepositoryTests
 
         await subject.AddAliasByIdAsync("key-1", "extra");
 
-        var found = await subject.FindByAliasAsync("extra");
+        var found = await subject.FindAsync(new KeyReference("extra", KeyReferenceType.Alias));
         found.Id.Should().Be("key-1");
         found.Aliases.Should().Contain("extra");
     }
@@ -167,10 +168,10 @@ public class InMemoryEncapsulatedKeyRepositoryTests
 
         await subject.DeleteAliasByIdAsync("key-1", "primary");
 
-        var byId = await subject.FindByIdAsync("key-1");
+        var byId = await subject.FindAsync(new KeyReference("key-1", KeyReferenceType.Id));
         byId.Aliases.Should().NotContain("primary");
 
-        var act = () => subject.FindByAliasAsync("primary");
+        var act = () => subject.FindAsync(new KeyReference("primary", KeyReferenceType.Alias));
         await act.Should().ThrowAsync<EncapsulatedAliasNotFoundException>();
     }
 
@@ -199,10 +200,10 @@ public class InMemoryEncapsulatedKeyRepositoryTests
 
         await subject.DeleteByIdAsync("key-1");
 
-        var byId = () => subject.FindByIdAsync("key-1");
+        var byId = () => subject.FindAsync(new KeyReference("key-1", KeyReferenceType.Id));
         await byId.Should().ThrowAsync<EncapsulatedKeyNotFoundException>();
 
-        var byAlias = () => subject.FindByAliasAsync("primary");
+        var byAlias = () => subject.FindAsync(new KeyReference("primary", KeyReferenceType.Alias));
         await byAlias.Should().ThrowAsync<EncapsulatedAliasNotFoundException>();
     }
 
@@ -229,7 +230,7 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         HashSet<string> secondAliases = ["primary"];
         await subject.SaveAsync(secondAliases, Encapsulation, Metadata);
 
-        var byAlias = await subject.FindByAliasAsync("primary");
+        var byAlias = await subject.FindAsync(new KeyReference("primary", KeyReferenceType.Alias));
         byAlias.Id.Should().Be("key-2");
     }
 
@@ -246,13 +247,13 @@ public class InMemoryEncapsulatedKeyRepositoryTests
 
         await subject.AddAliasByIdAsync("key-2", "shared");
 
-        var byAlias = await subject.FindByAliasAsync("shared");
+        var byAlias = await subject.FindAsync(new KeyReference("shared", KeyReferenceType.Alias));
         byAlias.Id.Should().Be("key-2");
 
-        var losing = await subject.FindByIdAsync("key-1");
+        var losing = await subject.FindAsync(new KeyReference("key-1", KeyReferenceType.Id));
         losing.Aliases.Should().NotContain("shared");
 
-        var gaining = await subject.FindByIdAsync("key-2");
+        var gaining = await subject.FindAsync(new KeyReference("key-2", KeyReferenceType.Id));
         gaining.Aliases.Should().Contain("shared");
     }
 
@@ -267,10 +268,10 @@ public class InMemoryEncapsulatedKeyRepositoryTests
 
         await subject.AddAliasByIdAsync("key-1", "primary");
 
-        var key = await subject.FindByIdAsync("key-1");
+        var key = await subject.FindAsync(new KeyReference("key-1", KeyReferenceType.Id));
         key.Aliases.Should().BeEquivalentTo("primary");
 
-        var byAlias = await subject.FindByAliasAsync("primary");
+        var byAlias = await subject.FindAsync(new KeyReference("primary", KeyReferenceType.Alias));
         byAlias.Id.Should().Be("key-1");
     }
 
@@ -286,10 +287,10 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         HashSet<string> secondAliases = ["shared"];
         await subject.SaveAsync(secondAliases, Encapsulation, Metadata);
 
-        var byAlias = await subject.FindByAliasAsync("shared");
+        var byAlias = await subject.FindAsync(new KeyReference("shared", KeyReferenceType.Alias));
         byAlias.Id.Should().Be("key-2");
 
-        var losing = await subject.FindByIdAsync("key-1");
+        var losing = await subject.FindAsync(new KeyReference("key-1", KeyReferenceType.Id));
         losing.Aliases.Should().NotContain("shared");
     }
 
@@ -306,7 +307,7 @@ public class InMemoryEncapsulatedKeyRepositoryTests
 
         saved.Aliases.Should().BeEquivalentTo("primary");
 
-        var act = () => subject.FindByAliasAsync("sneaked-in");
+        var act = () => subject.FindAsync(new KeyReference("sneaked-in", KeyReferenceType.Alias));
         await act.Should().ThrowAsync<EncapsulatedAliasNotFoundException>();
     }
 }

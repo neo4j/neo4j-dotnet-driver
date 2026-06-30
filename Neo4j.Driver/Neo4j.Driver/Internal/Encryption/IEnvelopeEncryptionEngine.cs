@@ -15,25 +15,17 @@
 
 #nullable enable
 
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-internal interface IEncapsulatedKeyRepository
+internal interface IEnvelopeEncryptionEngine
 {
-    Task<EncapsulatedKey> FindAsync(KeyReference keyReference, CancellationToken cancellationToken = default);
-
-    Task<EncapsulatedKey> SaveAsync(
-        IEnumerable<string> aliases,
-        byte[] encapsulation,
-        IReadOnlyDictionary<string, string> metadata,
+    Task<byte[]> EncryptAsync(
+        IEnvelopeProfile profile,
+        object value,
+        KeyReference? keyRef,
+        byte[]? aad,
         CancellationToken cancellationToken = default);
-
-    Task AddAliasByIdAsync(string id, string alias, CancellationToken cancellationToken = default);
-
-    Task DeleteAliasByIdAsync(string id, string alias, CancellationToken cancellationToken = default);
-
-    Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default);
 }

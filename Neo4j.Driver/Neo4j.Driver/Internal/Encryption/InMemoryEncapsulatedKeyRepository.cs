@@ -15,6 +15,7 @@
 
 #nullable enable
 
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,18 +36,33 @@ internal class InMemoryEncapsulatedKeyRepository : IEncapsulatedKeyRepository
         _keyIdGenerator = keyIdGenerator;
     }
 
-    public Task<EncapsulatedKey> FindByIdAsync(string id, CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(GetKeyByIdOrThrow(id));
-    }
-
-    public Task<EncapsulatedKey> FindByAliasAsync(string alias, CancellationToken cancellationToken = default)
+    private EncapsulatedKey GetKeyByIdOrThrow(string id)
     {
         lock (_lock)
         {
-            return _aliasToId.TryGetValue(alias, out var id)
-                ? Task.FromResult(GetKeyByIdOrThrow(id))
-                : throw new EncapsulatedAliasNotFoundException(alias);
+            return _idToKey.TryGetValue(id, out var key)
+                ? key
+                : throw new EncapsulatedKeyNotFoundException(id);
+        }
+    }
+
+    public Task<EncapsulatedKey> FindAsync(KeyReference keyReference, CancellationToken cancellationToken = default)
+    {
+        lock (_lock)
+        {
+            var id = keyReference switch
+            {
+                { Type: KeyReferenceType.Id } => keyReference.Reference,
+
+                { Type: KeyReferenceType.Alias } => _aliasToId.TryGetValue(keyReference.Reference, out var k) 
+                    ? k
+                    : throw new EncapsulatedAliasNotFoundException(keyReference.Reference),
+
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(keyReference), keyReference.Type, "Unknown key reference type")
+            };
+
+            return Task.FromResult(GetKeyByIdOrThrow(id));
         }
     }
 
@@ -136,15 +152,5 @@ internal class InMemoryEncapsulatedKeyRepository : IEncapsulatedKeyRepository
         }
 
         return Task.CompletedTask;
-    }
-
-    private EncapsulatedKey GetKeyByIdOrThrow(string id)
-    {
-        lock (_lock)
-        {
-            return _idToKey.TryGetValue(id, out var key)
-                ? key
-                : throw new EncapsulatedKeyNotFoundException(id);
-        }
     }
 }
