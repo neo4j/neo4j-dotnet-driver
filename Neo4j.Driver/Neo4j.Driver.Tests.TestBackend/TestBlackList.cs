@@ -14,11 +14,14 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
 internal static class TestBlackList
 {
+    public static IReadOnlyList<(string Name, string Reason)> Entries => BlackListNames;
+
     private static readonly (string Name, string Reason)[] BlackListNames =
     {
         ("test_session_run.TestSessionRun.test_iteration_nested",
