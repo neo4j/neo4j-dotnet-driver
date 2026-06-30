@@ -13,12 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
+using System.Collections.Generic;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
 internal static class TestBlackList
 {
+    public static IReadOnlyList<(string Name, string Reason)> Entries => BlackListNames;
+
     private static readonly (string Name, string Reason)[] BlackListNames =
     {
         ("test_session_run.TestSessionRun.test_iteration_nested",
@@ -133,17 +135,4 @@ internal static class TestBlackList
             "Re-enabling cache delayed until 6.0 release."),
     };
 
-    public static bool FindTest(string testName, out string reason)
-    {
-        var item = Array.Find(BlackListNames, x => testName.Contains(x.Name));
-
-        if (item != default)
-        {
-            reason = item.Reason;
-            return true;
-        }
-
-        reason = string.Empty;
-        return false;
-    }
 }
