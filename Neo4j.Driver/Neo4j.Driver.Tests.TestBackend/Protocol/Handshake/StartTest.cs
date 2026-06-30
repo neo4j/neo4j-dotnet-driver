@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System.Threading.Tasks;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Skip;
 
 namespace Neo4j.Driver.Tests.TestBackend.Protocol.Handshake;
 
@@ -28,13 +29,12 @@ internal class StartTest : ProtocolObject
 
     public override string Respond()
     {
-        var reason = string.Empty;
-        if (TestBlackList.FindTest(data.testName, out reason))
+        return TestSkipPolicies.Default.GetPolicy(data.testName).Overall switch
         {
-            return new ProtocolResponse("SkipTest", new { reason }).Encode();
-        }
-
-        return new ProtocolResponse("RunTest").Encode();
+            TestDisposition.SkipAll skip => new ProtocolResponse("SkipTest", new { reason = skip.Reason }).Encode(),
+            TestDisposition.RunSubtests => new ProtocolResponse("RunSubTests").Encode(),
+            _ => new ProtocolResponse("RunTest").Encode()
+        };
     }
 
     public class StartTestType

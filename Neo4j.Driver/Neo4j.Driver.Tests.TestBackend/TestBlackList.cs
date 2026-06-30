@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 
 namespace Neo4j.Driver.Tests.TestBackend;
@@ -136,17 +135,4 @@ internal static class TestBlackList
             "Re-enabling cache delayed until 6.0 release."),
     };
 
-    public static bool FindTest(string testName, out string reason)
-    {
-        var item = Array.Find(BlackListNames, x => testName.Contains(x.Name));
-
-        if (item != default)
-        {
-            reason = item.Reason;
-            return true;
-        }
-
-        reason = string.Empty;
-        return false;
-    }
 }
