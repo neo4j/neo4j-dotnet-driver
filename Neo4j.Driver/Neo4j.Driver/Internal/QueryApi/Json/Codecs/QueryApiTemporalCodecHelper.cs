@@ -27,6 +27,9 @@ internal static class QueryApiTemporalCodecHelper
     public const string TimePattern =
         @"(?<hour>\d{2}):(?<minute>\d{2})(?::(?<second>\d{2})(?:\.(?<fraction>\d{1,9}))?)?";
 
+    public const string OffsetPattern =
+        @"(?<offset>Z|[+-]\d{4}|[+-]\d{2}:\d{2}(?::\d{2})?)";
+
     public static string FormatDate(int year, int month, int day)
     {
         return $"{FormatYear(year)}-{month:D2}-{day:D2}";
@@ -36,6 +39,43 @@ internal static class QueryApiTemporalCodecHelper
     {
         var fraction = nanosecond > 0 ? $".{nanosecond:D9}" : string.Empty;
         return $"{hour:D2}:{minute:D2}:{second:D2}{fraction}";
+    }
+
+    public static string FormatOffset(int offsetSeconds)
+    {
+        if (offsetSeconds == 0)
+        {
+            return "Z";
+        }
+
+        var sign = offsetSeconds >= 0 ? "+" : "-";
+        var total = System.Math.Abs(offsetSeconds);
+        var seconds = total % 60;
+        var minutes = total / 60 % 60;
+        var hours = total / 3600;
+
+        var text = $"{sign}{hours:D2}:{minutes:D2}";
+        return seconds > 0 ? $"{text}:{seconds:D2}" : text;
+    }
+
+    public static int ParseOffset(Group group)
+    {
+        var text = group.Value;
+        if (text == "Z")
+        {
+            return 0;
+        }
+
+        var sign = text[0] == '-' ? -1 : 1;
+        var body = text.Substring(1).Replace(":", string.Empty);
+
+        var hours = int.Parse(body.Substring(0, 2), CultureInfo.InvariantCulture);
+        var minutes = int.Parse(body.Substring(2, 2), CultureInfo.InvariantCulture);
+        var seconds = body.Length > 4
+            ? int.Parse(body.Substring(4, 2), CultureInfo.InvariantCulture)
+            : 0;
+
+        return sign * (hours * 3600 + minutes * 60 + seconds);
     }
 
     public static int ParseInt(Group group)

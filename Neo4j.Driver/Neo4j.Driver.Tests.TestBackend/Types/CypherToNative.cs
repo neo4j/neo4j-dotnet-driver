@@ -144,17 +144,20 @@ internal class CypherToNative
             return null;
         }
 
+        if (!TypeMap.TryGetValue(sourceObject.name, out var objectType))
+        {
+            throw new IOException($"Unsupported Cypher type: {sourceObject.name}");
+        }
+
         try
         {
-            var objectType = TypeMap[sourceObject.name];
-            var function = FunctionMap[objectType];
-
-            return function(objectType, sourceObject);
+            return FunctionMap[objectType](objectType, sourceObject);
         }
-        catch
+        catch (Exception ex)
         {
             throw new IOException(
-                $"Attempting to convert an unsupported object type to a CypherType: {sourceObject.GetType()}");
+                $"Failed to convert {sourceObject.name} to a native value: {ex.Message}",
+                ex);
         }
     }
 
