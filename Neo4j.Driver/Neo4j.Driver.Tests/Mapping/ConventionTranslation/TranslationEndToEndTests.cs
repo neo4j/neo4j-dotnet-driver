@@ -107,4 +107,70 @@ public class TranslationEndToEndTests : MappingTestWithGlobalState
         flightCrew.CoPilot.NumberOfMiddleNames.Should().Be(2);
         flightCrew.CoPilot.FavouriteColor.Should().Be("blue");
     }
+
+    public class CrewMember(string personName, int yearsOfService = 10)
+    {
+        public string PersonName { get; set; } = personName;
+        public int YearsOfService { get; set; } = yearsOfService;
+    }
+
+    [Fact]
+    public void ShouldNotReMapOptionalConstructorParametersWhenTranslating()
+    {
+        // "years_of_service" is absent, so the optional constructor parameter falls back to its default.
+        // under identifier translation the public property resolves to the same record field as the parameter,
+        // so it must not be re-mapped via its setter (which would fail because the field is absent).
+        var record = TestRecord.Create(["person_name"], ["Bob"]);
+        RecordObjectMapping.TranslateIdentifiers(FieldCaseConvention.SnakeCase);
+
+        var crewMember = record.AsObject<CrewMember>();
+
+        crewMember.PersonName.Should().Be("Bob");
+        crewMember.YearsOfService.Should().Be(10);
+    }
+
+    public class NestedDottedMember
+    {
+        [MappingBindings(Path = "mainPerson.fullName")]
+        public string Name { get; set; }
+    }
+
+    [Fact]
+    public void ShouldTranslateEachSegmentOfDotSeparatedNonExplicitPath()
+    {
+        var personNode = new Node(0, [], new Dictionary<string, object> { ["full_name"] = "Bob" });
+        var record = TestRecord.Create(("main_person", personNode));
+        RecordObjectMapping.TranslateIdentifiers(FieldCaseConvention.SnakeCase);
+
+        var result = record.AsObject<NestedDottedMember>();
+
+        result.Name.Should().Be("Bob");
+    }
+
+    public class ExplicitParamMember
+    {
+        [MappingConstructor]
+        public ExplicitParamMember([MappingSource("title_field")] string titleField = "from-ctor")
+        {
+            TitleField = titleField;
+        }
+
+        public string TitleField { get; set; }
+    }
+
+    [Fact]
+    public void ShouldRebuildDefaultMapperWhenTranslationConfigChanges()
+    {
+        RecordObjectMapping.TranslateIdentifiers(FieldCaseConvention.SnakeCase);
+        var underSnake = TestRecord.Create(("title_field", "snake"), ("title-field", "kebab"))
+        .AsObject<ExplicitParamMember>();
+
+        underSnake.TitleField.Should().Be("snake");
+
+        RecordObjectMapping.TranslateIdentifiers(FieldCaseConvention.KebabCase);
+        var underKebab = TestRecord.Create(("title_field", "snake"), ("title-field", "kebab"))
+            .AsObject<ExplicitParamMember>();
+            
+        underKebab.TitleField.Should().Be("kebab");
+    }
 }

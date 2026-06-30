@@ -13,8 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-
 namespace Neo4j.Driver.Internal.Result;
 
 #pragma warning disable CS0618 // Type or member is obsolete

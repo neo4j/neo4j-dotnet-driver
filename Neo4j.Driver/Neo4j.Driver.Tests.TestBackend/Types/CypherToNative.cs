@@ -15,7 +15,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Neo4j.Driver.Internal.Util;
 using Neo4j.Driver.Tests.TestBackend.Protocol.Session;
@@ -146,19 +145,15 @@ internal class CypherToNative
 
         if (!TypeMap.TryGetValue(sourceObject.name, out var objectType))
         {
-            throw new IOException($"Unsupported Cypher type: {sourceObject.name}");
+            throw new ArgumentException($"Unsupported Cypher type: {sourceObject.name}");
         }
 
-        try
+        if(!FunctionMap.TryGetValue(objectType, out var function))
         {
-            return FunctionMap[objectType](objectType, sourceObject);
+            throw new ArgumentException($"Missing conversion function for: {objectType}");
         }
-        catch (Exception ex)
-        {
-            throw new IOException(
-                $"Failed to convert {sourceObject.name} to a native value: {ex.Message}",
-                ex);
-        }
+
+        return function(objectType, sourceObject);
     }
 
     public static object CypherSimple(Type objectType, CypherToNativeObject cypherObject)

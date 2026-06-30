@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -13,14 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Tests.TestBackend.Protocol.Skip;
+using Newtonsoft.Json.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend.Protocol.Handshake;
 
-internal class StartTest : ProtocolObject
+internal class StartSubTest : ProtocolObject
 {
-    public StartTestType data { get; set; } = new();
+    public StartSubTestType data { get; set; } = new();
 
     public override async Task Process()
     {
@@ -29,16 +31,17 @@ internal class StartTest : ProtocolObject
 
     public override string Respond()
     {
-        return TestSkipPolicies.Default.GetPolicy(data.testName).Overall switch
-        {
-            TestDisposition.SkipAll skip => new ProtocolResponse("SkipTest", new { reason = skip.Reason }).Encode(),
-            TestDisposition.RunSubtests => new ProtocolResponse("RunSubTests").Encode(),
-            _ => new ProtocolResponse("RunTest").Encode()
-        };
+        var policy = TestSkipPolicies.Default.GetPolicy(data.testName);
+
+        return policy.ShouldRunSubtest(data.subtestArguments, out var reason)
+            ? new ProtocolResponse("RunTest").Encode()
+            : new ProtocolResponse("SkipTest", new { reason }).Encode();
     }
 
-    public class StartTestType
+    public class StartSubTestType
     {
         public string testName { get; set; }
+
+        public Dictionary<string, JToken> subtestArguments { get; set; } = new();
     }
 }

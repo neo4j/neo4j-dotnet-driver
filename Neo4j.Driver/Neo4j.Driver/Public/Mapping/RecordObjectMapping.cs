@@ -169,6 +169,22 @@ public class RecordObjectMapping : IRecordObjectMapping
         return _conventionTranslator.Translate(objectIdentifier);
     }
 
+    internal string GetTranslatedRecordPath(string path)
+    {
+        if (path is null || path.IndexOf('.') < 0)
+        {
+            return GetTranslatedRecordIdentifier(path);
+        }
+
+        var segments = path.Split('.');
+        for (var i = 0; i < segments.Length; i++)
+        {
+            segments[i] = GetTranslatedRecordIdentifier(segments[i]);
+        }
+
+        return string.Join(".", segments);
+    }
+
     internal string GetTranslatedCypherParameterName(string propertyName)
     {
         return _translateCypherParameterNames 
@@ -191,6 +207,10 @@ public class RecordObjectMapping : IRecordObjectMapping
     {
         _conventionTranslator = conventionTranslator;
         _translateCypherParameterNames = translateCypherParameters;
+
+        // default mappers bake the translation config into their used-source dedup keys at build time and are
+        // cached per type, so if translation config changes the whole cache is invalidated.
+        DefaultMapper.Reset();
     }
 
     private static void TranslateIdentifiers(IConventionTranslator conventionTranslator, bool translateCypherParameters)
