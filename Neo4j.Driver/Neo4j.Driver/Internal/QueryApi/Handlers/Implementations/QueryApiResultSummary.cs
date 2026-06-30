@@ -19,7 +19,6 @@ using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Result;
 
-using Neo4j.Driver.Internal.DependencyInjection;
 namespace Neo4j.Driver.Internal.QueryApi;
 
 internal class QueryApiResultSummary : IResultSummary
