@@ -17,6 +17,7 @@
 
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Neo4j.Driver.Internal.Helpers;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
@@ -29,6 +30,23 @@ internal static class QueryApiTemporalCodecHelper
 
     public const string OffsetPattern =
         @"(?<offset>Z|[+-]\d{4}|[+-]\d{2}:\d{2}(?::\d{2})?)";
+
+    public const string ZonePattern = @"\[(?<zone>[^\]]+)\]";
+
+    public static (long UtcSeconds, int Nanoseconds, int OffsetSeconds) ParseUtcInstant(Match match)
+    {
+        var local = new LocalDateTime(
+            ParseInt(match.Groups["year"]),
+            ParseInt(match.Groups["month"]),
+            ParseInt(match.Groups["day"]),
+            ParseInt(match.Groups["hour"]),
+            ParseInt(match.Groups["minute"]),
+            ParseOptionalInt(match.Groups["second"]),
+            ParseFractionAsNanoseconds(match.Groups["fraction"]));
+
+        var offset = ParseOffset(match.Groups["offset"]);
+        return (local.ToEpochSeconds() - offset, local.Nanosecond, offset);
+    }
 
     public static string FormatDate(int year, int month, int day)
     {

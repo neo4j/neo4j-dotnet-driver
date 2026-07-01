@@ -36,7 +36,7 @@ internal static class QueryApiCodecAssert
         "Null", "Boolean", "Integer", "Float", "String", "Base64", "Unsupported",
         "List", "Map",
         "Vector",
-        "Date", "Time", "LocalTime", "ZonedDateTime", "LocalDateTime", "Duration",
+        "Date", "Time", "LocalTime", "ZonedDateTime", "OffsetDateTime", "LocalDateTime", "Duration",
         "Point", "Node", "Relationship", "Path"
     ];
 
