@@ -86,25 +86,6 @@ internal sealed class QueryApiPrimitiveCodec : IQueryApiTypeCodec
         };
     }
 
-    private static double ParseFloat(string value) => value switch
-    {
-        "NaN" => double.NaN,
-        "Infinity" => double.PositiveInfinity,
-        "-Infinity" => double.NegativeInfinity,
-        _ => double.Parse(value, CultureInfo.InvariantCulture)
-    };
-
-    private static string FormatFloat(double value)
-    {
-        return value switch
-        {
-            double.NaN => "NaN",
-            double.PositiveInfinity => "Infinity",
-            double.NegativeInfinity => "-Infinity",
-            _ => value.ToString("G17", CultureInfo.InvariantCulture)
-        };
-    }
-
     private static string FormatInteger(object value)
     {
         return Convert.ToInt64(value).ToString(CultureInfo.InvariantCulture);

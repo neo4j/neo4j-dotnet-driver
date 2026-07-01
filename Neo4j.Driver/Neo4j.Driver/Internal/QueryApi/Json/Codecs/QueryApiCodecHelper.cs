@@ -15,6 +15,7 @@
 
 #nullable enable
 
+using System.Globalization;
 using System.Text.Json.Nodes;
 
 namespace Neo4j.Driver.Internal.QueryApi;
@@ -23,4 +24,20 @@ internal static class QueryApiCodecHelper
 {
     internal static JsonObject CreateTypedEnvelope(string type, JsonNode? valueNode) =>
         new() { ["$type"] = type, ["_value"] = valueNode };
+
+    internal static string FormatFloat(double value) => value switch
+    {
+        double.NaN => "NaN",
+        double.PositiveInfinity => "Infinity",
+        double.NegativeInfinity => "-Infinity",
+        _ => value.ToString("G17", CultureInfo.InvariantCulture)
+    };
+
+    internal static double ParseFloat(string value) => value switch
+    {
+        "NaN" => double.NaN,
+        "Infinity" => double.PositiveInfinity,
+        "-Infinity" => double.NegativeInfinity,
+        _ => double.Parse(value, CultureInfo.InvariantCulture)
+    };
 }

@@ -80,6 +80,14 @@ public class DurationParameterValue
     public int? nanoseconds { get; set; }
 }
 
+public class PointParameterValue
+{
+    public string system { get; set; }
+    public object x { get; set; }
+    public object y { get; set; }
+    public object z { get; set; }
+}
+
 internal class CypherToNative
 {
     //Mapping of object type to a cypher type name string that will be used in the JSON.
@@ -127,7 +135,7 @@ internal class CypherToNative
         { typeof(ZonedDateTime), CypherDateTime },
         { typeof(LocalDateTime), CypherDateTime },
         { typeof(Duration), CypherDuration },
-        { typeof(Point), CypherTODO },
+        { typeof(Point), CypherPoint },
         { typeof(Vector), CypherVector },
         { typeof(Guid), CypherUuid },
 
@@ -163,7 +171,11 @@ internal class CypherToNative
 
     public static object CypherDouble(Type objectType, CypherToNativeObject cypherObject)
     {
-        var raw = ((SimpleValue)cypherObject.data).value;
+        return ToDouble(((SimpleValue)cypherObject.data).value);
+    }
+
+    private static double ToDouble(object raw)
+    {
         return raw switch
         {
             double d => d,
@@ -177,6 +189,23 @@ internal class CypherToNative
             System.Numerics.BigInteger big => (double)big,
             _ => System.Convert.ToDouble(raw)
         };
+    }
+
+    private static object CypherPoint(Type objectType, CypherToNativeObject obj)
+    {
+        var point = (PointParameterValue)obj.data;
+        var x = ToDouble(point.x);
+        var y = ToDouble(point.y);
+        var is3d = point.z != null;
+
+        var srId = point.system switch
+        {
+            "cartesian" => is3d ? 9157 : 7203,
+            "wgs84" => is3d ? 4979 : 4326,
+            _ => throw new ArgumentException($"Unsupported spatial system: {point.system}")
+        };
+
+        return is3d ? new Point(srId, x, y, ToDouble(point.z)) : new Point(srId, x, y);
     }
 
     public static object CypherBytesConvert(Type objectType, CypherToNativeObject cypherObject)
