@@ -15,20 +15,27 @@
 
 #nullable enable
 
-using System.Text.Json;
-using System.Text.Json.Nodes;
+using System;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-internal interface IQueryApiTypeCodec
+internal enum QueryApiMediaVersion
 {
-    bool CanRead(string typeName);
+    V1_0,
+    V1_1
+}
 
-    object? Read(JsonElement element, IJsonValueDecoder recurse);
+internal static class QueryApiMediaVersionExtensions
+{
+    public static string ToMediaTypeString(this QueryApiMediaVersion version)
+    {
+        var (major, minor) = version switch
+        {
+            QueryApiMediaVersion.V1_0 => (1, 0),
+            QueryApiMediaVersion.V1_1 => (1, 1),
+            _ => throw new ArgumentOutOfRangeException(nameof(version), version, null)
+        };
 
-    bool CanWrite(object? value);
-
-    JsonNode? Write(object? value, IJsonValueEncoder recurse);
-
-    QueryApiMediaVersion RequiredVersion => QueryApiMediaVersion.V1_0;
+        return $"application/vnd.neo4j.query.v{major}.{minor}";
+    }
 }

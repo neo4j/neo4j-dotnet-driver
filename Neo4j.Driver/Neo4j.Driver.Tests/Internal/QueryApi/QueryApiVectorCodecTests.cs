@@ -72,4 +72,10 @@ public class QueryApiVectorCodecTests
         // TODO - this test is just to make sure that we implement this method
         act.Should().NotThrow();
     }
+
+    [Fact]
+    public void VectorCodec_RequiresV1_1()
+    {
+        _subject.RequiredVersion.Should().Be(QueryApiMediaVersion.V1_1);
+    }
 }

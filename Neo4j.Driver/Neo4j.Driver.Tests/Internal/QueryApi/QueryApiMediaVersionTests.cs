@@ -15,20 +15,23 @@
 
 #nullable enable
 
-using System.Text.Json;
-using System.Text.Json.Nodes;
+using FluentAssertions;
+using Neo4j.Driver.Internal.QueryApi;
+using Xunit;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
-internal interface IQueryApiTypeCodec
+public class QueryApiMediaVersionTests
 {
-    bool CanRead(string typeName);
+    [Fact]
+    public void ToMediaTypeString_RendersV1_0()
+    {
+        QueryApiMediaVersion.V1_0.ToMediaTypeString().Should().Be("application/vnd.neo4j.query.v1.0");
+    }
 
-    object? Read(JsonElement element, IJsonValueDecoder recurse);
-
-    bool CanWrite(object? value);
-
-    JsonNode? Write(object? value, IJsonValueEncoder recurse);
-
-    QueryApiMediaVersion RequiredVersion => QueryApiMediaVersion.V1_0;
+    [Fact]
+    public void ToMediaTypeString_RendersV1_1()
+    {
+        QueryApiMediaVersion.V1_1.ToMediaTypeString().Should().Be("application/vnd.neo4j.query.v1.1");
+    }
 }

@@ -38,6 +38,8 @@ internal sealed class QueryApiVectorCodec : IQueryApiTypeCodec
         public string[]? Coordinates { get; init; }
     }
 
+    public QueryApiMediaVersion RequiredVersion => QueryApiMediaVersion.V1_1;
+
     public bool CanRead(string typeName) => typeName == "Vector";
 
     public object? Read(JsonElement element, IJsonValueDecoder recurse)
