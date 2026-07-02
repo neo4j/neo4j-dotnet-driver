@@ -28,16 +28,21 @@ using Neo4j.Driver.Internal.DependencyInjection;
 namespace Neo4j.Driver.Internal.QueryApi;
 
 [AutoRegister]
-internal class QueryApiJsonSerializer : IJsonSerializer, IJsonDeserializer
+internal class QueryApiJsonSerializer : IQueryApiJsonSerializer, IJsonDeserializer
 {
     private static readonly JsonNamingPolicy DefaultNamingPolicy = JsonNamingPolicy.CamelCase;
 
+    private readonly IRequiredMediaVersionCalculator _versionCalculator;
     private readonly JsonSerializerOptions _writeOptions;
 
     private readonly ConcurrentDictionary<JsonNamingPolicy, JsonSerializerOptions> _readOptionsByNamingPolicy = new();
 
-    public QueryApiJsonSerializer(IEnumerable<IQueryApiJsonConverter> converters)
+    public QueryApiJsonSerializer(
+        IEnumerable<IQueryApiJsonConverter> converters,
+        IRequiredMediaVersionCalculator versionCalculator)
     {
+        _versionCalculator = versionCalculator;
+
         var converterList = converters.Select(c => c.GetConverter()).ToList();
 
         _writeOptions = new JsonSerializerOptions
@@ -52,27 +57,40 @@ internal class QueryApiJsonSerializer : IJsonSerializer, IJsonDeserializer
         }
     }
 
-    public string Serialize<T>(T value) => JsonSerializer.Serialize(value, _writeOptions);
+    public SerializedBody Serialize(IQueryApiRequestBody body)
+    {
+        var json = JsonSerializer.Serialize(body, body.GetType(), _writeOptions);
+        var version = _versionCalculator.Calculate(body.GetParameterValues());
+        return new SerializedBody(json, version);
+    }
 
     public ValueTask<T?> DeserializeAsync<T>(
         Stream utf8Json,
         JsonNamingPolicy? namingPolicy,
-        CancellationToken cancellationToken = default) =>
-        JsonSerializer.DeserializeAsync<T>(utf8Json, GetReadOptions(namingPolicy), cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        return JsonSerializer.DeserializeAsync<T>(utf8Json, GetReadOptions(namingPolicy), cancellationToken);
+    }
 
-    public T MapObject<T>(JsonElement json, JsonNamingPolicy? namingPolicy) =>
-        json.Deserialize<T>(GetReadOptions(namingPolicy))
-            ?? throw new JsonException($"Failed to deserialize JSON element to type '{typeof(T)}'.");
+    public T MapObject<T>(JsonElement json, JsonNamingPolicy? namingPolicy)
+    {
+        return json.Deserialize<T>(GetReadOptions(namingPolicy)) ??
+            throw new JsonException($"Failed to deserialize JSON element to type '{typeof(T)}'.");
+    }
 
-    public ValueTask<T?> DeserializeAsync<T>(string json, CancellationToken cancellationToken = default) =>
-        ValueTask.FromResult(JsonSerializer.Deserialize<T>(json, GetReadOptions()));
+    public ValueTask<T?> DeserializeAsync<T>(string json, CancellationToken cancellationToken = default)
+    {
+        return ValueTask.FromResult(JsonSerializer.Deserialize<T>(json, GetReadOptions()));
+    }
 
-    private JsonSerializerOptions GetReadOptions(JsonNamingPolicy? namingPolicy = null) =>
-        _readOptionsByNamingPolicy.GetOrAdd(
+    private JsonSerializerOptions GetReadOptions(JsonNamingPolicy? namingPolicy = null)
+    {
+        return _readOptionsByNamingPolicy.GetOrAdd(
             namingPolicy ?? DefaultNamingPolicy,
             policy => new JsonSerializerOptions
             {
                 PropertyNamingPolicy = policy,
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
             });
+    }
 }

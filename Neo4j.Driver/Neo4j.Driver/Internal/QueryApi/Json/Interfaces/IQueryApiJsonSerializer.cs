@@ -15,22 +15,11 @@
 
 #nullable enable
 
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace Neo4j.Driver.Internal.QueryApi;
 
-/// <summary>
-/// Builds authenticated HTTP requests for the Query API, prepending <c>db/{database}/</c> to all
-/// paths and applying auth and cluster-affinity headers using session context injected at construction.
-/// </summary>
-internal interface IQueryApiRequestBuilder
+internal interface IQueryApiJsonSerializer
 {
-    Task<HttpRequestMessage> PostAsync(
-        string path,
-        IQueryApiRequestBody? body,
-        CancellationToken cancellationToken = default);
-
-    Task<HttpRequestMessage> DeleteAsync(string path, CancellationToken cancellationToken = default);
+    SerializedBody Serialize(IQueryApiRequestBody body);
 }
+
+internal readonly record struct SerializedBody(string Json, QueryApiMediaVersion Version);

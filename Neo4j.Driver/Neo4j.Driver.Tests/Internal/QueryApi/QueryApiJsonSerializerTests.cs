@@ -16,11 +16,11 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using AutoFixture;
-using AutoFixture.AutoMoq;
 using FluentAssertions;
+using Moq;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
 
@@ -46,24 +46,41 @@ public class QueryApiJsonSerializerTests
         }
     }
 
-    private static readonly IFixture Fixture = new Fixture().Customize(new AutoMoqCustomization());
-    private readonly QueryApiJsonSerializer _subject = new([new TestConverter(0)]);
+    private readonly Mock<IRequiredMediaVersionCalculator> _calculator = new();
 
-    private record Body(string Statement, string? AccessMode = null);
+    private QueryApiJsonSerializer Subject() => new([new TestConverter(0)], _calculator.Object);
+
+    private record Body(string Statement, string? AccessMode = null) : IQueryApiRequestBody
+    {
+        public IReadOnlyCollection<object?> ParameterValues { private get; init; } = [];
+
+        public IReadOnlyCollection<object?> GetParameterValues() => ParameterValues;
+    }
 
     [Fact]
     public void Serialize_WritesPropertiesAsCamelCase()
     {
-        var result = _subject.Serialize(new Body("MATCH (n) RETURN n", "READ"));
+        var result = Subject().Serialize(new Body("MATCH (n) RETURN n", "READ"));
 
-        result.Should().Be("""{"statement":"MATCH (n) RETURN n","accessMode":"READ"}""");
+        result.Json.Should().Be("""{"statement":"MATCH (n) RETURN n","accessMode":"READ"}""");
     }
 
     [Fact]
     public void Serialize_OmitsNullProperties()
     {
-        var result = _subject.Serialize(new Body("RETURN 1"));
+        var result = Subject().Serialize(new Body("RETURN 1"));
 
-        result.Should().Be("""{"statement":"RETURN 1"}""");
+        result.Json.Should().Be("""{"statement":"RETURN 1"}""");
+    }
+
+    [Fact]
+    public void Serialize_ReportsVersionFromCalculatorOverParameterValues()
+    {
+        var values = new object?[] { 0 };
+        _calculator.Setup(c => c.Calculate(values)).Returns(QueryApiMediaVersion.V1_1);
+
+        var result = Subject().Serialize(new Body("RETURN $v") { ParameterValues = values });
+
+        result.Version.Should().Be(QueryApiMediaVersion.V1_1);
     }
 }

@@ -16,6 +16,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -80,7 +81,13 @@ internal class TransactionBeginner : ITransactionBeginner
         return request;
     }
 
-    internal record RequestBody(string[]? Bookmarks, string? ImpersonatedUser);
+    internal record RequestBody(string[]? Bookmarks, string? ImpersonatedUser) : IQueryApiRequestBody
+    {
+        public IReadOnlyCollection<object?> GetParameterValues()
+        {
+            return [];
+        }
+    }
 
     internal record ResponseBody : QueryApiResponse
     {

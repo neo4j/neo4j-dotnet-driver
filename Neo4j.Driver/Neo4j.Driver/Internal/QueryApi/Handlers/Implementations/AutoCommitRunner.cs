@@ -93,12 +93,17 @@ internal class AutoCommitRunner : IAutoCommitRunner
         return request;
     }
 
-    internal record RequestBody
+    internal record RequestBody : IQueryApiRequestBody
     {
         public string? Statement { get; init; }
         public QueryApiParameterDictionary? Parameters { get; init; }
         public string[]? Bookmarks { get; init; }
         public string? ImpersonatedUser { get; init; }
         public string? AccessMode { get; init; }
+
+        public IReadOnlyCollection<object?> GetParameterValues()
+        {
+            return Parameters is null ? [] : [.. Parameters.Parameters.Values];
+        }
     }
 }

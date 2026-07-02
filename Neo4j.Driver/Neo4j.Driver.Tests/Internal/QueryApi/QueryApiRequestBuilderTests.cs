@@ -37,11 +37,19 @@ public class QueryApiRequestBuilderTests
 {
     private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
 
+    private sealed record TestBody : IQueryApiRequestBody
+    {
+        public IReadOnlyCollection<object?> GetParameterValues()
+        {
+            return [];
+        }
+    }
+
     public QueryApiRequestBuilderTests()
     {
-        _fixture.Freeze<Mock<IJsonSerializer>>()
-            .Setup(x => x.Serialize(It.IsAny<object>()))
-            .Returns("{}");
+        _fixture.Freeze<Mock<IQueryApiJsonSerializer>>()
+            .Setup(x => x.Serialize(It.IsAny<IQueryApiRequestBody>()))
+            .Returns(new SerializedBody("{}", QueryApiMediaVersion.V1_0));
     }
 
     [Fact]
@@ -50,7 +58,7 @@ public class QueryApiRequestBuilderTests
         // StringContent defaults to charset=utf-8 unless MediaTypeHeaderValue is used explicitly —
         // the server rejects requests with a charset parameter on this media type.
         var subject = _fixture.Create<QueryApiRequestBuilder>();
-        var request = await subject.PostAsync("query/v2", new object(), TestContext.Current.CancellationToken);
+        var request = await subject.PostAsync("query/v2", new TestBody(), TestContext.Current.CancellationToken);
 
         var contentType = request.Content!.Headers.ContentType;
         contentType!.MediaType.Should().Be("application/vnd.neo4j.query.v1.0");
@@ -61,7 +69,7 @@ public class QueryApiRequestBuilderTests
     public async Task PostAsync_SetsAcceptHeader_WithTypedJsonMediaType()
     {
         var subject = _fixture.Create<QueryApiRequestBuilder>();
-        var request = await subject.PostAsync("query/v2", new object(), TestContext.Current.CancellationToken);
+        var request = await subject.PostAsync("query/v2", new TestBody(), TestContext.Current.CancellationToken);
 
         request.Headers.Accept.Should().Contain(h => h.MediaType == "application/vnd.neo4j.query.v1.0");
     }
@@ -78,7 +86,7 @@ public class QueryApiRequestBuilderTests
             .Returns(new Uri("https://host/db/mydb/query/v2"));
 
         var subject = _fixture.Create<QueryApiRequestBuilder>();
-        var request = await subject.PostAsync("query/v2", new object(), TestContext.Current.CancellationToken);
+        var request = await subject.PostAsync("query/v2", new TestBody(), TestContext.Current.CancellationToken);
 
         request.RequestUri.Should().Be(new Uri("https://host/db/mydb/query/v2"));
     }
@@ -91,7 +99,7 @@ public class QueryApiRequestBuilderTests
         _fixture.Register<IEnumerable<IHttpRequestEnricher>>(() => [enricher1.Object, enricher2.Object]);
 
         var subject = _fixture.Create<QueryApiRequestBuilder>();
-        await subject.PostAsync("query/v2", new object(), TestContext.Current.CancellationToken);
+        await subject.PostAsync("query/v2", new TestBody(), TestContext.Current.CancellationToken);
 
         enricher1.Verify(x => x.Enrich(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()), Times.Once);
         enricher2.Verify(x => x.Enrich(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -100,12 +108,12 @@ public class QueryApiRequestBuilderTests
     [Fact]
     public async Task PostAsync_SetsBodyContent_FromSerializer()
     {
-        _fixture.Freeze<Mock<IJsonSerializer>>()
-            .Setup(x => x.Serialize(It.IsAny<object>()))
-            .Returns("{\"statement\":\"RETURN 1\"}");
+        _fixture.Freeze<Mock<IQueryApiJsonSerializer>>()
+            .Setup(x => x.Serialize(It.IsAny<IQueryApiRequestBody>()))
+            .Returns(new SerializedBody("{\"statement\":\"RETURN 1\"}", QueryApiMediaVersion.V1_0));
 
         var subject = _fixture.Create<QueryApiRequestBuilder>();
-        var request = await subject.PostAsync("query/v2", new object(), TestContext.Current.CancellationToken);
+        var request = await subject.PostAsync("query/v2", new TestBody(), TestContext.Current.CancellationToken);
 
         var body = await request.Content!.ReadAsStringAsync(TestContext.Current.CancellationToken);
         body.Should().Be("{\"statement\":\"RETURN 1\"}");

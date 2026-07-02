@@ -44,7 +44,7 @@ public class TransactionCommitterTests
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
             .Setup(x => x.PostAsync(
                 $"query/v2/tx/{txContext.TxId}/commit",
-                It.IsAny<object>(),
+                It.IsAny<IQueryApiRequestBody>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
 
@@ -97,7 +97,7 @@ public class TransactionCommitterTests
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
             .Setup(x => x.PostAsync(
                 $"query/v2/tx/{txContext.TxId}/commit",
-                It.IsAny<object>(),
+                It.IsAny<IQueryApiRequestBody>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
 

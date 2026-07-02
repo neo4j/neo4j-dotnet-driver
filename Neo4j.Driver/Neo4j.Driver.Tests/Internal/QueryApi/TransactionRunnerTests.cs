@@ -42,7 +42,7 @@ public class TransactionRunnerTests
         var request = new HttpRequestMessage();
 
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
-            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}", It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}", It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
 
         _fixture.Freeze<Mock<IQueryApiClient>>()
@@ -79,7 +79,7 @@ public class TransactionRunnerTests
         var request = new HttpRequestMessage();
 
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
-            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}", It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}", It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
 
         _fixture.Freeze<Mock<IQueryApiClient>>()

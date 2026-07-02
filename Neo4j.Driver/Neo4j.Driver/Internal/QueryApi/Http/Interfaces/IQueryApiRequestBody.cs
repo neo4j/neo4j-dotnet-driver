@@ -15,9 +15,11 @@
 
 #nullable enable
 
+using System.Collections.Generic;
+
 namespace Neo4j.Driver.Internal.QueryApi;
 
-internal interface IJsonSerializer
+internal interface IQueryApiRequestBody
 {
-    string Serialize<T>(T value);
+    IReadOnlyCollection<object?> GetParameterValues();
 }

@@ -44,7 +44,7 @@ public class TransactionBeginnerTests
         var request = new HttpRequestMessage();
 
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
-            .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
 
         _fixture.Freeze<Mock<IQueryApiClient>>()
@@ -112,7 +112,7 @@ public class TransactionBeginnerTests
         var request = new HttpRequestMessage();
 
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
-            .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
 
         _fixture.Freeze<Mock<IQueryApiClient>>()
@@ -147,8 +147,8 @@ public class TransactionBeginnerTests
         var request = new HttpRequestMessage();
 
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
-            .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
-            .Callback<string, object, CancellationToken>((_, body, _) => capturedBody = body)
+            .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
+            .Callback<string, IQueryApiRequestBody, CancellationToken>((_, body, _) => capturedBody = body)
             .ReturnsAsync(request);
 
         _fixture.Freeze<Mock<IQueryApiClient>>()
@@ -177,8 +177,8 @@ public class TransactionBeginnerTests
         object? capturedBody = null;
 
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
-            .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
-            .Callback<string, object, CancellationToken>((_, body, _) => capturedBody = body)
+            .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
+            .Callback<string, IQueryApiRequestBody, CancellationToken>((_, body, _) => capturedBody = body)
             .ReturnsAsync(request);
 
         _fixture.Freeze<Mock<IQueryApiClient>>()

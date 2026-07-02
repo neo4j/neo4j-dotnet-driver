@@ -15,6 +15,7 @@
 
 #nullable enable
 
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -83,9 +84,14 @@ internal class TransactionRunner : ITransactionRunner
         return request;
     }
 
-    internal record RequestBody
+    internal record RequestBody : IQueryApiRequestBody
     {
         public string? Statement { get; init; }
         public QueryApiParameterDictionary? Parameters { get; init; }
+
+        public IReadOnlyCollection<object?> GetParameterValues()
+        {
+            return Parameters is null ? [] : [.. Parameters.Parameters.Values];
+        }
     }
 }

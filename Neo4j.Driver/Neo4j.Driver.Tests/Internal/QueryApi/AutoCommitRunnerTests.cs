@@ -28,10 +28,6 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
-/// <summary>
-/// Auto-commit queries execute a single Cypher statement outside an explicit transaction. Spec:
-/// https://neo4j.com/docs/query-api/current/#query-api-run-autocommit-query
-/// </summary>
 public class AutoCommitRunnerTests
 {
     private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
@@ -42,7 +38,10 @@ public class AutoCommitRunnerTests
         var request = new HttpRequestMessage();
 
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
-            .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.PostAsync(
+                It.IsAny<string>(),
+                It.IsAny<IQueryApiRequestBody>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
 
         _fixture.Freeze<Mock<IQueryApiClient>>()
@@ -53,7 +52,6 @@ public class AutoCommitRunnerTests
     [Fact]
     public async Task RunAsync_ReturnsCursor_BuiltFromResultSet()
     {
-        // Spec: the result cursor is built from the deserialized response body
         var responseBody = new QueryApiResultBody
         {
             Data = new QueryApiDataBody
@@ -63,6 +61,7 @@ public class AutoCommitRunnerTests
             },
             Bookmarks = ["neo4j:bookmark:v1:tx55"]
         };
+
         SetupChain(responseBody);
 
         var expectedCursor = new Mock<IResultCursor>().Object;
@@ -107,12 +106,18 @@ public class AutoCommitRunnerTests
         object? capturedBody = null;
         var request = new HttpRequestMessage();
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
-            .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
-            .Callback<string, object, CancellationToken>((_, body, _) => capturedBody = body)
+            .Setup(x => x.PostAsync(
+                It.IsAny<string>(),
+                It.IsAny<IQueryApiRequestBody>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<string, IQueryApiRequestBody, CancellationToken>((_, body, _) => capturedBody = body)
             .ReturnsAsync(request);
+
         _fixture.Freeze<Mock<IQueryApiClient>>()
             .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new QueryApiResult<QueryApiResultBody>(new QueryApiResultBody(), new HttpResponseMessage().Headers));
+            .ReturnsAsync(
+                new QueryApiResult<QueryApiResultBody>(new QueryApiResultBody(), new HttpResponseMessage().Headers));
+
         _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
             .Setup(x => x.Build(It.IsAny<QueryApiResultSet>(), It.IsAny<Query>()))
             .Returns(new Mock<IResultCursor>().Object);
@@ -130,7 +135,10 @@ public class AutoCommitRunnerTests
         var request = new HttpRequestMessage();
 
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
-            .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.PostAsync(
+                It.IsAny<string>(),
+                It.IsAny<IQueryApiRequestBody>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
 
         _fixture.Freeze<Mock<IQueryApiClient>>()
@@ -146,23 +154,29 @@ public class AutoCommitRunnerTests
     [Fact]
     public async Task RunAsync_RequestBody_IncludesImpersonatedUserAndAccessMode_FromSessionContext()
     {
-        // Spec: impersonatedUser and accessMode must be forwarded from the session context on every request
         _fixture.Freeze<Mock<ISessionContext>>()
-            .Setup(x => x.ImpersonatedUser).Returns("banana_bob");
+            .Setup(x => x.ImpersonatedUser)
+            .Returns("banana_bob");
+
         _fixture.Freeze<Mock<ISessionContext>>()
-            .Setup(x => x.AccessMode).Returns(AccessMode.Read);
+            .Setup(x => x.AccessMode)
+            .Returns(AccessMode.Read);
 
         var request = new HttpRequestMessage();
         object? capturedBody = null;
 
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
-            .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
-            .Callback<string, object, CancellationToken>((_, body, _) => capturedBody = body)
+            .Setup(x => x.PostAsync(
+                It.IsAny<string>(),
+                It.IsAny<IQueryApiRequestBody>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<string, IQueryApiRequestBody, CancellationToken>((_, body, _) => capturedBody = body)
             .ReturnsAsync(request);
 
         _fixture.Freeze<Mock<IQueryApiClient>>()
             .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new QueryApiResult<QueryApiResultBody>(new QueryApiResultBody(), new HttpResponseMessage().Headers));
+            .ReturnsAsync(
+                new QueryApiResult<QueryApiResultBody>(new QueryApiResultBody(), new HttpResponseMessage().Headers));
 
         _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
             .Setup(x => x.Build(It.IsAny<QueryApiResultSet>(), It.IsAny<Query>()))

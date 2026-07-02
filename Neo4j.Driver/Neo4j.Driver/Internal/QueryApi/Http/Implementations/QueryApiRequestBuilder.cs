@@ -30,7 +30,7 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
     private const string TypedJsonMediaType = "application/vnd.neo4j.query.v1.0";
 
     private readonly IEnumerable<IHttpRequestEnricher> _requestEnrichers;
-    private readonly IJsonSerializer _jsonSerializer;
+    private readonly IQueryApiJsonSerializer _jsonSerializer;
     private readonly ISessionContext _sessionContext;
     private readonly IQueryApiUrlBuilder _urlBuilder;
 
@@ -38,7 +38,7 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
         IQueryApiUrlBuilder urlBuilder,
         ISessionContext sessionContext,
         IEnumerable<IHttpRequestEnricher> requestEnrichers,
-        IJsonSerializer jsonSerializer)
+        IQueryApiJsonSerializer jsonSerializer)
     {
         _urlBuilder = urlBuilder;
         _sessionContext = sessionContext;
@@ -46,9 +46,12 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
         _jsonSerializer = jsonSerializer;
     }
 
-    public Task<HttpRequestMessage> PostAsync(string path, object? body, CancellationToken cancellationToken = default)
+    public Task<HttpRequestMessage> PostAsync(
+        string path,
+        IQueryApiRequestBody? body,
+        CancellationToken cancellationToken = default)
     {
-        return BuildAsync(HttpMethod.Post, path, body ?? new object(), cancellationToken);
+        return BuildAsync(HttpMethod.Post, path, body, cancellationToken);
     }
 
     public Task<HttpRequestMessage> DeleteAsync(string path, CancellationToken cancellationToken = default)
@@ -59,7 +62,7 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
     private async Task<HttpRequestMessage> BuildAsync(
         HttpMethod method,
         string path,
-        object? body,
+        IQueryApiRequestBody? body,
         CancellationToken cancellationToken)
     {
         var request = new HttpRequestMessage(method, _urlBuilder.Build($"db/{_sessionContext.Database}/{path}"));
@@ -72,9 +75,8 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
 
         if (body is not null)
         {
-            request.Content = new StringContent(
-                _jsonSerializer.Serialize(body),
-                new MediaTypeHeaderValue(TypedJsonMediaType));
+            var serialized = _jsonSerializer.Serialize(body);
+            request.Content = new StringContent(serialized.Json, new MediaTypeHeaderValue(TypedJsonMediaType));
         }
 
         return request;
