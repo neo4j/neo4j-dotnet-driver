@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -24,13 +24,13 @@ using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 
-public sealed class SessionIT : DirectDriverTestBase
+public abstract class SessionITBase<TTransport> : TransportTestBase<TTransport>
+    where TTransport : ITransport, new()
 {
-    public SessionIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
+    protected SessionITBase(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        : base(output, fixture)
     {
     }
-
-    private IDriver Driver => Server.Driver;
 
     [RequireServerFact]
     public async Task ServiceUnavailableErrorWhenFailedToConn()
@@ -364,5 +364,23 @@ public sealed class SessionIT : DirectDriverTestBase
 
         record.Keys.Should().BeEquivalentTo("Number");
         record.Values.Should().BeEquivalentTo(new KeyValuePair<string, object>("Number", 1));
+    }
+}
+
+// Temporary hand-written proof subclasses. Once the [TransportSuite] source generator lands
+// these are deleted and emitted instead.
+public sealed class BoltSessionIT : SessionITBase<BoltTransport>
+{
+    public BoltSessionIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        : base(output, fixture)
+    {
+    }
+}
+
+public sealed class QueryApiSessionIT : SessionITBase<QueryApiTransport>
+{
+    public QueryApiSessionIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        : base(output, fixture)
+    {
     }
 }

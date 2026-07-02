@@ -27,8 +27,6 @@ public sealed class ErrorIT : DirectDriverTestBase
     {
     }
 
-    private IDriver Driver => Server.Driver;
-
     [RequireServerFact]
     public async Task ErrorToRunSessionInTransaction()
     {

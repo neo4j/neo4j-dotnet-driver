@@ -29,8 +29,6 @@ public sealed class CypherParametersIT : DirectDriverTestBase
     {
     }
 
-    private IDriver Driver => Server.Driver;
-
     [RequireServerFact]
     public async Task ShouldHandleStringLiteral()
     {

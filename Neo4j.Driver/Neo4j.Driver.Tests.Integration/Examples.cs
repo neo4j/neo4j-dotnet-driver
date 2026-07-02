@@ -497,7 +497,7 @@ public class Examples
                 Console.WriteLine(greeting);
             }
 
-            public static void Main()
+            public static void RunExample()
             {
                 using var greeter = new HelloWorldExample("bolt://localhost:7687", "neo4j", "password");
 
