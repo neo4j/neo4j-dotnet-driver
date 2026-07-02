@@ -40,7 +40,7 @@ internal static class SummaryJsonSerializer
                     database = summary.Database?.Name,
                     serverInfo = GetServerInfo(summary),
                     counters = GetCountersFromSummary(summary.Counters),
-                    profile = MapToProfilePlan(summary.Profile),
+                    profile = MapToProfile(summary.QueryProfile),
                     resultAvailableAfter = GetTotalMilliseconds(summary.ResultAvailableAfter),
                     resultConsumedAfter = GetTotalMilliseconds(summary.ResultConsumedAfter),
                     gqlStatusObjects = MapGqlStatusObjects(summary.GqlStatusObjects)
@@ -112,39 +112,29 @@ internal static class SummaryJsonSerializer
         };
     }
 
-    private static object MapToProfilePlan(IProfiledPlan plan)
+    private static object MapToProfile(IQueryProfile plan)
     {
         if (plan == null)
         {
             return null;
         }
 
-        if (plan.HasPageCacheStats)
+        IDictionary<string, object> result = new Dictionary<string, object>
         {
-            return new
-            {
-                args = plan.Arguments,
-                operatorType = plan.OperatorType,
-                children = plan.Children.Select(MapToProfilePlan).ToList(),
-                identifiers = plan.Identifiers,
-                time = plan.Time,
-                pageCacheHitRatio = plan.PageCacheHitRatio,
-                pageCacheMisses = plan.PageCacheMisses,
-                pageCacheHits = plan.PageCacheHits,
-                rows = plan.Records,
-                dbHits = plan.DbHits
-            };
-        }
-
-        return new
-        {
-            args = plan.Arguments,
-            operatorType = plan.OperatorType,
-            children = plan.Children.Select(MapToProfilePlan).ToList(),
-            identifiers = plan.Identifiers,
-            rows = plan.Records,
-            dbHits = plan.DbHits
+            ["args"] = plan.Arguments,
+            ["operatorType"] = plan.OperatorType,
+            ["children"] = plan.Children.Select(MapToProfile).ToList(),
+            ["identifiers"] = plan.Identifiers
         };
+
+        result["time"] = plan.Time;
+        result["pageCacheHitRatio"] = plan.PageCacheHitRatio;
+        result["pageCacheMisses"] = plan.PageCacheMisses;
+        result["pageCacheHits"] = plan.PageCacheHits;
+        result["rows"] = plan.Rows;
+        result["dbHits"] = plan.DbHits;
+
+        return result;
     }
 
     private static object MapToPlanJson(IPlan plan)

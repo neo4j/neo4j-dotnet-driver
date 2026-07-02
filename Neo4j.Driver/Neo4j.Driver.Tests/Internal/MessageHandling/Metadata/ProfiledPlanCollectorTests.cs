@@ -290,6 +290,52 @@ public class ProfiledPlanCollectorTests
     }
 
     [Fact]
+    public void ShouldCollectWithPresetZeroStats()
+    {
+        var metadata = new Dictionary<string, object>
+        {
+            {
+                Key, new Dictionary<string, object>
+                {
+                    { "operatorType", "opType" },
+                    { "dbHits", 0L },
+                    { "rows", 0L },
+                    { "time", 0L },
+                    { "pageCacheHits", 0L },
+                    { "pageCacheMisses", 0L },
+                    { "pageCacheHitRatio", 0.0 },
+                    { "args", new Dictionary<string, object> { { "a", 1L } } },
+                    {
+                        "identifiers", new List<object>
+                        {
+                            "a", "b", "c"
+                        }
+                    }
+                }
+            }
+        };
+
+        var collector = new ProfiledPlanCollector();
+
+        collector.Collect(metadata);
+
+        collector.Collected.Should()
+            .BeEquivalentTo(
+                new ProfiledPlan(
+                    "opType",
+                    new Dictionary<string, object> { { "a", 1L } },
+                    new List<string> { "a", "b", "c" },
+                    new List<IProfiledPlan>(),
+                    0,
+                    0,
+                    0,
+                    0,
+                    0.0,
+                    0,
+                    true));
+    }
+
+    [Fact]
     public void ShouldCollectWithChildPlans()
     {
         var metadata = new Dictionary<string, object>

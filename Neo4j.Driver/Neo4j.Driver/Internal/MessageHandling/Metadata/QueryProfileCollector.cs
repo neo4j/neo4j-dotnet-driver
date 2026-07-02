@@ -19,37 +19,36 @@ using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
 
-#pragma warning disable CS0618 // Type or member is obsolete
-internal class ProfiledPlanCollector : IMetadataCollector<IProfiledPlan>
+internal class QueryProfileCollector : IMetadataCollector<IQueryProfile>
 {
-    internal const string ProfiledPlanKey = QueryProfileCollector.ProfileKey;
+    internal const string ProfileKey = "profile";
 
     object IMetadataCollector.Collected => Collected;
 
-    public IProfiledPlan Collected { get; private set; }
+    public IQueryProfile Collected { get; private set; }
 
     public void Collect(IDictionary<string, object> metadata)
     {
-        if (metadata != null && metadata.TryGetValue(ProfiledPlanKey, out var profiledPlanValue))
+        if (metadata != null && metadata.TryGetValue(ProfileKey, out var profileValue))
         {
-            switch (profiledPlanValue)
+            switch (profileValue)
             {
                 case null:
                     Collected = null;
                     break;
 
-                case IDictionary<string, object> profiledPlanDict:
-                    Collected = CollectProfile(profiledPlanDict);
+                case IDictionary<string, object> profileDict:
+                    Collected = CollectProfile(profileDict);
                     break;
 
                 default:
                     throw new ProtocolException(
-                        $"Expected '{ProfiledPlanKey}' metadata to be of type 'IDictionary<String,Object>', but got '{profiledPlanValue?.GetType().Name}'.");
+                        $"Expected '{ProfileKey}' metadata to be of type 'IDictionary<String,Object>', but got '{profileValue?.GetType().Name}'.");
             }
         }
     }
 
-    private static IProfiledPlan CollectProfile(IDictionary<string, object> profileDictionary)
+    private static IQueryProfile CollectProfile(IDictionary<string, object> profileDictionary)
     {
         if (profileDictionary.Count == 0)
         {
@@ -61,16 +60,14 @@ internal class ProfiledPlanCollector : IMetadataCollector<IProfiledPlan>
 
         var args = profileDictionary.GetValue("args", new Dictionary<string, object>());
         var identifiers = profileDictionary.GetValue("identifiers", new List<object>()).Cast<string>();
-        var dbHits = profileDictionary.GetValue<long>("dbHits", 0);
-        var rows = profileDictionary.GetValue<long>("rows", 0);
-        var foundPage = profileDictionary.TryGetValue<long>("pageCacheHits", 0, out var pageCacheHits);
-        var foundMisses = profileDictionary.TryGetValue("pageCacheMisses", 0L, out var pageCacheMisses);
-        var foundHitRatio = profileDictionary.TryGetValue("pageCacheHitRatio", 0.0, out var pageCacheHitRatio);
-        var time = profileDictionary.GetValue<long>("time", 0);
+        var dbHits = TryGetOrNull<long>(profileDictionary, "dbHits");
+        var rows = TryGetOrNull<long>(profileDictionary, "rows");
+        var pageCacheHits = TryGetOrNull<long>(profileDictionary, "pageCacheHits");
+        var pageCacheMisses = TryGetOrNull<long>(profileDictionary, "pageCacheMisses");
+        var pageCacheHitRatio = TryGetOrNull<double>(profileDictionary, "pageCacheHitRatio");
+        var time = TryGetOrNull<long>(profileDictionary, "time");
 
         var children = profileDictionary.GetValue("children", new List<object>());
-
-        var foundStats = foundMisses || foundPage || foundHitRatio;
 
         var childPlans = children
             .Select(child => child as IDictionary<string, object>)
@@ -78,7 +75,7 @@ internal class ProfiledPlanCollector : IMetadataCollector<IProfiledPlan>
             .Where(childProfile => childProfile != null)
             .ToList();
 
-        return new ProfiledPlan(
+        return new QueryProfile(
             operationType,
             args,
             identifiers.ToList(),
@@ -88,8 +85,15 @@ internal class ProfiledPlanCollector : IMetadataCollector<IProfiledPlan>
             pageCacheHits,
             pageCacheMisses,
             pageCacheHitRatio,
-            time,
-            foundStats);
+            time);
+    }
+
+    private static T? TryGetOrNull<T> (IDictionary<string, object> profileDictionary, string key) where T : struct
+    {
+        if (profileDictionary.TryGetValue<T>(key, default, out var value))
+        {
+            return value;
+        }
+        return null;
     }
 }
-#pragma warning restore CS0618 // Type or member is obsolete

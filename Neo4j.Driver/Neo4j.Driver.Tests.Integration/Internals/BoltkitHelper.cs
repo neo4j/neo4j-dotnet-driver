@@ -132,6 +132,11 @@ public static class BoltkitHelper
 
     public static string ServerVersion()
     {
+        var envVersion = GetEnvironmentVariable("TEST_NEO4J_VERSION");
+        if (LocalStandAloneInstance.IsServerProvided() && !string.IsNullOrEmpty(envVersion))
+        {
+            return envVersion;
+        }
         // the last of the args is the version to installed
         var strings = BoltkitArgs.Split(null);
         return strings.Last();

@@ -50,6 +50,7 @@ internal static class SupportedFeatures
             "Feature:API:SSLConfig",
             "Feature:API:SSLSchemes",
             "Feature:API:Summary:GqlStatusObjects",
+            "Feature:API:Summary:Profile:OptionalStats",
             "Feature:API:Type.Temporal",
             "Feature:API:Type.UnsupportedType",
             "Feature:API:Type.UUID",
