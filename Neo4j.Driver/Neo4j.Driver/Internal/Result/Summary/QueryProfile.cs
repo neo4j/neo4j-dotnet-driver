@@ -18,32 +18,29 @@ using System.Linq;
 
 namespace Neo4j.Driver.Internal.Result;
 
-#pragma warning disable CS0618 // Type or member is obsolete
-internal class ProfiledPlan : IProfiledPlan
+internal class QueryProfile : IQueryProfile
 {
-    public ProfiledPlan(
+    public QueryProfile(
         string operatorType,
         IDictionary<string, object> arguments,
         IList<string> identifiers,
-        IList<IProfiledPlan> children,
-        long dbHits,
-        long records,
-        long pageCacheHits,
-        long pageCacheMisses,
-        double pageCacheHitRatio,
-        long time,
-        bool foundStats)
+        IList<IQueryProfile> children,
+        long? dbHits,
+        long? rows,
+        long? pageCacheHits,
+        long? pageCacheMisses,
+        double? pageCacheHitRatio,
+        long? time)
     {
         OperatorType = operatorType;
         Arguments = arguments;
         Identifiers = identifiers;
         Children = children;
         DbHits = dbHits;
-        Records = records;
+        Rows = rows;
         PageCacheHits = pageCacheHits;
         PageCacheMisses = pageCacheMisses;
         PageCacheHitRatio = pageCacheHitRatio;
-        HasPageCacheStats = foundStats;
         Time = time;
     }
 
@@ -53,18 +50,17 @@ internal class ProfiledPlan : IProfiledPlan
 
     public IList<string> Identifiers { get; }
 
-    public bool HasPageCacheStats { get; }
     IList<IPlan> IPlan.Children => Children.Cast<IPlan>().ToList();
 
-    public IList<IProfiledPlan> Children { get; }
+    public IList<IQueryProfile> Children { get; }
 
-    public long DbHits { get; }
+    public long? DbHits { get; }
 
-    public long Records { get; }
-    public long PageCacheHits { get; }
-    public long PageCacheMisses { get; }
-    public double PageCacheHitRatio { get; }
-    public long Time { get; }
+    public long? Rows { get; }
+    public long? PageCacheHits { get; }
+    public long? PageCacheMisses { get; }
+    public double? PageCacheHitRatio { get; }
+    public long? Time { get; }
 
     public override string ToString()
     {
@@ -72,7 +68,7 @@ internal class ProfiledPlan : IProfiledPlan
             $"{nameof(Arguments)}={Arguments.ToContentString()}, " +
             $"{nameof(Identifiers)}={Identifiers.ToContentString()}, " +
             $"{nameof(DbHits)}={DbHits}, " +
-            $"{nameof(Records)}={Records}, " +
+            $"{nameof(Rows)}={Rows}, " +
             $"{nameof(PageCacheHits)}={PageCacheHits}, " +
             $"{nameof(PageCacheMisses)}={PageCacheMisses}, " +
             $"{nameof(PageCacheHitRatio)}={PageCacheHitRatio}, " +
@@ -80,4 +76,3 @@ internal class ProfiledPlan : IProfiledPlan
             $"{nameof(Children)}={Children.ToContentString()}}}";
     }
 }
-#pragma warning restore CS0618 // Type or member is obsolete

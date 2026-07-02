@@ -17,6 +17,7 @@ using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
+using Neo4j.Driver.Internal.Util;
 using Neo4j.Driver.Tests.Result;
 using Xunit;
 using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
@@ -142,11 +143,82 @@ public sealed class ResultIT : DirectDriverTestBase
             summary.HasPlan.Should().BeTrue();
             summary.HasProfile.Should().BeTrue();
 
-            summary.Plan.Should().Be(summary.Profile);
-
             var profile = summary.Profile;
             profile.DbHits.Should().Be(0L);
             profile.Records.Should().Be(1L);
+            profile.HasPageCacheStats.Should().BeFalse();
+            profile.PageCacheHits.Should().Be(0L);
+            profile.PageCacheMisses.Should().Be(0L);
+            profile.PageCacheHitRatio.Should().Be(0.0);
+            profile.Time.Should().Be(0L);
+
+            profile.Children.Count.Should().Be(1);
+            var child = profile.Children[0];
+            child.DbHits.Should().Be(0L);
+            child.Records.Should().Be(1L);
+
+            var availableVersion = ServerVersion.From(BoltkitHelper.ServerVersion());
+            if (availableVersion.CompareTo(ServerVersion.From("4.2")) > 0)
+            {
+                child.HasPageCacheStats.Should().BeTrue();
+            }
+            else
+            {
+                child.HasPageCacheStats.Should().BeFalse();
+            }
+            child.PageCacheHits.Should().Be(0L);
+            child.PageCacheMisses.Should().Be(0L);
+            child.PageCacheHitRatio.Should().Be(0.0);
+            child.Time.Should().Be(0L);
+
+        }
+        finally
+        {
+            await session.CloseAsync();
+        }
+    }
+
+    [RequireServerFact]
+    public async Task GetQueryProfile()
+    {
+        var session = Driver.AsyncSession();
+        try
+        {
+            var cursor = await session.RunAsync("PROFILE RETURN 1");
+            var summary = await cursor.ConsumeAsync();
+
+            summary.HasPlan.Should().BeTrue();
+            summary.HasProfile.Should().BeTrue();
+
+            summary.Plan.Should().Be(summary.QueryProfile);
+
+            var profile = summary.QueryProfile;
+            profile.DbHits.Should().Be(0L);
+            profile.Rows.Should().Be(1L);
+            profile.PageCacheHits.Should().BeNull();
+            profile.PageCacheMisses.Should().BeNull();
+            profile.PageCacheHitRatio.Should().BeNull();
+            profile.Time.Should().BeNull();
+
+            profile.Children.Count.Should().Be(1);
+            var child = profile.Children[0];
+            child.DbHits.Should().Be(0L);
+            child.Rows.Should().Be(1L);
+            var availableVersion = ServerVersion.From(BoltkitHelper.ServerVersion());
+            if (availableVersion.CompareTo(ServerVersion.From("4.2")) > 0)
+            {
+                child.PageCacheHits.Should().Be(0L);
+                child.PageCacheMisses.Should().Be(0L);
+                child.PageCacheHitRatio.Should().Be(0.0);
+                child.Time.Should().Be(0L);
+            }
+            else
+            {
+                child.PageCacheHits.Should().BeNull();
+                child.PageCacheMisses.Should().BeNull();
+                child.PageCacheHitRatio.Should().BeNull();
+                child.Time.Should().BeNull();
+            }
         }
         finally
         {
