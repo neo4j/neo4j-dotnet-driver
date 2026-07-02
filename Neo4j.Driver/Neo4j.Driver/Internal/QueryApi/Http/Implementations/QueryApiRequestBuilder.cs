@@ -17,7 +17,6 @@
 
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
@@ -27,10 +26,9 @@ namespace Neo4j.Driver.Internal.QueryApi;
 [AutoRegister]
 internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
 {
-    private const string TypedJsonMediaType = "application/vnd.neo4j.query.v1.0";
-
     private readonly IEnumerable<IHttpRequestEnricher> _requestEnrichers;
     private readonly IQueryApiJsonSerializer _jsonSerializer;
+    private readonly IQueryApiRequestHeaderWriter _headerWriter;
     private readonly ISessionContext _sessionContext;
     private readonly IQueryApiUrlBuilder _urlBuilder;
 
@@ -38,12 +36,14 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
         IQueryApiUrlBuilder urlBuilder,
         ISessionContext sessionContext,
         IEnumerable<IHttpRequestEnricher> requestEnrichers,
-        IQueryApiJsonSerializer jsonSerializer)
+        IQueryApiJsonSerializer jsonSerializer,
+        IQueryApiRequestHeaderWriter headerWriter)
     {
         _urlBuilder = urlBuilder;
         _sessionContext = sessionContext;
         _requestEnrichers = requestEnrichers;
         _jsonSerializer = jsonSerializer;
+        _headerWriter = headerWriter;
     }
 
     public Task<HttpRequestMessage> PostAsync(
@@ -66,19 +66,20 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
         CancellationToken cancellationToken)
     {
         var request = new HttpRequestMessage(method, _urlBuilder.Build($"db/{_sessionContext.Database}/{path}"));
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(TypedJsonMediaType));
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json", 0.9));
         foreach (var enricher in _requestEnrichers)
         {
             await enricher.Enrich(request, cancellationToken).ConfigureAwait(false);
         }
 
+        var version = QueryApiMediaVersion.V1_0;
         if (body is not null)
         {
             var serialized = _jsonSerializer.Serialize(body);
-            request.Content = new StringContent(serialized.Json, new MediaTypeHeaderValue(TypedJsonMediaType));
+            version = serialized.Version;
+            request.Content = new StringContent(serialized.Json);
         }
 
+        _headerWriter.ApplyMediaType(request, version);
         return request;
     }
 }

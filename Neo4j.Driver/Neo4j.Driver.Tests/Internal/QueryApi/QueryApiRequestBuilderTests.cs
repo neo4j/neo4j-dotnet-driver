@@ -29,10 +29,6 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
-/// <summary>
-/// Verifies the HTTP request structure produced by <see cref="QueryApiRequestBuilder"/>.
-/// Spec: https://neo4j.com/docs/query-api/current/
-/// </summary>
 public class QueryApiRequestBuilderTests
 {
     private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
@@ -53,25 +49,33 @@ public class QueryApiRequestBuilderTests
     }
 
     [Fact]
-    public async Task PostAsync_SetsContentType_WithoutCharset()
+    public async Task PostAsync_AppliesResolvedMediaVersion_FromSerializer()
     {
-        // StringContent defaults to charset=utf-8 unless MediaTypeHeaderValue is used explicitly —
-        // the server rejects requests with a charset parameter on this media type.
-        var subject = _fixture.Create<QueryApiRequestBuilder>();
-        var request = await subject.PostAsync("query/v2", new TestBody(), TestContext.Current.CancellationToken);
+        _fixture.Freeze<Mock<IQueryApiJsonSerializer>>()
+            .Setup(x => x.Serialize(It.IsAny<IQueryApiRequestBody>()))
+            .Returns(new SerializedBody("{}", QueryApiMediaVersion.V1_1));
 
-        var contentType = request.Content!.Headers.ContentType;
-        contentType!.MediaType.Should().Be("application/vnd.neo4j.query.v1.0");
-        contentType.CharSet.Should().BeNull();
+        var headerWriter = _fixture.Freeze<Mock<IQueryApiRequestHeaderWriter>>();
+
+        var subject = _fixture.Create<QueryApiRequestBuilder>();
+        await subject.PostAsync("query/v2", new TestBody(), TestContext.Current.CancellationToken);
+
+        headerWriter.Verify(
+            x => x.ApplyMediaType(It.IsAny<HttpRequestMessage>(), QueryApiMediaVersion.V1_1),
+            Times.Once);
     }
 
     [Fact]
-    public async Task PostAsync_SetsAcceptHeader_WithTypedJsonMediaType()
+    public async Task DeleteAsync_AppliesV1_0()
     {
-        var subject = _fixture.Create<QueryApiRequestBuilder>();
-        var request = await subject.PostAsync("query/v2", new TestBody(), TestContext.Current.CancellationToken);
+        var headerWriter = _fixture.Freeze<Mock<IQueryApiRequestHeaderWriter>>();
 
-        request.Headers.Accept.Should().Contain(h => h.MediaType == "application/vnd.neo4j.query.v1.0");
+        var subject = _fixture.Create<QueryApiRequestBuilder>();
+        await subject.DeleteAsync("query/v2/tx/tx-1", TestContext.Current.CancellationToken);
+
+        headerWriter.Verify(
+            x => x.ApplyMediaType(It.IsAny<HttpRequestMessage>(), QueryApiMediaVersion.V1_0),
+            Times.Once);
     }
 
     [Fact]
