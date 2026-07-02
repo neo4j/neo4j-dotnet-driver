@@ -16,10 +16,12 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Neo4j.Driver.Internal.DependencyInjection;
+using static Neo4j.Driver.Internal.QueryApi.QueryApiCodecHelper;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
@@ -31,42 +33,76 @@ internal sealed class QueryApiVectorCodec : IQueryApiTypeCodec
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    public class JsonVector
+    private static readonly VectorType[] VectorTypes =
+    [
+        new VectorType<sbyte>("INT8", null),
+        new VectorType<short>("INT16", null),
+        new VectorType<int>("INT32", null),
+        new VectorType<long>("INT64", null),
+        new VectorType<float>("FLOAT32", "G9"),
+        new VectorType<double>("FLOAT64", "G17")
+    ];
+
+    private static readonly Dictionary<Type, VectorType> ByElementType =
+        VectorTypes.ToDictionary(v => v.ElementType);
+
+    private static readonly Dictionary<string, VectorType> ByWireName =
+        VectorTypes.ToDictionary(v => v.WireName);
+
+    public QueryApiMediaVersion RequiredVersion => QueryApiMediaVersion.V1_1;
+
+    public bool CanRead(string typeName)
+    {
+        return typeName == "Vector";
+    }
+
+    public object? Read(JsonElement element, IJsonValueDecoder recurse)
+    {
+        var vector = element.GetProperty("_value").Deserialize<JsonVector>(CamelCaseOptions) ??
+            throw new ProtocolException("Vector element could not be deserialized.");
+
+        var coords = vector.Coordinates ?? throw new ProtocolException("Vector coordinates are missing.");
+
+        if (vector.CoordinatesType is null || !ByWireName.TryGetValue(vector.CoordinatesType, out var type))
+        {
+            throw new ProtocolException($"Unsupported vector coordinatesType: '{vector.CoordinatesType}'.");
+        }
+
+        return type.Build(coords);
+    }
+
+    public bool CanWrite(object? value)
+    {
+        return value is IVector;
+    }
+
+    public JsonNode? Write(object? value, IJsonValueEncoder recurse)
+    {
+        var vector = (IVector)value!;
+        if (!ByElementType.TryGetValue(vector.ElementType, out var type))
+        {
+            throw new ProtocolException($"Unsupported vector element type: '{vector.ElementType}'.");
+        }
+
+        var coordinates = new JsonArray();
+        foreach (var element in vector.UntypedValues)
+        {
+            coordinates.Add(JsonValue.Create(type.Format(element)));
+        }
+
+        var body = new JsonObject
+        {
+            ["coordinatesType"] = type.WireName,
+            ["coordinates"] = coordinates
+        };
+
+        return CreateTypedEnvelope("Vector", body);
+    }
+
+    private class JsonVector
     {
         public string? CoordinatesType { get; init; }
 
         public string[]? Coordinates { get; init; }
     }
-
-    public QueryApiMediaVersion RequiredVersion => QueryApiMediaVersion.V1_1;
-
-    public bool CanRead(string typeName) => typeName == "Vector";
-
-    public object? Read(JsonElement element, IJsonValueDecoder recurse)
-    {
-        var vector = element.Deserialize<JsonVector>(CamelCaseOptions)
-            ?? throw new ProtocolException("Vector element could not be deserialized.");
-
-        var coords = vector.Coordinates
-            ?? throw new ProtocolException("Vector coordinates are missing.");
-
-        Array values = vector.CoordinatesType switch
-        {
-            "FLOAT64" => coords.Select(double.Parse).ToArray(),
-            "FLOAT32" => coords.Select(float.Parse).ToArray(),
-            "INT64" => coords.Select(long.Parse).ToArray(),
-            "INT32" => coords.Select(int.Parse).ToArray(),
-            "INT16" => coords.Select(short.Parse).ToArray(),
-            "INT8" => coords.Select(sbyte.Parse).ToArray(),
-            _ => throw new ProtocolException(
-                $"Unsupported vector coordinatesType: '{vector.CoordinatesType}'.")
-        };
-
-        return Vector.CreateDynamic(values);
-    }
-
-    public bool CanWrite(object? value) => false;
-
-    public JsonNode? Write(object? value, IJsonValueEncoder recurse) =>
-        throw new NotImplementedException("Vector parameters are not yet implemented as query parameters.");
 }

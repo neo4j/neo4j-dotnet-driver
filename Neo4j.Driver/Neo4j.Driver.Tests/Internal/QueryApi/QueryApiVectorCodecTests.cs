@@ -15,14 +15,15 @@
 
 #nullable enable
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
+using static Neo4j.Driver.Tests.Internal.QueryApi.QueryApiCodecAssert;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
@@ -30,47 +31,87 @@ public class QueryApiVectorCodecTests
 {
     private readonly QueryApiVectorCodec _subject = new();
 
-    private static JsonElement VectorElement(string coordinatesType, string[] coordinates)
-    {
-        var json = $$"""{"coordinatesType":"{{coordinatesType}}","coordinates":[{{string.Join(",", coordinates.Select(c => $"\"{c}\""))}}]}""";
-        return JsonDocument.Parse(json).RootElement;
-    }
-
-    [Fact]
-    public void CanRead_TrueForVector() => _subject.CanRead("Vector").Should().BeTrue();
-
-    [Fact]
-    public void CanRead_FalseForOtherTypes() => _subject.CanRead("String").Should().BeFalse();
-
-    public static IEnumerable<object[]> VectorCoordinateTypes() =>
+    public static IEnumerable<object[]> WriteCases() =>
     [
-        ["FLOAT64", new[] { "1.5", "-2.5", "3.0" }, typeof(IVector<double>)],
-        ["FLOAT32", new[] { "1.5", "-2.5", "3.0" }, typeof(IVector<float>)],
-        ["INT64",   new[] { "100", "-200", "300" },  typeof(IVector<long>)],
-        ["INT32",   new[] { "10",  "-20",  "30" },   typeof(IVector<int>)],
-        ["INT16",   new[] { "1",   "-5",   "10" },   typeof(IVector<short>)],
-        ["INT8",    new[] { "1",   "-5",   "10" },   typeof(IVector<sbyte>)]
+        [Vector.Create(new sbyte[] { 1, -5, 10 }), "INT8", new[] { "1", "-5", "10" }],
+        [Vector.Create(new short[] { 1, -5, 10 }), "INT16", new[] { "1", "-5", "10" }],
+        [Vector.Create(new[] { 10, -20, 30 }), "INT32", new[] { "10", "-20", "30" }],
+        [Vector.Create(new[] { 100L, -200L, 300L }), "INT64", new[] { "100", "-200", "300" }],
+        [Vector.Create(new[] { 1.5f, -2.5f, 3f }), "FLOAT32", new[] { "1.5", "-2.5", "3" }],
+        [Vector.Create(new[] { 1.5, -2.5, 3.0 }), "FLOAT64", new[] { "1.5", "-2.5", "3" }]
+    ];
+
+    public static IEnumerable<object[]> RoundTripCases() =>
+    [
+        [Vector.Create(new sbyte[] { sbyte.MinValue, 0, sbyte.MaxValue })],
+        [Vector.Create(new short[] { short.MinValue, 0, short.MaxValue })],
+        [Vector.Create(new[] { int.MinValue, 0, int.MaxValue })],
+        [Vector.Create(new[] { long.MinValue, 0L, long.MaxValue })],
+        [Vector.Create(new[] { 0.1f, -0.1f, float.Epsilon, float.MaxValue, 1f / 3f })],
+        [Vector.Create(new[] { 0.1, -0.1, double.Epsilon, double.MaxValue, 1.0 / 3.0 })]
     ];
 
     [Theory]
-    [MemberData(nameof(VectorCoordinateTypes))]
-    public void Read_ReturnsTypedVector(string coordinatesType, string[] coordinates, Type expectedVectorType)
+    [MemberData(nameof(WriteCases))]
+    public void Write_ReturnsTypedEnvelope(IVector vector, string coordinatesType, string[] expected)
     {
-        var element = VectorElement(coordinatesType, coordinates);
-        var result = _subject.Read(element, Mock.Of<IJsonValueDecoder>());
-        result.Should().BeAssignableTo(expectedVectorType);
+        var result = _subject.Write(vector, Mock.Of<IJsonValueEncoder>())!;
+
+        result["$type"]!.GetValue<string>().Should().Be("Vector");
+        result["_value"]!["coordinatesType"]!.GetValue<string>().Should().Be(coordinatesType);
+        result["_value"]!["coordinates"]!.AsArray()
+            .Select(c => c!.GetValue<string>())
+            .Should()
+            .Equal(expected);
+    }
+
+    [Theory]
+    [MemberData(nameof(RoundTripCases))]
+    public void WriteThenRead_RoundTrips(IVector vector)
+    {
+        var envelope = _subject.Write(vector, Mock.Of<IJsonValueEncoder>())!;
+        using var document = JsonDocument.Parse(envelope.ToJsonString());
+
+        _subject.Read(document.RootElement, Mock.Of<IJsonValueDecoder>()).Should().Be(vector);
+    }
+
+    [Theory]
+    [MemberData(nameof(WriteCases))]
+    public void Read_ReturnsVector(IVector expected, string coordinatesType, string[] coordinates)
+    {
+        Read(coordinatesType, coordinates).Should().Be(expected);
+    }
+
+    private object? Read(string coordinatesType, string[] coordinates)
+    {
+        var value = new JsonObject
+        {
+            ["coordinatesType"] = coordinatesType,
+            ["coordinates"] = new JsonArray(coordinates.Select(c => (JsonNode)JsonValue.Create(c)!).ToArray())
+        };
+
+        using var document = JsonDocument.Parse(
+            new JsonObject { ["$type"] = "Vector", ["_value"] = value }.ToJsonString());
+
+        return _subject.Read(document.RootElement, Mock.Of<IJsonValueDecoder>());
     }
 
     [Fact]
-    public void CanWrite_FalseForVector() =>
-        _subject.CanWrite(Vector.CreateDynamic(new[] { 1.0 })).Should().BeFalse();
+    public void CanRead_CorrectTypes()
+    {
+        CanRead(_subject, "Vector");
+    }
 
     [Fact]
-    public void Write_ShouldWork()
+    public void CanWrite_TrueForVector()
     {
-        var act = () => _subject.Write(Vector.CreateDynamic(new[] { 1.0 }), Mock.Of<IJsonValueEncoder>());
-        // TODO - this test is just to make sure that we implement this method
-        act.Should().NotThrow();
+        _subject.CanWrite(Vector.Create(new[] { 1.0 })).Should().BeTrue();
+    }
+
+    [Fact]
+    public void CanWrite_FalseForOtherTypes()
+    {
+        CanWrite(_subject);
     }
 
     [Fact]

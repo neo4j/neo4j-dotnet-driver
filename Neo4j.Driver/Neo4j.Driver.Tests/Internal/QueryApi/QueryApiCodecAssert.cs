@@ -107,7 +107,7 @@ internal static class QueryApiCodecAssert
             .BecauseOf(because, becauseArgs)
             .WithDefaultIdentifier("JsonNode")
             .FailWith(
-                $"Expected a typed envelope with type {{0}} and value {{1}}, but found {{2}}",
+                "Expected a typed envelope with type {0} and value {1}, but found {2}",
                 expectedType,
                 expectedValue,
                 node?.ToJsonString() ?? "<null>");
