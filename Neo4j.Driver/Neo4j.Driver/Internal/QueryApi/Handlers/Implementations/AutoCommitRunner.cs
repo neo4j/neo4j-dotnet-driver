@@ -103,7 +103,7 @@ internal class AutoCommitRunner : IAutoCommitRunner
 
         public IReadOnlyCollection<object?> GetParameterValues()
         {
-            return Parameters is null ? [] : [.. Parameters.Parameters.Values];
+            return Parameters is null ? [] : [.. Parameters.Values];
         }
     }
 }

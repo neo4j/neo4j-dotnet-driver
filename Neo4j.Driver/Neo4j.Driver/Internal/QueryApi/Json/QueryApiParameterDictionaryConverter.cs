@@ -49,7 +49,7 @@ internal sealed class QueryApiParameterDictionaryConverter :
         JsonSerializerOptions options)
     {
         writer.WriteStartObject();
-        foreach (var (key, paramValue) in value.Parameters)
+        foreach (var (key, paramValue) in value)
         {
             writer.WritePropertyName(key);
             var node = _encoder.Encode(paramValue);

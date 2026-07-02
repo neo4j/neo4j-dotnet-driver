@@ -15,15 +15,21 @@
 
 #nullable enable
 
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-/// <summary>
-/// Wraps a query parameter dictionary so that <see cref="QueryApiParameterDictionaryConverter"/>
-/// can intercept serialization and encode each value as a typed JSON envelope.
-/// </summary>
 internal sealed class QueryApiParameterDictionary(IDictionary<string, object> parameters)
+    : IReadOnlyDictionary<string, object>
 {
-    public IDictionary<string, object> Parameters { get; } = parameters;
+    public int Count => parameters.Count;
+    public IEnumerable<string> Keys => parameters.Keys;
+    public IEnumerable<object> Values => parameters.Values;
+    public object this[string key] => parameters[key];
+    public bool ContainsKey(string key) => parameters.ContainsKey(key);
+    public bool TryGetValue(string key, [MaybeNullWhen(false)] out object value) => parameters.TryGetValue(key, out value);
+    public IEnumerator<KeyValuePair<string, object>> GetEnumerator() => parameters.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
