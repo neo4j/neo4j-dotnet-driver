@@ -30,6 +30,8 @@ public sealed class ResultIT : DirectDriverTestBase
     {
     }
 
+    private IDriver Driver => Server.Driver;
+
     [RequireServerFact]
     public async Task GetSummary()
     {

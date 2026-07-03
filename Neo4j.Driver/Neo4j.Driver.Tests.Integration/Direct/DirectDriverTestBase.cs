@@ -13,19 +13,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 
-/// <summary>
-/// Bolt-transport convenience base. Suites that have not been converted to run cross-transport
-/// derive from this and behave exactly as before.
-/// </summary>
-public abstract class DirectDriverTestBase : TransportTestBase<BoltTransport>
+[Collection(SaIntegrationCollection.CollectionName)]
+public abstract class DirectDriverTestBase : IDisposable
 {
+    private bool _disposed;
+
     protected DirectDriverTestBase(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
-        : base(output, fixture)
     {
+        Output = output;
+        Server = fixture.StandAloneSharedInstance;
+        ServerEndPoint = DefaultInstallation.UseQueryApi ? Server.HttpUri : Server.BoltUri;
+        AuthToken = Server.AuthToken;
+    }
+
+    protected ITestOutputHelper Output { get; }
+    protected IStandAlone Server { get; }
+    protected Uri ServerEndPoint { get; }
+    protected IAuthToken AuthToken { get; }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        using var session = Server.Driver.Session();
+        session.Run("MATCH (n) DETACH DELETE n").Consume();
+        _disposed = true;
     }
 }

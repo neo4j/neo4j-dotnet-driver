@@ -26,6 +26,8 @@ public sealed class BookmarkIT : DirectDriverTestBase
     {
     }
 
+    private IDriver Driver => Server.Driver;
+
     [RequireServerFact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
     public async Task ShouldContainLastBookmarkAfterTx()
     {

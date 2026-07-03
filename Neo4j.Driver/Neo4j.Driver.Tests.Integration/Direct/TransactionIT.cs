@@ -29,6 +29,8 @@ public sealed class TransactionIT : DirectDriverTestBase
     {
     }
 
+    private IDriver Driver => Server.Driver;
+
     [RequireServerFact]
     public async Task ShouldRetry()
     {
