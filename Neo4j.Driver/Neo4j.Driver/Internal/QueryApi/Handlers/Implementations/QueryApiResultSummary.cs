@@ -14,6 +14,7 @@
 // limitations under the License.
 
 #nullable enable
+#pragma warning disable CS0618
 
 using System;
 using System.Collections.Generic;
@@ -38,10 +39,9 @@ internal class QueryApiResultSummary : IResultSummary
     public bool HasProfile => false;
     public IPlan? Plan => null;
     public IProfiledPlan? Profile => null;
+    public IQueryProfile? QueryProfile => null;
 
-#pragma warning disable CS0618
     public IList<INotification>? Notifications => null;
-#pragma warning restore CS0618
 
     public IList<IGqlStatusObject>? GqlStatusObjects => null;
     public TimeSpan ResultAvailableAfter => TimeSpan.FromMilliseconds(-1);
