@@ -36,7 +36,7 @@ public class CachingResolverTests
     }
 
     [Fact]
-    public async void ShouldResolveAsync()
+    public async Task ShouldResolveAsync()
     {
         var resolverMock = new Mock<IHostResolver>();
         var resolver = new CachingHostResolver(resolverMock.Object, 1000);
@@ -59,7 +59,7 @@ public class CachingResolverTests
     }
 
     [Fact]
-    public async void ShouldResolveOnceAsync()
+    public async Task ShouldResolveOnceAsync()
     {
         var resolverMock = new Mock<IHostResolver>();
         var resolver = new CachingHostResolver(resolverMock.Object, 5000);
@@ -71,7 +71,7 @@ public class CachingResolverTests
     }
 
     [Fact]
-    public async void ShouldResolveOnceMixedAsyncFirst()
+    public async Task ShouldResolveOnceMixedAsyncFirst()
     {
         var resolverMock = new Mock<IHostResolver>();
         var resolver = new CachingHostResolver(resolverMock.Object, 5000);
@@ -85,7 +85,7 @@ public class CachingResolverTests
     }
 
     [Fact]
-    public async void ShouldResolveOnceMixedSyncFirst()
+    public async Task ShouldResolveOnceMixedSyncFirst()
     {
         var resolverMock = new Mock<IHostResolver>();
         var resolver = new CachingHostResolver(resolverMock.Object, 5000);
@@ -112,7 +112,7 @@ public class CachingResolverTests
     }
 
     [Fact]
-    public async void ShouldExpireCachedAsync()
+    public async Task ShouldExpireCachedAsync()
     {
         var resolverMock = new Mock<IHostResolver>();
         var resolver = new CachingHostResolver(resolverMock.Object, 1000);

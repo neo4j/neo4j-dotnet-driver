@@ -17,6 +17,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -98,7 +99,7 @@ public class ChunkReaderTests
         },
         new byte[] { 0x00, 0x01, 0x02, 0x00, 0x01, 0x02 },
         2)]
-    public async void ShouldReadMessageSpanningMultipleChunksAsync(
+    public async Task ShouldReadMessageSpanningMultipleChunksAsync(
         byte[] input,
         byte[] expectedMessageBuffers,
         int expectedCount)
@@ -118,7 +119,7 @@ public class ChunkReaderTests
     [InlineData(new byte[] { 0x00, 0x01 })]
     [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02 })]
     [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02, 0x01 })]
-    public async void ShouldThrowWhenEndOfStreamIsDetectedAsync(byte[] input)
+    public async Task ShouldThrowWhenEndOfStreamIsDetectedAsync(byte[] input)
     {
         var reader = new ChunkReader(new MemoryStream(input));
 
@@ -146,7 +147,7 @@ public class ChunkReaderTests
         }, //NOOP
         new byte[] { 0x00, 0x01, 0x02, 0x00, 0x01, 0x02 },
         2)]
-    public async void ShouldReadNoopsBetweenMessagesAsync(
+    public async Task ShouldReadNoopsBetweenMessagesAsync(
         byte[] input,
         byte[] expectedMessageBuffers,
         int expectedCount)
@@ -162,7 +163,7 @@ public class ChunkReaderTests
     }
 
     [Fact]
-    public async void ShouldResetBufferStreamPosition()
+    public async Task ShouldResetBufferStreamPosition()
     {
         var data = GenerateMessages(1000, 128 * 1024);
 
@@ -179,7 +180,7 @@ public class ChunkReaderTests
     }
 
     [Fact]
-    public async void ShouldThrowCancellationWhenReadAsyncIsCancelled()
+    public async Task ShouldThrowCancellationWhenReadAsyncIsCancelled()
     {
         var testStream = AsyncTestStream.CreateCancellingStream();
         testStream.SetLength(4);
@@ -193,7 +194,7 @@ public class ChunkReaderTests
     }
 
     [Fact]
-    public async void ShouldThrowIOExceptionWhenReadAsyncIsFaultedSynchronously()
+    public async Task ShouldThrowIOExceptionWhenReadAsyncIsFaultedSynchronously()
     {
         var testStream = AsyncTestStream.CreateSyncFailingStream(new IOException("some error"));
         testStream.SetLength(4);
@@ -207,7 +208,7 @@ public class ChunkReaderTests
     }
 
     [Fact]
-    public async void ShouldThrowIOExceptionWhenReadAsyncIsFaulted()
+    public async Task ShouldThrowIOExceptionWhenReadAsyncIsFaulted()
     {
         var testStream = AsyncTestStream.CreateFailingStream(new IOException("some error"));
         testStream.SetLength(4);
@@ -221,7 +222,7 @@ public class ChunkReaderTests
     }
 
     [Fact]
-    public async void ShouldResetBufferStreamPositionAsync()
+    public async Task ShouldResetBufferStreamPositionAsync()
     {
         var data = GenerateMessages(1000, 128 * 1024);
 
@@ -238,7 +239,7 @@ public class ChunkReaderTests
     }
 
     [Fact]
-    public async void ShouldReadSingleMessageStreamLargerThanBufferSizeAsync()
+    public async Task ShouldReadSingleMessageStreamLargerThanBufferSizeAsync()
     {
         const int chunkSize = 22 * 1024;
         const int totalStreamSizeByte = 2 * chunkSize;
@@ -257,7 +258,7 @@ public class ChunkReaderTests
     }
 
     [Fact]
-    public async void ShouldReadMultipleMessageStreamLargerThanBufferSizeAsync()
+    public async Task ShouldReadMultipleMessageStreamLargerThanBufferSizeAsync()
     {
         const int chunkSize = 11 * 1024;
         const int totalStreamSizeByte = 2 * chunkSize;

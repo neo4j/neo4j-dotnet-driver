@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal.Util;
-using Xunit.Abstractions;
+using Xunit;
 using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 using static Neo4j.Driver.IntegrationTests.Extensions.DatabaseExtensions;
 

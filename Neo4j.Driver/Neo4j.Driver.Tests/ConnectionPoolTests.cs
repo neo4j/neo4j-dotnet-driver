@@ -28,7 +28,6 @@ using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Util;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-using Xunit.Abstractions;
 using ITimer = Neo4j.Driver.Internal.ITimer;
 
 namespace Neo4j.Driver.Tests;
@@ -639,7 +638,7 @@ public class ConnectionPoolTests
         }
 
         [Fact]
-        public async void ShouldTimeoutAfterAcquireAsyncTimeoutIfPoolIsFull()
+        public async Task ShouldTimeoutAfterAcquireAsyncTimeoutIfPoolIsFull()
         {
             var context = new DriverContext(
                 new Uri("bolt://localhost:7687"),
@@ -673,7 +672,7 @@ public class ConnectionPoolTests
         }
 
         [Fact]
-        public async void ShouldTimeoutAfterAcquireAsyncTimeoutWhenConnectionIsNotValidated()
+        public async Task ShouldTimeoutAfterAcquireAsyncTimeoutWhenConnectionIsNotValidated()
         {
             var pool = NewConnectionPool(
                 isConnectionValid: false,
@@ -1285,7 +1284,7 @@ public class ConnectionPoolTests
         }
 
         [Fact]
-        public async void ShouldReportCorrectPoolSizeWhenIdleConnectionsAreNotAllowedAsync()
+        public async Task ShouldReportCorrectPoolSizeWhenIdleConnectionsAreNotAllowedAsync()
         {
             var connectionMock = new Mock<IConnection>();
             connectionMock.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
@@ -1320,7 +1319,7 @@ public class ConnectionPoolTests
         }
 
         [Fact]
-        public async void ShouldReportPoolSizeCorrectOnConcurrentRequestsAsync()
+        public async Task ShouldReportPoolSizeCorrectOnConcurrentRequestsAsync()
         {
             var connectionMock = new Mock<IConnection>();
             connectionMock.Setup(x => x.IsOpen).Returns(true);

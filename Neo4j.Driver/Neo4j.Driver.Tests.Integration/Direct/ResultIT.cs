@@ -20,7 +20,6 @@ using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal.Util;
 using Neo4j.Driver.Tests.Result;
 using Xunit;
-using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;

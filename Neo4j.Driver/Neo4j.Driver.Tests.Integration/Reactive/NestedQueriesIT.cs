@@ -18,7 +18,6 @@ using Microsoft.Reactive.Testing;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Tests.Reactive.Utils;
 using Xunit;
-using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 using static Neo4j.Driver.Tests.Reactive.Utils.Utils;
 

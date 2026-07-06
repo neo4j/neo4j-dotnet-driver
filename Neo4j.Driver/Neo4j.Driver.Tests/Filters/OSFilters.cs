@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Neo4j.Driver.Internal;
 using Xunit;
@@ -22,82 +23,106 @@ namespace Neo4j.Driver.Tests.Filters;
 
 public class OSFactAttribute : FactAttribute
 {
-    public OSFactAttribute(params OSPlatform[] onPlatforms)
+    public OSFactAttribute(
+        OSPlatform[] onPlatforms,
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(sourceFilePath, sourceLineNumber)
     {
-        var shouldSkip = onPlatforms.All(platform => !RuntimeInformation.IsOSPlatform(platform));
-
-        if (shouldSkip)
-        {
+        if (onPlatforms.All(platform => !RuntimeInformation.IsOSPlatform(platform)))
             Skip = $"Test is supposed to be run only on platforms '{onPlatforms.ToContentString()}'";
-        }
     }
 }
 
 public class WindowsFactAttribute : OSFactAttribute
 {
-    public WindowsFactAttribute() : base(OSPlatform.Windows)
+    public WindowsFactAttribute(
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base([OSPlatform.Windows], sourceFilePath, sourceLineNumber)
     {
     }
 }
 
 public class LinuxFactAttribute : OSFactAttribute
 {
-    public LinuxFactAttribute() : base(OSPlatform.Linux)
+    public LinuxFactAttribute(
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base([OSPlatform.Linux], sourceFilePath, sourceLineNumber)
     {
     }
 }
 
 public class OSXFactAttribute : OSFactAttribute
 {
-    public OSXFactAttribute() : base(OSPlatform.OSX)
+    public OSXFactAttribute(
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base([OSPlatform.OSX], sourceFilePath, sourceLineNumber)
     {
     }
 }
 
 public class UnixFactAttribute : OSFactAttribute
 {
-    public UnixFactAttribute() : base(OSPlatform.Linux, OSPlatform.OSX)
+    public UnixFactAttribute(
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base([OSPlatform.Linux, OSPlatform.OSX], sourceFilePath, sourceLineNumber)
     {
     }
 }
 
 public class OSTheoryAttribute : TheoryAttribute
 {
-    public OSTheoryAttribute(params OSPlatform[] onPlatforms)
+    public OSTheoryAttribute(
+        OSPlatform[] onPlatforms,
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(sourceFilePath, sourceLineNumber)
     {
-        var shouldSkip = onPlatforms.All(platform => !RuntimeInformation.IsOSPlatform(platform));
-
-        if (shouldSkip)
-        {
+        if (onPlatforms.All(platform => !RuntimeInformation.IsOSPlatform(platform)))
             Skip = $"Test is supposed to be run only on platforms '{onPlatforms.ToContentString()}'";
-        }
     }
 }
 
 public class WindowsTheoryAttribute : OSTheoryAttribute
 {
-    public WindowsTheoryAttribute() : base(OSPlatform.Windows)
+    public WindowsTheoryAttribute(
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base([OSPlatform.Windows], sourceFilePath, sourceLineNumber)
     {
     }
 }
 
 public class LinuxTheoryAttribute : OSTheoryAttribute
 {
-    public LinuxTheoryAttribute() : base(OSPlatform.Linux)
+    public LinuxTheoryAttribute(
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base([OSPlatform.Linux], sourceFilePath, sourceLineNumber)
     {
     }
 }
 
 public class OSXTheoryAttribute : OSTheoryAttribute
 {
-    public OSXTheoryAttribute() : base(OSPlatform.OSX)
+    public OSXTheoryAttribute(
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base([OSPlatform.OSX], sourceFilePath, sourceLineNumber)
     {
     }
 }
 
 public class UnixTheoryAttribute : OSTheoryAttribute
 {
-    public UnixTheoryAttribute() : base(OSPlatform.Linux, OSPlatform.OSX)
+    public UnixTheoryAttribute(
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base([OSPlatform.Linux, OSPlatform.OSX], sourceFilePath, sourceLineNumber)
     {
     }
 }

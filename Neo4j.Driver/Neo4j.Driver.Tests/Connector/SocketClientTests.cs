@@ -112,7 +112,7 @@ public class SocketClientTests
     public class ConnectMethod
     {
         [Fact]
-        public async void ShouldNotCatchHandshakeFailuresOrConstructIoTypes()
+        public async Task ShouldNotCatchHandshakeFailuresOrConstructIoTypes()
         {
             var (_, io) = CreateMockIoFactory(null, null);
             var mockHandshaker = new Mock<IBoltHandshaker>();

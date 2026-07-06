@@ -20,7 +20,6 @@ using Neo4j.Driver.IntegrationTests.Extensions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Stub;
 
@@ -47,7 +46,9 @@ public sealed class MultiDatabasesTests
         var cursor =
             await session.RunAsync("MATCH (n) RETURN n.name");
 
-        var result = await cursor.ToListAsync(r => r[0].As<string>());
+        var result = await cursor.ToListAsync(
+            r => r[0].As<string>(),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
     }
@@ -78,7 +79,9 @@ public sealed class MultiDatabasesTests
         var cursor =
             await session.RunAsync("MATCH (n) RETURN n.name");
 
-        var result = await cursor.ToListAsync(r => r[0].As<string>());
+        var result = await cursor.ToListAsync(
+            r => r[0].As<string>(),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
     }
@@ -125,7 +128,9 @@ public sealed class MultiDatabasesTests
                 var cursor =
                     await session.RunAsync("MATCH (n) RETURN n.name");
 
-                var result = await cursor.ToListAsync(r => r[0].As<string>());
+                var result = await cursor.ToListAsync(
+                    r => r[0].As<string>(),
+                    cancellationToken: TestContext.Current.CancellationToken);
 
                 result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
             });
@@ -157,7 +162,9 @@ public sealed class MultiDatabasesTests
         var cursor =
             await session.RunAsync("MATCH (n) RETURN n.name");
 
-        var result = await cursor.ToListAsync(r => r[0].As<string>());
+        var result = await cursor.ToListAsync(
+            r => r[0].As<string>(),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
     }
