@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -28,6 +29,7 @@ namespace Neo4j.Driver.Internal.DependencyInjection;
 
 internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 {
+    private readonly ConcurrentDictionary<Type, (ConstructorInfo Constructor, ParameterInfo[] Parameters)> _constructorCache = new();
     private readonly Stack<IAsyncDisposable> _disposables = new();
     private readonly List<IResolutionInterceptor> _interceptors = [];
     private readonly ScopedContainer? _parent;
@@ -79,30 +81,17 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         return ResolveCore(serviceType, requestingType, null);
     }
 
-    public bool TryResolve<T>(out T? value)
+    public bool TryResolve<T>([NotNullWhen(true)] out T? value)
     {
-        var result = TryResolveCore(typeof(T), null, null);
-        if (result is null)
-        {
-            value = default;
-            return false;
-        }
-
-        value = (T)result;
-        return true;
+        var success = TryResolve(typeof(T), out var service);
+        value = (T?)service;
+        return success;
     }
 
-    public bool TryResolve(Type serviceType, out object? service)
+    public bool TryResolve(Type serviceType, [NotNullWhen(true)] out object? service)
     {
-        var result = TryResolveCore(serviceType, null, null);
-        if (result is null)
-        {
-            service = null;
-            return false;
-        }
-
-        service = result;
-        return true;
+        service = TryResolveCore(serviceType, null, null);
+        return service != null;
     }
 
     public IResolutionScope CreateChildScope(Action<IServiceRegistry> registrations)
@@ -274,7 +263,7 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 
                 if (registration.Singleton)
                 {
-                    registrations[^1] = new Registration(instance);
+                    registration.Instance = instance;
                 }
 
                 return instance;
@@ -360,21 +349,31 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         return array;
     }
 
+    private (ConstructorInfo Constructor, ParameterInfo[] Parameters) GetConstructorAndParams(Type implementationType)
+    {
+        return _constructorCache.GetOrAdd(
+            implementationType,
+            static type =>
+            {
+                var constructors = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+
+                if (constructors.Length == 0)
+                {
+                    throw new InvalidOperationException($"Type {type} has no public constructors.");
+                }
+
+                var constructor = constructors.OrderByDescending(c => c.GetParameters().Length).First();
+                return (constructor, constructor.GetParameters());
+            });
+    }
+
     private object CreateInstance(
         Type implementationType,
         Type requestingType,
         Dictionary<Type, List<Registration>>? extraRegistrations,
         ScopedContainer? childScope = null)
     {
-        var constructors = implementationType.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
-
-        if (constructors.Length == 0)
-        {
-            throw new InvalidOperationException($"Type {implementationType} has no public constructors.");
-        }
-
-        var constructor = constructors.OrderByDescending(c => c.GetParameters().Length).First();
-        var parameters = constructor.GetParameters();
+        var (constructor, parameters) = GetConstructorAndParams(implementationType);
         var parameterInstances = new object[parameters.Length];
 
         for (var i = 0; i < parameters.Length; i++)
@@ -432,7 +431,7 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             Singleton = singleton;
         }
 
-        public object? Instance { get; }
+        public object? Instance { get; internal set; }
         public Type ImplementationType { get; }
         public bool Singleton { get; }
     }
