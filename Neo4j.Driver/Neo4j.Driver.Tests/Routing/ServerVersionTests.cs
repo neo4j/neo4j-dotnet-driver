@@ -57,6 +57,18 @@ public class ServerVersionTests
     }
 
     [Theory]
+    [InlineData("2026.dev")]
+    [InlineData("Neo4j/2026.dev")]
+    [InlineData("2025.dev")]
+    public void ShouldHandleCalendarDevVersion(string version)
+    {
+        var serverVersion = ServerVersion.From(version);
+        serverVersion.Major.Should().Be(int.MaxValue);
+        serverVersion.Minor.Should().Be(int.MaxValue);
+        serverVersion.Patch.Should().Be(int.MaxValue);
+    }
+
+    [Theory]
     [InlineData("Neo4j/illegal")]
     [InlineData("Neo4j/3-alpha2")]
     [InlineData("Illegal")]
