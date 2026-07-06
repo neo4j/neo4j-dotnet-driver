@@ -14,30 +14,13 @@
 // limitations under the License.
 
 using System;
-using System.Reflection;
 using System.Threading.Tasks;
 using AutoFixture;
 using AutoFixture.AutoMoq;
-using AutoFixture.Kernel;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Tests.Internal.Core;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
-
-internal class QueryApiSpecimenBuilder : ISpecimenBuilder
-{
-    public object Create(object request, ISpecimenContext context)
-    {
-        if (request is ParameterInfo p)
-        {
-            if (p.ParameterType == typeof(ILogger))
-            {
-                return new TestLogger(p.Member.DeclaringType!);
-            }
-        }
-
-        return new NoSpecimen();
-    }
-}
 
 internal class SimpleRetryLogic : IAsyncRetryLogic
 {
@@ -60,7 +43,7 @@ internal class QueryApiCustomization : ICustomization
     public void Customize(IFixture fixture)
     {
         fixture.Customize(new AutoMoqCustomization { ConfigureMembers = true });
-        fixture.Customizations.Add(new QueryApiSpecimenBuilder());
+        fixture.Customize(new LoggingCustomization());
         fixture.Register(() => SessionConfig.Builder.Build());
         fixture.Register<IBookmarkTracker>(() => new BookmarkTracker(SessionConfig.Builder.Build()));
     }

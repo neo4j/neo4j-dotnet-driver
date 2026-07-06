@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -21,7 +21,7 @@ using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Util;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.Internal.QueryApi;
+namespace Neo4j.Driver.Tests.Internal.Core;
 
 internal class TestLogger(Type subjectType) : ILogger
 {

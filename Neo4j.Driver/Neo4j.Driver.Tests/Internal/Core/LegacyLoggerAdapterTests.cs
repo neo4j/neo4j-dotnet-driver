@@ -20,7 +20,7 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.Internal.QueryApi;
+namespace Neo4j.Driver.Tests.Internal.Core;
 
 public class LegacyLoggerAdapterTests
 {

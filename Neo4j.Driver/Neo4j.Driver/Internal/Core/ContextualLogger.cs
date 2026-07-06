@@ -31,38 +31,10 @@ internal class ContextualLogger : ILogger
         _downstream = downstream;
     }
 
-    private (string, object[]) Contextualise(string messageTemplate, params object[] args)
-    {
-        var contexts = _tracker.Contexts;
-        var messageSegments = new string[contexts.Count + 1];
-        messageSegments[^1] = messageTemplate;
-
-        var allArgs = new object[contexts.Count + args.Length];
-        args.CopyTo(allArgs, contexts.Count);
-
-        for (var index = 0; index < contexts.Count; index++)
-        {
-            var context = contexts[index];
-            messageSegments[index] = $"[{context.Key}:{{{context.Key}}}] ";
-            allArgs[index] = context.Value;
-        }
-
-        var message = string.Join("", messageSegments);
-        return (message, allArgs);
-    }
-
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
     {
-        if (LoggingHelpers.ExtractFormatAndArguments(state, out var messageTemplate, out var args))
-        {
-            var (contextualisedMessage, contextualisedArgs) = Contextualise(messageTemplate, args);
-            using var scope = _downstream.BeginScope(_tracker.Contexts.AsMicrosoftStateItems().ToList());
-            _downstream.Log(logLevel, eventId, state, exception, (s, e) => string.Format(contextualisedMessage, contextualisedArgs));
-        }
-        else
-        {
-            _downstream.Log(logLevel, eventId, state, exception, formatter);
-        }
+        using var scope = _downstream.BeginScope(_tracker.Contexts.AsMicrosoftStateItems().ToList());
+        _downstream.Log(logLevel, eventId, state, exception, formatter);
     }
 
     public bool IsEnabled(LogLevel logLevel)

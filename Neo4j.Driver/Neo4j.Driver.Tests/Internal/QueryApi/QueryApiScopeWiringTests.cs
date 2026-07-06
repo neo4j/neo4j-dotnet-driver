@@ -22,6 +22,7 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi;
+using Neo4j.Driver.Tests.Internal.Core;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
