@@ -28,7 +28,13 @@ internal class SimpleNeo4JLogger : INeo4jLogger
             ? ConsoleColor.DarkMagenta
             : ConsoleColor.DarkGreen;
 
-        Console.WriteLine($"{Now} DBG: {message}", args);
+        var line = string.Format($"{Now} DBG: {message}", args);
+        if (line.Length > 4000)
+        {
+            line = $"{line[..4000]} (truncated)";
+        }
+
+        Console.WriteLine(line);
         Console.ResetColor();
     }
 
