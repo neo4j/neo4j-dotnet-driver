@@ -22,13 +22,15 @@ namespace Neo4j.Driver.Internal.Util;
 internal class ServerVersion : IComparable<ServerVersion>
 {
     private const string Neo4jProduct = "Neo4j";
-    private const string InDevVersionString = "Neo4j/dev";
-    private static readonly ServerVersion VInDev = new(int.MaxValue, int.MaxValue, int.MaxValue, InDevVersionString);
+    private static readonly ServerVersion VInDev = new(int.MaxValue, int.MaxValue, int.MaxValue, "Neo4j/dev");
 
     private static readonly Regex VersionRegex =
         new(
             $@"({Neo4jProduct}/)?(\d+)\.(\d+)(?:\.)?(\d*)(\.|-|\+)?([0-9A-Za-z-.]*)?",
             RegexOptions.IgnoreCase);
+
+    private static readonly Regex DevVersionRegex =
+        new($@"^({Neo4jProduct}/)?(dev|\d+\.dev)$", RegexOptions.IgnoreCase);
 
     public readonly string Agent;
 
@@ -130,7 +132,7 @@ internal class ServerVersion : IComparable<ServerVersion>
             throw new ArgumentNullException(nameof(serverAgent));
         }
 
-        if (serverAgent == InDevVersionString)
+        if (DevVersionRegex.IsMatch(serverAgent))
         {
             return VInDev;
         }
