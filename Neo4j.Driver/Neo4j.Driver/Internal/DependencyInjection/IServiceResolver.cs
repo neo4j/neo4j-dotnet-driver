@@ -16,6 +16,7 @@
 #nullable enable
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Neo4j.Driver.Internal.DependencyInjection;
 
@@ -24,6 +25,6 @@ internal interface IServiceResolver
     TService Resolve<TService>();
     object Resolve(Type serviceType);
     object Resolve(Type serviceType, Type requestingType);
-    bool TryResolve<T>(out T? value);
-    bool TryResolve(Type serviceType, out object? service);
+    bool TryResolve<T>([NotNullWhen(true)] out T? value);
+    bool TryResolve(Type serviceType, [NotNullWhen(true)] out object? service);
 }
