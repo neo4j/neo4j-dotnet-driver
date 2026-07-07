@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
@@ -21,6 +22,42 @@ internal sealed class PropertyTypeValidator : IPropertyTypeValidator
 {
     public void EnsureSupported(object value)
     {
-        throw new NotImplementedException();
+        if (!IsSupported(value, allowList: true))
+        {
+            var typeName = value?.GetType().FullName ?? "null";
+            throw new ArgumentException(
+                $"Value of type '{typeName}' is not a supported Neo4j property type.",
+                nameof(value));
+        }
+    }
+
+    private static bool IsSupported(object value, bool allowList)
+    {
+        switch (value)
+        {
+            case bool:
+            case long:
+            case double:
+            case string:
+            case byte[]:
+                return true;
+
+            case IDictionary:
+                return false;
+
+            case IEnumerable enumerable when allowList:
+                foreach (var item in enumerable)
+                {
+                    if (!IsSupported(item, allowList: false))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+
+            default:
+                return false;
+        }
     }
 }

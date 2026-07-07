@@ -13,19 +13,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
+using System.IO;
+using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
 internal sealed class PlaintextSerializer : IPlaintextSerializer, IPlaintextDeserializer
 {
+    // The plaintext scheme is pinned to a fixed PackStream/Bolt version so encrypted values do not
+    // change encoding with the negotiated connection version. 6.1 (UUID) is deliberately excluded
+    // until UUID support is settled.
+    private static readonly BoltProtocolVersion PlaintextVersion = BoltProtocolVersion.V6_0;
+
+    private readonly MessageFormat _format;
+
+    public PlaintextSerializer(DriverContext context)
+    {
+        _format = new MessageFormat(PlaintextVersion, context);
+    }
+
     public byte[] Serialize(object value)
     {
-        throw new NotImplementedException();
+        using var stream = new MemoryStream();
+        new PackStreamWriter(_format, stream).Write(value);
+        return stream.ToArray();
     }
 
     public object Deserialize(byte[] plaintext)
     {
-        throw new NotImplementedException();
+        return new PackStreamReader(_format, new MemoryStream(plaintext), new ByteBuffers()).Read();
     }
 }

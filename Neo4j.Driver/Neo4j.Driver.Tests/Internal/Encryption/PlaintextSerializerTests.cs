@@ -22,56 +22,34 @@ namespace Neo4j.Driver.Tests.Internal.Encryption;
 
 public class PlaintextSerializerTests
 {
-    private readonly PlaintextSerializer _subject = new();
+    private readonly PlaintextSerializer _subject = new(TestDriverContext.MockContext);
 
-    public static IEnumerable<object[]> ScalarPropertyValues => new[]
+    // just a few sanity checks - serialization is delegated to PackStreamReader/Writer
+    // which are both fully tested in PackStreamTestSpecs   
+    public static IEnumerable<object[]> LockVectors => new[]
     {
-        new object[] { true },
-        new object[] { false },
-        new object[] { 0L },
-        new object[] { 42L },
-        new object[] { -1L },
-        new object[] { long.MaxValue },
-        new object[] { long.MinValue },
-        new object[] { 3.14 },
-        new object[] { 0.0 },
-        new object[] { "hello" },
-        new object[] { "" },
-        new object[] { "unicode ☃ 日本語" }
+        new object[] { true, new byte[] { 0xC3 } },
+        new object[] { false, new byte[] { 0xC2 } },
+        new object[] { 42L, new byte[] { 0x2A } },
+        new object[] { 1234L, new byte[] { 0xC9, 0x04, 0xD2 } },
+        new object[] { 1.5, new byte[] { 0xC1, 0x3F, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } },
+        new object[] { "hello", new byte[] { 0x85, 0x68, 0x65, 0x6C, 0x6C, 0x6F } },
+        new object[] { "", new byte[] { 0x80 } },
+        new object[] { new byte[] { 0x01, 0x02, 0x03 }, new byte[] { 0xCC, 0x03, 0x01, 0x02, 0x03 } },
+        new object[] { new List<long> { 1L, 2L, 3L }, new byte[] { 0x93, 0x01, 0x02, 0x03 } }
     };
 
     [Theory]
-    [MemberData(nameof(ScalarPropertyValues))]
-    public void RoundTripsScalarPropertyValue(object value)
+    [MemberData(nameof(LockVectors))]
+    public void Serialize_ProducesPackStreamBytes(object value, byte[] expected)
     {
-        var result = _subject.Deserialize(_subject.Serialize(value));
-
-        result.Should().BeEquivalentTo(value);
+        _subject.Serialize(value).Should().Equal(expected);
     }
 
-    [Fact]
-    public void RoundTripsByteArray()
+    [Theory]
+    [MemberData(nameof(LockVectors))]
+    public void Deserialize_ReadsPackStreamBytesBackToValue(object value, byte[] plaintext)
     {
-        var value = new byte[] { 0x00, 0x01, 0xFE, 0xFF };
-
-        var result = _subject.Deserialize(_subject.Serialize(value));
-
-        result.Should().BeEquivalentTo(value);
-    }
-
-    [Fact]
-    public void RoundTripsHomogeneousList()
-    {
-        var value = new List<long> { 1L, 2L, 3L };
-
-        var result = _subject.Deserialize(_subject.Serialize(value));
-
-        result.Should().BeEquivalentTo(value);
-    }
-
-    [Fact]
-    public void SerializeProducesNonEmptyPlaintext()
-    {
-        _subject.Serialize("x").Should().NotBeNullOrEmpty();
+        _subject.Deserialize(plaintext).Should().BeEquivalentTo(value);
     }
 }
