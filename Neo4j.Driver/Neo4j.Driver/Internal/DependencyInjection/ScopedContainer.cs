@@ -146,6 +146,15 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
     public IServiceRegistry RegisterType(Type service, Type implementation, bool singleton = false)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentNullException.ThrowIfNull(service);
+        ArgumentNullException.ThrowIfNull(implementation);
+        if (implementation.IsAbstract || implementation.IsInterface)
+        {
+            throw new ArgumentException(
+                $"Implementation type {implementation} must be a non-abstract class.",
+                nameof(implementation));
+        }
+
         if (!service.IsAssignableFrom(implementation))
         {
             throw new ArgumentException(
@@ -192,10 +201,6 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
                 $"Resolution chain: {GetResolutionStackString()}");
     }
 
-    // All resolution logic lives here. Returns null only when the service is not registered.
-    // Other failure modes (disposed, circular dependency, construction failure) still throw.
-    // extraRegistrations carries the calling child scope's registrations so they take priority
-    // throughout the entire resolution chain, including transitive dependencies resolved by ancestors.
     private object? TryResolveCore(
         Type serviceType,
         Type? requestingType,
@@ -231,7 +236,6 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 
                 if (reg.Singleton && childScope != null)
                 {
-                    // singletons should be attached to innermost scope
                     return childScope.ResolveCore(serviceType, requestingType, null, null);
                 }
 
@@ -278,9 +282,6 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
                 return instance;
             }
 
-            // Delegate to parent. Merge this scope's registrations with whatever the child
-            // passed down, so every ancestor scope sees registrations from the full chain.
-            // The more-derived scope's registrations win for any conflicting key.
             if (_parent != null)
             {
                 return _parent.TryResolveCore(
@@ -313,14 +314,8 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
     {
         var instances = new List<object>();
 
-        // Merge this scope's registrations with any child overrides passed in.
-        // The more-derived scope's registrations win for conflicting keys.
         var effectiveOverrides = MergeRegistrations(_registrations, extraRegistrations);
 
-        // Collect from parent first, forwarding the effective overrides so that
-        // parent-registered implementations are instantiated with child-scope deps.
-        // Enumerable resolution always yields an array (never "not registered"), so a
-        // failure here is a genuine construction error and must propagate.
         if (_parent != null)
         {
             var enumerableType = typeof(IEnumerable<>).MakeGenericType(elementType);
@@ -331,8 +326,6 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             }
         }
 
-        // Add implementations from this scope's own registrations, matching the element
-        // type exactly (as single-service resolution does).
         if (_registrations.TryGetValue(elementType, out var registrations))
         {
             foreach (var registration in registrations)
