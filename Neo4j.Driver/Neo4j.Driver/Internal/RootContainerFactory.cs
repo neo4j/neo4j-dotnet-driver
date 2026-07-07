@@ -13,24 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal;
 
-internal class LoggingInterceptor : IResolutionInterceptor
+internal static class RootContainerFactory
 {
-    public bool TryResolve(Type serviceType, Type requestingType, IServiceResolver resolver, out object service)
+    public static IResolutionScope Build(DriverContext context)
     {
-        if (serviceType == typeof(ILogger))
-        {
-            var loggerFactory = resolver.Resolve<ILoggerFactory>();
-            var tracker = resolver.Resolve<ILoggingContextTracker>();
-            service = loggerFactory.GetLoggerForType(requestingType, tracker);
-            return true;
-        }
-
-        service = null;
-        return false;
+        var container = new ScopedContainer();
+        container.RegisterInstance(context);
+        container.RegisterInstance(context.Neo4JLogger);
+        container.RegisterModule<LoggingModule>();
+        return container;
     }
 }

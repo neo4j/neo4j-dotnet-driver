@@ -13,24 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal;
 
-internal class LoggingInterceptor : IResolutionInterceptor
+internal sealed class LoggingModule : IRegistrationModule
 {
-    public bool TryResolve(Type serviceType, Type requestingType, IServiceResolver resolver, out object service)
+    public void Register(IServiceRegistry serviceRegistry)
     {
-        if (serviceType == typeof(ILogger))
-        {
-            var loggerFactory = resolver.Resolve<ILoggerFactory>();
-            var tracker = resolver.Resolve<ILoggingContextTracker>();
-            service = loggerFactory.GetLoggerForType(requestingType, tracker);
-            return true;
-        }
-
-        service = null;
-        return false;
+        serviceRegistry.RegisterType<ILoggingContextTracker, LoggingContextTracker>(singleton: true);
+        serviceRegistry.RegisterType<ILoggerFactory, LoggerFactory>(singleton: true);
+        serviceRegistry.RegisterInterceptor(new LoggingInterceptor());
     }
 }

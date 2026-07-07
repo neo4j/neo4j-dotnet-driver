@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
 
@@ -26,17 +27,20 @@ internal sealed class Driver : IInternalDriver
 {
     private readonly DefaultBookmarkManager _bookmarkManager;
     private readonly IProtocolAdapter _server;
+    private readonly IResolutionScope _rootScope;
 
     private int _closedMarker;
 
     internal Driver(
         Uri uri,
         IProtocolAdapter server,
-        DriverContext driverContext)
+        DriverContext driverContext,
+        IResolutionScope rootScope)
     {
         Uri = uri;
         Context = driverContext;
         _server = server ?? throw new ArgumentNullException(nameof(server));
+        _rootScope = rootScope ?? throw new ArgumentNullException(nameof(rootScope));
         _bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
     }
 
@@ -94,7 +98,7 @@ internal sealed class Driver : IInternalDriver
     public Task CloseAsync()
     {
         return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0
-            ? _server.DisposeAsync().AsTask()
+            ? ShutdownAsync().AsTask()
             : Task.CompletedTask;
     }
 
@@ -139,8 +143,14 @@ internal sealed class Driver : IInternalDriver
     public ValueTask DisposeAsync()
     {
         return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0
-            ? _server.DisposeAsync()
+            ? ShutdownAsync()
             : new ValueTask(Task.CompletedTask);
+    }
+
+    private async ValueTask ShutdownAsync()
+    {
+        await _server.DisposeAsync().ConfigureAwait(false);
+        await _rootScope.DisposeAsync().ConfigureAwait(false);
     }
 
     public async Task<ExecutionSummary> GetRowsAsync(

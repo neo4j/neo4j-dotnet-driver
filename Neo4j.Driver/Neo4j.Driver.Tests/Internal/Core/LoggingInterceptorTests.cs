@@ -27,11 +27,11 @@ public class LoggingInterceptorTests
 {
     private readonly Mock<ILoggerFactory> _loggerFactory = new();
     private readonly Mock<IServiceResolver> _resolver = new();
-    private readonly LoggingInterceptor _subject;
+    private readonly LoggingInterceptor _subject = new();
 
     public LoggingInterceptorTests()
     {
-        _subject = new LoggingInterceptor(_loggerFactory.Object);
+        _resolver.Setup(r => r.Resolve<ILoggerFactory>()).Returns(_loggerFactory.Object);
     }
 
     [Fact]

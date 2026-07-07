@@ -177,6 +177,13 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         return RegisterType(typeof(TService), typeof(TService), singleton);
     }
 
+    public IServiceRegistry RegisterModule<T>() where T : IRegistrationModule, new()
+    {
+        var module = new T();
+        module.Register(this);
+        return this;
+    }   
+
     public IServiceRegistry RegisterInterceptor(IResolutionInterceptor interceptor)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);

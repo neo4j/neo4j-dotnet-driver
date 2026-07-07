@@ -13,16 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-
 namespace Neo4j.Driver.Internal.DependencyInjection;
 
-internal interface IServiceRegistry
+internal interface IRegistrationModule
 {
-    IServiceRegistry RegisterInstance<TService>(TService instance, bool transferOwnership = false);
-    IServiceRegistry RegisterType<TService, TImplementation>(bool singleton = false) where TImplementation : TService;
-    IServiceRegistry RegisterType(Type service, Type implementation, bool singleton = false);
-    IServiceRegistry RegisterType<TService>(bool singleton = false);
-    IServiceRegistry RegisterModule<T>() where T : IRegistrationModule, new();
-    IServiceRegistry RegisterInterceptor(IResolutionInterceptor interceptor);
+    void Register(IServiceRegistry serviceRegistry);
 }
