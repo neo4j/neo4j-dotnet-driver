@@ -21,7 +21,7 @@ using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Direct;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal.Helpers;
-using Xunit.Abstractions;
+using Xunit;
 using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 
 #pragma warning disable CS0618 // Type or member is obsolete - but we still test obsolete members

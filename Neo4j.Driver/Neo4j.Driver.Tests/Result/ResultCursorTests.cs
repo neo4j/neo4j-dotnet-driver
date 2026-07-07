@@ -23,7 +23,6 @@ using Moq;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-using Xunit.Abstractions;
 using Record = Neo4j.Driver.Internal.Result.Record;
 using ExceptionRecord = Xunit.Record;
 
@@ -80,7 +79,7 @@ public class ResultCursorTests
         }
 
         [Fact]
-        public async void ShouldReturnRecords()
+        public async Task ShouldReturnRecords()
         {
             var recordYielder = new TestRecordYielder(5, 10, _output);
             var recordYielderEnum = recordYielder.RecordsWithAutoLoad.GetEnumerator();
@@ -100,7 +99,7 @@ public class ResultCursorTests
         }
 
         [Fact]
-        public async void ShouldWaitForAllRecordsToArrive()
+        public async Task ShouldWaitForAllRecordsToArrive()
         {
             var recordYielder = new TestRecordYielder(5, 10, _output);
             var recordYielderEnum = recordYielder.Records.GetEnumerator();
@@ -134,7 +133,7 @@ public class ResultCursorTests
         }
 
         [Fact]
-        public async void ShouldReturnRecordsImmediatelyWhenReady()
+        public async Task ShouldReturnRecordsImmediatelyWhenReady()
         {
             var recordYielder = new TestRecordYielder(5, 10, _output);
             var recordYielderEnum = recordYielder.Records.GetEnumerator();
@@ -232,7 +231,7 @@ public class ResultCursorTests
     public class ResultNavigation
     {
         [Fact]
-        public async void ShouldGetTheFirstRecordAndMoveToNextPosition()
+        public async Task ShouldGetTheFirstRecordAndMoveToNextPosition()
         {
             var result = ResultCursorCreator.CreateResultCursor(1, 3);
             var read = await result.FetchAsync();
@@ -250,7 +249,7 @@ public class ResultCursorTests
     public class ConsumeAsyncMethod
     {
         [Fact]
-        public async void ShouldCallGetSummary()
+        public async Task ShouldCallGetSummary()
         {
             var getSummaryCalled = false;
             var result = ResultCursorCreator.CreateResultCursor(
@@ -269,7 +268,7 @@ public class ResultCursorTests
         }
 
         [Fact]
-        public async void ShouldOnlyThrowErrorOnce()
+        public async Task ShouldOnlyThrowErrorOnce()
         {
             var getSummaryCalled = 0;
             var result = ResultCursorCreator.CreateResultCursor(
@@ -287,7 +286,7 @@ public class ResultCursorTests
         }
 
         [Fact]
-        public async void ShouldReturnExistingSummaryWhenSummaryHasBeenRetrieved()
+        public async Task ShouldReturnExistingSummaryWhenSummaryHasBeenRetrieved()
         {
             var getSummaryCalled = 0;
             var result = ResultCursorCreator.CreateResultCursor(
@@ -310,7 +309,7 @@ public class ResultCursorTests
     public class PeekAsyncMethod
     {
         [Fact]
-        public async void ShouldReturnNextRecordWithoutMovingCurrentRecord()
+        public async Task ShouldReturnNextRecordWithoutMovingCurrentRecord()
         {
             var result = ResultCursorCreator.CreateResultCursor(1);
             var record = await result.PeekAsync();
@@ -320,7 +319,7 @@ public class ResultCursorTests
         }
 
         [Fact]
-        public async void ShouldReturnNullJustBeforeAtEnd()
+        public async Task ShouldReturnNullJustBeforeAtEnd()
         {
             var result = ResultCursorCreator.CreateResultCursor(1);
             var read = await result.FetchAsync();
@@ -330,7 +329,7 @@ public class ResultCursorTests
         }
 
         [Fact]
-        public async void ShouldReturnNullIfAtEnd()
+        public async Task ShouldReturnNullIfAtEnd()
         {
             var result = ResultCursorCreator.CreateResultCursor(1);
             var read = await result.FetchAsync();
@@ -342,7 +341,7 @@ public class ResultCursorTests
         }
 
         [Fact]
-        public async void ShouldReturnSameRecordIfPeekedTwice()
+        public async Task ShouldReturnSameRecordIfPeekedTwice()
         {
             var result = ResultCursorCreator.CreateResultCursor(1);
             var peeked1 = await result.PeekAsync();
@@ -356,7 +355,7 @@ public class ResultCursorTests
     public class FetchAsyncMethod
     {
         [Fact]
-        public async void FetchAsyncAndCurrentWillReturnPeekedAfterPeek()
+        public async Task FetchAsyncAndCurrentWillReturnPeekedAfterPeek()
         {
             var result = ResultCursorCreator.CreateResultCursor(1);
             var peeked = await result.PeekAsync();
@@ -383,7 +382,7 @@ public class ResultCursorTests
         }
 
         [Fact]
-        public async void ShouldNotThrowExceptionWhenCursorIsEmptyAndFetched()
+        public async Task ShouldNotThrowExceptionWhenCursorIsEmptyAndFetched()
         {
             var result = ResultCursorCreator.CreateResultCursor(1, 0);
 
@@ -395,7 +394,7 @@ public class ResultCursorTests
         }
 
         [Fact]
-        public async void ShouldNotThrowExceptionWhenCursorIsEmptyAndPeeked()
+        public async Task ShouldNotThrowExceptionWhenCursorIsEmptyAndPeeked()
         {
             var result = ResultCursorCreator.CreateResultCursor(1, 0);
 
@@ -444,7 +443,7 @@ public class ResultCursorTests
     public class ConsumableCursorTests
     {
         [Fact]
-        public async void ShouldErrorWhenAccessRecordsAfterConsume()
+        public async Task ShouldErrorWhenAccessRecordsAfterConsume()
         {
             var result = ResultCursorCreator.CreateResultCursor(1, 3);
             await result.ConsumeAsync();
@@ -455,7 +454,7 @@ public class ResultCursorTests
         }
 
         [Fact]
-        public async void ShouldErrorWhenAccessRecordsViaExtensionMethodsAfterConsume()
+        public async Task ShouldErrorWhenAccessRecordsViaExtensionMethodsAfterConsume()
         {
             var result = ResultCursorCreator.CreateResultCursor(1, 3);
             await result.ConsumeAsync();
@@ -466,7 +465,7 @@ public class ResultCursorTests
         }
 
         [Fact]
-        public async void ShouldAllowKeysAndConsumeAfterConsume()
+        public async Task ShouldAllowKeysAndConsumeAfterConsume()
         {
             var result = ResultCursorCreator.CreateResultCursor(1, 3);
             var summary0 = await result.ConsumeAsync();

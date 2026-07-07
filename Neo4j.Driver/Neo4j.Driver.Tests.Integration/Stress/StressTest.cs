@@ -24,7 +24,7 @@ using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Extensions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
-using Xunit.Abstractions;
+using Xunit;
 using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;

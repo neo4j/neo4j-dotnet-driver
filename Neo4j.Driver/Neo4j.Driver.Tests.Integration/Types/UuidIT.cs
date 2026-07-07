@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Direct;
 using Neo4j.Driver.IntegrationTests.Internals;
-using Xunit.Abstractions;
+using Xunit;
 using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 
 namespace Neo4j.Driver.IntegrationTests.Types;
@@ -92,7 +92,7 @@ public sealed class UuidIT : DirectDriverTestBase
         }
     }
 
-    [RequireServerFact(MinUuidServerVersion, GreaterThanOrEqualTo)]
+    [RequireEnterpriseEditionFact(MinUuidServerVersion, GreaterThanOrEqualTo)]
     public async Task ShouldStoreAndRetrieveUuidOnNode()
     {
         var uuid = Guid.NewGuid();

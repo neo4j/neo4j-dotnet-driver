@@ -111,7 +111,7 @@ public class DriverTests
     }
 
     [Fact]
-    public async void CloseAsyncClosesDriver()
+    public async Task CloseAsyncClosesDriver()
     {
         var driver = GraphDatabase.Driver("bolt://localhost");
         await driver.DisposeAsync();
@@ -122,7 +122,7 @@ public class DriverTests
     }
 
     [Fact]
-    public async void MultipleCloseAndDisposeIsValidOnDriver()
+    public async Task MultipleCloseAndDisposeIsValidOnDriver()
     {
         var driver = GraphDatabase.Driver("bolt://localhost");
         await driver.DisposeAsync();
@@ -135,7 +135,7 @@ public class DriverTests
     }
 
     [Fact]
-    public async void ShouldVerifyConnection()
+    public async Task ShouldVerifyConnection()
     {
         var mock = new Mock<IProtocolAdapter>();
         mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
@@ -148,7 +148,7 @@ public class DriverTests
     }
 
     [Fact]
-    public async void ShouldTryVerifyConnection()
+    public async Task ShouldTryVerifyConnection()
     {
         var mock = new Mock<IProtocolAdapter>();
         mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
@@ -165,7 +165,7 @@ public class DriverTests
     }
 
     [Fact]
-    public async void ShouldCatchInTryVerifyConnection()
+    public async Task ShouldCatchInTryVerifyConnection()
     {
         var mock = new Mock<IProtocolAdapter>();
         mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
@@ -182,7 +182,7 @@ public class DriverTests
     }
 
     [Fact]
-    public async void ShouldGetInfoConnection()
+    public async Task ShouldGetInfoConnection()
     {
         var mockServerInfo = new Mock<IServerInfo>().Object;
         var mock = new Mock<IProtocolAdapter>();
@@ -201,7 +201,7 @@ public class DriverTests
     }
 
     [Fact]
-    public async void ShouldTestSupportMultiDb()
+    public async Task ShouldTestSupportMultiDb()
     {
         var mock = new Mock<IProtocolAdapter>();
         mock.Setup(x => x.SupportsMultiDbAsync()).Returns(Task.FromResult(true));

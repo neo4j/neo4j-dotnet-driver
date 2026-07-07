@@ -17,7 +17,6 @@ using System;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Routing;
 

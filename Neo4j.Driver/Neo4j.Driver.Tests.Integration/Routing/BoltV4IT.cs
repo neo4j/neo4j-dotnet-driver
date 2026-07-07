@@ -19,7 +19,6 @@ using Neo4j.Driver.IntegrationTests.Extensions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 using static Neo4j.Driver.SessionConfigBuilder;
 

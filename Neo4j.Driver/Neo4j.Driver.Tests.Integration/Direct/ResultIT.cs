@@ -20,7 +20,6 @@ using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal.Util;
 using Neo4j.Driver.Tests.Result;
 using Xunit;
-using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
@@ -134,7 +133,7 @@ public sealed class ResultIT : DirectDriverTestBase
         }
     }
 
-    [RequireServerFact]
+    [RequireEnterpriseEditionFact]
     public async Task GetProfile()
     {
         var session = Driver.AsyncSession();
@@ -181,7 +180,7 @@ public sealed class ResultIT : DirectDriverTestBase
         }
     }
 
-    [RequireServerFact]
+    [RequireEnterpriseEditionFact]
     public async Task GetQueryProfile()
     {
         var session = Driver.AsyncSession();

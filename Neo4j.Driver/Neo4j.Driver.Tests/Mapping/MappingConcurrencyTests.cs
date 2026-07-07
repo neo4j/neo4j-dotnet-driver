@@ -23,7 +23,6 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Mapping;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Neo4j.Driver.Tests.Mapping;
 
@@ -56,7 +55,7 @@ public class MappingConcurrencyTests(ITestOutputHelper testOutputHelper)
     private record DummyType4(string Name, int Age);
 
     [Fact]
-    public async void DefaultMapperShouldBeThreadSafe()
+    public async Task DefaultMapperShouldBeThreadSafe()
     {
         List<ITestTask> threads =
         [

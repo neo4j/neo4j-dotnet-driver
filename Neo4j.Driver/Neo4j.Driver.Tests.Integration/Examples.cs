@@ -19,10 +19,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
-using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.Extensions.DatabaseExtensions;
 
 namespace Neo4j.Driver.IntegrationTests;
@@ -497,7 +497,7 @@ public class Examples
                 Console.WriteLine(greeting);
             }
 
-            public static void Main()
+            public static void RunExample()
             {
                 using var greeter = new HelloWorldExample("bolt://localhost:7687", "neo4j", "password");
 
@@ -787,8 +787,8 @@ public class Examples
         {
         }
 
-        [RequireEnterpriseEdition("4.0.0", "5.0.0", VersionComparison.Between)]
-        public async void TestUseAnotherDatabaseExample()
+        [RequireEnterpriseEditionFact("4.0.0", "5.0.0", VersionComparison.Between)]
+        public async Task TestUseAnotherDatabaseExample()
         {
             try
             {
@@ -811,8 +811,8 @@ public class Examples
             greetingCount.Should().Be(1);
         }
 
-        [RequireEnterpriseEdition("5.0.0", VersionComparison.GreaterThanOrEqualTo)]
-        public async void TestUseAnotherDatabaseExampleAsync()
+        [RequireEnterpriseEditionFact("5.0.0", VersionComparison.GreaterThanOrEqualTo)]
+        public async Task TestUseAnotherDatabaseExampleAsync()
         {
             try
             {
