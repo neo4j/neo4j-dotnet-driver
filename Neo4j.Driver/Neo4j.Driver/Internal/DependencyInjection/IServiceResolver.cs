@@ -2,7 +2,7 @@
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
-// you may not use this file except in compliance with the License.
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -24,7 +24,7 @@ internal interface IServiceResolver
 {
     TService Resolve<TService>();
     object Resolve(Type serviceType);
-    object Resolve(Type serviceType, Type requestingType);
+    object Resolve(Type serviceType, Type? requestingType);
     bool TryResolve<T>([NotNullWhen(true)] out T? value);
     bool TryResolve(Type serviceType, [NotNullWhen(true)] out object? service);
 }

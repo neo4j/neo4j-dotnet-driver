@@ -13,11 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#nullable enable
+
 using System;
 
 namespace Neo4j.Driver.Internal.DependencyInjection;
 
 internal interface IResolutionInterceptor
 {
-    bool TryResolve(Type serviceType, Type requestingType, IServiceResolver resolver, out object service);
+    bool TryResolve(Type serviceType, Type? requestingType, IServiceResolver resolver, out object service);
 }
