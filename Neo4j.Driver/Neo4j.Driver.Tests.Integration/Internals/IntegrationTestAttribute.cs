@@ -252,9 +252,9 @@ public class RequireServerFactAttribute : FactAttribute
     }
 }
 
-public sealed class RequireEnterpriseEdition : RequireServerFactAttribute
+public sealed class RequireEnterpriseEditionFactAttribute : RequireServerFactAttribute
 {
-    public RequireEnterpriseEdition(
+    public RequireEnterpriseEditionFactAttribute(
         string versionText = null,
         VersionComparison versionCompare = VersionComparison.EqualTo)
         : base(versionText, versionCompare)
@@ -268,7 +268,7 @@ public sealed class RequireEnterpriseEdition : RequireServerFactAttribute
         }
     }
 
-    public RequireEnterpriseEdition(
+    public RequireEnterpriseEditionFactAttribute(
         string minVersionText,
         string maxVersionText,
         VersionComparison versionComparison) : base(minVersionText, maxVersionText, versionComparison)

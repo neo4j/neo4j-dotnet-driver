@@ -42,7 +42,7 @@ public sealed class BoltV4IT : DirectDriverTestBase
         await VerifyDatabaseNameOnSummary("neo4j", "neo4j");
     }
 
-    [RequireEnterpriseEdition("4.0.0", "5.0.0", Between)]
+    [RequireEnterpriseEditionFact("4.0.0", "5.0.0", Between)]
     public async Task ShouldReturnDatabaseInfoForDatabase()
     {
         await CreateDatabase(Server.Driver, "foo");
@@ -56,7 +56,7 @@ public sealed class BoltV4IT : DirectDriverTestBase
         }
     }
 
-    [RequireEnterpriseEdition("5.0.0", GreaterThanOrEqualTo)]
+    [RequireEnterpriseEditionFact("5.0.0", GreaterThanOrEqualTo)]
     public async Task ShouldReturnDatabaseInfoForDatabaseAsync()
     {
         await CreateDatabase(Server.Driver, "foo", true);
@@ -82,7 +82,7 @@ public sealed class BoltV4IT : DirectDriverTestBase
         await VerifyDatabaseNameOnSummaryTx("neo4j", "neo4j");
     }
 
-    [RequireEnterpriseEdition("4.0.0", "5.0.0", Between)]
+    [RequireEnterpriseEditionFact("4.0.0", "5.0.0", Between)]
     public async Task ShouldReturnDatabaseInfoForDatabaseInTx()
     {
         await CreateDatabase(Server.Driver, "foo");
@@ -96,7 +96,7 @@ public sealed class BoltV4IT : DirectDriverTestBase
         }
     }
 
-    [RequireEnterpriseEdition("5.0.0", GreaterThanOrEqualTo)]
+    [RequireEnterpriseEditionFact("5.0.0", GreaterThanOrEqualTo)]
     public async Task ShouldReturnDatabaseInfoForDatabaseInTxAsync()
     {
         await CreateDatabase(Server.Driver, "foo", true);
@@ -123,7 +123,7 @@ public sealed class BoltV4IT : DirectDriverTestBase
         await VerifyDatabaseNameOnSummaryTxFunc("neo4j", "neo4j");
     }
 
-    [RequireEnterpriseEdition("4.0.0", "5.0.0", Between)]
+    [RequireEnterpriseEditionFact("4.0.0", "5.0.0", Between)]
     public async Task ShouldReturnDatabaseInfoForDatabaseInTxFunc()
     {
         await CreateDatabase(Server.Driver, "foo");
@@ -137,7 +137,7 @@ public sealed class BoltV4IT : DirectDriverTestBase
         }
     }
 
-    [RequireEnterpriseEdition("5.0.0", GreaterThanOrEqualTo)]
+    [RequireEnterpriseEditionFact("5.0.0", GreaterThanOrEqualTo)]
     public async Task ShouldReturnDatabaseInfoForDatabaseInTxFuncAsync()
     {
         await CreateDatabase(Server.Driver, "foo", true);
@@ -151,7 +151,7 @@ public sealed class BoltV4IT : DirectDriverTestBase
         }
     }
 
-    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    [RequireEnterpriseEditionFact("4.0.0", GreaterThanOrEqualTo)]
     public void ShouldThrowForNonExistentDatabase()
     {
         this.Awaiting(_ => VerifyDatabaseNameOnSummary("bar", "bar"))
@@ -160,7 +160,7 @@ public sealed class BoltV4IT : DirectDriverTestBase
             .WithMessage("*database does not exist.*");
     }
 
-    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    [RequireEnterpriseEditionFact("4.0.0", GreaterThanOrEqualTo)]
     public void ShouldThrowForNonExistentDatabaseInTx()
     {
         this.Awaiting(_ => VerifyDatabaseNameOnSummaryTx("bar", "bar"))
@@ -169,7 +169,7 @@ public sealed class BoltV4IT : DirectDriverTestBase
             .WithMessage("*database does not exist.*");
     }
 
-    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    [RequireEnterpriseEditionFact("4.0.0", GreaterThanOrEqualTo)]
     public void ShouldThrowForNonExistentDatabaseInTxFunc()
     {
         this.Awaiting(_ => VerifyDatabaseNameOnSummaryTxFunc("bar", "bar"))

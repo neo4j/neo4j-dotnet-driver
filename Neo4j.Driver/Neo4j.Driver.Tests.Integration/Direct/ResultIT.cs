@@ -133,7 +133,7 @@ public sealed class ResultIT : DirectDriverTestBase
         }
     }
 
-    [RequireServerFact]
+    [RequireEnterpriseEditionFact]
     public async Task GetProfile()
     {
         var session = Driver.AsyncSession();
@@ -180,7 +180,7 @@ public sealed class ResultIT : DirectDriverTestBase
         }
     }
 
-    [RequireServerFact]
+    [RequireEnterpriseEditionFact]
     public async Task GetQueryProfile()
     {
         var session = Driver.AsyncSession();

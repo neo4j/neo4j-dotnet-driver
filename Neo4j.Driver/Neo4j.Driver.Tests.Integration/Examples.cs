@@ -787,7 +787,7 @@ public class Examples
         {
         }
 
-        [RequireEnterpriseEdition("4.0.0", "5.0.0", VersionComparison.Between)]
+        [RequireEnterpriseEditionFact("4.0.0", "5.0.0", VersionComparison.Between)]
         public async Task TestUseAnotherDatabaseExample()
         {
             try
@@ -811,7 +811,7 @@ public class Examples
             greetingCount.Should().Be(1);
         }
 
-        [RequireEnterpriseEdition("5.0.0", VersionComparison.GreaterThanOrEqualTo)]
+        [RequireEnterpriseEditionFact("5.0.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task TestUseAnotherDatabaseExampleAsync()
         {
             try
