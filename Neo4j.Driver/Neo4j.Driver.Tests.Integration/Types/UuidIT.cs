@@ -92,7 +92,7 @@ public sealed class UuidIT : DirectDriverTestBase
         }
     }
 
-    [RequireServerFact(MinUuidServerVersion, GreaterThanOrEqualTo)]
+    [RequireEnterpriseEditionFact(MinUuidServerVersion, GreaterThanOrEqualTo)]
     public async Task ShouldStoreAndRetrieveUuidOnNode()
     {
         var uuid = Guid.NewGuid();

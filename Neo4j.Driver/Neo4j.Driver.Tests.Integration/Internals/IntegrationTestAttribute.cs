@@ -265,9 +265,9 @@ public class RequireServerFactAttribute : FactAttribute
     }
 }
 
-public sealed class RequireEnterpriseEdition : RequireServerFactAttribute
+public sealed class RequireEnterpriseEditionFactAttribute : RequireServerFactAttribute
 {
-    public RequireEnterpriseEdition(
+    public RequireEnterpriseEditionFactAttribute(
         string versionText = null,
         VersionComparison versionCompare = VersionComparison.EqualTo,
         [CallerFilePath] string sourceFilePath = null,
@@ -283,7 +283,7 @@ public sealed class RequireEnterpriseEdition : RequireServerFactAttribute
         }
     }
 
-    public RequireEnterpriseEdition(
+    public RequireEnterpriseEditionFactAttribute(
         string minVersionText,
         string maxVersionText,
         VersionComparison versionComparison,
