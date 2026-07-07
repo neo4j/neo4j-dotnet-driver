@@ -34,7 +34,7 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
     private readonly List<IResolutionInterceptor> _interceptors = [];
     private readonly ScopedContainer? _parent;
     private readonly Dictionary<Type, List<Registration>> _registrations = new();
-    private readonly ThreadLocal<HashSet<Type>> _resolutionStack = new(() => []);
+    private readonly ThreadLocal<List<Type>> _resolutionStack = new(() => []);
     private bool _disposed;
 
     public ScopedContainer() : this(null)
@@ -105,9 +105,10 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 
     public IServiceRegistry RegisterInstance<TService>(TService instance, bool transferOwnership = false)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         if (instance == null)
         {
-            throw new ArgumentException("Instance cannot be null", nameof(instance));
+            throw new ArgumentNullException(nameof(instance));
         }
 
         var serviceType = typeof(TService);
@@ -144,6 +145,14 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 
     public IServiceRegistry RegisterType(Type service, Type implementation, bool singleton = false)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (!service.IsAssignableFrom(implementation))
+        {
+            throw new ArgumentException(
+                $"Type {implementation} is not assignable to service type {service}.",
+                nameof(implementation));
+        }
+
         if (!_registrations.TryGetValue(service, out var registrations))
         {
             registrations = [];
@@ -156,19 +165,17 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 
     public IServiceRegistry RegisterType<TService>(bool singleton = false)
     {
-        var serviceType = typeof(TService);
-        if (!_registrations.TryGetValue(serviceType, out var registrations))
-        {
-            registrations = [];
-            _registrations[serviceType] = registrations;
-        }
-
-        registrations.Add(new Registration(serviceType, singleton));
-        return this;
+        return RegisterType(typeof(TService), typeof(TService), singleton);
     }
 
     public IServiceRegistry RegisterInterceptor(IResolutionInterceptor interceptor)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (interceptor == null)
+        {
+            throw new ArgumentNullException(nameof(interceptor));
+        }
+
         _interceptors.Add(interceptor);
         return this;
     }
@@ -200,13 +207,15 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             throw new ObjectDisposedException(nameof(ScopedContainer));
         }
 
-        if (_resolutionStack.Value != null && !_resolutionStack.Value.Add(serviceType))
+        var resolutionStack = _resolutionStack.Value;
+        if (resolutionStack != null && resolutionStack.Contains(serviceType))
         {
             throw new InvalidOperationException(
                 $"Circular dependency detected while resolving {serviceType}. " +
-                $"Resolution chain: {GetResolutionStackString()}");
+                $"Resolution chain: {string.Join(" -> ", resolutionStack.Append(serviceType).Select(t => t.Name))}");
         }
 
+        resolutionStack?.Add(serviceType);
         try
         {
             // Child-scope registrations take priority over everything in the parent chain.
@@ -285,7 +294,10 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         }
         finally
         {
-            _resolutionStack.Value?.Remove(serviceType);
+            if (resolutionStack is { Count: > 0 })
+            {
+                resolutionStack.RemoveAt(resolutionStack.Count - 1);
+            }
         }
     }
 
@@ -307,36 +319,42 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 
         // Collect from parent first, forwarding the effective overrides so that
         // parent-registered implementations are instantiated with child-scope deps.
+        // Enumerable resolution always yields an array (never "not registered"), so a
+        // failure here is a genuine construction error and must propagate.
         if (_parent != null)
         {
-            try
+            var enumerableType = typeof(IEnumerable<>).MakeGenericType(elementType);
+            var parentEnumerable = _parent.ResolveCore(enumerableType, null, effectiveOverrides, childScope);
+            if (parentEnumerable is IEnumerable enumerable)
             {
-                var enumerableType = typeof(IEnumerable<>).MakeGenericType(elementType);
-                var parentEnumerable = _parent.ResolveCore(enumerableType, null, effectiveOverrides, childScope);
-                if (parentEnumerable is IEnumerable enumerable)
-                {
-                    instances.AddRange(enumerable.Cast<object>());
-                }
-            }
-            catch (InvalidOperationException)
-            {
-                // Parent has no registrations for this element type — continue.
+                instances.AddRange(enumerable.Cast<object>());
             }
         }
 
-        // Add implementations from this scope's own registrations.
-        foreach (var (type, registrations) in _registrations)
+        // Add implementations from this scope's own registrations, matching the element
+        // type exactly (as single-service resolution does).
+        if (_registrations.TryGetValue(elementType, out var registrations))
         {
-            if (!elementType.IsAssignableFrom(type))
-            {
-                continue;
-            }
-
             foreach (var registration in registrations)
             {
-                instances.Add(
-                    registration.Instance ??
-                    CreateInstance(registration.ImplementationType, type, effectiveOverrides, childScope));
+                if (registration.Instance != null)
+                {
+                    instances.Add(registration.Instance);
+                    continue;
+                }
+
+                var instance = CreateInstance(
+                    registration.ImplementationType,
+                    elementType,
+                    effectiveOverrides,
+                    childScope);
+
+                if (registration.Singleton)
+                {
+                    registration.Instance = instance;
+                }
+
+                instances.Add(instance);
             }
         }
 

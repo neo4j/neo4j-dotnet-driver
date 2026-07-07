@@ -203,7 +203,8 @@ public class ScopedContainerTests
 
         act.Should()
             .Throw<InvalidOperationException>()
-            .WithMessage("*Circular dependency*");
+            .WithMessage("*Circular dependency*")
+            .WithMessage("*CircularA -> CircularB -> CircularA*");
     }
 
     [Fact]
@@ -454,22 +455,6 @@ public class ScopedContainerTests
     // overrides into the parent's resolution chain, so that a service registered
     // only in the parent scope can still be fully instantiated using dependencies
     // that live in the child scope.
-    //
-    // Known bugs at time of writing (do not fix here, just note):
-    //
-    //   BUG-1: Resolve(Type, IServiceResolver? extra = null) at line ~71 calls
-    //          itself recursively — `return Resolve(serviceType, extra)` binds
-    //          back to the same 2-arg overload instead of the 3-arg one.
-    //          All tests that fall through to parent will StackOverflow.
-    //
-    //   BUG-2: The extra-resolver check at line ~83 calls IServiceResolver.Resolve
-    //          which throws InvalidOperationException for unregistered services.
-    //          The `is { }` guard is never reached for a miss; the exception
-    //          propagates instead of falling through to local registrations.
-    //
-    //   BUG-3: CreateInstance at line ~251 calls Resolve(paramType, requestingType)
-    //          without threading extraResolver through, so child-scope overrides
-    //          are invisible for transitive dependencies.
     // -------------------------------------------------------------------------
 
     // Test types for override flow-through scenarios
@@ -745,5 +730,147 @@ public class ScopedContainerTests
         results.Should().ContainSingle(x => x is ServiceA_NeedsBC);
         results.OfType<ServiceA_NeedsB>().Single().B.Should().BeSameAs(childB);
         results.OfType<ServiceA_NeedsBC>().Single().B.Should().BeSameAs(childB);
+    }
+
+    [Fact]
+    public void RegisterType_Singleton_ReturnsSameInstanceForEveryResolve()
+    {
+        var container = new ScopedContainer();
+        container.RegisterType<ITestService, ServiceWithNoDependencies>(singleton: true);
+
+        var first = container.Resolve<ITestService>();
+        var second = container.Resolve<ITestService>();
+
+        first.Should().BeSameAs(second);
+    }
+
+    [Fact]
+    public void RegisterType_NonSingleton_ReturnsNewInstanceForEveryResolve()
+    {
+        var container = new ScopedContainer();
+        container.RegisterType<ITestService, ServiceWithNoDependencies>();
+
+        var first = container.Resolve<ITestService>();
+        var second = container.Resolve<ITestService>();
+
+        first.Should().NotBeSameAs(second);
+    }
+
+    [Fact]
+    public void RegisterType_Singleton_IsSharedAcrossChildScopes()
+    {
+        // A singleton is cached on the registration it was registered against, so a
+        // parent-registered singleton is the same instance for every child scope.
+        var parent = new ScopedContainer();
+        parent.RegisterType<ITestService, ServiceWithNoDependencies>(singleton: true);
+
+        var child1 = parent.CreateChildScope(_ => { });
+        var child2 = parent.CreateChildScope(_ => { });
+
+        var fromChild1 = child1.Resolve<ITestService>();
+        var fromChild2 = child2.Resolve<ITestService>();
+
+        fromChild1.Should().BeSameAs(fromChild2);
+    }
+
+    [Fact]
+    public void ResolveEnumerable_Singleton_ReturnsSameInstanceForEveryResolve()
+    {
+        var container = new ScopedContainer();
+        container.RegisterType<IMultiImplementer, MultiImplementer1>(singleton: true);
+
+        var first = container.Resolve<IEnumerable<IMultiImplementer>>().Single();
+        var second = container.Resolve<IEnumerable<IMultiImplementer>>().Single();
+
+        first.Should().BeSameAs(second);
+    }
+
+    [Fact]
+    public void ChildSingleton_ShadowsParentForSingleResolve_ButBothAppearInEnumerable()
+    {
+        // Parent and child each register their own singleton implementation of the same
+        // interface. They are independent singletons: the child's shadows the parent's for
+        // single-service resolution, while an enumerable resolve returns both — and the
+        // enumerable yields the same cached instances as the single resolves.
+        var parent = new ScopedContainer();
+        parent.RegisterType<IMultiImplementer, MultiImplementer1>(singleton: true);
+        var child = parent.CreateChildScope(r => r.RegisterType<IMultiImplementer, MultiImplementer2>(singleton: true));
+
+        var fromChild = child.Resolve<IMultiImplementer>();
+        var fromParent = parent.Resolve<IMultiImplementer>();
+        var childEnumerable = child.Resolve<IEnumerable<IMultiImplementer>>().ToArray();
+
+        fromChild.Should().BeOfType<MultiImplementer2>();
+        fromParent.Should().BeOfType<MultiImplementer1>();
+        fromChild.Should().NotBeSameAs(fromParent);
+
+        childEnumerable.Should().HaveCount(2);
+        childEnumerable.Should().Contain(x => ReferenceEquals(x, fromParent));
+        childEnumerable.Should().Contain(x => ReferenceEquals(x, fromChild));
+    }
+
+    [Fact]
+    public void RegisterType_ImplementationNotAssignableToService_Throws()
+    {
+        var container = new ScopedContainer();
+
+        var act = () => container.RegisterType(typeof(ITestService), typeof(MultiImplementer1));
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void RegisterInstance_NullInstance_ThrowsArgumentNullException()
+    {
+        var container = new ScopedContainer();
+
+        var act = () => container.RegisterInstance<ITestService>(null!);
+
+        act.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void RegisterInterceptor_NullInterceptor_ThrowsArgumentNullException()
+    {
+        var container = new ScopedContainer();
+
+        var act = () => container.RegisterInterceptor(null!);
+
+        act.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void RegisterInstance_AfterDispose_Throws()
+    {
+        var container = new ScopedContainer();
+        var instance = new Mock<ITestService>().Object;
+        container.Dispose();
+
+        var act = () => container.RegisterInstance(instance);
+
+        act.Should().Throw<ObjectDisposedException>();
+    }
+
+    [Fact]
+    public void RegisterType_AfterDispose_Throws()
+    {
+        var container = new ScopedContainer();
+        container.Dispose();
+
+        var act = () => container.RegisterType<ITestService, ServiceWithNoDependencies>();
+
+        act.Should().Throw<ObjectDisposedException>();
+    }
+
+    [Fact]
+    public void RegisterInterceptor_AfterDispose_Throws()
+    {
+        var container = new ScopedContainer();
+        var interceptor = new Mock<IResolutionInterceptor>().Object;
+        container.Dispose();
+
+        var act = () => container.RegisterInterceptor(interceptor);
+
+        act.Should().Throw<ObjectDisposedException>();
     }
 }
