@@ -187,13 +187,5 @@ internal class LogParams : IReadOnlyList<KeyValuePair<string, object?>>
 
     public int Count => _extractedList.Count;
 
-    public KeyValuePair<string, object?> this[int index]
-    {
-        get
-        {
-            return _extractedList
-                .Skip(index)
-                .First();
-        }
-    }
+    public KeyValuePair<string, object?> this[int index] => _extractedList[index];
 }

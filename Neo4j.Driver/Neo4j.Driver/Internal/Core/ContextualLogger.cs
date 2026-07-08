@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#nullable enable
+
 using System;
 using System.Linq;
 
@@ -31,7 +33,12 @@ internal class ContextualLogger : ILogger
         _downstream = downstream;
     }
 
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+    public void Log<TState>(
+        LogLevel logLevel,
+        EventId eventId,
+        TState state,
+        Exception? exception,
+        Func<TState, Exception?, string> formatter)
     {
         using var scope = _downstream.BeginScope(_tracker.Contexts.AsMicrosoftStateItems().ToList());
         _downstream.Log(logLevel, eventId, state, exception, formatter);
@@ -42,9 +49,8 @@ internal class ContextualLogger : ILogger
         return _downstream.IsEnabled(logLevel);
     }
 
-    public IDisposable BeginScope<TState>(TState state) where TState : notnull
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull
     {
         return _downstream.BeginScope(state);
     }
 }
-
