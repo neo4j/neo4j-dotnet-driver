@@ -125,6 +125,81 @@ public class ScopedContainerTests
         }
     }
 
+    private class CountingDisposableService : ITestService, IDisposable
+    {
+        public int DisposeCount { get; private set; }
+        public void Dispose() => DisposeCount++;
+    }
+
+    [Fact]
+    public void Resolve_RegisteredInstanceWithoutOwnership_IsNotDisposed()
+    {
+        // Hypothesis (H1): the caller retains ownership of a RegisterInstance value unless
+        // transferOwnership is set, so resolving it must NOT cause the scope to dispose it.
+        var container = new ScopedContainer();
+        var instance = new DisposableService();
+
+        container.RegisterInstance(instance);
+        _ = container.Resolve<DisposableService>();
+        container.Dispose();
+
+        instance.IsDisposed.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Resolve_Singleton_DisposedExactlyOnceRegardlessOfResolveCount()
+    {
+        // Hypothesis (H2): a singleton is one owned instance, so it must be disposed exactly
+        // once no matter how many times it is resolved.
+        var container = new ScopedContainer();
+        container.RegisterType<ITestService, CountingDisposableService>(singleton: true);
+
+        var first = (CountingDisposableService)container.Resolve<ITestService>();
+        _ = container.Resolve<ITestService>();
+        _ = container.Resolve<ITestService>();
+        container.Dispose();
+
+        first.DisposeCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ChildScope_ParentOwnedService_IsDisposedByParentNotByChild()
+    {
+        // Issue 3: a service registered in the parent is owned by the parent even when it is
+        // first resolved through a child scope. Disposing the child must not dispose it, and
+        // the parent must dispose it exactly once (no cross-scope double-tracking).
+        var parent = new ScopedContainer();
+        parent.RegisterType<ITestService, CountingDisposableService>();
+
+        var child = parent.CreateChildScope(_ => { });
+        var resolved = (CountingDisposableService)child.Resolve<ITestService>();
+
+        await child.DisposeAsync();
+        resolved.DisposeCount.Should().Be(0);
+
+        await parent.DisposeAsync();
+        resolved.DisposeCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Resolve_SelfRegisteredResolutionScope_IsNotEnrolledForDisposal()
+    {
+        // Issue 4: the container registers itself as IResolutionScope — a registered instance
+        // under an interface. Resolving such an instance must return it as-is without enrolling
+        // it for disposal (the create path is the only thing that transfers ownership). Mirrored
+        // here with an IAsyncDisposable registered instance resolved via its interface.
+        var container = new ScopedContainer();
+
+        container.Resolve<IResolutionScope>().Should().BeSameAs(container);
+
+        var instance = new AsyncDisposableService();
+        container.RegisterInstance<IAsyncDisposable>(instance);
+        _ = container.Resolve<IAsyncDisposable>();
+        await container.DisposeAsync();
+
+        instance.IsDisposed.Should().BeFalse();
+    }
+
     [Fact]
     public void RegisterInstance_ResolvesRegisteredInstance()
     {
@@ -485,6 +560,12 @@ public class ScopedContainerTests
     private class ServiceB_NoDeps : IOverrideB { }
     private class ServiceC_NoDeps : IOverrideC { }
 
+    private class DisposableServiceB : IOverrideB, IDisposable
+    {
+        public bool IsDisposed { get; private set; }
+        public void Dispose() => IsDisposed = true;
+    }
+
     [Fact]
     public void ChildScope_CanResolveParentServiceUsingChildInstanceDep()
     {
@@ -605,8 +686,6 @@ public class ScopedContainerTests
         // Child scope supplies IB.
         // Grandchild scope supplies IC.
         // Resolving IOverrideA from the grandchild must use IB from child AND IC from grandchild.
-        // With extraRegistrations ?? _registrations, child's IB is lost when grandchild delegates
-        // upward (grandchild's non-null extraRegistrations replaces child's registrations entirely).
         var parent = new ScopedContainer();
         parent.RegisterType<IOverrideA, ServiceA_NeedsBC>();
 
@@ -660,6 +739,22 @@ public class ScopedContainerTests
         results.Should().HaveCount(1);
         results[0].Should().BeOfType<ServiceA_NeedsB>();
         ((ServiceA_NeedsB)results[0]).B.Should().BeSameAs(childB);
+    }
+
+    [Fact]
+    public async Task ChildScope_DisposesChildRegisteredDependencyUsedByParentService()
+    {
+        var parent = new ScopedContainer();
+        parent.RegisterType<IOverrideA, ServiceA_NeedsB>();
+
+        var child = parent.CreateChildScope(r => r.RegisterType<IOverrideB, DisposableServiceB>());
+
+        var result = (ServiceA_NeedsB)child.Resolve<IOverrideA>();
+        var childB = (DisposableServiceB)result.B;
+
+        await child.DisposeAsync();
+
+        childB.IsDisposed.Should().BeTrue();
     }
 
     [Fact]
