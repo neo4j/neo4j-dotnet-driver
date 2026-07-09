@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -17,15 +17,6 @@ using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal;
 
-internal static class RootContainerFactory
+internal class DriverAutoRegisterAttribute(bool singleton = false) : AutoRegisterAttribute(singleton)
 {
-    public static IResolutionScope Build(DriverContext context)
-    {
-        var container = new ScopedContainer();
-        container.AutoRegister<DriverAutoRegisterAttribute>();
-        container.RegisterInstance(context);
-        container.RegisterInstance(context.Neo4JLogger);
-        container.RegisterModule<LoggingModule>();
-        return container;
-    }
 }

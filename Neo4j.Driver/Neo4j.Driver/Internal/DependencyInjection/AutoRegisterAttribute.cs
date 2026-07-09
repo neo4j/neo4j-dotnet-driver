@@ -18,7 +18,7 @@ using System;
 namespace Neo4j.Driver.Internal.DependencyInjection;
 
 [AttributeUsage(AttributeTargets.Class)]
-internal class AutoRegisterAttribute(bool singleton = false) : Attribute
+internal abstract class AutoRegisterAttribute(bool singleton = false) : Attribute
 {
     public bool Singleton { get; } = singleton;
 }
