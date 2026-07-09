@@ -15,6 +15,7 @@
 
 using System.Collections.Generic;
 using FluentAssertions;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Encryption;
 using Xunit;
 
@@ -22,7 +23,7 @@ namespace Neo4j.Driver.Tests.Internal.Encryption;
 
 public class PlaintextSerializerTests
 {
-    private readonly PlaintextSerializer _subject = new(TestDriverContext.MockContext);
+    private readonly PlaintextSerializer _subject = new(new MessageFormatFactory(TestDriverContext.MockContext));
 
     // just a few sanity checks - serialization is delegated to PackStreamReader/Writer
     // which are both fully tested in PackStreamTestSpecs   

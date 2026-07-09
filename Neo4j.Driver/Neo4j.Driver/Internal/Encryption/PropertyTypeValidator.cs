@@ -15,49 +15,38 @@
 
 using System;
 using System.Collections;
+using System.Linq;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-internal sealed class PropertyTypeValidator : IPropertyTypeValidator
+internal class PropertyTypeValidator : IPropertyTypeValidator
 {
     public void EnsureSupported(object value)
     {
-        if (!IsSupported(value, allowList: true))
+        var isSupported = IsSupported(value, allowList: true);
+        if (isSupported)
         {
-            var typeName = value?.GetType().FullName ?? "null";
-            throw new ArgumentException(
-                $"Value of type '{typeName}' is not a supported Neo4j property type.",
-                nameof(value));
+            return;
         }
+
+        var typeName = value?.GetType().FullName ?? "null";
+        throw new ArgumentException(
+            $"Value of type '{typeName}' is not a supported Neo4j property type.",
+            nameof(value));
     }
 
     private static bool IsSupported(object value, bool allowList)
     {
-        switch (value)
+        return value switch
         {
-            case bool:
-            case long:
-            case double:
-            case string:
-            case byte[]:
-                return true;
+            bool or long or double or string or byte[] => true,
+            
+            // if this isn't explicitly disallowed, an empty dictionary
+            // would pass the next check and be treated as a valid property type
+            IDictionary => false,
 
-            case IDictionary:
-                return false;
-
-            case IEnumerable enumerable when allowList:
-                foreach (var item in enumerable)
-                {
-                    if (!IsSupported(item, allowList: false))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-
-            default:
-                return false;
-        }
+            IEnumerable e when allowList => e.Cast<object>().All(o => IsSupported(o, allowList: false)), 
+            _ => false
+        };
     }
 }

@@ -20,18 +20,16 @@ using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-internal sealed class PlaintextSerializer : IPlaintextSerializer, IPlaintextDeserializer
+internal class PlaintextSerializer : IPlaintextSerializer, IPlaintextDeserializer
 {
-    // The plaintext scheme is pinned to a fixed PackStream/Bolt version so encrypted values do not
-    // change encoding with the negotiated connection version. 6.1 (UUID) is deliberately excluded
-    // until UUID support is settled.
+    // 6.1 (UUID) is excluded until UUID support is confirmed
     private static readonly BoltProtocolVersion PlaintextVersion = BoltProtocolVersion.V6_0;
 
     private readonly MessageFormat _format;
 
-    public PlaintextSerializer(DriverContext context)
+    public PlaintextSerializer(IMessageFormatFactory messageFormatFactory)
     {
-        _format = new MessageFormat(PlaintextVersion, context);
+        _format = messageFormatFactory.CreateMessageFormat(PlaintextVersion);
     }
 
     public byte[] Serialize(object value)

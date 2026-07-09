@@ -184,7 +184,7 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         var module = new T();
         module.Register(this);
         return this;
-    }   
+    }
 
     public IServiceRegistry RegisterInterceptor(IResolutionInterceptor interceptor)
     {
@@ -227,19 +227,10 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         }
 
         object? resolved;
-        bool resolvedFromChild, success;
         resolutionStack?.Add(serviceType);
         try
         {
-            resolvedFromChild = TryResolveFromChildScope(
-                serviceType,
-                requestingType,
-                childRegistrations,
-                childScope,
-                out resolved);
-
-            success =
-                resolvedFromChild ||
+            _ = TryResolveFromChildScope(serviceType, requestingType, childRegistrations, childScope, out resolved) ||
                 TryApplyInterceptors(serviceType, requestingType, childScope, out resolved) ||
                 TryResolveGenericEnumerable(serviceType, childRegistrations, childScope, out resolved) ||
                 TryResolveFromLocal(serviceType, childRegistrations, childScope, out resolved) ||
@@ -291,7 +282,12 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             return true;
         }
 
-        var instance = CreateOwnedInstance(registration.ImplementationType, serviceType, childRegistrations, childScope, this);
+        var instance = CreateOwnedInstance(
+            registration.ImplementationType,
+            serviceType,
+            childRegistrations,
+            childScope,
+            this);
 
         if (registration.Singleton)
         {
@@ -360,9 +356,17 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             { Instance: not null } => registration.Instance,
 
             { Singleton: true } when childScope != null => childScope.ResolveCore(
-                serviceType, requestingType, null, null),
+                serviceType,
+                requestingType,
+                null,
+                null),
 
-            _ => CreateOwnedInstance(registration.ImplementationType, serviceType, childRegistrations, childScope, childScope)
+            _ => CreateOwnedInstance(
+                registration.ImplementationType,
+                serviceType,
+                childRegistrations,
+                childScope,
+                childScope)
         };
 
         return (resolved is not null);
@@ -476,8 +480,8 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 
         var instance = Activator.CreateInstance(implementationType, parameterInstances);
 
-        return instance 
-         ?? throw new InvalidOperationException($"Failed to create instance of type {implementationType}.");
+        return instance ??
+            throw new InvalidOperationException($"Failed to create instance of type {implementationType}.");
     }
 
     private static Dictionary<Type, List<Registration>> MergeRegistrations(
