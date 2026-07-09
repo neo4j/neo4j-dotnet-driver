@@ -13,8 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Neo4j.Driver.Internal;
 
@@ -30,7 +33,7 @@ internal static class StringObjectDictionaryExtensions
                 ? (T)value
                 : throw exceptionFact($"Expected key '{key}' to be present in the dictionary, but could not find.");
         }
-    
+
         public T GetValue<T>(string key, T defaultValue)
         {
             return dict.TryGetValue(key, out var value) ? (T)value : defaultValue;
@@ -45,6 +48,19 @@ internal static class StringObjectDictionaryExtensions
             }
 
             value = defaultValue;
+            return false;
+        }
+
+        public bool TryGetValue<T>(string key, [NotNullWhen(true)] out T? value)
+        {
+            var found = dict.TryGetValue(key, out var uncastValue);
+            if (found && uncastValue is T goodValue)
+            {
+                value = goodValue;
+                return true;
+            }
+
+            value = default;
             return false;
         }
     }
