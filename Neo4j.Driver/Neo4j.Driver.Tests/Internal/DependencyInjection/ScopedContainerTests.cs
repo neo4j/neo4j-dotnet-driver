@@ -131,6 +131,12 @@ public class ScopedContainerTests
         public void Dispose() => DisposeCount++;
     }
 
+    private class DisposableMultiImplementer : IMultiImplementer, IDisposable
+    {
+        public bool IsDisposed { get; private set; }
+        public void Dispose() => IsDisposed = true;
+    }
+
     [Fact]
     public void Resolve_RegisteredInstanceWithoutOwnership_IsNotDisposed()
     {
@@ -253,6 +259,37 @@ public class ScopedContainerTests
         var resolved = container.Resolve<ServiceWithMultipleConstructors>();
 
         resolved.ConstructorCalled.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_DisposesContainerCreatedServiceResolvedViaEnumerable()
+    {
+        // A container-created (RegisterType) service resolved only through IEnumerable<T> must
+        // still be enrolled for disposal, exactly like the single-resolve path — otherwise it
+        // leaks.
+        var container = new ScopedContainer();
+        container.RegisterType<IMultiImplementer, DisposableMultiImplementer>();
+
+        var resolved = (DisposableMultiImplementer)container.Resolve<IEnumerable<IMultiImplementer>>().Single();
+        await container.DisposeAsync();
+
+        resolved.IsDisposed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void TryResolve_RegisteredTypeWithUnregisteredNestedDependency_Throws()
+    {
+        // TryResolve returns false when the requested type itself is unregistered. When the type
+        // is registered but a constructor dependency is not, construction fails and the exception
+        // surfaces rather than being swallowed as a false result.
+        var container = new ScopedContainer();
+        container.RegisterType<ITestService, TestService>();
+
+        var act = () => container.TryResolve<ITestService>(out _);
+
+        act.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("*not registered*");
     }
 
     [Fact]
