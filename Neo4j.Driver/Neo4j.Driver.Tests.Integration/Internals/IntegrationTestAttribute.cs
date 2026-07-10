@@ -17,6 +17,7 @@ using System;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Neo4j.Driver.Internal.Util;
 using Xunit;
@@ -31,7 +32,10 @@ public sealed class RequireBoltStubServerFactAttribute : FactAttribute
     //Default server version required to run stub tests is anything less than 4.3. After this version testkit takes over the stub tests.
     public RequireBoltStubServerFactAttribute(
         string versionText = "4.3.0",
-        VersionComparison versionCompare = VersionComparison.LessThan)
+        VersionComparison versionCompare = VersionComparison.LessThan,
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(sourceFilePath, sourceLineNumber)
     {
         var skipText = new StringBuilder();
 
@@ -59,7 +63,10 @@ public sealed class RequireBoltStubServerTheoryAttribute : TheoryAttribute
     //Default server version required to run stub tests is anything less than 4.3. After this version testkit takes over the stub tests.
     public RequireBoltStubServerTheoryAttribute(
         string versionText = "4.3.0",
-        VersionComparison versionCompare = VersionComparison.LessThan)
+        VersionComparison versionCompare = VersionComparison.LessThan,
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(sourceFilePath, sourceLineNumber)
     {
         var skipText = new StringBuilder();
 
@@ -208,7 +215,10 @@ public class RequireServerFactAttribute : FactAttribute
 
     public RequireServerFactAttribute(
         string versionText = null,
-        VersionComparison versionCompare = VersionComparison.EqualTo)
+        VersionComparison versionCompare = VersionComparison.EqualTo,
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(sourceFilePath, sourceLineNumber)
     {
         var skipText = new StringBuilder();
 
@@ -228,7 +238,10 @@ public class RequireServerFactAttribute : FactAttribute
     public RequireServerFactAttribute(
         string minVersionText,
         string maxVersionText,
-        VersionComparison versionComparison)
+        VersionComparison versionComparison,
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(sourceFilePath, sourceLineNumber)
     {
         if (versionComparison != VersionComparison.Between)
         {
@@ -256,8 +269,10 @@ public sealed class RequireEnterpriseEditionFactAttribute : RequireServerFactAtt
 {
     public RequireEnterpriseEditionFactAttribute(
         string versionText = null,
-        VersionComparison versionCompare = VersionComparison.EqualTo)
-        : base(versionText, versionCompare)
+        VersionComparison versionCompare = VersionComparison.EqualTo,
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(versionText, versionCompare, sourceFilePath, sourceLineNumber)
     {
         if (string.IsNullOrEmpty(Skip))
         {
@@ -271,7 +286,10 @@ public sealed class RequireEnterpriseEditionFactAttribute : RequireServerFactAtt
     public RequireEnterpriseEditionFactAttribute(
         string minVersionText,
         string maxVersionText,
-        VersionComparison versionComparison) : base(minVersionText, maxVersionText, versionComparison)
+        VersionComparison versionComparison,
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(minVersionText, maxVersionText, versionComparison, sourceFilePath, sourceLineNumber)
     {
         if (string.IsNullOrEmpty(Skip))
         {
@@ -287,8 +305,10 @@ public sealed class RequireServerWithIPv6FactAttribute : RequireServerFactAttrib
 {
     public RequireServerWithIPv6FactAttribute(
         string versionText = null,
-        VersionComparison versionCompare = VersionComparison.EqualTo)
-        : base(versionText, versionCompare)
+        VersionComparison versionCompare = VersionComparison.EqualTo,
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(versionText, versionCompare, sourceFilePath, sourceLineNumber)
     {
         if (string.IsNullOrEmpty(Skip))
         {
@@ -335,7 +355,10 @@ public sealed class RequireServerTheoryAttribute : TheoryAttribute
 {
     public RequireServerTheoryAttribute(
         string versionText = null,
-        VersionComparison versionCompare = VersionComparison.EqualTo)
+        VersionComparison versionCompare = VersionComparison.EqualTo,
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(sourceFilePath, sourceLineNumber)
     {
         var skipText = new StringBuilder();
 
@@ -358,7 +381,10 @@ public sealed class RequireClusterFactAttribute : FactAttribute
 {
     public RequireClusterFactAttribute(
         string versionText = null,
-        VersionComparison versionCompare = VersionComparison.EqualTo)
+        VersionComparison versionCompare = VersionComparison.EqualTo,
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(sourceFilePath, sourceLineNumber)
     {
         var skipText = new StringBuilder();
 
@@ -378,7 +404,10 @@ public sealed class RequireClusterFactAttribute : FactAttribute
 
 public sealed class ShouldNotRunInTestKitFact : FactAttribute
 {
-    public ShouldNotRunInTestKitFact()
+    public ShouldNotRunInTestKitFact(
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(sourceFilePath, sourceLineNumber)
     {
         var envVariable = Environment.GetEnvironmentVariable("TEST_NEO4J_USING_TESTKIT");
         if (!string.IsNullOrEmpty(envVariable) && envVariable.Equals("true", StringComparison.OrdinalIgnoreCase))
@@ -390,7 +419,10 @@ public sealed class ShouldNotRunInTestKitFact : FactAttribute
 
 public sealed class ShouldNotRunInTestKitRequireServerFactAttribute : RequireServerFactAttribute
 {
-    public ShouldNotRunInTestKitRequireServerFactAttribute()
+    public ShouldNotRunInTestKitRequireServerFactAttribute(
+        [CallerFilePath] string sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(sourceFilePath: sourceFilePath, sourceLineNumber: sourceLineNumber)
     {
         var envVariable = Environment.GetEnvironmentVariable("TEST_NEO4J_USING_TESTKIT");
         if (!string.IsNullOrEmpty(envVariable) && envVariable.Equals("true", StringComparison.OrdinalIgnoreCase))

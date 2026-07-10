@@ -47,7 +47,9 @@ public sealed class ResultStreamingTests
         var cursor =
             await session.RunAsync("MATCH (n) RETURN n.name");
 
-        var result = await cursor.ToListAsync(r => r[0].As<string>());
+        var result = await cursor.ToListAsync(
+            r => r[0].As<string>(),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
     }
@@ -65,7 +67,9 @@ public sealed class ResultStreamingTests
         var cursor =
             await session.RunAsync("MATCH (n) RETURN n.name");
 
-        var result = await cursor.ToListAsync(r => r[0].As<string>());
+        var result = await cursor.ToListAsync(
+            r => r[0].As<string>(),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
     }
