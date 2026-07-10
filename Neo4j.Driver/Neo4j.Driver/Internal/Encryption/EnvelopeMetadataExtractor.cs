@@ -20,8 +20,6 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-internal class MetadataExtractionException(string message) : Exception(message);
-
 // keyId + iv are mandatory, aad is optional, any "opt." prefixed keys are KES-specific
 // encapsulation options and are not parsed
 [DriverAutoRegister(singleton: true)]
