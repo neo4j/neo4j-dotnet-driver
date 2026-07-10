@@ -32,12 +32,21 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
     private readonly ConcurrentDictionary<Type, (ConstructorInfo Constructor, ParameterInfo[] Parameters)>
         _constructorCache = new();
 
-    private readonly Stack<IAsyncDisposable> _disposables = new();
+    private readonly ConcurrentStack<IAsyncDisposable> _disposables = new();
     private readonly List<IResolutionInterceptor> _interceptors = [];
     private readonly ScopedContainer? _parent;
     private readonly Dictionary<Type, List<Registration>> _registrations = new();
-    private readonly ThreadLocal<List<Type>> _resolutionStack = new(() => []);
+    private readonly ThreadLocal<Stack<Type>> _resolutionStack = new(() => new Stack<Type>());
+    private readonly object _singletonLock = new();
     private bool _disposed;
+
+    // Never null: the ThreadLocal factory always produces a fresh stack per thread.
+    private Stack<Type> ResolutionStack => _resolutionStack.Value!;
+
+    private IEnumerable<Type> GetStackOldestFirst()
+    {
+        return ResolutionStack.Reverse();
+    }
 
     public ScopedContainer() : this(null)
     {
@@ -216,32 +225,20 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         resolved = null;
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        var resolutionStack = _resolutionStack.Value;
-        if (resolutionStack != null && resolutionStack.Contains(serviceType))
+        var resolutionStack = ResolutionStack;
+        if (resolutionStack.Contains(serviceType))
         {
             throw new InvalidOperationException(
                 $"Circular dependency detected while resolving {serviceType}. " +
-                $"Resolution chain: {string.Join(" -> ", resolutionStack.Append(serviceType).Select(t => t.Name))}");
+                $"Resolution chain: {string.Join(" -> ", GetStackOldestFirst().Append(serviceType).Select(t => t.Name))}");
         }
 
-        resolutionStack?.Add(serviceType);
-        bool success;
-        try
-        {
-            success =
-                TryResolveFromChildScope(serviceType, requestingType, childRegistrations, childScope, out resolved) ||
-                TryApplyInterceptors(serviceType, requestingType, childScope, out resolved) ||
-                TryResolveGenericEnumerable(serviceType, childRegistrations, childScope, out resolved) ||
-                TryResolveFromLocal(serviceType, childRegistrations, childScope, out resolved) ||
-                TryResolveFromParent(serviceType, requestingType, childRegistrations, childScope, out resolved);
-        }
-        finally
-        {
-            if (resolutionStack is { Count: > 0 })
-            {
-                resolutionStack.RemoveAt(resolutionStack.Count - 1);
-            }
-        }
+        var success =
+            TryResolveFromChildScope(serviceType, requestingType, childRegistrations, childScope, out resolved) ||
+            TryApplyInterceptors(serviceType, requestingType, childScope, out resolved) ||
+            TryResolveGenericEnumerable(serviceType, childRegistrations, childScope, out resolved) ||
+            TryResolveFromLocal(serviceType, childRegistrations, childScope, out resolved) ||
+            TryResolveFromParent(serviceType, requestingType, childRegistrations, childScope, out resolved);
 
         return success;
     }
@@ -282,19 +279,10 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             return true;
         }
 
-        var instance = CreateOwnedInstance(
-            registration.ImplementationType,
-            serviceType,
-            childRegistrations,
-            childScope,
-            this);
+        resolved = registration.Singleton
+            ? GetOrCreateSingleton(registration, serviceType, childRegistrations, childScope)
+            : CreateOwnedInstance(registration.ImplementationType, serviceType, childRegistrations, childScope, this);
 
-        if (registration.Singleton)
-        {
-            registration.Instance = instance;
-        }
-
-        resolved = instance;
         return true;
     }
 
@@ -322,14 +310,28 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         out object? resolved)
     {
         resolved = null;
-        IServiceResolver interceptorResolver = childScope ?? this;
-        foreach (var interceptor in _interceptors)
+        if (_interceptors.Count == 0)
         {
-            if (interceptor.TryResolve(serviceType, requestingType, interceptorResolver, out var overrideResult))
+            return false;
+        }
+
+        var resolutionStack = ResolutionStack;
+        resolutionStack.Push(serviceType);
+        try
+        {
+            IServiceResolver interceptorResolver = childScope ?? this;
+            foreach (var interceptor in _interceptors)
             {
-                resolved = overrideResult;
-                return true;
+                if (interceptor.TryResolve(serviceType, requestingType, interceptorResolver, out var overrideResult))
+                {
+                    resolved = overrideResult;
+                    return true;
+                }
             }
+        }
+        finally
+        {
+            resolutionStack.Pop();
         }
 
         return false;
@@ -384,9 +386,41 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         return obj;
     }
 
+    private object GetOrCreateSingleton(
+        Registration registration,
+        Type serviceType,
+        Dictionary<Type, List<Registration>>? childRegistrations,
+        ScopedContainer? childScope)
+    {
+        var existing = registration.Instance;
+        if (existing != null)
+        {
+            return existing;
+        }
+
+        lock (_singletonLock)
+        {
+            existing = registration.Instance;
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            var created = CreateOwnedInstance(
+                registration.ImplementationType,
+                serviceType,
+                childRegistrations,
+                childScope,
+                this);
+
+            registration.Instance = created;
+            return created;
+        }
+    }
+
     private string GetResolutionStackString()
     {
-        return string.Join(" -> ", _resolutionStack.Value?.Select(t => t.Name) ?? []);
+        return string.Join(" -> ", GetStackOldestFirst().Select(t => t.Name));
     }
 
     private Array ResolveEnumerable(
@@ -418,19 +452,15 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
                     continue;
                 }
 
-                var instance = CreateOwnedInstance(
-                    registration.ImplementationType,
-                    elementType,
-                    effectiveOverrides,
-                    childScope,
-                    this);
-
-                if (registration.Singleton)
-                {
-                    registration.Instance = instance;
-                }
-
-                instances.Add(instance);
+                instances.Add(
+                    registration.Singleton
+                        ? GetOrCreateSingleton(registration, elementType, effectiveOverrides, childScope)
+                        : CreateOwnedInstance(
+                            registration.ImplementationType,
+                            elementType,
+                            effectiveOverrides,
+                            childScope,
+                            this));
             }
         }
 
@@ -470,10 +500,19 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         var (constructor, parameters) = GetConstructorAndParams(implementationType);
         var constructorArguments = new object[parameters.Length];
 
-        for (var i = 0; i < parameters.Length; i++)
+        var resolutionStack = ResolutionStack;
+        resolutionStack.Push(requestingType);
+        try
         {
-            constructorArguments[i] =
-                ResolveCore(parameters[i].ParameterType, implementationType, extraRegistrations, owningScope);
+            for (var i = 0; i < parameters.Length; i++)
+            {
+                constructorArguments[i] =
+                    ResolveCore(parameters[i].ParameterType, implementationType, extraRegistrations, owningScope);
+            }
+        }
+        finally
+        {
+            resolutionStack.Pop();
         }
 
         var instance = constructor.Invoke(constructorArguments);
