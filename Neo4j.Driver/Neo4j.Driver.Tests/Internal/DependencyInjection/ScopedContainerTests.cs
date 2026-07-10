@@ -14,9 +14,11 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -131,11 +133,31 @@ public class ScopedContainerTests
         public void Dispose() => DisposeCount++;
     }
 
+    private class DisposableMultiImplementer : IMultiImplementer, IDisposable
+    {
+        public bool IsDisposed { get; private set; }
+        public void Dispose() => IsDisposed = true;
+    }
+
+    private class ConstructionCounter
+    {
+        private int _count;
+        public int Count => Volatile.Read(ref _count);
+        public void Increment() => Interlocked.Increment(ref _count);
+    }
+
+    private class SlowSingletonService : ITestService
+    {
+        public SlowSingletonService(ConstructionCounter counter)
+        {
+            counter.Increment();
+            Thread.Sleep(20);
+        }
+    }
+
     [Fact]
     public void Resolve_RegisteredInstanceWithoutOwnership_IsNotDisposed()
     {
-        // Hypothesis (H1): the caller retains ownership of a RegisterInstance value unless
-        // transferOwnership is set, so resolving it must NOT cause the scope to dispose it.
         var container = new ScopedContainer();
         var instance = new DisposableService();
 
@@ -149,8 +171,6 @@ public class ScopedContainerTests
     [Fact]
     public void Resolve_Singleton_DisposedExactlyOnceRegardlessOfResolveCount()
     {
-        // Hypothesis (H2): a singleton is one owned instance, so it must be disposed exactly
-        // once no matter how many times it is resolved.
         var container = new ScopedContainer();
         container.RegisterType<ITestService, CountingDisposableService>(singleton: true);
 
@@ -165,9 +185,6 @@ public class ScopedContainerTests
     [Fact]
     public async Task ChildScope_ParentOwnedService_IsDisposedByParentNotByChild()
     {
-        // Issue 3: a service registered in the parent is owned by the parent even when it is
-        // first resolved through a child scope. Disposing the child must not dispose it, and
-        // the parent must dispose it exactly once (no cross-scope double-tracking).
         var parent = new ScopedContainer();
         parent.RegisterType<ITestService, CountingDisposableService>();
 
@@ -184,10 +201,6 @@ public class ScopedContainerTests
     [Fact]
     public async Task Resolve_SelfRegisteredResolutionScope_IsNotEnrolledForDisposal()
     {
-        // Issue 4: the container registers itself as IResolutionScope — a registered instance
-        // under an interface. Resolving such an instance must return it as-is without enrolling
-        // it for disposal (the create path is the only thing that transfers ownership). Mirrored
-        // here with an IAsyncDisposable registered instance resolved via its interface.
         var container = new ScopedContainer();
 
         container.Resolve<IResolutionScope>().Should().BeSameAs(container);
@@ -256,6 +269,101 @@ public class ScopedContainerTests
     }
 
     [Fact]
+    public async Task DisposeAsync_DisposesContainerCreatedServiceResolvedViaEnumerable()
+    {
+        var container = new ScopedContainer();
+        container.RegisterType<IMultiImplementer, DisposableMultiImplementer>();
+
+        var resolved = (DisposableMultiImplementer)container.Resolve<IEnumerable<IMultiImplementer>>().Single();
+        await container.DisposeAsync();
+
+        resolved.IsDisposed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void TryResolve_RegisteredTypeWithUnregisteredNestedDependency_Throws()
+    {
+        var container = new ScopedContainer();
+        container.RegisterType<ITestService, TestService>();
+
+        var act = () => container.TryResolve<ITestService>(out _);
+
+        act.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("*not registered*");
+    }
+
+    [Fact]
+    public async Task Resolve_SingletonUnderConcurrentResolution_ConstructedExactlyOnce()
+    {
+        // Hammer a fresh singleton race many times per run so the test is deterministic on a single
+        // CI pass: each iteration releases all threads simultaneously via a Barrier to maximise the
+        // window in which an unguarded singleton could be constructed more than once.
+        const int iterations = 50;
+        const int threadsPerIteration = 8;
+
+        for (var iteration = 0; iteration < iterations; iteration++)
+        {
+            var container = new ScopedContainer();
+            var counter = new ConstructionCounter();
+            container.RegisterInstance(counter);
+            container.RegisterType<ITestService, SlowSingletonService>(singleton: true);
+
+            using var gate = new Barrier(threadsPerIteration);
+            var tasks = new Task<ITestService>[threadsPerIteration];
+            for (var t = 0; t < threadsPerIteration; t++)
+            {
+                tasks[t] = Task.Run(() =>
+                {
+                    gate.SignalAndWait();
+                    return container.Resolve<ITestService>();
+                });
+            }
+
+            var results = await Task.WhenAll(tasks);
+            await container.DisposeAsync();
+
+            counter.Count.Should().Be(1);
+            results.Should().OnlyContain(r => ReferenceEquals(r, results[0]));
+        }
+    }
+
+    [Fact]
+    public async Task Resolve_TransientsUnderConcurrentResolution_AllEnrolledForDisposal()
+    {
+        // A few threads each resolve many transients concurrently, hammering the disposables stack and
+        // the per-thread resolution stack in a single run. Every instance must be unique and, after
+        // disposal, disposed — so none was lost to a race on enrolment for disposal.
+        var container = new ScopedContainer();
+        container.RegisterType<DisposableService>();
+
+        const int threads = 8;
+        const int resolutionsPerThread = 500;
+        var resolved = new ConcurrentQueue<DisposableService>();
+        using var gate = new Barrier(threads);
+
+        var tasks = new Task[threads];
+        for (var t = 0; t < threads; t++)
+        {
+            tasks[t] = Task.Run(() =>
+            {
+                gate.SignalAndWait();
+                for (var i = 0; i < resolutionsPerThread; i++)
+                {
+                    resolved.Enqueue(container.Resolve<DisposableService>());
+                }
+            });
+        }
+
+        await Task.WhenAll(tasks);
+        await container.DisposeAsync();
+
+        resolved.Should().HaveCount(threads * resolutionsPerThread);
+        resolved.Should().OnlyHaveUniqueItems();
+        resolved.Should().OnlyContain(s => s.IsDisposed);
+    }
+
+    [Fact]
     public void Resolve_ThrowsForUnregisteredService()
     {
         var container = new ScopedContainer();
@@ -280,6 +388,52 @@ public class ScopedContainerTests
             .Throw<InvalidOperationException>()
             .WithMessage("*Circular dependency*")
             .WithMessage("*CircularA -> CircularB -> CircularA*");
+    }
+
+    [Fact]
+    public void Resolve_ThrowsForCircularDependencyAcrossScopes()
+    {
+        // A lives in the parent and needs B; B lives in the child and needs A. Resolving A from the child
+        // delegates up to the parent, which constructs B from the child's registrations — closing an
+        // A→B→A cycle that spans both scopes. It must be detected rather than recursing forever.
+        var parent = new ScopedContainer();
+        parent.RegisterType<IOverrideA, ServiceA_NeedsB>();
+        var child = parent.CreateChildScope(r => r.RegisterType<IOverrideB, ServiceB_NeedsA>());
+
+        var act = () => child.Resolve<IOverrideA>();
+
+        act.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("*Circular dependency*");
+    }
+
+    [Fact]
+    public void Resolve_ThrowsWhenInterceptorReResolvesInterceptedType()
+    {
+        var container = new ScopedContainer();
+        var mocker = new AutoMocker();
+        var mockInterceptor = mocker.GetMock<IResolutionInterceptor>();
+
+        mockInterceptor
+            .Setup(x => x.TryResolve(
+                typeof(ITestService),
+                It.IsAny<Type>(),
+                It.IsAny<IServiceResolver>(),
+                out It.Ref<object>.IsAny))
+            .Returns(
+                new TryResolveDelegate((_, _, resolver, out service) =>
+                {
+                    service = resolver.Resolve<ITestService>();
+                    return true;
+                }));
+
+        container.RegisterInterceptor(mockInterceptor.Object);
+
+        var act = () => container.Resolve<ITestService>();
+
+        act.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("*Circular dependency*");
     }
 
     [Fact]
@@ -523,16 +677,6 @@ public class ScopedContainerTests
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Child-scope override flow-through tests
-    //
-    // These test the new behaviour where child-scope registrations are passed as
-    // overrides into the parent's resolution chain, so that a service registered
-    // only in the parent scope can still be fully instantiated using dependencies
-    // that live in the child scope.
-    // -------------------------------------------------------------------------
-
-    // Test types for override flow-through scenarios
 
     public interface IOverrideA { }
     public interface IOverrideB { }
@@ -557,6 +701,12 @@ public class ScopedContainerTests
         public IOverrideC C { get; } = c;
     }
 
+    // B depends on A — pairs with ServiceA_NeedsB to form a cross-scope cycle A→B→A
+    private class ServiceB_NeedsA(IOverrideA a) : IOverrideB
+    {
+        public IOverrideA A { get; } = a;
+    }
+
     private class ServiceB_NoDeps : IOverrideB { }
     private class ServiceC_NoDeps : IOverrideC { }
 
@@ -569,9 +719,6 @@ public class ScopedContainerTests
     [Fact]
     public void ChildScope_CanResolveParentServiceUsingChildInstanceDep()
     {
-        // Parent knows how to build IOverrideA (needs IOverrideB).
-        // Child supplies IOverrideB.
-        // Resolving IOverrideA from the child should succeed and use the child's IOverrideB.
         var parent = new ScopedContainer();
         parent.RegisterType<IOverrideA, ServiceA_NeedsB>();
 
@@ -587,8 +734,6 @@ public class ScopedContainerTests
     [Fact]
     public void ChildScope_CanResolveParentServiceUsingMultipleChildDeps()
     {
-        // Parent knows how to build IOverrideA (needs IOverrideB and IOverrideC).
-        // Child supplies both.
         var parent = new ScopedContainer();
         parent.RegisterType<IOverrideA, ServiceA_NeedsBC>();
 
@@ -610,10 +755,6 @@ public class ScopedContainerTests
     [Fact]
     public void ChildScope_ChildDepOverridesParentDepDuringParentInstantiation()
     {
-        // Parent has IOverrideA → ServiceA_NeedsB, and IOverrideB → ServiceB_NoDeps.
-        // Child overrides IOverrideB with its own instance.
-        // Resolving IOverrideA from the child should use the child's IOverrideB, not
-        // the parent's ServiceB_NoDeps.
         var parent = new ScopedContainer();
         parent.RegisterType<IOverrideA, ServiceA_NeedsB>();
         parent.RegisterType<IOverrideB, ServiceB_NoDeps>();
@@ -630,11 +771,6 @@ public class ScopedContainerTests
     [Fact]
     public void ChildScope_TransitiveChildDepVisibleThroughParentChain()
     {
-        // Parent has IOverrideA → ServiceA_NeedsB, IOverrideB → ServiceB_NeedsC.
-        // Child supplies IOverrideC.
-        // Resolving IOverrideA from child: parent creates ServiceA_NeedsB,
-        // which needs IOverrideB; parent creates ServiceB_NeedsC,
-        // which needs IOverrideC — found in child.
         var parent = new ScopedContainer();
         parent.RegisterType<IOverrideA, ServiceA_NeedsB>();
         parent.RegisterType<IOverrideB, ServiceB_NeedsC>();
@@ -652,8 +788,6 @@ public class ScopedContainerTests
     [Fact]
     public void ChildScope_ParentDepsNotInChildStillResolveFromParent()
     {
-        // Child has nothing extra. Parent has everything needed.
-        // Should still work — no overrides required.
         var parent = new ScopedContainer();
         parent.RegisterType<IOverrideA, ServiceA_NeedsB>();
         parent.RegisterType<IOverrideB, ServiceB_NoDeps>();
@@ -669,7 +803,6 @@ public class ScopedContainerTests
     [Fact]
     public void ChildScope_ServiceInChildNotParent_ResolvesDirectlyFromChild()
     {
-        // Child registers IOverrideA directly — no parent lookup needed.
         var parent = new ScopedContainer();
         var childA = new Mock<IOverrideA>().Object;
         var child = parent.CreateChildScope(r => r.RegisterInstance(childA));
@@ -682,10 +815,6 @@ public class ScopedContainerTests
     [Fact]
     public void GrandchildScope_CanResolveParentServiceUsingDepsFromBothIntermediateScopeAndOwnScope()
     {
-        // Parent knows how to build IOverrideA (needs IB and IC).
-        // Child scope supplies IB.
-        // Grandchild scope supplies IC.
-        // Resolving IOverrideA from the grandchild must use IB from child AND IC from grandchild.
         var parent = new ScopedContainer();
         parent.RegisterType<IOverrideA, ServiceA_NeedsBC>();
 
@@ -724,10 +853,6 @@ public class ScopedContainerTests
     [Fact]
     public void ChildScope_ResolveEnumerable_UsesChildDepsWhenInstantiatingParentRegistrations()
     {
-        // Parent has two IOverrideA implementations, both needing IOverrideB.
-        // Child supplies IOverrideB.
-        // Asking child for IEnumerable<IOverrideA> should return both instances,
-        // each constructed with the child's IOverrideB.
         var parent = new ScopedContainer();
         parent.RegisterType<IOverrideA, ServiceA_NeedsB>();
 
@@ -788,25 +913,20 @@ public class ScopedContainerTests
         var order = new List<string>();
         var container = new ScopedContainer();
 
-        // Owned instances added to _disposables in creation order
         container.RegisterInstance(new OrderedDisposable(order, "first"), transferOwnership: true);
         container.RegisterInstance(new OrderedDisposable(order, "second"), transferOwnership: true);
 
-        // Child scope created last — appended to parent _disposables after both parent instances
         container.CreateChildScope(r =>
             r.RegisterInstance(new OrderedDisposable(order, "child"), transferOwnership: true));
 
         await container.DisposeAsync();
 
-        // Reverse creation order: child (last added) disposed first
         order.Should().Equal("child", "second", "first");
     }
 
     [Fact]
     public void ChildScope_ResolveEnumerable_IncludesParentAndChildImplementations()
     {
-        // Parent has one IOverrideA implementation; child adds another.
-        // Both require IOverrideB which the child supplies.
         var parent = new ScopedContainer();
         parent.RegisterType<IOverrideA, ServiceA_NeedsB>();
 
@@ -814,8 +934,8 @@ public class ScopedContainerTests
         var child = parent.CreateChildScope(r =>
         {
             r.RegisterInstance(childB);
-            r.RegisterType<IOverrideA, ServiceA_NeedsBC>(); // child adds a second impl (also needs IOverrideB)
-            r.RegisterInstance(new Mock<IOverrideC>().Object); // satisfy ServiceA_NeedsBC's IOverrideC dep
+            r.RegisterType<IOverrideA, ServiceA_NeedsBC>(); 
+            r.RegisterInstance(new Mock<IOverrideC>().Object);
         });
 
         var results = child.Resolve<IEnumerable<IOverrideA>>().ToArray();
@@ -854,8 +974,6 @@ public class ScopedContainerTests
     [Fact]
     public void RegisterType_Singleton_IsSharedAcrossChildScopes()
     {
-        // A singleton is cached on the registration it was registered against, so a
-        // parent-registered singleton is the same instance for every child scope.
         var parent = new ScopedContainer();
         parent.RegisterType<ITestService, ServiceWithNoDependencies>(singleton: true);
 
@@ -883,10 +1001,6 @@ public class ScopedContainerTests
     [Fact]
     public void ChildSingleton_ShadowsParentForSingleResolve_ButBothAppearInEnumerable()
     {
-        // Parent and child each register their own singleton implementation of the same
-        // interface. They are independent singletons: the child's shadows the parent's for
-        // single-service resolution, while an enumerable resolve returns both — and the
-        // enumerable yields the same cached instances as the single resolves.
         var parent = new ScopedContainer();
         parent.RegisterType<IMultiImplementer, MultiImplementer1>(singleton: true);
         var child = parent.CreateChildScope(r => r.RegisterType<IMultiImplementer, MultiImplementer2>(singleton: true));
