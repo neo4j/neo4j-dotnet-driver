@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#nullable enable
+
 using System.Security.Cryptography;
 using System.Text;
 
@@ -29,7 +31,7 @@ internal class HkdfKeyDerivation : IKeyDerivation
         return Derive(ikm, null, info, outputLength);
     }
 
-    internal byte[] Derive(byte[] ikm, byte[] salt, byte[] info, int outputLength)
+    internal byte[] Derive(byte[] ikm, byte[]? salt, byte[] info, int outputLength)
     {
         return HKDF.DeriveKey(HashAlgorithmName.SHA256, ikm, outputLength, salt, info);
     }

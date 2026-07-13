@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using FluentAssertions;
@@ -64,7 +66,7 @@ public class PropertyTypeValidatorTests
     [Fact]
     public void EnsureSupported_Throws_ForNull()
     {
-        var act = () => _subject.EnsureSupported(null);
+        var act = () => _subject.EnsureSupported(null!);
 
         act.Should().Throw<ArgumentException>();
     }
