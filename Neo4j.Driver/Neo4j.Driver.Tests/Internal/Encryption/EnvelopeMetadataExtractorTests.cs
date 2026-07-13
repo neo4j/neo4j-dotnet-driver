@@ -26,9 +26,11 @@ public class EnvelopeMetadataExtractorTests
 
     private static Dictionary<string, object> ValidMetadata() => new()
     {
-        ["keyId"] = "key-1",
+        ["key_id"] = "key-1",
         ["iv"] = new byte[] { 1, 2, 3 },
-        ["aad"] = new byte[] { 4, 5 }
+        ["aad"] = new byte[] { 4, 5 },
+        ["aad_protocol_major"] = 6,
+        ["aad_protocol_minor"] = 0
     };
 
     [Fact]
@@ -39,18 +41,33 @@ public class EnvelopeMetadataExtractorTests
         result.KeyId.Should().Be("key-1");
         result.Iv.Should().Equal(1, 2, 3);
         result.Aad.Should().Equal(4, 5);
+        result.AadProtocolMajor.Should().Be(6);
+        result.AadProtocolMinor.Should().Be(0);
         result.EncapsulationOptions.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Extract_MissingAadProtocolVersion_DefaultsToSixZero()
+    {
+        var metadata = ValidMetadata();
+        metadata.Remove("aad_protocol_major");
+        metadata.Remove("aad_protocol_minor");
+
+        var result = _subject.Extract(metadata);
+
+        result.AadProtocolMajor.Should().Be(6);
+        result.AadProtocolMinor.Should().Be(0);
     }
 
     [Fact]
     public void Extract_MissingKeyId_Throws()
     {
         var metadata = ValidMetadata();
-        metadata.Remove("keyId");
+        metadata.Remove("key_id");
 
         var act = () => _subject.Extract(metadata);
 
-        act.Should().Throw<MetadataExtractionException>().WithMessage("*keyId*");
+        act.Should().Throw<MetadataExtractionException>().WithMessage("*key_id*");
     }
 
     [Fact]

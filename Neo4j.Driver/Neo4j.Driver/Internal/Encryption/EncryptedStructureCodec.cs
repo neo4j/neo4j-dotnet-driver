@@ -26,7 +26,8 @@ internal class EncryptedStructureCodec : IEncryptedStructureCodec
     // 6.1 (UUID) is excluded until UUID support is confirmed
     private static readonly BoltProtocolVersion StructureVersion = BoltProtocolVersion.V6_0;
     private const byte EncryptedSignature = 0x65;
-    private const int FieldCount = 6;
+    private const int FieldCount = 7;
+    private const int StructureFormatVersion = 1;
 
     private readonly MessageFormat _format;
 
@@ -41,6 +42,7 @@ internal class EncryptedStructureCodec : IEncryptedStructureCodec
         var writer = new PackStreamWriter(_format, stream);
 
         writer.WriteStructHeader(FieldCount, EncryptedSignature);
+        writer.Write(StructureFormatVersion);
         writer.Write(structure.ProfileName);
         writer.Write(structure.CipherOutput);
         writer.Write(structure.TypeName);
@@ -61,6 +63,13 @@ internal class EncryptedStructureCodec : IEncryptedStructureCodec
         {
             throw new ProtocolException(
                 $"Expected an Encrypted structure (0x{EncryptedSignature:X2}), but got: 0x{signature:X2}");
+        }
+
+        var version = reader.ReadInteger();
+        if (version != StructureFormatVersion)
+        {
+            throw new ProtocolException(
+                $"Unsupported Encrypted structure version {version}; expected {StructureFormatVersion}.");
         }
 
         return new EncryptedStructure(

@@ -57,6 +57,15 @@ public class EncryptedStructureCodecTests
         var marker = bytes[0];
         var (hi, lo) = (marker & 0xF0, marker & 0x0F);
         hi.Should().Be(PackStream.TinyStruct);
-        lo.Should().Be(6);
+        lo.Should().Be(7);
+    }
+
+    [Fact]
+    public void Encode_WritesVersionAsFirstField()
+    {
+        var bytes = _subject.Encode(Sample());
+
+        bytes[1].Should().Be(0x65);
+        bytes[2].Should().Be(0x01);
     }
 }
