@@ -65,8 +65,10 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         return profile.Object;
     }
 
-    [Fact]
-    public async Task EncryptAsync_WithDefaultKeyAlias_EncryptsAndEncodesTheStructure()
+    [Theory]
+    [InlineData(null)]
+    [InlineData(new byte[] { 0x99 })]
+    public async Task EncryptAsync_WithDefaultKeyAlias_EncryptsAndEncodesTheStructure(byte[]? suppliedAad)
     {
         const long value = 5L;
         var plaintext = new byte[] { 0x10, 0x11 };
@@ -76,6 +78,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         var dataKey = Sequence(32, seed: 0x40);
         var cipher = new CipherResult(new byte[] { 0xC0 }, new byte[] { 0xD0 });
         var encoded = new byte[] { 0xEE };
+        byte[] expectedAad = suppliedAad ?? [];
 
         var key = new EncapsulatedKey("key-1", new HashSet<string> { "main" }, encapsulation, options);
 
@@ -99,11 +102,11 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
 
         Freeze<IKeyDerivation>().Setup(d => d.Derive(Matches(dek), 32)).Returns(dataKey);
         Freeze<IAeadCipher>()
-            .Setup(c => c.Encrypt(Matches(dataKey), Matches(Iv), Matches(plaintext), Empty()))
+            .Setup(c => c.Encrypt(Matches(dataKey), Matches(Iv), Matches(plaintext), Matches(expectedAad)))
             .Returns(cipher);
 
         Freeze<IEncryptedStructureCodec>()
-            .Setup(c => c.Encode(It.Is<EncryptedStructure>(s => IsExpectedStructure(s, cipher.Combined))))
+            .Setup(c => c.Encode(It.Is<EncryptedStructure>(s => IsExpectedStructure(s, cipher.Combined, expectedAad))))
             .Returns(encoded);
 
         var subject = CreateSubject<EnvelopeEncryptionEngine>();
@@ -111,12 +114,78 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             Profile(new KeyReference("main", KeyReferenceType.Alias)),
             value,
             keyRef: null,
-            aad: null);
+            suppliedAad,
+            TestContext.Current.CancellationToken);
 
         result.Should().Equal(encoded);
     }
 
-    private static bool IsExpectedStructure(EncryptedStructure s, byte[] expectedCipherOutput)
+    [Theory]
+    [InlineData(null)]
+    [InlineData(new byte[] { 0x99 })]
+    public async Task DecryptAsync_ResolvesKeyByIdAndUsesSuppliedAadElsePersisted(byte[]? suppliedAad)
+    {
+        var encrypted = new byte[] { 0xEE };
+        var cipherOutput = new byte[] { 0xC0, 0xD0 };
+        var persistedAad = new byte[] { 0xAA };
+        var structureMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
+        var structure = new EncryptedStructure(ProfileName, cipherOutput, "INTEGER", 6, 0, structureMetadata);
+        var envelopeMetadata = new EnvelopeMetadata(
+            "key-1",
+            Iv,
+            persistedAad,
+            6,
+            0,
+            new Dictionary<string, object>());
+
+        var encapsulation = new byte[] { 0xBB };
+        var keyMetadata = new Dictionary<string, string> { ["iv"] = "wrap-iv" };
+        var dek = Sequence(32, seed: 0x30);
+        var dataKey = Sequence(32, seed: 0x40);
+        var plaintext = new byte[] { 0x10, 0x11 };
+        const long value = 5L;
+
+        var key = new EncapsulatedKey("key-1", new HashSet<string> { "main" }, encapsulation, keyMetadata);
+
+        Freeze<IEncryptedStructureCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
+        Freeze<IEnvelopeMetadataExtractor>().Setup(e => e.Extract(structureMetadata)).Returns(envelopeMetadata);
+
+        _repository.Setup(r => r.FindAsync(
+                new KeyReference("key-1", KeyReferenceType.Id),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(key);
+
+        byte[]? cacheMiss = null;
+        Freeze<IEncryptionKeyCache>()
+            .Setup(c => c.TryGet(ProfileName, "key-1", out cacheMiss))
+            .Returns(false);
+
+        _kes.Setup(k => k.DecapsulateAsync(
+                Matches(encapsulation),
+                It.IsAny<IReadOnlyDictionary<string, string>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(dek);
+
+        Freeze<IKeyDerivation>().Setup(d => d.Derive(Matches(dek), 32)).Returns(dataKey);
+
+        var expectedAad = suppliedAad ?? persistedAad;
+        Freeze<IAeadCipher>()
+            .Setup(c => c.Decrypt(Matches(dataKey), Matches(Iv), Matches(cipherOutput), Matches(expectedAad)))
+            .Returns(plaintext);
+
+        Freeze<IPlaintextDeserializer>().Setup(d => d.Deserialize(Matches(plaintext))).Returns(value);
+
+        var subject = CreateSubject<EnvelopeEncryptionEngine>();
+        var result = await subject.DecryptAsync(
+            Profile(new KeyReference("main", KeyReferenceType.Alias)),
+            encrypted,
+            suppliedAad,
+            TestContext.Current.CancellationToken);
+
+        result.Should().Be(value);
+    }
+
+    private static bool IsExpectedStructure(EncryptedStructure s, byte[] expectedCipherOutput, byte[] expectedAad)
     {
         return s.ProfileName == ProfileName &&
             s.TypeName == "INTEGER" &&
@@ -125,7 +194,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             s.CipherOutput.SequenceEqual(expectedCipherOutput) &&
             (string)s.Metadata["key_id"] == "key-1" &&
             ((byte[])s.Metadata["iv"]).SequenceEqual(Iv) &&
-            ((byte[])s.Metadata["aad"]).Length == 0 &&
+            ((byte[])s.Metadata["aad"]).SequenceEqual(expectedAad) &&
             (int)s.Metadata["aad_protocol_major"] == 6 &&
             (int)s.Metadata["aad_protocol_minor"] == 0;
     }
@@ -133,11 +202,6 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
     private static byte[] Matches(byte[] expected)
     {
         return It.Is<byte[]>(actual => actual.AsEnumerable().SequenceEqual(expected));
-    }
-
-    private static byte[] Empty()
-    {
-        return It.Is<byte[]>(actual => actual.Length == 0);
     }
 
     private static byte[] Sequence(byte length, byte seed = 0)

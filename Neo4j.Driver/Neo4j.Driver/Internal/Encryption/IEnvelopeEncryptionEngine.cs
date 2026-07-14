@@ -28,4 +28,10 @@ internal interface IEnvelopeEncryptionEngine
         KeyReference? keyRef,
         byte[]? aad,
         CancellationToken cancellationToken = default);
+
+    Task<object> DecryptAsync(
+        IEnvelopeProfile profile,
+        byte[] encrypted,
+        byte[]? aad,
+        CancellationToken cancellationToken = default);
 }

@@ -38,6 +38,8 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
     private readonly IEncryptedStructureCodec _encryptedStructureCodec;
     private readonly IEncryptionKeyCache _encryptionKeyCache;
     private readonly ICryptoRandomProvider _randomProvider;
+    private readonly IEnvelopeMetadataExtractor _envelopeMetadataExtractor;
+    private readonly IPlaintextDeserializer _plaintextDeserializer;
 
     public EnvelopeEncryptionEngine(
         IPropertyTypeValidator propertyTypeValidator,
@@ -47,7 +49,9 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
         IAeadCipher aeadCipher,
         IEncryptedStructureCodec encryptedStructureCodec,
         IEncryptionKeyCache encryptionKeyCache,
-        ICryptoRandomProvider randomProvider)
+        ICryptoRandomProvider randomProvider,
+        IEnvelopeMetadataExtractor envelopeMetadataExtractor,
+        IPlaintextDeserializer plaintextDeserializer)
     {
         _propertyTypeValidator = propertyTypeValidator;
         _plaintextSerializer = plaintextSerializer;
@@ -57,6 +61,8 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
         _encryptedStructureCodec = encryptedStructureCodec;
         _encryptionKeyCache = encryptionKeyCache;
         _randomProvider = randomProvider;
+        _envelopeMetadataExtractor = envelopeMetadataExtractor;
+        _plaintextDeserializer = plaintextDeserializer;
     }
 
     public async Task<byte[]> EncryptAsync(
@@ -88,7 +94,7 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
             typeName,
             ProtocolMajor,
             ProtocolMinor,
-            new Dictionary<string, object>
+            new Dictionary<string, object> 
             {
                 [EnvelopeMetadataKeys.KeyId] = key.Id,
                 [EnvelopeMetadataKeys.Iv] = iv,
@@ -98,6 +104,25 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
             });
 
         return _encryptedStructureCodec.Encode(structure);
+    }
+
+    public async Task<object> DecryptAsync(
+        IEnvelopeProfile profile,
+        byte[] encrypted,
+        byte[]? aad,
+        CancellationToken cancellationToken = default)
+    {
+        var structure = _encryptedStructureCodec.Decode(encrypted);
+        var metadata = _envelopeMetadataExtractor.Extract(structure.Metadata);
+        var key = await profile.KeyRepository
+            .FindAsync(new KeyReference(metadata.KeyId, KeyReferenceType.Id), cancellationToken)
+            .ConfigureAwait(false);
+
+        var dek = await ResolveDataEncryptionKeyAsync(profile, key, cancellationToken).ConfigureAwait(false);
+        var dataKey = _keyDerivation.Derive(dek, DataKeyLength);
+        var aadToUse = aad ?? metadata.Aad;
+        var plaintext = _aeadCipher.Decrypt(dataKey, metadata.Iv, structure.CipherOutput, aadToUse);
+        return _plaintextDeserializer.Deserialize(plaintext);
     }
 
     private async Task<byte[]> ResolveDataEncryptionKeyAsync(
