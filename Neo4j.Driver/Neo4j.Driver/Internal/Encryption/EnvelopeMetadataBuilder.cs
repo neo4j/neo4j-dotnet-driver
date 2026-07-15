@@ -1,0 +1,38 @@
+// Copyright (c) "Neo4j"
+// Neo4j Sweden AB [https://neo4j.com]
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#nullable enable
+
+using System.Collections.Generic;
+
+namespace Neo4j.Driver.Internal.Encryption;
+
+// Mirrors IEnvelopeMetadataExtractor. EncapsulationOptions is deliberately not written here
+// for phase 1 (see ADR).
+[DriverAutoRegister(singleton: true)]
+internal class EnvelopeMetadataBuilder : IEnvelopeMetadataBuilder
+{
+    public IDictionary<string, object> Build(EnvelopeMetadata metadata)
+    {
+        return new Dictionary<string, object>
+        {
+            [EnvelopeMetadataKeys.KeyId] = metadata.KeyId,
+            [EnvelopeMetadataKeys.Iv] = metadata.Iv,
+            [EnvelopeMetadataKeys.Aad] = metadata.Aad,
+            [EnvelopeMetadataKeys.AadProtocolMajor] = metadata.AadProtocolMajor,
+            [EnvelopeMetadataKeys.AadProtocolMinor] = metadata.AadProtocolMinor
+        };
+    }
+}

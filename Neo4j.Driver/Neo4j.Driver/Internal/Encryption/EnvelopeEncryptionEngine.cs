@@ -38,6 +38,7 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
     private readonly IEncryptionKeyCache _encryptionKeyCache;
     private readonly ICryptoRandomProvider _randomProvider;
     private readonly IEnvelopeMetadataExtractor _envelopeMetadataExtractor;
+    private readonly IEnvelopeMetadataBuilder _envelopeMetadataBuilder;
 
     public EnvelopeEncryptionEngine(
         IPlaintextCodec plaintextCodec,
@@ -47,7 +48,8 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
         IEncryptedStructureCodec encryptedStructureCodec,
         IEncryptionKeyCache encryptionKeyCache,
         ICryptoRandomProvider randomProvider,
-        IEnvelopeMetadataExtractor envelopeMetadataExtractor)
+        IEnvelopeMetadataExtractor envelopeMetadataExtractor,
+        IEnvelopeMetadataBuilder envelopeMetadataBuilder)
     {
         _plaintextCodec = plaintextCodec;
         _propertyTypeNamer = propertyTypeNamer;
@@ -57,6 +59,7 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
         _encryptionKeyCache = encryptionKeyCache;
         _randomProvider = randomProvider;
         _envelopeMetadataExtractor = envelopeMetadataExtractor;
+        _envelopeMetadataBuilder = envelopeMetadataBuilder;
     }
 
     public async Task<byte[]> EncryptAsync(
@@ -81,20 +84,22 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
         aad ??= [];
         var cipherResult = _aeadCipher.Encrypt(dataKey, iv, plaintext, aad);
 
+        var envelopeMetadata = new EnvelopeMetadata(
+            key.Id,
+            iv,
+            aad,
+            ProtocolMajor,
+            ProtocolMinor,
+            new Dictionary<string, object>());
+
+        var metadata = _envelopeMetadataBuilder.Build(envelopeMetadata);
         var structure = new EncryptedStructure(
             profile.Name,
             cipherResult.Combined,
             typeName,
             ProtocolMajor,
             ProtocolMinor,
-            new Dictionary<string, object> 
-            {
-                [EnvelopeMetadataKeys.KeyId] = key.Id,
-                [EnvelopeMetadataKeys.Iv] = iv,
-                [EnvelopeMetadataKeys.Aad] = aad,
-                [EnvelopeMetadataKeys.AadProtocolMajor] = ProtocolMajor,
-                [EnvelopeMetadataKeys.AadProtocolMinor] = ProtocolMinor
-            });
+            metadata);
 
         return _encryptedStructureCodec.Encode(structure);
     }

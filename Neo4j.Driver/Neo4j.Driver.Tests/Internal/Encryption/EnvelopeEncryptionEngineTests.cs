@@ -68,6 +68,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         var dataKey = Sequence(32, seed: 0x40);
         var cipher = new CipherResult(new byte[] { 0xC0 }, new byte[] { 0xD0 });
         var encoded = new byte[] { 0xEE };
+        var builtMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
         byte[] expectedAad = suppliedAad ?? [];
 
         var key = new EncapsulatedKey("key-1", new HashSet<string> { "main" }, encapsulation, options);
@@ -95,8 +96,12 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             .Setup(c => c.Encrypt(Matches(dataKey), Matches(Iv), Matches(plaintext), Matches(expectedAad)))
             .Returns(cipher);
 
+        Freeze<IEnvelopeMetadataBuilder>()
+            .Setup(b => b.Build(IsExpectedMetadata("key-1", expectedAad)))
+            .Returns(builtMetadata);
+
         Freeze<IEncryptedStructureCodec>()
-            .Setup(c => c.Encode(It.Is<EncryptedStructure>(s => IsExpectedStructure(s, cipher.Combined, expectedAad))))
+            .Setup(c => c.Encode(It.Is<EncryptedStructure>(s => IsExpectedStructure(s, cipher.Combined, builtMetadata))))
             .Returns(encoded);
 
         var subject = CreateSubject<EnvelopeEncryptionEngine>();
@@ -175,17 +180,26 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         result.Should().Be(value);
     }
 
-    private static bool IsExpectedStructure(EncryptedStructure s, byte[] expectedCipherOutput, byte[] expectedAad)
+    private static bool IsExpectedStructure(
+        EncryptedStructure s,
+        byte[] expectedCipherOutput,
+        IDictionary<string, object> expectedMetadata)
     {
         return s.ProfileName == ProfileName &&
             s.TypeName == "INTEGER" &&
             s.TypeProtocolMajor == 6 &&
             s.TypeProtocolMinor == 0 &&
             s.CipherOutput.SequenceEqual(expectedCipherOutput) &&
-            (string)s.Metadata["key_id"] == "key-1" &&
-            ((byte[])s.Metadata["iv"]).SequenceEqual(Iv) &&
-            ((byte[])s.Metadata["aad"]).SequenceEqual(expectedAad) &&
-            (int)s.Metadata["aad_protocol_major"] == 6 &&
-            (int)s.Metadata["aad_protocol_minor"] == 0;
+            ReferenceEquals(s.Metadata, expectedMetadata);
+    }
+
+    private static EnvelopeMetadata IsExpectedMetadata(string keyId, byte[] expectedAad)
+    {
+        return It.Is<EnvelopeMetadata>(m =>
+            m.KeyId == keyId &&
+            m.Iv.SequenceEqual(Iv) &&
+            m.Aad.SequenceEqual(expectedAad) &&
+            m.AadProtocolMajor == 6 &&
+            m.AadProtocolMinor == 0);
     }
 }
