@@ -26,6 +26,13 @@ internal class AesGcmCipher : IAeadCipher
 
     public byte[] Decrypt(byte[] key, byte[] iv, byte[] cipherOutput, byte[] aad)
     {
+        if (cipherOutput.Length < TagSizeInBytes)
+        {
+            throw new ProtocolException(
+                $"Cipher output must be at least {TagSizeInBytes} bytes to contain an authentication tag, " +
+                $"but was {cipherOutput.Length} bytes.");
+        }
+
         using var aesGcm = new AesGcm(key, TagSizeInBytes);
         var ciphertext = cipherOutput[..^TagSizeInBytes];
         var tag = cipherOutput[^TagSizeInBytes..];

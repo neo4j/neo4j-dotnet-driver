@@ -95,4 +95,14 @@ public class AesGcmCipherTests
 
         act.Should().Throw<AuthenticationTagMismatchException>();
     }
+
+    [Fact]
+    public void Decrypt_CipherOutputShorterThanTag_ThrowsProtocolException()
+    {
+        var cipherOutput = new byte[8];
+
+        var act = () => _subject.Decrypt(Key, Iv, cipherOutput, aad: []);
+
+        act.Should().Throw<ProtocolException>();
+    }
 }
