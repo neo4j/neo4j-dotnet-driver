@@ -26,17 +26,17 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.IO;
 
-// The helper's only job is to build a stream, ask the factory for a reader/writer bound
-// to it, invoke the caller's callback, and hand back the result - so these tests mock the
-// factory entirely and never touch a real PackStreamWriter/PackStreamReader. Real
-// serialization behaviour is covered end to end by PlaintextSerializerTests and
-// EncryptedStructureCodecTests, which wire up the real factory.
 public class PackStreamSerializationHelperTests
 {
-    private static readonly MessageFormat Format = new MessageFormatFactory(TestDriverContext.MockContext)
-        .CreateMessageFormat(BoltProtocolVersion.V6_0);
+    private static readonly MessageFormat Format;
 
     private readonly Mock<IPackStreamReaderWriterFactory> _factory = new();
+
+    static PackStreamSerializationHelperTests()
+    {
+        var messageFormatFactory = new MessageFormatFactory(TestDriverContext.MockContext);
+        Format = messageFormatFactory.CreateMessageFormat(BoltProtocolVersion.V6_0);
+    }
 
     private PackStreamSerializationHelper CreateSubject() => new(_factory.Object);
 
@@ -49,11 +49,11 @@ public class PackStreamSerializationHelperTests
         var invocations = new List<IPackStreamWriter>();
         CreateSubject().Write(Format, invocations.Add);
 
-        invocations.Should().Equal(writerFromFactory);
+        invocations.Should().ContainSingle().Which.Should().BeSameAs(writerFromFactory);
     }
 
     [Fact]
-    public void Write_ReturnsWhateverBytesEndUpInTheStreamGivenToTheFactory()
+    public void Write_ReturnsStreamContentToTheFactory()
     {
         _factory.Setup(f => f.CreateWriter(Format, It.IsAny<Stream>()))
             .Returns((MessageFormat _, Stream stream) =>

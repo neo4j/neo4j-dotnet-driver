@@ -26,17 +26,17 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.Encryption;
 
-public class PlaintextSerializerTests
+public class PlaintextCodecTests
 {
     private readonly Mock<IMessageFormatFactory> _messageFormatFactory = new();
     private readonly Mock<IPackStreamSerializationHelper> _packStreamHelper = new();
     private readonly MessageFormat _format = new MessageFormatFactory(TestDriverContext.MockContext)
         .CreateMessageFormat(BoltProtocolVersion.V6_0);
 
-    private PlaintextSerializer CreateSubject()
+    private PlaintextCodec CreateSubject()
     {
         _messageFormatFactory.Setup(f => f.CreateMessageFormat(It.IsAny<BoltProtocolVersion>())).Returns(_format);
-        return new PlaintextSerializer(_messageFormatFactory.Object, _packStreamHelper.Object);
+        return new PlaintextCodec(_messageFormatFactory.Object, _packStreamHelper.Object);
     }
 
     [Fact]

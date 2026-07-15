@@ -31,7 +31,7 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
     private static readonly int ProtocolMinor = BoltProtocolVersion.V6_0.MinorVersion;
 
     private readonly IPropertyTypeValidator _propertyTypeValidator;
-    private readonly IPlaintextSerializer _plaintextSerializer;
+    private readonly IPlaintextCodec _plaintextCodec;
     private readonly IPropertyTypeNamer _propertyTypeNamer;
     private readonly IKeyDerivation _keyDerivation;
     private readonly IAeadCipher _aeadCipher;
@@ -39,22 +39,20 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
     private readonly IEncryptionKeyCache _encryptionKeyCache;
     private readonly ICryptoRandomProvider _randomProvider;
     private readonly IEnvelopeMetadataExtractor _envelopeMetadataExtractor;
-    private readonly IPlaintextDeserializer _plaintextDeserializer;
 
     public EnvelopeEncryptionEngine(
         IPropertyTypeValidator propertyTypeValidator,
-        IPlaintextSerializer plaintextSerializer,
+        IPlaintextCodec plaintextCodec,
         IPropertyTypeNamer propertyTypeNamer,
         IKeyDerivation keyDerivation,
         IAeadCipher aeadCipher,
         IEncryptedStructureCodec encryptedStructureCodec,
         IEncryptionKeyCache encryptionKeyCache,
         ICryptoRandomProvider randomProvider,
-        IEnvelopeMetadataExtractor envelopeMetadataExtractor,
-        IPlaintextDeserializer plaintextDeserializer)
+        IEnvelopeMetadataExtractor envelopeMetadataExtractor)
     {
         _propertyTypeValidator = propertyTypeValidator;
-        _plaintextSerializer = plaintextSerializer;
+        _plaintextCodec = plaintextCodec;
         _propertyTypeNamer = propertyTypeNamer;
         _keyDerivation = keyDerivation;
         _aeadCipher = aeadCipher;
@@ -62,7 +60,6 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
         _encryptionKeyCache = encryptionKeyCache;
         _randomProvider = randomProvider;
         _envelopeMetadataExtractor = envelopeMetadataExtractor;
-        _plaintextDeserializer = plaintextDeserializer;
     }
 
     public async Task<byte[]> EncryptAsync(
@@ -73,7 +70,7 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
         CancellationToken cancellationToken = default)
     {
         _propertyTypeValidator.EnsureSupported(value);
-        var plaintext = _plaintextSerializer.Serialize(value);
+        var plaintext = _plaintextCodec.Serialize(value);
         var typeName = _propertyTypeNamer.GetTypeName(value);
 
         var key = await profile.KeyRepository.FindAsync(keyRef ?? profile.DefaultKeyReference, cancellationToken)
@@ -122,7 +119,7 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
         var dataKey = _keyDerivation.Derive(dek, DataKeyLength);
         var aadToUse = aad ?? metadata.Aad;
         var plaintext = _aeadCipher.Decrypt(dataKey, metadata.Iv, structure.CipherOutput, aadToUse);
-        return _plaintextDeserializer.Deserialize(plaintext);
+        return _plaintextCodec.Deserialize(plaintext);
     }
 
     private async Task<byte[]> ResolveDataEncryptionKeyAsync(

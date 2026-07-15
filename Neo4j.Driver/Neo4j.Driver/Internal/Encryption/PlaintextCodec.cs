@@ -20,7 +20,7 @@ using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-internal class PlaintextSerializer : IPlaintextSerializer, IPlaintextDeserializer
+internal class PlaintextCodec : IPlaintextCodec
 {
     // 6.1 (UUID) is excluded until UUID support is confirmed
     private static readonly BoltProtocolVersion PlaintextVersion = BoltProtocolVersion.V6_0;
@@ -28,7 +28,7 @@ internal class PlaintextSerializer : IPlaintextSerializer, IPlaintextDeserialize
     private readonly IPackStreamSerializationHelper _packStreamHelper;
     private readonly MessageFormat _format;
 
-    public PlaintextSerializer(IMessageFormatFactory messageFormatFactory, IPackStreamSerializationHelper packStreamHelper)
+    public PlaintextCodec(IMessageFormatFactory messageFormatFactory, IPackStreamSerializationHelper packStreamHelper)
     {
         _packStreamHelper = packStreamHelper;
         _format = messageFormatFactory.CreateMessageFormat(PlaintextVersion);

@@ -82,7 +82,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
 
         var key = new EncapsulatedKey("key-1", new HashSet<string> { "main" }, encapsulation, options);
 
-        Freeze<IPlaintextSerializer>().Setup(s => s.Serialize(value)).Returns(plaintext);
+        Freeze<IPlaintextCodec>().Setup(s => s.Serialize(value)).Returns(plaintext);
         Freeze<IPropertyTypeNamer>().Setup(n => n.GetTypeName(value)).Returns("INTEGER");
         _repository.Setup(r => r.FindAsync(
                 new KeyReference("main", KeyReferenceType.Alias),
@@ -173,7 +173,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             .Setup(c => c.Decrypt(Matches(dataKey), Matches(Iv), Matches(cipherOutput), Matches(expectedAad)))
             .Returns(plaintext);
 
-        Freeze<IPlaintextDeserializer>().Setup(d => d.Deserialize(Matches(plaintext))).Returns(value);
+        Freeze<IPlaintextCodec>().Setup(d => d.Deserialize(Matches(plaintext))).Returns(value);
 
         var subject = CreateSubject<EnvelopeEncryptionEngine>();
         var result = await subject.DecryptAsync(
