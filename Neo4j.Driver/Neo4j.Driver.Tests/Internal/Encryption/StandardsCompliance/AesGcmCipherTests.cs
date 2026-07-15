@@ -42,7 +42,7 @@ public class AesGcmCipherTests
 
         var cipherResult = _subject.Encrypt(key, iv, msg, aad);
 
-        cipherResult.CipherOutput.Should().Equal(expectedCt);
+        cipherResult.CipherText.Should().Equal(expectedCt);
         cipherResult.Tag.Should().Equal(expectedTag);
 
         _subject.Decrypt(key, iv, cipherResult.Combined, aad).Should().Equal(msg);
@@ -89,7 +89,7 @@ public class AesGcmCipherTests
 
         var cipherResult = _subject.Encrypt(key, iv, msg, aad: []);
 
-        cipherResult.CipherOutput.Should().Equal(expectedCt);
+        cipherResult.CipherText.Should().Equal(expectedCt);
         cipherResult.Tag.Should().Equal(expectedTag);
 
         _subject.Decrypt(key, iv, cipherResult.Combined, aad: []).Should().Equal(msg);

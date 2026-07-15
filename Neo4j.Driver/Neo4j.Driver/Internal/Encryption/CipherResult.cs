@@ -17,7 +17,7 @@
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-internal readonly record struct CipherResult(byte[] CipherOutput, byte[] Tag)
+internal readonly record struct CipherResult(byte[] CipherText, byte[] Tag)
 {
-    public byte[] Combined => [..CipherOutput, ..Tag];
+    public byte[] Combined => [..CipherText, ..Tag];
 }

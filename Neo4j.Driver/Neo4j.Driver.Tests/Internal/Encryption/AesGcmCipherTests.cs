@@ -46,7 +46,7 @@ public class AesGcmCipherTests
         var first  = _subject.Encrypt(Key, Iv, plaintext, aad: []);
         var second = _subject.Encrypt(Key, Iv, plaintext, aad: []);
 
-        first.CipherOutput.Should().Equal(second.CipherOutput);
+        first.CipherText.Should().Equal(second.CipherText);
         first.Tag.Should().Equal(second.Tag);
     }
 
@@ -62,7 +62,7 @@ public class AesGcmCipherTests
         var result1 = _subject.Encrypt(Key, Iv, plaintext, aad: []);
         var result2 = _subject.Encrypt(Key, iv2, plaintext, aad: []);
 
-        result1.CipherOutput.Should().NotEqual(result2.CipherOutput);
+        result1.CipherText.Should().NotEqual(result2.CipherText);
     }
 
     // Encrypt then Decrypt recovers the original plaintext.
@@ -75,7 +75,7 @@ public class AesGcmCipherTests
         Random.Shared.NextBytes(aad);
 
         var result = _subject.Encrypt(Key, Iv, plaintext, aad);
-        byte[] cipherOutput = [..result.CipherOutput, ..result.Tag];
+        byte[] cipherOutput = [..result.CipherText, ..result.Tag];
 
         _subject.Decrypt(Key, Iv, cipherOutput, aad).Should().Equal(plaintext);
     }
@@ -88,7 +88,7 @@ public class AesGcmCipherTests
         Random.Shared.NextBytes(plaintext);
 
         var result = _subject.Encrypt(Key, Iv, plaintext, aad: []);
-        byte[] cipherOutput = [..result.CipherOutput, ..result.Tag];
+        byte[] cipherOutput = [..result.CipherText, ..result.Tag];
         cipherOutput[^1] ^= 0xff;
 
         var act = () => _subject.Decrypt(Key, Iv, cipherOutput, aad: []);
