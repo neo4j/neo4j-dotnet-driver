@@ -19,17 +19,7 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-internal record MapKeyEncapsulationOptions : IKeyEncapsulationOptions
+internal record MapKeyEncapsulationOptions(IReadOnlyDictionary<string, string> Map) : IKeyEncapsulationOptions
 {
-    private readonly IReadOnlyDictionary<string, string> _map;
-
-    public MapKeyEncapsulationOptions(IReadOnlyDictionary<string, string> map)
-    {
-        _map = map;
-    }
-
-    public IReadOnlyDictionary<string, string> ToMap()
-    {
-        return _map;
-    }
+    public IReadOnlyDictionary<string, string> ToMap() => Map;
 }
