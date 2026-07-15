@@ -25,6 +25,7 @@ using Moq.AutoMock;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Encryption;
 using Xunit;
+using static Neo4j.Driver.Tests.Internal.Encryption.EncryptionTestHelpers;
 
 namespace Neo4j.Driver.Tests.Internal.Encryption;
 
@@ -50,17 +51,6 @@ public class LocalKeyEncapsulationServiceTests
         }
     }
 
-    private class SequentialRandom : ICryptoRandomProvider
-    {
-        public void Fill(Span<byte> buffer)
-        {
-            for (var i = 0; i < buffer.Length; i++)
-            {
-                buffer[i] = (byte)i;
-            }
-        }
-    }
-
     private LocalKeyEncapsulationService CreateSubject()
     {
         return new LocalKeyEncapsulationService(
@@ -75,7 +65,7 @@ public class LocalKeyEncapsulationServiceTests
     {
         var wrapped = new CipherResult(new byte[] { 0xAA, 0xBB }, Sequence(16, seed: 0xC0));
         _autoMock.GetMock<IAeadCipher>()
-            .Setup(c => c.Encrypt(Kek, Matches(Iv), Matches(Dek), Empty()))
+            .Setup(c => c.Encrypt(Kek, Matches(Iv), Matches(Dek), Matches(Array.Empty<byte>())))
             .Returns(wrapped);
         _autoMock.GetMock<IBase64Codec>()
             .Setup(b => b.Encode(Matches(Iv)))
@@ -95,7 +85,7 @@ public class LocalKeyEncapsulationServiceTests
         var dek = Sequence(DekLength, seed: 0x77);
         _autoMock.GetMock<IBase64Codec>().Setup(b => b.Decode("stored-iv")).Returns(Iv);
         _autoMock.GetMock<IAeadCipher>()
-            .Setup(c => c.Decrypt(Kek, Matches(Iv), encapsulation, Empty()))
+            .Setup(c => c.Decrypt(Kek, Matches(Iv), encapsulation, Matches(Array.Empty<byte>())))
             .Returns(dek);
 
         var options = new Dictionary<string, string> { ["iv"] = "stored-iv" };
@@ -103,20 +93,5 @@ public class LocalKeyEncapsulationServiceTests
         var result = await CreateSubject().DecapsulateAsync(encapsulation, options);
 
         result.Should().Equal(dek);
-    }
-
-    private static byte[] Matches(byte[] expected)
-    {
-        return It.Is<byte[]>(actual => actual.SequenceEqual(expected));
-    }
-
-    private static byte[] Empty()
-    {
-        return It.Is<byte[]>(actual => actual.Length == 0);
-    }
-
-    private static byte[] Sequence(byte length, byte seed = 0)
-    {
-        return Enumerable.TypedRange(seed, length).ToArray();
     }
 }

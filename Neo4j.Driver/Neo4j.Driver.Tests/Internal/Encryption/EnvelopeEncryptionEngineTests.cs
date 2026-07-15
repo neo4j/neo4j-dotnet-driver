@@ -26,6 +26,7 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Encryption;
 using Xunit;
+using static Neo4j.Driver.Tests.Internal.Encryption.EncryptionTestHelpers;
 
 namespace Neo4j.Driver.Tests.Internal.Encryption;
 
@@ -38,17 +39,6 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
 
     // SequentialRandom fills each buffer with 0,1,2,... so the generated IV is known.
     private static readonly byte[] Iv = Sequence(12);
-
-    private class SequentialRandom : ICryptoRandomProvider
-    {
-        public void Fill(Span<byte> buffer)
-        {
-            for (var i = 0; i < buffer.Length; i++)
-            {
-                buffer[i] = (byte)i;
-            }
-        }
-    }
 
     public EnvelopeEncryptionEngineTests()
     {
@@ -197,15 +187,5 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             ((byte[])s.Metadata["aad"]).SequenceEqual(expectedAad) &&
             (int)s.Metadata["aad_protocol_major"] == 6 &&
             (int)s.Metadata["aad_protocol_minor"] == 0;
-    }
-
-    private static byte[] Matches(byte[] expected)
-    {
-        return It.Is<byte[]>(actual => actual.AsEnumerable().SequenceEqual(expected));
-    }
-
-    private static byte[] Sequence(byte length, byte seed = 0)
-    {
-        return Enumerable.TypedRange(seed, length).ToArray();
     }
 }

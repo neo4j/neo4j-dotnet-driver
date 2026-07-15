@@ -36,12 +36,14 @@ internal static class EnumerableExtensions
         {
             if (length < T.AdditiveIdentity)
             {
-                throw new ArgumentOutOfRangeException(nameof(length), "Length must be non-negative.");
+                throw new ArgumentOutOfRangeException(
+                    nameof(length), "Length must be non-negative.");
             }
 
             if(T.MaxValue - start < length)
             {
-                throw new ArgumentOutOfRangeException(nameof(length), "The range exceeds the maximum value of the type.");
+                throw new ArgumentOutOfRangeException(
+                    nameof(length), "The range exceeds the maximum value of the type.");
             }
 
             var current = start;
