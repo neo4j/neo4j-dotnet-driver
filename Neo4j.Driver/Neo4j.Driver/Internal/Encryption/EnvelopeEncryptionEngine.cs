@@ -30,7 +30,6 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
     private static readonly int ProtocolMajor = BoltProtocolVersion.V6_0.MajorVersion;
     private static readonly int ProtocolMinor = BoltProtocolVersion.V6_0.MinorVersion;
 
-    private readonly IPropertyTypeValidator _propertyTypeValidator;
     private readonly IPlaintextCodec _plaintextCodec;
     private readonly IPropertyTypeNamer _propertyTypeNamer;
     private readonly IKeyDerivation _keyDerivation;
@@ -41,7 +40,6 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
     private readonly IEnvelopeMetadataExtractor _envelopeMetadataExtractor;
 
     public EnvelopeEncryptionEngine(
-        IPropertyTypeValidator propertyTypeValidator,
         IPlaintextCodec plaintextCodec,
         IPropertyTypeNamer propertyTypeNamer,
         IKeyDerivation keyDerivation,
@@ -51,7 +49,6 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
         ICryptoRandomProvider randomProvider,
         IEnvelopeMetadataExtractor envelopeMetadataExtractor)
     {
-        _propertyTypeValidator = propertyTypeValidator;
         _plaintextCodec = plaintextCodec;
         _propertyTypeNamer = propertyTypeNamer;
         _keyDerivation = keyDerivation;
@@ -69,9 +66,8 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
         byte[]? aad,
         CancellationToken cancellationToken = default)
     {
-        _propertyTypeValidator.EnsureSupported(value);
+        var typeName = _propertyTypeNamer.GetValidTypeName(value);
         var plaintext = _plaintextCodec.Serialize(value);
-        var typeName = _propertyTypeNamer.GetTypeName(value);
 
         var key = await profile.KeyRepository.FindAsync(keyRef ?? profile.DefaultKeyReference, cancellationToken)
             .ConfigureAwait(false);

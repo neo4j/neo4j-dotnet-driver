@@ -15,6 +15,7 @@
 
 #nullable enable
 
+using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Encryption;
@@ -26,33 +27,55 @@ public class PropertyTypeNamerTests
 {
     private readonly PropertyTypeNamer _subject = new();
 
+    public static IEnumerable<object[]> UnsupportedValues => new[]
+    {
+        new object[] { new Dictionary<string, object> { ["k"] = 1L } },
+        new object[] { new object() },
+        new object[] { new List<object> { new List<long> { 1L } } }
+    };
+
     [Theory]
     [InlineData(true, "BOOLEAN")]
     [InlineData(5L, "INTEGER")]
     [InlineData(1.5, "FLOAT")]
     [InlineData("hello", "STRING")]
-    public void GetTypeName_ReturnsCanonicalName_ForScalars(object value, string expected)
+    public void GetValidTypeName_ReturnsCanonicalName_ForScalars(object value, string expected)
     {
-        _subject.GetTypeName(value).Should().Be(expected);
+        _subject.GetValidTypeName(value).Should().Be(expected);
     }
 
     [Fact]
-    public void GetTypeName_ReturnsBytes_ForByteArray()
+    public void GetValidTypeName_ReturnsBytes_ForByteArray()
     {
-        _subject.GetTypeName(new byte[] { 1, 2, 3 }).Should().Be("BYTES");
+        _subject.GetValidTypeName(new byte[] { 1, 2, 3 }).Should().Be("BYTES");
     }
 
     [Fact]
-    public void GetTypeName_ReturnsList_ForList()
+    public void GetValidTypeName_ReturnsList_ForHomogeneousList()
     {
-        _subject.GetTypeName(new List<long> { 1, 2 }).Should().Be("LIST");
+        _subject.GetValidTypeName(new List<long> { 1, 2 }).Should().Be("LIST");
     }
 
     [Fact]
-    public void GetTypeName_Throws_ForUnsupportedType()
+    public void GetValidTypeName_ReturnsList_ForEmptyList()
     {
-        var act = () => _subject.GetTypeName(this);
+        _subject.GetValidTypeName(new List<object>()).Should().Be("LIST");
+    }
 
-        act.Should().Throw<System.ArgumentException>();
+    [Theory]
+    [MemberData(nameof(UnsupportedValues))]
+    public void GetValidTypeName_Throws_ForUnsupportedType(object value)
+    {
+        var act = () => _subject.GetValidTypeName(value);
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void GetValidTypeName_Throws_ForNull()
+    {
+        var act = () => _subject.GetValidTypeName(null!);
+
+        act.Should().Throw<ArgumentException>();
     }
 }

@@ -83,7 +83,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         var key = new EncapsulatedKey("key-1", new HashSet<string> { "main" }, encapsulation, options);
 
         Freeze<IPlaintextCodec>().Setup(s => s.Serialize(value)).Returns(plaintext);
-        Freeze<IPropertyTypeNamer>().Setup(n => n.GetTypeName(value)).Returns("INTEGER");
+        Freeze<IPropertyTypeNamer>().Setup(n => n.GetValidTypeName(value)).Returns("INTEGER");
         _repository.Setup(r => r.FindAsync(
                 new KeyReference("main", KeyReferenceType.Alias),
                 It.IsAny<CancellationToken>()))

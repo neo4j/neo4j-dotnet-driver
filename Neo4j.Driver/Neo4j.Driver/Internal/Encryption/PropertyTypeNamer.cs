@@ -23,7 +23,12 @@ namespace Neo4j.Driver.Internal.Encryption;
 [DriverAutoRegister(singleton: true)]
 internal class PropertyTypeNamer : IPropertyTypeNamer
 {
-    public string GetTypeName(object value)
+    public string GetValidTypeName(object value)
+    {
+        return GetValidTypeName(value, allowList: true);
+    }
+
+    private static string GetValidTypeName(object value, bool allowList)
     {
         return value switch
         {
@@ -32,10 +37,32 @@ internal class PropertyTypeNamer : IPropertyTypeNamer
             double => "FLOAT",
             string => "STRING",
             byte[] => "BYTES",
-            IEnumerable => "LIST",
-            _ => throw new ArgumentException(
-                $"Value of type '{value?.GetType().FullName ?? "null"}' has no canonical Neo4j property type name.",
-                nameof(value))
+
+            // if this isn't explicitly disallowed, an empty dictionary
+            // would pass the next check and be treated as a valid property type
+            IDictionary => throw Unsupported(value),
+
+            IEnumerable e when allowList => ValidateList(e),
+
+            _ => throw Unsupported(value)
         };
+    }
+
+    private static string ValidateList(IEnumerable list)
+    {
+        foreach (var item in list)
+        {
+            GetValidTypeName(item, allowList: false);
+        }
+
+        return "LIST";
+    }
+
+    private static ArgumentException Unsupported(object value)
+    {
+        var typeName = value?.GetType().FullName ?? "null";
+        return new ArgumentException(
+            $"Value of type '{typeName}' is not a supported Neo4j property type.",
+            nameof(value));
     }
 }

@@ -19,5 +19,5 @@ namespace Neo4j.Driver.Internal.Encryption;
 
 internal interface IPropertyTypeNamer
 {
-    string GetTypeName(object value);
+    string GetValidTypeName(object value);
 }
