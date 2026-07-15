@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
@@ -30,24 +31,44 @@ internal class EnvelopeMetadataExtractor : IEnvelopeMetadataExtractor
 
     public EnvelopeMetadata Extract(IDictionary<string, object> metadata)
     {
-        var aad = metadata.TryGetValue(EnvelopeMetadataKeys.Aad, out byte[]? aadValue) ? aadValue : [];
+        var aad = metadata.GetOptionalValue<byte[]>(EnvelopeMetadataKeys.Aad, [], ExtractionError);
         var options = ExtractEncapsulationOptions(metadata);
         var keyId = metadata.GetMandatoryValue<string>(EnvelopeMetadataKeys.KeyId, m => new MetadataExtractionException(m));
         var iv = metadata.GetMandatoryValue<byte[]>(EnvelopeMetadataKeys.Iv, m => new MetadataExtractionException(m));
-        var aadProtocolMajor = metadata.TryGetValue(EnvelopeMetadataKeys.AadProtocolMajor, out int major) ? major : DefaultAadProtocolMajor;
-        var aadProtocolMinor = metadata.TryGetValue(EnvelopeMetadataKeys.AadProtocolMinor, out int minor) ? minor : DefaultAadProtocolMinor;
+        
+        var aadProtocolMajor = metadata.GetOptionalValue(
+            EnvelopeMetadataKeys.AadProtocolMajor,
+            DefaultAadProtocolMajor,
+            ExtractionError);
+
+        var aadProtocolMinor = metadata.GetOptionalValue(
+            EnvelopeMetadataKeys.AadProtocolMinor,
+            DefaultAadProtocolMinor,
+            ExtractionError);
+
         return new EnvelopeMetadata(keyId, iv, aad, aadProtocolMajor, aadProtocolMinor, options);
+
+        static Exception ExtractionError(string message)
+        {
+            return new MetadataExtractionException(message);
+        }
     }
 
-    private static IDictionary<string, object> ExtractEncapsulationOptions(IDictionary<string, object> metadata)
+    private static Dictionary<string, object> ExtractEncapsulationOptions(IDictionary<string, object> metadata)
     {
+        const string optItemRegex = @"^opt\.(.*)$";
+
         var options = new Dictionary<string, object>();
-        foreach (var pair in metadata)
+        foreach (var (key, value) in metadata)
         {
-            if (pair.Key.StartsWith(EnvelopeMetadataKeys.OptionsPrefix, StringComparison.Ordinal))
+            var match = Regex.Match(key, optItemRegex);
+            if (!match.Success)
             {
-                options[pair.Key[EnvelopeMetadataKeys.OptionsPrefix.Length..]] = pair.Value;
+                continue;
             }
+
+            var newKey = match.Groups[1].Value;
+            options[newKey] = value;
         }
 
         return options;

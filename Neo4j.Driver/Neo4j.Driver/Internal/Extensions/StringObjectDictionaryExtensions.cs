@@ -37,6 +37,16 @@ internal static class StringObjectDictionaryExtensions
                 : throw exceptionFact($"Expected key '{key}' to be present in the dictionary, but could not find.");
         }
 
+        public T GetOptionalValue<T>(
+            string key,
+            T defaultValue,
+            Func<string, Exception> exceptionFact)
+        {
+            return dict.TryGetValue<T>(key, out var value, exceptionFact) 
+                ? value 
+                : defaultValue;
+        }
+
         public T GetValue<T>(string key, T defaultValue)
         {
             return dict.TryGetValue(key, out var value) ? (T)value : defaultValue;
@@ -56,6 +66,14 @@ internal static class StringObjectDictionaryExtensions
 
         public bool TryGetValue<T>(string key, [NotNullWhen(true)] out T? value)
         {
+            return dict.TryGetValue<T>(key, out value, m => new InvalidOperationException(m));
+        }
+
+        public bool TryGetValue<T>(
+            string key,
+            [NotNullWhen(true)] out T? value,
+            Func<string, Exception> exceptionFactory)
+        {
             var found = dict.TryGetValue(key, out var uncastValue);
 
             if (found)
@@ -66,7 +84,7 @@ internal static class StringObjectDictionaryExtensions
                     return true;
                 }
 
-                throw new InvalidOperationException(
+                throw exceptionFactory(
                     $"Expected key '{key}' to be of type '{typeof(T)}', but was '{uncastValue!.GetType()}'.");
             }
 
