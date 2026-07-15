@@ -15,8 +15,6 @@
 
 #nullable enable
 
-using System.IO;
-using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Protocol;
 
@@ -31,34 +29,41 @@ internal class EncryptedStructureCodec : IEncryptedStructureCodec
     private const int FieldCount = 7;
     private const int StructureFormatVersion = 1;
 
+    private readonly IPackStreamSerializationHelper _packStreamHelper;
     private readonly MessageFormat _format;
 
-    public EncryptedStructureCodec(IMessageFormatFactory messageFormatFactory)
+    public EncryptedStructureCodec(
+        IMessageFormatFactory messageFormatFactory,
+        IPackStreamSerializationHelper packStreamHelper)
     {
+        _packStreamHelper = packStreamHelper;
         _format = messageFormatFactory.CreateMessageFormat(StructureVersion);
     }
 
     public byte[] Encode(EncryptedStructure structure)
     {
-        using var stream = new MemoryStream();
-        var writer = new PackStreamWriter(_format, stream);
-
-        writer.WriteStructHeader(FieldCount, EncryptedSignature);
-        writer.Write(StructureFormatVersion);
-        writer.Write(structure.ProfileName);
-        writer.Write(structure.CipherOutput);
-        writer.Write(structure.TypeName);
-        writer.Write(structure.TypeProtocolMajor);
-        writer.Write(structure.TypeProtocolMinor);
-        writer.Write(structure.Metadata);
-
-        return stream.ToArray();
+        return _packStreamHelper.Write(
+            _format,
+            writer =>
+            {
+                writer.WriteStructHeader(FieldCount, EncryptedSignature);
+                writer.Write(StructureFormatVersion);
+                writer.Write(structure.ProfileName);
+                writer.Write(structure.CipherOutput);
+                writer.Write(structure.TypeName);
+                writer.Write(structure.TypeProtocolMajor);
+                writer.Write(structure.TypeProtocolMinor);
+                writer.Write(structure.Metadata);
+            });
     }
 
     public EncryptedStructure Decode(byte[] bytes)
     {
-        var reader = new PackStreamReader(_format, new MemoryStream(bytes), new ByteBuffers());
+        return _packStreamHelper.Read(_format, bytes, ReadStructure);
+    }
 
+    private static EncryptedStructure ReadStructure(IPackStreamReader reader)
+    {
         reader.ReadStructHeader();
         var signature = reader.ReadStructSignature();
         if (signature != EncryptedSignature)

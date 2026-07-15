@@ -15,44 +15,65 @@
 
 #nullable enable
 
-using System.Collections.Generic;
+using System;
 using FluentAssertions;
+using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Encryption;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.Encryption;
 
 public class PlaintextSerializerTests
 {
-    private readonly PlaintextSerializer _subject = new(new MessageFormatFactory(TestDriverContext.MockContext));
+    private readonly Mock<IMessageFormatFactory> _messageFormatFactory = new();
+    private readonly Mock<IPackStreamSerializationHelper> _packStreamHelper = new();
+    private readonly MessageFormat _format = new MessageFormatFactory(TestDriverContext.MockContext)
+        .CreateMessageFormat(BoltProtocolVersion.V6_0);
 
-    // just a few sanity checks - serialization is delegated to PackStreamReader/Writer
-    // which are both fully tested in PackStreamTestSpecs   
-    public static IEnumerable<object[]> LockVectors => new[]
+    private PlaintextSerializer CreateSubject()
     {
-        new object[] { true, new byte[] { 0xC3 } },
-        new object[] { false, new byte[] { 0xC2 } },
-        new object[] { 42L, new byte[] { 0x2A } },
-        new object[] { 1234L, new byte[] { 0xC9, 0x04, 0xD2 } },
-        new object[] { 1.5, new byte[] { 0xC1, 0x3F, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } },
-        new object[] { "hello", new byte[] { 0x85, 0x68, 0x65, 0x6C, 0x6C, 0x6F } },
-        new object[] { "", new byte[] { 0x80 } },
-        new object[] { new byte[] { 0x01, 0x02, 0x03 }, new byte[] { 0xCC, 0x03, 0x01, 0x02, 0x03 } },
-        new object[] { new List<long> { 1L, 2L, 3L }, new byte[] { 0x93, 0x01, 0x02, 0x03 } }
-    };
-
-    [Theory]
-    [MemberData(nameof(LockVectors))]
-    public void Serialize_ProducesPackStreamBytes(object value, byte[] expected)
-    {
-        _subject.Serialize(value).Should().Equal(expected);
+        _messageFormatFactory.Setup(f => f.CreateMessageFormat(It.IsAny<BoltProtocolVersion>())).Returns(_format);
+        return new PlaintextSerializer(_messageFormatFactory.Object, _packStreamHelper.Object);
     }
 
-    [Theory]
-    [MemberData(nameof(LockVectors))]
-    public void Deserialize_ReadsPackStreamBytesBackToValue(object value, byte[] plaintext)
+    [Fact]
+    public void Serialize_WritesTheValueThroughTheHelperAndReturnsItsBytes()
     {
-        _subject.Deserialize(plaintext).Should().BeEquivalentTo(value);
+        const long value = 42L;
+        var expectedBytes = new byte[] { 0xAA };
+        var writer = new Mock<IPackStreamWriter>();
+
+        _packStreamHelper
+            .Setup(h => h.Write(_format, It.IsAny<Action<IPackStreamWriter>>()))
+            .Returns((MessageFormat _, Action<IPackStreamWriter> write) =>
+            {
+                write(writer.Object);
+                return expectedBytes;
+            });
+
+        var result = CreateSubject().Serialize(value);
+
+        result.Should().BeSameAs(expectedBytes);
+        writer.Verify(w => w.Write(value), Times.Once);
+    }
+
+    [Fact]
+    public void Deserialize_ReadsThroughTheHelperAndReturnsItsResult()
+    {
+        const long expectedValue = 42L;
+        var plaintext = new byte[] { 0x2A };
+        var reader = new Mock<IPackStreamReader>();
+        reader.Setup(r => r.Read()).Returns(expectedValue);
+
+        _packStreamHelper
+            .Setup(h => h.Read(_format, plaintext, It.IsAny<Func<IPackStreamReader, object>>()))
+            .Returns((MessageFormat _, byte[] _, Func<IPackStreamReader, object> read) => read(reader.Object));
+
+        var result = CreateSubject().Deserialize(plaintext);
+
+        result.Should().Be(expectedValue);
     }
 }

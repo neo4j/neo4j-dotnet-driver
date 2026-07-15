@@ -15,18 +15,28 @@
 
 #nullable enable
 
+using System;
 using System.Collections.Generic;
 using FluentAssertions;
+using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.Encryption;
 
+// EncryptedStructureCodec's own responsibility is delegating to IPackStreamSerializationHelper
+// plus the version/signature guard clauses in Decode - the actual on-wire byte layout is a
+// conformance concern, locked down for real in
+// Encryption.FormatConformance.EncryptedStructureConformanceTests.
 public class EncryptedStructureCodecTests
 {
-    private readonly EncryptedStructureCodec _subject = new(new MessageFormatFactory(TestDriverContext.MockContext));
+    private readonly Mock<IMessageFormatFactory> _messageFormatFactory = new();
+    private readonly Mock<IPackStreamSerializationHelper> _packStreamHelper = new();
+    private readonly MessageFormat _format = new MessageFormatFactory(TestDriverContext.MockContext)
+        .CreateMessageFormat(BoltProtocolVersion.V6_0);
 
     private static EncryptedStructure Sample() => new(
         ProfileName: "Envelope",
@@ -40,34 +50,62 @@ public class EncryptedStructureCodecTests
             ["iv"] = new byte[] { 1, 2, 3 }
         });
 
+    private EncryptedStructureCodec CreateSubject()
+    {
+        _messageFormatFactory.Setup(f => f.CreateMessageFormat(It.IsAny<BoltProtocolVersion>())).Returns(_format);
+        return new EncryptedStructureCodec(_messageFormatFactory.Object, _packStreamHelper.Object);
+    }
+
+    private void StubHelperRead(IPackStreamReader reader)
+    {
+        _packStreamHelper
+            .Setup(h => h.Read(_format, It.IsAny<byte[]>(), It.IsAny<Func<IPackStreamReader, EncryptedStructure>>()))
+            .Returns((MessageFormat _, byte[] _, Func<IPackStreamReader, EncryptedStructure> read) => read(reader));
+    }
+
     [Fact]
-    public void Encode_ThenDecode_RoundTripsAllFields()
+    public void Encode_WritesTheStructureThroughTheHelperAndReturnsItsBytes()
     {
         var structure = Sample();
+        var writer = new Mock<IPackStreamWriter>();
+        var expectedBytes = new byte[] { 0xAA };
 
-        var result = _subject.Decode(_subject.Encode(structure));
+        _packStreamHelper
+            .Setup(h => h.Write(_format, It.IsAny<Action<IPackStreamWriter>>()))
+            .Returns((MessageFormat _, Action<IPackStreamWriter> write) =>
+            {
+                write(writer.Object);
+                return expectedBytes;
+            });
 
-        result.Should().NotBeSameAs(structure);
-        result.Should().BeEquivalentTo(structure, opt => opt.ComparingByMembers<EncryptedStructure>());
+        var result = CreateSubject().Encode(structure);
+
+        result.Should().BeSameAs(expectedBytes);
+        writer.Verify(w => w.Write(structure.Metadata), Times.Once);
     }
 
     [Fact]
-    public void Encode_WritesEncryptedStructHeader()
+    public void Decode_WrongSignature_ThrowsProtocolException()
     {
-        var bytes = _subject.Encode(Sample());
+        var reader = new Mock<IPackStreamReader>();
+        reader.Setup(r => r.ReadStructSignature()).Returns((byte)0x99);
+        StubHelperRead(reader.Object);
 
-        var marker = bytes[0];
-        var (hi, lo) = (marker & 0xF0, marker & 0x0F);
-        hi.Should().Be(PackStream.TinyStruct);
-        lo.Should().Be(7);
+        var act = () => CreateSubject().Decode([]);
+
+        act.Should().Throw<ProtocolException>();
     }
 
     [Fact]
-    public void Encode_WritesVersionAsFirstField()
+    public void Decode_WrongVersion_ThrowsProtocolException()
     {
-        var bytes = _subject.Encode(Sample());
+        var reader = new Mock<IPackStreamReader>();
+        reader.Setup(r => r.ReadStructSignature()).Returns((byte)0x65);
+        reader.Setup(r => r.ReadInteger()).Returns(2);
+        StubHelperRead(reader.Object);
 
-        bytes[1].Should().Be(0x65);
-        bytes[2].Should().Be(0x01);
+        var act = () => CreateSubject().Decode([]);
+
+        act.Should().Throw<ProtocolException>();
     }
 }

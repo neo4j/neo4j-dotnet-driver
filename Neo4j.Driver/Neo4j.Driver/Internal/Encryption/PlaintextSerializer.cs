@@ -15,8 +15,6 @@
 
 #nullable enable
 
-using System.IO;
-using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Protocol;
 
@@ -27,22 +25,22 @@ internal class PlaintextSerializer : IPlaintextSerializer, IPlaintextDeserialize
     // 6.1 (UUID) is excluded until UUID support is confirmed
     private static readonly BoltProtocolVersion PlaintextVersion = BoltProtocolVersion.V6_0;
 
+    private readonly IPackStreamSerializationHelper _packStreamHelper;
     private readonly MessageFormat _format;
 
-    public PlaintextSerializer(IMessageFormatFactory messageFormatFactory)
+    public PlaintextSerializer(IMessageFormatFactory messageFormatFactory, IPackStreamSerializationHelper packStreamHelper)
     {
+        _packStreamHelper = packStreamHelper;
         _format = messageFormatFactory.CreateMessageFormat(PlaintextVersion);
     }
 
     public byte[] Serialize(object value)
     {
-        using var stream = new MemoryStream();
-        new PackStreamWriter(_format, stream).Write(value);
-        return stream.ToArray();
+        return _packStreamHelper.Write(_format, writer => writer.Write(value));
     }
 
     public object Deserialize(byte[] plaintext)
     {
-        return new PackStreamReader(_format, new MemoryStream(plaintext), new ByteBuffers()).Read();
+        return _packStreamHelper.Read(_format, plaintext, reader => reader.Read());
     }
 }
