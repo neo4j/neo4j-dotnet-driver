@@ -220,6 +220,58 @@ public class ConnectionPoolTests
         }
 
         [Fact]
+        public async Task ShouldAcquireFreshConnectionWhenIdleConnectionLivenessProbeHangs()
+        {
+            var deadConnection = new Mock<IPooledConnection>();
+            deadConnection
+                .Setup(x => x.ResetAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            deadConnection
+                .Setup(x => x.SyncAsync(It.IsAny<CancellationToken>()))
+                .Returns<CancellationToken>(ct => Task.Delay(Timeout.Infinite, ct));
+
+            var freshConnection = new Mock<IPooledConnection>();
+            freshConnection
+                .Setup(x => x.InitAsync(It.IsAny<SessionConfig>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            freshConnection
+                .Setup(x => x.ResetAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            freshConnection
+                .Setup(x => x.SyncAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            freshConnection
+                .Setup(x => x.ValidateCredsAsync())
+                .Returns(ValueTask.CompletedTask);
+
+            var factoryMock = new Mock<IPooledConnectionFactory>();
+            factoryMock
+                .Setup(x => x.Create(It.IsAny<Uri>(), It.IsAny<IConnectionReleaseManager>(), It.IsAny<IAuthToken>()))
+                .Returns(freshConnection.Object);
+
+            var idleConnections = new BlockingCollection<IPooledConnection> { deadConnection.Object };
+
+            var pool = new ConnectionPool(
+                factoryMock.Object,
+                idleConnections,
+                driverContext: TestDriverContext.With(
+                    config: x => x
+                        .WithMaxConnectionPoolSize(1)
+                        .WithConnectionTimeout(TimeSpan.FromMilliseconds(500))
+                        .WithConnectionAcquisitionTimeout(TimeSpan.FromSeconds(5))),
+                validator: new LivenessProbeValidator());
+
+            var acquired = await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
+
+            acquired.Should().BeSameAs(freshConnection.Object);
+            deadConnection.Verify(x => x.DestroyAsync(), Times.Once);
+        }
+
+        [Fact]
         public async Task ShouldNotExceedIdleLimit()
         {
             var pool = NewConnectionPool(
