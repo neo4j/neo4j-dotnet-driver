@@ -16,7 +16,6 @@
 #nullable enable
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -28,22 +27,12 @@ internal class InMemoryEncapsulatedKeyRepository : IEncapsulatedKeyRepository
 {
     private readonly IKeyIdGenerator _keyIdGenerator;
     private readonly object _lock = new();
-    private readonly ConcurrentDictionary<string, EncapsulatedKey> _idToKey = new();
-    private readonly ConcurrentDictionary<string, string> _aliasToId = new();
+    private readonly Dictionary<string, EncapsulatedKey> _idToKey = new();
+    private readonly Dictionary<string, string> _aliasToId = new();
 
     public InMemoryEncapsulatedKeyRepository(IKeyIdGenerator keyIdGenerator)
     {
         _keyIdGenerator = keyIdGenerator;
-    }
-
-    private EncapsulatedKey GetKeyByIdOrThrow(string id)
-    {
-        lock (_lock)
-        {
-            return _idToKey.TryGetValue(id, out var key)
-                ? key
-                : throw new EncapsulatedKeyNotFoundException(id);
-        }
     }
 
     public Task<EncapsulatedKey> FindAsync(KeyReference keyReference, CancellationToken cancellationToken = default)
@@ -54,12 +43,14 @@ internal class InMemoryEncapsulatedKeyRepository : IEncapsulatedKeyRepository
             {
                 { Type: KeyReferenceType.Id } => keyReference.Reference,
 
-                { Type: KeyReferenceType.Alias } => _aliasToId.TryGetValue(keyReference.Reference, out var k) 
+                { Type: KeyReferenceType.Alias } => _aliasToId.TryGetValue(keyReference.Reference, out var k)
                     ? k
                     : throw new EncapsulatedAliasNotFoundException(keyReference.Reference),
 
                 _ => throw new ArgumentOutOfRangeException(
-                    nameof(keyReference), keyReference.Type, "Unknown key reference type")
+                    nameof(keyReference),
+                    keyReference.Type,
+                    "Unknown key reference type")
             };
 
             return Task.FromResult(GetKeyByIdOrThrow(id));
@@ -78,10 +69,10 @@ internal class InMemoryEncapsulatedKeyRepository : IEncapsulatedKeyRepository
             var aliasSet = aliases.ToHashSet();
             RemoveExistingAliases(aliasSet);
             var key = new EncapsulatedKey(id, aliasSet, encapsulation, metadata);
-            _idToKey.AddOrUpdate(id, key, (_, _) => key);
+            _idToKey[id] = key;
             foreach (var alias in aliasSet)
             {
-                _aliasToId.AddOrUpdate(alias, id, (_, _) => id);
+                _aliasToId[alias] = id;
             }
 
             return Task.FromResult(key);
@@ -96,27 +87,9 @@ internal class InMemoryEncapsulatedKeyRepository : IEncapsulatedKeyRepository
             RemoveExistingAliases([alias]);
 
             var gainingKey = key with { Aliases = key.Aliases + [alias] };
-            _aliasToId.AddOrUpdate(alias, id, (_, _) => id);
-            _idToKey.AddOrUpdate(id, gainingKey, (_, _) => gainingKey);
+            _aliasToId[alias] = id;
+            _idToKey[id] = gainingKey;
             return Task.CompletedTask;
-        }
-    }
-
-    private void RemoveExistingAliases(IEnumerable<string> aliases)
-    {
-        lock (_lock)
-        {
-            foreach (var alias in aliases)
-            {
-                if (!_aliasToId.TryGetValue(alias, out var prevKeyId))
-                {
-                    continue;
-                }
-
-                var existingKey = GetKeyByIdOrThrow(prevKeyId);
-                var updatedKey = existingKey with { Aliases = existingKey.Aliases - [alias] };
-                _idToKey.AddOrUpdate(prevKeyId, updatedKey, (_, _) => updatedKey);
-            }
         }
     }
 
@@ -132,8 +105,8 @@ internal class InMemoryEncapsulatedKeyRepository : IEncapsulatedKeyRepository
 
             var newAliases = key.Aliases.Where(a => a != alias).ToHashSet();
             var newKey = key with { Aliases = newAliases };
-            _aliasToId.TryRemove(alias, out _);
-            _idToKey.AddOrUpdate(id, newKey, (_, _) => newKey);
+            _aliasToId.Remove(alias);
+            _idToKey[id] = newKey;
             return Task.CompletedTask;
         }
     }
@@ -145,12 +118,36 @@ internal class InMemoryEncapsulatedKeyRepository : IEncapsulatedKeyRepository
             var key = GetKeyByIdOrThrow(id);
             foreach (var alias in key.Aliases)
             {
-                _aliasToId.TryRemove(alias, out _);
+                _aliasToId.Remove(alias);
             }
 
-            _idToKey.TryRemove(id, out _);
+            _idToKey.Remove(id);
         }
 
         return Task.CompletedTask;
+    }
+
+    private EncapsulatedKey GetKeyByIdOrThrow(string id)
+    {
+        // assumes lock already held
+        return _idToKey.TryGetValue(id, out var key)
+            ? key
+            : throw new EncapsulatedKeyNotFoundException(id);
+    }
+
+    private void RemoveExistingAliases(IEnumerable<string> aliases)
+    {
+        // assumes lock already held
+        foreach (var alias in aliases)
+        {
+            if (!_aliasToId.TryGetValue(alias, out var prevKeyId))
+            {
+                continue;
+            }
+
+            var existingKey = GetKeyByIdOrThrow(prevKeyId);
+            var updatedKey = existingKey with { Aliases = existingKey.Aliases - [alias] };
+            _idToKey[prevKeyId] = updatedKey;
+        }
     }
 }
