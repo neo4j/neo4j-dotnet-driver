@@ -272,6 +272,50 @@ public class ConnectionPoolTests
         }
 
         [Fact]
+        public async Task ShouldSurfaceAcquisitionTimeoutWhenItFiresBeforeLivenessProbeTimeout()
+        {
+            var deadConnection = new Mock<IPooledConnection>();
+            deadConnection
+                .Setup(x => x.ResetAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            deadConnection
+                .Setup(x => x.SyncAsync(It.IsAny<CancellationToken>()))
+                .Returns<CancellationToken>(ct => Task.Delay(Timeout.Infinite, ct));
+
+            var connectionDestroyed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            deadConnection
+                .Setup(x => x.DestroyAsync())
+                .Returns(() =>
+                {
+                    connectionDestroyed.TrySetResult();
+                    return Task.CompletedTask;
+                });
+
+            var factoryMock = new Mock<IPooledConnectionFactory>();
+            var idleConnections = new BlockingCollection<IPooledConnection> { deadConnection.Object };
+
+            var pool = new ConnectionPool(
+                factoryMock.Object,
+                idleConnections,
+                driverContext: TestDriverContext.With(
+                    config: x => x
+                        .WithMaxConnectionPoolSize(1)
+                        .WithConnectionTimeout(TimeSpan.FromSeconds(5))
+                        .WithConnectionAcquisitionTimeout(TimeSpan.FromMilliseconds(500))),
+                validator: new LivenessProbeValidator());
+
+            var act = () => pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
+
+            await act.Should().ThrowAsync<ClientException>();
+
+            await connectionDestroyed.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            factoryMock.Verify(
+                x => x.Create(It.IsAny<Uri>(), It.IsAny<IConnectionReleaseManager>(), It.IsAny<IAuthToken>()),
+                Times.Never);
+        }
+
+        [Fact]
         public async Task ShouldNotExceedIdleLimit()
         {
             var pool = NewConnectionPool(
