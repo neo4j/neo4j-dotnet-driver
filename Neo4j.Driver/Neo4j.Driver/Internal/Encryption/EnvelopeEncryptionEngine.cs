@@ -23,7 +23,7 @@ using Neo4j.Driver.Internal.Protocol;
 namespace Neo4j.Driver.Internal.Encryption;
 
 [DriverAutoRegister(singleton: true)]
-internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
+internal class EnvelopeEncryptionEngine : IEncryptionEngine
 {
     private const int IvLength = 12;
     private const int DataKeyLength = 32;
@@ -62,12 +62,47 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
         _envelopeMetadataBuilder = envelopeMetadataBuilder;
     }
 
-    public async Task<byte[]> EncryptAsync(
+    public bool TryStartEncrypt(
+        IEncryptionProfile profile,
+        object value,
+        KeyReference? keyRef,
+        byte[]? aad,
+        CancellationToken cancellationToken,
+        out Task<byte[]>? encryptionTask)
+    {
+        if (profile is not IEnvelopeProfile envelopeProfile)
+        {
+            encryptionTask = null;
+            return false;
+        }
+
+        encryptionTask = EncryptAsync(envelopeProfile, value, keyRef, aad, cancellationToken);
+        return true;
+    }
+
+    public bool TryStartDecrypt(
+        IEncryptionProfile profile,
+        byte[] encrypted,
+        byte[]? aad,
+        CancellationToken cancellationToken,
+        out Task<object>? decryptionTask)
+    {
+        if (profile is not IEnvelopeProfile envelopeProfile)
+        {
+            decryptionTask = null;
+            return false;
+        }
+
+        decryptionTask = DecryptAsync(envelopeProfile, encrypted, aad, cancellationToken);
+        return true;
+    }
+
+    private async Task<byte[]> EncryptAsync(
         IEnvelopeProfile profile,
         object value,
         KeyReference? keyRef,
         byte[]? aad,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken)
     {
         var typeName = _propertyTypeNamer.GetValidTypeName(value);
         var plaintext = _plaintextCodec.Serialize(value);
@@ -104,11 +139,11 @@ internal class EnvelopeEncryptionEngine : IEnvelopeEncryptionEngine
         return _encryptedStructureCodec.Encode(structure);
     }
 
-    public async Task<object> DecryptAsync(
+    private async Task<object> DecryptAsync(
         IEnvelopeProfile profile,
         byte[] encrypted,
         byte[]? aad,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken)
     {
         var structure = _encryptedStructureCodec.Decode(encrypted);
         var metadata = _envelopeMetadataExtractor.Extract(structure.Metadata);

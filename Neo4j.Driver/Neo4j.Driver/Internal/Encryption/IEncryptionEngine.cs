@@ -20,18 +20,25 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-internal interface IEnvelopeEncryptionEngine
+internal interface IEncryptionEngine
 {
-    Task<byte[]> EncryptAsync(
-        IEnvelopeProfile profile,
+    // If the encryption profile is supported, start the encryption process.
+    // If the return value is false, the encryption profile is not supported
+    // and the encryptionTask will be null. If true, the profile is supported
+    // and the encryptionTask will be a task that will complete with the encrypted value.
+    bool TryStartEncrypt(
+        IEncryptionProfile profile,
         object value,
         KeyReference? keyRef,
         byte[]? aad,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken,
+        out Task<byte[]>? encryptionTask);
 
-    Task<object> DecryptAsync(
-        IEnvelopeProfile profile,
+    // Works the same as TryStartEncrypt. 
+    bool TryStartDecrypt(
+        IEncryptionProfile profile,
         byte[] encrypted,
         byte[]? aad,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken,
+        out Task<object>? decryptionTask);
 }

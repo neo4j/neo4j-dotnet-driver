@@ -58,7 +58,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
     [Theory]
     [InlineData(null)]
     [InlineData(new byte[] { 0x99 })]
-    public async Task EncryptAsync_WithDefaultKeyAlias_EncryptsAndEncodesTheStructure(byte[]? suppliedAad)
+    public async Task TryStartEncrypt_WithDefaultKeyAlias_EncryptsAndEncodesTheStructure(byte[]? suppliedAad)
     {
         const long value = 5L;
         var plaintext = new byte[] { 0x10, 0x11 };
@@ -105,12 +105,16 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             .Returns(encoded);
 
         var subject = CreateSubject<EnvelopeEncryptionEngine>();
-        var result = await subject.EncryptAsync(
+        var started = subject.TryStartEncrypt(
             Profile(new KeyReference("main", KeyReferenceType.Alias)),
             value,
             keyRef: null,
             suppliedAad,
-            TestContext.Current.CancellationToken);
+            TestContext.Current.CancellationToken,
+            out var encryptedTask);
+
+        started.Should().BeTrue();
+        var result = await encryptedTask!;
 
         result.Should().Equal(encoded);
     }
@@ -118,7 +122,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
     [Theory]
     [InlineData(null)]
     [InlineData(new byte[] { 0x99 })]
-    public async Task DecryptAsync_ResolvesKeyByIdAndUsesSuppliedAadElsePersisted(byte[]? suppliedAad)
+    public async Task TryStartDecrypt_ResolvesKeyByIdAndUsesSuppliedAadElsePersisted(byte[]? suppliedAad)
     {
         var encrypted = new byte[] { 0xEE };
         var cipherOutput = new byte[] { 0xC0, 0xD0 };
@@ -171,13 +175,50 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         Freeze<IPlaintextCodec>().Setup(d => d.Deserialize(Matches(plaintext))).Returns(value);
 
         var subject = CreateSubject<EnvelopeEncryptionEngine>();
-        var result = await subject.DecryptAsync(
+        var started = subject.TryStartDecrypt(
             Profile(new KeyReference("main", KeyReferenceType.Alias)),
             encrypted,
             suppliedAad,
-            TestContext.Current.CancellationToken);
+            TestContext.Current.CancellationToken,
+            out var decryptedTask);
+
+        started.Should().BeTrue();
+        var result = await decryptedTask!;
 
         result.Should().Be(value);
+    }
+
+    [Fact]
+    public void TryStartEncrypt_WithNonEnvelopeProfile_ReturnsFalse()
+    {
+        var subject = CreateSubject<EnvelopeEncryptionEngine>();
+
+        var result = subject.TryStartEncrypt(
+            Mock.Of<IEncryptionProfile>(),
+            5L,
+            keyRef: null,
+            aad: null,
+            TestContext.Current.CancellationToken,
+            out var encrypted);
+
+        result.Should().BeFalse();
+        encrypted.Should().BeNull();
+    }
+
+    [Fact]
+    public void TryStartDecrypt_WithNonEnvelopeProfile_ReturnsFalse()
+    {
+        var subject = CreateSubject<EnvelopeEncryptionEngine>();
+
+        var result = subject.TryStartDecrypt(
+            Mock.Of<IEncryptionProfile>(),
+            [0xEE],
+            aad: null,
+            TestContext.Current.CancellationToken,
+            out var decrypted);
+
+        result.Should().BeFalse();
+        decrypted.Should().BeNull();
     }
 
     private static bool IsExpectedStructure(
