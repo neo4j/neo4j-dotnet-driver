@@ -56,15 +56,23 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1");
 
-        string[] aliases = ["primary"];
-        HashSet<string> aliasSet = new(aliases);
-
-        var saved = await subject.SaveAsync(aliasSet, Encapsulation, Metadata);
+        var saved = await subject.SaveAsync("primary", Encapsulation, Metadata);
 
         saved.Id.Should().Be("key-1");
-        saved.Aliases.Should().BeEquivalentTo(aliases);
+        saved.Alias.Should().Be("primary");
         saved.Encapsulation.Should().Equal(Encapsulation);
         saved.Metadata.Should().Equal(Metadata);
+    }
+
+    [Fact]
+    public async Task Save_WithNoAliasSavesAnUnaliasedKey()
+    {
+        var subject = CreateSubject();
+        SetGeneratedIds("key-1");
+
+        var saved = await subject.SaveAsync(null, Encapsulation, Metadata);
+
+        saved.Alias.Should().BeNull();
     }
 
     [Fact]
@@ -73,10 +81,8 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1", "key-2");
 
-        HashSet<string> aliasSet = [];
-
-        var first = await subject.SaveAsync(aliasSet, Encapsulation, Metadata);
-        var second = await subject.SaveAsync(aliasSet, Encapsulation, Metadata);
+        var first = await subject.SaveAsync(null, Encapsulation, Metadata);
+        var second = await subject.SaveAsync(null, Encapsulation, Metadata);
 
         first.Id.Should().Be("key-1");
         second.Id.Should().Be("key-2");
@@ -88,8 +94,7 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1");
 
-        HashSet<string> aliasSet = ["primary"];
-        var saved = await subject.SaveAsync(aliasSet, Encapsulation, Metadata);
+        var saved = await subject.SaveAsync("primary", Encapsulation, Metadata);
 
         var found = await subject.FindAsync(new KeyReference("key-1", KeyReferenceType.Id));
 
@@ -102,14 +107,11 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1");
 
-        HashSet<string> aliasSet = ["primary", "secondary"];
-        await subject.SaveAsync(aliasSet, Encapsulation, Metadata);
+        await subject.SaveAsync("primary", Encapsulation, Metadata);
 
-        var byFirst = await subject.FindAsync(new KeyReference("primary", KeyReferenceType.Alias));
-        var bySecond = await subject.FindAsync(new KeyReference("secondary", KeyReferenceType.Alias));
+        var found = await subject.FindAsync(new KeyReference("primary", KeyReferenceType.Alias));
 
-        byFirst.Id.Should().Be("key-1");
-        bySecond.Id.Should().Be("key-1");
+        found.Id.Should().Be("key-1");
     }
 
     [Fact]
@@ -138,14 +140,30 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1");
 
-        HashSet<string> aliasSet = ["primary"];
-        await subject.SaveAsync(aliasSet, Encapsulation, Metadata);
+        await subject.SaveAsync("primary", Encapsulation, Metadata);
 
         await subject.AddAliasByIdAsync("key-1", "extra");
 
         var found = await subject.FindAsync(new KeyReference("extra", KeyReferenceType.Alias));
         found.Id.Should().Be("key-1");
-        found.Aliases.Should().Contain("extra");
+        found.Alias.Should().Be("extra");
+    }
+
+    [Fact]
+    public async Task AddAliasById_ReplacesAnyExistingAliasOnTheSameKey()
+    {
+        var subject = CreateSubject();
+        SetGeneratedIds("key-1");
+
+        await subject.SaveAsync("primary", Encapsulation, Metadata);
+
+        await subject.AddAliasByIdAsync("key-1", "extra");
+
+        var key = await subject.FindAsync(new KeyReference("key-1", KeyReferenceType.Id));
+        key.Alias.Should().Be("extra");
+
+        var act = () => subject.FindAsync(new KeyReference("primary", KeyReferenceType.Alias));
+        await act.Should().ThrowAsync<EncapsulatedAliasNotFoundException>();
     }
 
     [Fact]
@@ -164,13 +182,12 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1");
 
-        HashSet<string> aliasSet = ["primary"];
-        await subject.SaveAsync(aliasSet, Encapsulation, Metadata);
+        await subject.SaveAsync("primary", Encapsulation, Metadata);
 
         await subject.DeleteAliasByIdAsync("key-1", "primary");
 
         var byId = await subject.FindAsync(new KeyReference("key-1", KeyReferenceType.Id));
-        byId.Aliases.Should().NotContain("primary");
+        byId.Alias.Should().BeNull();
 
         var act = () => subject.FindAsync(new KeyReference("primary", KeyReferenceType.Alias));
         await act.Should().ThrowAsync<EncapsulatedAliasNotFoundException>();
@@ -182,8 +199,7 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1");
 
-        HashSet<string> aliasSet = ["primary"];
-        await subject.SaveAsync(aliasSet, Encapsulation, Metadata);
+        await subject.SaveAsync("primary", Encapsulation, Metadata);
 
         var act = () => subject.DeleteAliasByIdAsync("key-1", "never-added");
 
@@ -191,13 +207,12 @@ public class InMemoryEncapsulatedKeyRepositoryTests
     }
 
     [Fact]
-    public async Task DeleteById_RemovesTheKeyAndItsAliases()
+    public async Task DeleteById_RemovesTheKeyAndItsAlias()
     {
         var subject = CreateSubject();
         SetGeneratedIds("key-1");
 
-        HashSet<string> aliasSet = ["primary"];
-        await subject.SaveAsync(aliasSet, Encapsulation, Metadata);
+        await subject.SaveAsync("primary", Encapsulation, Metadata);
 
         await subject.DeleteByIdAsync("key-1");
 
@@ -224,12 +239,10 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1", "key-2");
 
-        HashSet<string> firstAliases = ["primary"];
-        await subject.SaveAsync(firstAliases, Encapsulation, Metadata);
+        await subject.SaveAsync("primary", Encapsulation, Metadata);
         await subject.DeleteByIdAsync("key-1");
 
-        HashSet<string> secondAliases = ["primary"];
-        await subject.SaveAsync(secondAliases, Encapsulation, Metadata);
+        await subject.SaveAsync("primary", Encapsulation, Metadata);
 
         var byAlias = await subject.FindAsync(new KeyReference("primary", KeyReferenceType.Alias));
         byAlias.Id.Should().Be("key-2");
@@ -241,10 +254,8 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1", "key-2");
 
-        HashSet<string> firstAliases = ["shared"];
-        await subject.SaveAsync(firstAliases, Encapsulation, Metadata);
-        HashSet<string> secondAliases = [];
-        await subject.SaveAsync(secondAliases, Encapsulation, Metadata);
+        await subject.SaveAsync("shared", Encapsulation, Metadata);
+        await subject.SaveAsync(null, Encapsulation, Metadata);
 
         await subject.AddAliasByIdAsync("key-2", "shared");
 
@@ -252,10 +263,10 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         byAlias.Id.Should().Be("key-2");
 
         var losing = await subject.FindAsync(new KeyReference("key-1", KeyReferenceType.Id));
-        losing.Aliases.Should().NotContain("shared");
+        losing.Alias.Should().BeNull();
 
         var gaining = await subject.FindAsync(new KeyReference("key-2", KeyReferenceType.Id));
-        gaining.Aliases.Should().Contain("shared");
+        gaining.Alias.Should().Be("shared");
     }
 
     [Fact]
@@ -264,13 +275,12 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1");
 
-        HashSet<string> aliasSet = ["primary"];
-        await subject.SaveAsync(aliasSet, Encapsulation, Metadata);
+        await subject.SaveAsync("primary", Encapsulation, Metadata);
 
         await subject.AddAliasByIdAsync("key-1", "primary");
 
         var key = await subject.FindAsync(new KeyReference("key-1", KeyReferenceType.Id));
-        key.Aliases.Should().BeEquivalentTo("primary");
+        key.Alias.Should().Be("primary");
 
         var byAlias = await subject.FindAsync(new KeyReference("primary", KeyReferenceType.Alias));
         byAlias.Id.Should().Be("key-1");
@@ -282,33 +292,14 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1", "key-2");
 
-        HashSet<string> firstAliases = ["shared"];
-        await subject.SaveAsync(firstAliases, Encapsulation, Metadata);
+        await subject.SaveAsync("shared", Encapsulation, Metadata);
 
-        HashSet<string> secondAliases = ["shared"];
-        await subject.SaveAsync(secondAliases, Encapsulation, Metadata);
+        await subject.SaveAsync("shared", Encapsulation, Metadata);
 
         var byAlias = await subject.FindAsync(new KeyReference("shared", KeyReferenceType.Alias));
         byAlias.Id.Should().Be("key-2");
 
         var losing = await subject.FindAsync(new KeyReference("key-1", KeyReferenceType.Id));
-        losing.Aliases.Should().NotContain("shared");
-    }
-
-    [Fact]
-    public async Task Save_TakesASnapshotOfTheAliases()
-    {
-        var subject = CreateSubject();
-        SetGeneratedIds("key-1");
-
-        HashSet<string> aliasSet = ["primary"];
-        var saved = await subject.SaveAsync(aliasSet, Encapsulation, Metadata);
-
-        aliasSet.Add("sneaked-in");
-
-        saved.Aliases.Should().BeEquivalentTo("primary");
-
-        var act = () => subject.FindAsync(new KeyReference("sneaked-in", KeyReferenceType.Alias));
-        await act.Should().ThrowAsync<EncapsulatedAliasNotFoundException>();
+        losing.Alias.Should().BeNull();
     }
 }

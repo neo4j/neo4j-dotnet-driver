@@ -27,7 +27,8 @@ namespace Neo4j.Driver.Preview.Encryption;
 /// </summary>
 /// <remarks>
 /// Every method throws if it cannot do what its name says: an unknown id or alias throws rather than returning
-/// null or silently doing nothing.
+/// null or silently doing nothing. A key has at most one alias at a time; binding a new alias to a key replaces
+/// any alias it previously had.
 /// </remarks>
 public interface IEncapsulatedKeyRepository
 {
@@ -39,20 +40,21 @@ public interface IEncapsulatedKeyRepository
     /// <exception cref="EncapsulatedAliasNotFoundException">The alias is not found.</exception>
     Task<EncapsulatedKey> FindAsync(KeyReference keyReference, CancellationToken cancellationToken = default);
 
-    /// <summary>Saves a new encapsulated key under the given aliases.</summary>
-    /// <param name="aliases">The aliases to bind to the new key.</param>
+    /// <summary>Saves a new encapsulated key, optionally under an alias.</summary>
+    /// <param name="alias">The alias to bind to the new key, or <see langword="null"/> to save it unaliased.</param>
     /// <param name="encapsulation">The encapsulated (wrapped) data encryption key.</param>
     /// <param name="metadata">Metadata to persist alongside the key.</param>
     /// <param name="cancellationToken">The cancellation token for the operation.</param>
     /// <returns>The stored key, including its repository-assigned id.</returns>
     Task<EncapsulatedKey> SaveAsync(
-        IEnumerable<string> aliases,
+        string? alias,
         byte[] encapsulation,
         IReadOnlyDictionary<string, string> metadata,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Binds an additional alias to an existing key, moving the alias from any key it was previously bound to.
+    /// Binds an alias to an existing key, replacing any alias it already has and moving the alias from any key
+    /// it was previously bound to.
     /// </summary>
     /// <param name="id">The id of the key to bind the alias to.</param>
     /// <param name="alias">The alias to bind.</param>
@@ -60,7 +62,7 @@ public interface IEncapsulatedKeyRepository
     /// <exception cref="EncapsulatedKeyNotFoundException">The id is not found.</exception>
     Task AddAliasByIdAsync(string id, string alias, CancellationToken cancellationToken = default);
 
-    /// <summary>Removes an alias from a key.</summary>
+    /// <summary>Removes a key's alias.</summary>
     /// <param name="id">The id of the key to remove the alias from.</param>
     /// <param name="alias">The alias to remove.</param>
     /// <param name="cancellationToken">The cancellation token for the operation.</param>
@@ -68,7 +70,7 @@ public interface IEncapsulatedKeyRepository
     /// <exception cref="EncapsulatedAliasNotFoundException">The alias is not bound to the key.</exception>
     Task DeleteAliasByIdAsync(string id, string alias, CancellationToken cancellationToken = default);
 
-    /// <summary>Deletes a key and all of its aliases.</summary>
+    /// <summary>Deletes a key and its alias.</summary>
     /// <param name="id">The id of the key to delete.</param>
     /// <param name="cancellationToken">The cancellation token for the operation.</param>
     /// <exception cref="EncapsulatedKeyNotFoundException">The id is not found.</exception>

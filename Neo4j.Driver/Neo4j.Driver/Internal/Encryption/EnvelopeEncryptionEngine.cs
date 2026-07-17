@@ -66,7 +66,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
     public bool TryStartEncrypt(
         IEncryptionProfile profile,
         object value,
-        KeyReference? keyRef,
+        KeyReference keyRef,
         byte[]? aad,
         CancellationToken cancellationToken,
         out Task<byte[]>? encryptionTask)
@@ -101,15 +101,14 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
     private async Task<byte[]> EncryptAsync(
         IEnvelopeProfile profile,
         object value,
-        KeyReference? keyRef,
+        KeyReference keyRef,
         byte[]? aad,
         CancellationToken cancellationToken)
     {
         var typeName = _propertyTypeNamer.GetValidTypeName(value);
         var plaintext = _plaintextCodec.Serialize(value);
 
-        var key = await profile.KeyRepository.FindAsync(keyRef ?? profile.DefaultKeyReference, cancellationToken)
-            .ConfigureAwait(false);
+        var key = await profile.KeyRepository.FindAsync(keyRef, cancellationToken).ConfigureAwait(false);
 
         var dek = await ResolveDataEncryptionKeyAsync(profile, key, cancellationToken).ConfigureAwait(false);
         var dataKey = _keyDerivation.Derive(dek, DataKeyLength);

@@ -30,7 +30,7 @@ internal interface IEncryptionEngine
     bool TryStartEncrypt(
         IEncryptionProfile profile,
         object value,
-        KeyReference? keyRef,
+        KeyReference keyRef,
         byte[]? aad,
         CancellationToken cancellationToken,
         out Task<byte[]>? encryptionTask);

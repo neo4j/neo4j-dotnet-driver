@@ -23,5 +23,4 @@ internal interface IEnvelopeProfile : IEncryptionProfile
 {
     IKeyEncapsulationService KeyEncapsulationService { get; }
     IEncapsulatedKeyRepository KeyRepository { get; }
-    KeyReference DefaultKeyReference { get; }
 }

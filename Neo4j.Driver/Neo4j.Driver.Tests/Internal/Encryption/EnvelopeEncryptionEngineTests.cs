@@ -46,11 +46,10 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         Fixture.Inject<ICryptoRandomProvider>(new SequentialRandom());
     }
 
-    private IEnvelopeProfile Profile(KeyReference defaultKeyReference)
+    private IEnvelopeProfile Profile()
     {
         var profile = new Mock<IEnvelopeProfile>();
         profile.SetupGet(p => p.Name).Returns(ProfileName);
-        profile.SetupGet(p => p.DefaultKeyReference).Returns(defaultKeyReference);
         profile.SetupGet(p => p.KeyEncapsulationService).Returns(_kes.Object);
         profile.SetupGet(p => p.KeyRepository).Returns(_repository.Object);
         return profile.Object;
@@ -59,7 +58,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
     [Theory]
     [InlineData(null)]
     [InlineData(new byte[] { 0x99 })]
-    public async Task TryStartEncrypt_WithDefaultKeyAlias_EncryptsAndEncodesTheStructure(byte[]? suppliedAad)
+    public async Task TryStartEncrypt_EncryptsAndEncodesTheStructure(byte[]? suppliedAad)
     {
         const long value = 5L;
         var plaintext = new byte[] { 0x10, 0x11 };
@@ -72,7 +71,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         var builtMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
         byte[] expectedAad = suppliedAad ?? [];
 
-        var key = new EncapsulatedKey("key-1", new HashSet<string> { "main" }, encapsulation, options);
+        var key = new EncapsulatedKey("key-1", "main", encapsulation, options);
 
         Freeze<IPlaintextCodec>().Setup(s => s.Serialize(value)).Returns(plaintext);
         Freeze<IPropertyTypeNamer>().Setup(n => n.GetValidTypeName(value)).Returns("INTEGER");
@@ -107,9 +106,9 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
 
         var subject = CreateSubject<EnvelopeEncryptionEngine>();
         var started = subject.TryStartEncrypt(
-            Profile(new KeyReference("main", KeyReferenceType.Alias)),
+            Profile(),
             value,
-            keyRef: null,
+            new KeyReference("main", KeyReferenceType.Alias),
             suppliedAad,
             TestContext.Current.CancellationToken,
             out var encryptedTask);
@@ -145,7 +144,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         var plaintext = new byte[] { 0x10, 0x11 };
         const long value = 5L;
 
-        var key = new EncapsulatedKey("key-1", new HashSet<string> { "main" }, encapsulation, keyMetadata);
+        var key = new EncapsulatedKey("key-1", "main", encapsulation, keyMetadata);
 
         Freeze<IEncryptedStructureCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
         Freeze<IEnvelopeMetadataExtractor>().Setup(e => e.Extract(structureMetadata)).Returns(envelopeMetadata);
@@ -177,7 +176,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
 
         var subject = CreateSubject<EnvelopeEncryptionEngine>();
         var started = subject.TryStartDecrypt(
-            Profile(new KeyReference("main", KeyReferenceType.Alias)),
+            Profile(),
             encrypted,
             suppliedAad,
             TestContext.Current.CancellationToken,
@@ -197,7 +196,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         var result = subject.TryStartEncrypt(
             Mock.Of<IEncryptionProfile>(),
             5L,
-            keyRef: null,
+            keyRef: new KeyReference("main", KeyReferenceType.Alias),
             aad: null,
             TestContext.Current.CancellationToken,
             out var encrypted);

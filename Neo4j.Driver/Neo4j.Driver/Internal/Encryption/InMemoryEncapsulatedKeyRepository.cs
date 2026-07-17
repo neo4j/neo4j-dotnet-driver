@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Preview.Encryption;
@@ -59,7 +58,7 @@ internal class InMemoryEncapsulatedKeyRepository : IEncapsulatedKeyRepository
     }
 
     public Task<EncapsulatedKey> SaveAsync(
-        IEnumerable<string> aliases,
+        string? alias,
         byte[] encapsulation,
         IReadOnlyDictionary<string, string> metadata,
         CancellationToken cancellationToken = default)
@@ -67,11 +66,14 @@ internal class InMemoryEncapsulatedKeyRepository : IEncapsulatedKeyRepository
         lock (_lock)
         {
             var id = _keyIdGenerator.Get();
-            var aliasSet = aliases.ToHashSet();
-            RemoveExistingAliases(aliasSet);
-            var key = new EncapsulatedKey(id, aliasSet, encapsulation, metadata);
+            if (alias is not null)
+            {
+                RemoveExistingAlias(alias);
+            }
+
+            var key = new EncapsulatedKey(id, alias, encapsulation, metadata);
             _idToKey[id] = key;
-            foreach (var alias in aliasSet)
+            if (alias is not null)
             {
                 _aliasToId[alias] = id;
             }
@@ -85,11 +87,14 @@ internal class InMemoryEncapsulatedKeyRepository : IEncapsulatedKeyRepository
         lock (_lock)
         {
             var key = GetKeyByIdOrThrow(id);
-            RemoveExistingAliases([alias]);
+            RemoveExistingAlias(alias);
+            if (key.Alias is not null)
+            {
+                _aliasToId.Remove(key.Alias);
+            }
 
-            var gainingKey = key with { Aliases = key.Aliases + [alias] };
             _aliasToId[alias] = id;
-            _idToKey[id] = gainingKey;
+            _idToKey[id] = key with { Alias = alias };
             return Task.CompletedTask;
         }
     }
@@ -99,15 +104,13 @@ internal class InMemoryEncapsulatedKeyRepository : IEncapsulatedKeyRepository
         lock (_lock)
         {
             var key = GetKeyByIdOrThrow(id);
-            if (!key.Aliases.Contains(alias))
+            if (key.Alias != alias)
             {
                 throw new EncapsulatedAliasNotFoundException(alias);
             }
 
-            var newAliases = key.Aliases.Where(a => a != alias).ToHashSet();
-            var newKey = key with { Aliases = newAliases };
             _aliasToId.Remove(alias);
-            _idToKey[id] = newKey;
+            _idToKey[id] = key with { Alias = null };
             return Task.CompletedTask;
         }
     }
@@ -117,9 +120,9 @@ internal class InMemoryEncapsulatedKeyRepository : IEncapsulatedKeyRepository
         lock (_lock)
         {
             var key = GetKeyByIdOrThrow(id);
-            foreach (var alias in key.Aliases)
+            if (key.Alias is not null)
             {
-                _aliasToId.Remove(alias);
+                _aliasToId.Remove(key.Alias);
             }
 
             _idToKey.Remove(id);
@@ -136,19 +139,14 @@ internal class InMemoryEncapsulatedKeyRepository : IEncapsulatedKeyRepository
             : throw new EncapsulatedKeyNotFoundException(id);
     }
 
-    private void RemoveExistingAliases(IEnumerable<string> aliases)
+    private void RemoveExistingAlias(string alias)
     {
         // assumes lock already held
-        foreach (var alias in aliases)
+        if (!_aliasToId.TryGetValue(alias, out var prevKeyId))
         {
-            if (!_aliasToId.TryGetValue(alias, out var prevKeyId))
-            {
-                continue;
-            }
-
-            var existingKey = GetKeyByIdOrThrow(prevKeyId);
-            var updatedKey = existingKey with { Aliases = existingKey.Aliases - [alias] };
-            _idToKey[prevKeyId] = updatedKey;
+            return;
         }
+
+        _idToKey[prevKeyId] = _idToKey[prevKeyId] with { Alias = null };
     }
 }
