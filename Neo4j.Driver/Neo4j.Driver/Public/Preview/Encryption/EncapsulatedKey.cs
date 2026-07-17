@@ -17,9 +17,14 @@
 
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.Encryption;
+namespace Neo4j.Driver.Preview.Encryption;
 
-internal record EncapsulatedKey(
+/// <summary>An encapsulated data encryption key as stored in an <see cref="IEncapsulatedKeyRepository"/>.</summary>
+/// <param name="Id">The repository-assigned identifier of the key.</param>
+/// <param name="Aliases">The aliases currently bound to this key.</param>
+/// <param name="Encapsulation">The encapsulated (wrapped) data encryption key.</param>
+/// <param name="Metadata">Metadata persisted alongside the key, e.g. the key encapsulation options.</param>
+public record EncapsulatedKey(
     string Id,
     IReadOnlySet<string> Aliases,
     byte[] Encapsulation,

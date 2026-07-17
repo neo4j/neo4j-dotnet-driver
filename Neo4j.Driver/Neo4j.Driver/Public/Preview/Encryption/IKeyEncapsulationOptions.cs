@@ -16,21 +16,16 @@
 #nullable enable
 
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.Encryption;
+namespace Neo4j.Driver.Preview.Encryption;
 
-internal record EncapsulationResult(byte[] Encapsulation, IKeyEncapsulationOptions Options, byte[] Key);
-
-internal interface IKeyEncapsulationService
+/// <summary>
+/// Options passed to <see cref="IKeyEncapsulationService.EncapsulateAsync"/> controlling how a data encryption key
+/// is encapsulated.
+/// </summary>
+public interface IKeyEncapsulationOptions
 {
-    Task<EncapsulationResult> EncapsulateAsync(
-        IKeyEncapsulationOptions options,
-        CancellationToken cancellationToken = default);
-
-    Task<byte[]> DecapsulateAsync(
-        byte[] encapsulation,
-        IReadOnlyDictionary<string, string> options,
-        CancellationToken cancellationToken = default);
+    /// <summary>Converts the options to a flat string-to-string map, e.g. for persistence alongside the encapsulation.</summary>
+    /// <returns>The options as a read-only map.</returns>
+    IReadOnlyDictionary<string, string> ToMap();
 }

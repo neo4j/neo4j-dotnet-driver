@@ -24,6 +24,7 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Encryption;
+using Neo4j.Driver.Preview.Encryption;
 using Xunit;
 using static Neo4j.Driver.Tests.Internal.Encryption.EncryptionTestHelpers;
 

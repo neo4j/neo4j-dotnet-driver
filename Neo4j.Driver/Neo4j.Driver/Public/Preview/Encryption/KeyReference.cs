@@ -15,12 +15,19 @@
 
 #nullable enable
 
-namespace Neo4j.Driver.Internal.Encryption;
+namespace Neo4j.Driver.Preview.Encryption;
 
-internal enum KeyReferenceType
+/// <summary>Distinguishes whether a <see cref="KeyReference"/> refers to a key by its repository-assigned id or by an alias.</summary>
+public enum KeyReferenceType
 {
+    /// <summary>The reference is a repository-assigned key id.</summary>
     Id,
+
+    /// <summary>The reference is an alias bound to a key.</summary>
     Alias
 }
 
-internal record KeyReference(string Reference, KeyReferenceType Type);
+/// <summary>A reference to an encapsulated key, either by id or by alias.</summary>
+/// <param name="Reference">The id or alias value.</param>
+/// <param name="Type">Which kind of reference <paramref name="Reference"/> is.</param>
+public record KeyReference(string Reference, KeyReferenceType Type);

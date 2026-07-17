@@ -15,6 +15,8 @@
 
 #nullable enable
 
+using Neo4j.Driver.Preview.Encryption;
+
 namespace Neo4j.Driver.Internal.Encryption;
 
 internal interface IEnvelopeProfile : IEncryptionProfile

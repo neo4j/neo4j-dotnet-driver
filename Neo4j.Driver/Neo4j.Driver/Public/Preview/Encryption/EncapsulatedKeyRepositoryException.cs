@@ -15,14 +15,15 @@
 
 #nullable enable
 
-using System;
+namespace Neo4j.Driver.Preview.Encryption;
 
-namespace Neo4j.Driver.Internal.Encryption;
+/// <summary>The base exception for failures raised by an <see cref="IEncapsulatedKeyRepository"/>.</summary>
+public class EncapsulatedKeyRepositoryException(string message) : Neo4jException(message);
 
-internal class EncapsulatedKeyRepositoryException(string message) : Exception(message);
-
-internal class EncapsulatedKeyNotFoundException(string id)
+/// <summary>Thrown when an <see cref="IEncapsulatedKeyRepository"/> is asked for a key id it doesn't have.</summary>
+public class EncapsulatedKeyNotFoundException(string id)
     : EncapsulatedKeyRepositoryException($"Encapsulated key with id '{id}' not found.");
 
-internal class EncapsulatedAliasNotFoundException(string alias)
+/// <summary>Thrown when an <see cref="IEncapsulatedKeyRepository"/> is asked for an alias it doesn't have.</summary>
+public class EncapsulatedAliasNotFoundException(string alias)
     : EncapsulatedKeyRepositoryException($"Alias '{alias}' not found.");
