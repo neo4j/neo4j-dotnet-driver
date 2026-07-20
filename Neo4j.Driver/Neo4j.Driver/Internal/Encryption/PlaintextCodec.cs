@@ -22,8 +22,9 @@ namespace Neo4j.Driver.Internal.Encryption;
 
 internal class PlaintextCodec : IPlaintextCodec
 {
-    // 6.1 (UUID) is excluded until UUID support is confirmed
-    private static readonly BoltProtocolVersion PlaintextVersion = BoltProtocolVersion.V6_0;
+    // always serialize at the latest supported version (per ADR 037); UUID is excluded from
+    // the types we encode even though it's within this dialect, until UUID support is confirmed
+    private static readonly BoltProtocolVersion PlaintextVersion = BoltProtocolVersion.V6_1;
 
     private readonly IPackStreamSerializationHelper _packStreamHelper;
     private readonly MessageFormat _format;

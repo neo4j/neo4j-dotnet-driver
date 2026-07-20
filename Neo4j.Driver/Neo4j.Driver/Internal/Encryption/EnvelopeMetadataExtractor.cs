@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
@@ -26,8 +27,10 @@ namespace Neo4j.Driver.Internal.Encryption;
 [DriverAutoRegister(singleton: true)]
 internal class EnvelopeMetadataExtractor : IEnvelopeMetadataExtractor
 {
-    private const int DefaultAadProtocolMajor = 6;
-    private const int DefaultAadProtocolMinor = 0;
+    // aad_protocol_* is absent from older/foreign-driver metadata written before this field
+    // existed - default to the latest baseline, matching the engine's fixed AAD protocol version.
+    private static readonly int DefaultAadProtocolMajor = BoltProtocolVersion.V6_1.MajorVersion;
+    private static readonly int DefaultAadProtocolMinor = BoltProtocolVersion.V6_1.MinorVersion;
 
     public EnvelopeMetadata Extract(IDictionary<string, object> metadata)
     {

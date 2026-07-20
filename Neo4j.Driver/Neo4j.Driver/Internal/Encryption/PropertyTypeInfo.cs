@@ -15,9 +15,8 @@
 
 #nullable enable
 
+using Neo4j.Driver.Internal.Protocol;
+
 namespace Neo4j.Driver.Internal.Encryption;
 
-internal interface IPropertyTypeNamer
-{
-    string GetValidTypeName(object value);
-}
+internal record PropertyTypeInfo(string Name, BoltProtocolVersion Baseline);

@@ -28,11 +28,14 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
 {
     private const int IvLength = 12;
     private const int DataKeyLength = 32;
-    private static readonly int ProtocolMajor = BoltProtocolVersion.V6_0.MajorVersion;
-    private static readonly int ProtocolMinor = BoltProtocolVersion.V6_0.MinorVersion;
+
+    // AAD is opaque bytes at this layer (no typed value to inspect) - fixed at the latest
+    // baseline until the future API layer serializes typed AAD content itself.
+    private static readonly int AadProtocolMajor = BoltProtocolVersion.V6_1.MajorVersion;
+    private static readonly int AadProtocolMinor = BoltProtocolVersion.V6_1.MinorVersion;
 
     private readonly IPlaintextCodec _plaintextCodec;
-    private readonly IPropertyTypeNamer _propertyTypeNamer;
+    private readonly IPropertyTypeInspector _propertyTypeInspector;
     private readonly IKeyDerivation _keyDerivation;
     private readonly IAeadCipher _aeadCipher;
     private readonly IEncryptedStructureCodec _encryptedStructureCodec;
@@ -43,7 +46,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
 
     public EnvelopeEncryptionEngine(
         IPlaintextCodec plaintextCodec,
-        IPropertyTypeNamer propertyTypeNamer,
+        IPropertyTypeInspector propertyTypeInspector,
         IKeyDerivation keyDerivation,
         IAeadCipher aeadCipher,
         IEncryptedStructureCodec encryptedStructureCodec,
@@ -53,7 +56,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         IEnvelopeMetadataBuilder envelopeMetadataBuilder)
     {
         _plaintextCodec = plaintextCodec;
-        _propertyTypeNamer = propertyTypeNamer;
+        _propertyTypeInspector = propertyTypeInspector;
         _keyDerivation = keyDerivation;
         _aeadCipher = aeadCipher;
         _encryptedStructureCodec = encryptedStructureCodec;
@@ -105,7 +108,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         byte[]? aad,
         CancellationToken cancellationToken)
     {
-        var typeName = _propertyTypeNamer.GetValidTypeName(value);
+        var typeInfo = _propertyTypeInspector.GetPropertyTypeInfo(value);
         var plaintext = _plaintextCodec.Serialize(value);
 
         var key = await profile.KeyRepository.FindAsync(keyRef, cancellationToken).ConfigureAwait(false);
@@ -123,17 +126,17 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
             key.Id,
             iv,
             aad,
-            ProtocolMajor,
-            ProtocolMinor,
+            AadProtocolMajor,
+            AadProtocolMinor,
             new Dictionary<string, object>());
 
         var metadata = _envelopeMetadataBuilder.Build(envelopeMetadata);
         var structure = new EncryptedStructure(
             profile.Name,
             cipherResult.Combined,
-            typeName,
-            ProtocolMajor,
-            ProtocolMinor,
+            typeInfo.Name,
+            typeInfo.Baseline.MajorVersion,
+            typeInfo.Baseline.MinorVersion,
             metadata);
 
         return _encryptedStructureCodec.Encode(structure);

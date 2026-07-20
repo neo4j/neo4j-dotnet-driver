@@ -23,8 +23,9 @@ namespace Neo4j.Driver.Internal.Encryption;
 [DriverAutoRegister(singleton: true)]
 internal class EncryptedStructureCodec : IEncryptedStructureCodec
 {
-    // 6.1 (UUID) is excluded until UUID support is confirmed
-    private static readonly BoltProtocolVersion StructureVersion = BoltProtocolVersion.V6_0;
+    // always serialize at the latest supported version (per ADR 037); UUID is excluded from
+    // the types we encode even though it's within this dialect, until UUID support is confirmed
+    private static readonly BoltProtocolVersion StructureVersion = BoltProtocolVersion.V6_1;
     private const byte EncryptedSignature = 0x65;
     private const int FieldCount = 7;
     private const int StructureFormatVersion = 1;

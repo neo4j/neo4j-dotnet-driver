@@ -17,45 +17,54 @@
 
 using System;
 using System.Collections;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
 [DriverAutoRegister(singleton: true)]
-internal class PropertyTypeNamer : IPropertyTypeNamer
+internal class PropertyTypeInspector : IPropertyTypeInspector
 {
-    public string GetValidTypeName(object value)
+    private static readonly BoltProtocolVersion Baseline1_0 = new(1, 0);
+
+    public PropertyTypeInfo GetPropertyTypeInfo(object value)
     {
-        return GetValidTypeName(value, allowList: true);
+        return GetPropertyTypeInfo(value, allowList: true);
     }
 
-    private static string GetValidTypeName(object value, bool allowList)
+    private static PropertyTypeInfo GetPropertyTypeInfo(object value, bool allowList)
     {
         return value switch
         {
-            bool => "BOOLEAN",
-            long => "INTEGER",
-            double => "FLOAT",
-            string => "STRING",
-            byte[] => "BYTES",
+            bool => new PropertyTypeInfo("BOOLEAN", Baseline1_0),
+            long => new PropertyTypeInfo("INTEGER", Baseline1_0),
+            double => new PropertyTypeInfo("FLOAT", Baseline1_0),
+            string => new PropertyTypeInfo("STRING", Baseline1_0),
+            byte[] => new PropertyTypeInfo("BYTES", Baseline1_0),
 
             // if this isn't explicitly disallowed, an empty dictionary
             // would pass the next check and be treated as a valid property type
             IDictionary => throw Unsupported(value),
 
-            IEnumerable e when allowList => ValidateList(e),
+            IEnumerable e when allowList => GetListTypeInfo(e),
 
             _ => throw Unsupported(value)
         };
     }
 
-    private static string ValidateList(IEnumerable list)
+    private static PropertyTypeInfo GetListTypeInfo(IEnumerable list)
     {
+        var baseline = Baseline1_0;
+
         foreach (var item in list)
         {
-            GetValidTypeName(item, allowList: false);
+            var itemInfo = GetPropertyTypeInfo(item, allowList: false);
+            if (itemInfo.Baseline > baseline)
+            {
+                baseline = itemInfo.Baseline;
+            }
         }
 
-        return "LIST";
+        return new PropertyTypeInfo("LIST", baseline);
     }
 
     private static ArgumentException Unsupported(object value)

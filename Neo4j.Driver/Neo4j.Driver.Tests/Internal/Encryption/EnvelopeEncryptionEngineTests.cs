@@ -25,6 +25,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Encryption;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Preview.Encryption;
 using Xunit;
 using static Neo4j.Driver.Tests.Internal.Encryption.EncryptionTestHelpers;
@@ -74,7 +75,9 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         var key = new EncapsulatedKey("key-1", "main", encapsulation, options);
 
         Freeze<IPlaintextCodec>().Setup(s => s.Serialize(value)).Returns(plaintext);
-        Freeze<IPropertyTypeNamer>().Setup(n => n.GetValidTypeName(value)).Returns("INTEGER");
+        Freeze<IPropertyTypeInspector>()
+            .Setup(n => n.GetPropertyTypeInfo(value))
+            .Returns(new PropertyTypeInfo("INTEGER", new BoltProtocolVersion(1, 0)));
         _repository.Setup(r => r.FindAsync(
                 new KeyReference("main", KeyReferenceType.Alias),
                 It.IsAny<CancellationToken>()))
@@ -228,7 +231,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
     {
         return s.ProfileName == ProfileName &&
             s.TypeName == "INTEGER" &&
-            s.TypeProtocolMajor == 6 &&
+            s.TypeProtocolMajor == 1 &&
             s.TypeProtocolMinor == 0 &&
             s.CipherOutput.SequenceEqual(expectedCipherOutput) &&
             ReferenceEquals(s.Metadata, expectedMetadata);
@@ -241,6 +244,6 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             m.Iv.SequenceEqual(Iv) &&
             m.Aad.SequenceEqual(expectedAad) &&
             m.AadProtocolMajor == 6 &&
-            m.AadProtocolMinor == 0);
+            m.AadProtocolMinor == 1);
     }
 }
