@@ -107,6 +107,7 @@ internal sealed class ConnectionPool : IConnectionPool
 
     private int MaxIdlePoolSize => DriverContext.Config.MaxIdleConnectionPoolSize;
     private TimeSpan ConnectionAcquisitionTimeout => DriverContext.Config.ConnectionAcquisitionTimeout;
+    private TimeSpan ConnectionTimeout => DriverContext.Config.ConnectionTimeout;
     private int MaxPoolSize => DriverContext.Config.MaxConnectionPoolSize;
 
     private bool IsClosed => AtomicRead(ref _poolStatus) == Closed;
@@ -511,8 +512,12 @@ internal sealed class ConnectionPool : IConnectionPool
             {
                 try
                 {
-                    await connection.ResetAsync(cancellationToken).ConfigureAwait(false);
-                    await connection.SyncAsync(cancellationToken).ConfigureAwait(false);
+                    using var probeTimeoutSource =
+                        CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+                    probeTimeoutSource.CancelAfter(ConnectionTimeout);
+                    await connection.ResetAsync(probeTimeoutSource.Token).ConfigureAwait(false);
+                    await connection.SyncAsync(probeTimeoutSource.Token).ConfigureAwait(false);
                 }
                 catch
                 {
