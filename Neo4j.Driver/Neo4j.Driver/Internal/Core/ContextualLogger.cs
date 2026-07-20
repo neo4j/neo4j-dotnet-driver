@@ -40,6 +40,11 @@ internal class ContextualLogger : ILogger
         Exception? exception,
         Func<TState, Exception?, string> formatter)
     {
+        if (!_downstream.IsEnabled(logLevel))
+        {
+            return;
+        }
+
         using var scope = _downstream.BeginScope(_tracker.Contexts.AsMicrosoftStateItems().ToList());
         _downstream.Log(logLevel, eventId, state, exception, formatter);
     }

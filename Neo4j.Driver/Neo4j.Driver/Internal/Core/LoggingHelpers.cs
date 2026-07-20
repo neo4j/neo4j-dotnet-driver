@@ -28,7 +28,8 @@ internal static class LoggingHelpers
     public static bool TryBuildScopePrefix<TState>(TState state, [NotNullWhen(true)] out string? prefix)
         where TState : notnull
     {
-        if (state is not IEnumerable<KeyValuePair<string, object?>> contexts)
+        // LogParams is message state, not scope context, even though it has the same enumerable shape.
+        if (state is LogParams || state is not IEnumerable<KeyValuePair<string, object?>> contexts)
         {
             prefix = null;
             return false;
@@ -43,16 +44,28 @@ internal static class LoggingHelpers
         [NotNullWhen(true)] out string? format, 
         [NotNullWhen(true)] out object?[]? args)
     {
-        if (state is not IEnumerable<KeyValuePair<string, object>> list)
+        if (state is not LogParams logParams)
         {
             format = null;
             args = null;
             return false;
         }
 
-        var dict = list.ToDictionary(kv => kv.Key, object? (kv) => kv.Value);
-        args = dict.Where(kv => kv.Key != OriginalFormatStringKey).Select(kv => kv.Value).ToArray();
-        format = dict.GetValueOrDefault(OriginalFormatStringKey)?.ToString() ?? "";
+        format = "";
+        var extractedArgs = new List<object?>(logParams.Count);
+        foreach (var kv in logParams)
+        {
+            if (kv.Key == OriginalFormatStringKey)
+            {
+                format = kv.Value?.ToString() ?? "";
+            }
+            else
+            {
+                extractedArgs.Add(kv.Value);
+            }
+        }
+
+        args = extractedArgs.ToArray();
         return true;
     }
 }

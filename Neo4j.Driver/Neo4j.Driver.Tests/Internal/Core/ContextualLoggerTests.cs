@@ -30,6 +30,11 @@ public class ContextualLoggerTests
     private readonly Mock<ILogger> _downstream = new();
     private readonly LoggingContextTracker _tracker = new();
 
+    public ContextualLoggerTests()
+    {
+        _downstream.Setup(d => d.IsEnabled(It.IsAny<LogLevel>())).Returns(true);
+    }
+
     private ContextualLogger CreateSubject() => new(_tracker, _downstream.Object);
 
     [Fact]
@@ -80,6 +85,25 @@ public class ContextualLoggerTests
         subject.Log(LogLevel.Debug, new EventId(0, ""), "state", null, (_, _) => "unused");
 
         capturedScope.Should().ContainSingle().Which.Should().Be(new KeyValuePair<string, object?>("sid", 456));
+    }
+
+    [Fact]
+    public void Log_WhenLevelDisabled_DoesNotBeginScopeOrLog()
+    {
+        _downstream.Setup(d => d.IsEnabled(LogLevel.Debug)).Returns(false);
+        var subject = CreateSubject();
+
+        subject.Log(LogLevel.Debug, new EventId(0, ""), "state", null, (_, _) => "unused");
+
+        _downstream.Verify(d => d.BeginScope(It.IsAny<List<KeyValuePair<string, object?>>>()), Times.Never);
+        _downstream.Verify(
+            d => d.Log(
+                It.IsAny<LogLevel>(),
+                It.IsAny<EventId>(),
+                It.IsAny<string>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<string, Exception?, string>>()),
+            Times.Never);
     }
 
     [Fact]

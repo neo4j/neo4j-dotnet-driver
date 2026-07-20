@@ -16,7 +16,7 @@
 #nullable enable
 
 using System;
-using System.Text.RegularExpressions;
+using System.Threading;
 using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal;
@@ -25,7 +25,7 @@ internal class LegacyLoggerAdapter : ILogger
 {
     private readonly INeo4jLogger _legacyLogger;
     private readonly Type _loggingType;
-    private string _scopePrefix = "";
+    private readonly AsyncLocal<string?> _scopePrefix = new();
 
     public LegacyLoggerAdapter(INeo4jLogger legacyLogger, Type loggingType)
     {
@@ -35,13 +35,16 @@ internal class LegacyLoggerAdapter : ILogger
 
     private string GetModifiedFormat(string messageTemplate)
     {
-        // replace "{id}, {name}" with "{0}, {1}""
+        // Replace "{id}, {name:D3}" with "{0}, {1:D3}", preserving alignment/format suffixes.
+        // Must use the same placeholder definition as LogParams so args stay paired with placeholders.
         var index = 0;
-        var indexedFormat = Regex.Replace(messageTemplate, @"\{[^}]+\}", _ => $"{{{index++}}}");
+        var indexedFormat = LogParams.PlaceholderRegex.Replace(
+            messageTemplate,
+            m => $"{{{index++}{m.Groups[2].Value}}}");
 
         // add the name of the type that's doing the logging
         var typeName = _loggingType.Name;
-        var finalFormat = $"[{typeName}] {_scopePrefix}{indexedFormat}";
+        var finalFormat = $"[{typeName}] {_scopePrefix.Value}{indexedFormat}";
 
         return finalFormat;
     }
@@ -106,8 +109,8 @@ internal class LegacyLoggerAdapter : ILogger
             return null;
         }
 
-        var previous = _scopePrefix;
-        _scopePrefix = prefix;
-        return new ActionDisposable(() => _scopePrefix = previous);
+        var previous = _scopePrefix.Value;
+        _scopePrefix.Value = prefix;
+        return new ActionDisposable(() => _scopePrefix.Value = previous);
     }
 }

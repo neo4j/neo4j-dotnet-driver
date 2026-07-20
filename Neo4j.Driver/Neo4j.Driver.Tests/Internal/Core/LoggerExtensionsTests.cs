@@ -30,6 +30,7 @@ public class LoggerExtensionsTests
 
     public LoggerExtensionsTests()
     {
+        _logger.Setup(l => l.IsEnabled(It.IsAny<LogLevel>())).Returns(true);
         _logger
             .Setup(
                 l => l.Log(
@@ -76,6 +77,16 @@ public class LoggerExtensionsTests
                 It.IsAny<LogParams>(),
                 exception,
                 It.IsAny<Func<LogParams, Exception?, string>>()));
+    }
+
+    [Fact]
+    public void Log_WhenLevelDisabled_DoesNotCallDownstreamLog()
+    {
+        _logger.Setup(l => l.IsEnabled(LogLevel.Debug)).Returns(false);
+
+        _logger.Object.LogDebug("value is {x}", 42);
+
+        _capturedState.Should().BeNull();
     }
 
     [Fact]

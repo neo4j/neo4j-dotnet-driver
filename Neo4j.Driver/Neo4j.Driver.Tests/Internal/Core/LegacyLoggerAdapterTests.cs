@@ -16,6 +16,8 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Moq;
 using Neo4j.Driver.Internal;
 using Xunit;
@@ -107,5 +109,44 @@ public class LegacyLoggerAdapterTests
             .Verify(l => l.Debug(
                 $$"""[{{TypeName}}] no placeholders here""",
                 It.IsAny<object[]>()));
+    }
+
+    [Fact]
+    public void Debug_PlaceholderWithFormatSpecifier_PairsArgAndPreservesSpecifier()
+    {
+        _subject.LogDebug("took {ms:D3}ms", 42);
+
+        _mockLegacyLogger
+            .Verify(l => l.Debug(
+                $$"""[{{TypeName}}] took {0:D3}ms""",
+                It.Is<object[]>(a => a.Length == 1 && a[0].Equals(42))));
+    }
+
+    [Fact]
+    public void Debug_PlaceholderWithAlignment_PairsArgAndPreservesAlignment()
+    {
+        _subject.LogDebug("value {value,10}", "x");
+
+        _mockLegacyLogger
+            .Verify(l => l.Debug(
+                $$"""[{{TypeName}}] value {0,10}""",
+                It.Is<object[]>(a => a.Length == 1 && a[0].Equals("x"))));
+    }
+
+    [Fact]
+    public async Task BeginScope_InOneAsyncFlow_DoesNotLeakIntoAnother()
+    {
+        var scopeState = new[] { new KeyValuePair<string, object?>("tx", "tx-1") };
+
+        await Task.Run(() =>
+        {
+            using var scope = _subject.BeginScope(scopeState);
+            _subject.LogDebug("inside");
+        });
+
+        _subject.LogDebug("outside");
+
+        _mockLegacyLogger.Verify(l => l.Debug($$"""[{{TypeName}}] [tx:tx-1] inside""", It.IsAny<object[]>()));
+        _mockLegacyLogger.Verify(l => l.Debug($$"""[{{TypeName}}] outside""", It.IsAny<object[]>()));
     }
 }
