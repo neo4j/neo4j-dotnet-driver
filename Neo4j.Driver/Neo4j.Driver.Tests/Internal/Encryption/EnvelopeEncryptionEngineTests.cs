@@ -191,6 +191,137 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         result.Should().Be(value);
     }
 
+    [Theory]
+    [InlineData(7, 0, "7.0")]
+    [InlineData(6, 2, "6.2")]
+    public async Task TryStartDecrypt_TypeBaselineNewerThanLatestKnown_ReturnsUnsupportedType(
+        int typeProtocolMajor,
+        int typeProtocolMinor,
+        string expectedMinimumVersion)
+    {
+        var encrypted = new byte[] { 0xEE };
+        var structure = new EncryptedStructure(
+            ProfileName,
+            [0xC0, 0xD0],
+            "VECTOR",
+            typeProtocolMajor,
+            typeProtocolMinor,
+            new Dictionary<string, object>());
+
+        Freeze<IEncryptedStructureCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
+
+        var subject = CreateSubject<EnvelopeEncryptionEngine>();
+        var started = subject.TryStartDecrypt(
+            Profile(),
+            encrypted,
+            aad: null,
+            TestContext.Current.CancellationToken,
+            out var decryptedTask);
+
+        started.Should().BeTrue();
+        var result = await decryptedTask!;
+
+        var unsupported = result.Should().BeOfType<UnsupportedType>().Subject;
+        unsupported.Name.Should().Be("VECTOR");
+        unsupported.MinimumProtocolVersion.Should().Be(expectedMinimumVersion);
+    }
+
+    [Fact]
+    public async Task TryStartDecrypt_NoSuppliedAadWithAadBaselineNewerThanLatestKnown_UsesPersistedAadWithoutThrowing()
+    {
+        var encrypted = new byte[] { 0xEE };
+        var cipherOutput = new byte[] { 0xC0, 0xD0 };
+        var persistedAad = new byte[] { 0xAA };
+        var structureMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
+        var structure = new EncryptedStructure(ProfileName, cipherOutput, "INTEGER", 1, 0, structureMetadata);
+        var envelopeMetadata = new EnvelopeMetadata(
+            "key-1",
+            Iv,
+            persistedAad,
+            AadProtocolMajor: 7,
+            AadProtocolMinor: 0,
+            new Dictionary<string, object>());
+
+        var encapsulation = new byte[] { 0xBB };
+        var keyMetadata = new Dictionary<string, string> { ["iv"] = "wrap-iv" };
+        var dek = Sequence(32, seed: 0x30);
+        var dataKey = Sequence(32, seed: 0x40);
+        var plaintext = new byte[] { 0x10, 0x11 };
+        const long value = 5L;
+
+        var key = new EncapsulatedKey("key-1", "main", encapsulation, keyMetadata);
+
+        Freeze<IEncryptedStructureCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
+        Freeze<IEnvelopeMetadataExtractor>().Setup(e => e.Extract(structureMetadata)).Returns(envelopeMetadata);
+
+        _repository.Setup(r => r.FindAsync(
+                new KeyReference("key-1", KeyReferenceType.Id),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(key);
+
+        byte[]? cacheMiss = null;
+        Freeze<IEncryptionKeyCache>()
+            .Setup(c => c.TryGet(ProfileName, "key-1", out cacheMiss))
+            .Returns(false);
+
+        _kes.Setup(k => k.DecapsulateAsync(
+                Matches(encapsulation),
+                It.IsAny<IReadOnlyDictionary<string, string>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(dek);
+
+        Freeze<IKeyDerivation>().Setup(d => d.Derive(Matches(dek), 32)).Returns(dataKey);
+        Freeze<IAeadCipher>()
+            .Setup(c => c.Decrypt(Matches(dataKey), Matches(Iv), Matches(cipherOutput), Matches(persistedAad)))
+            .Returns(plaintext);
+
+        Freeze<IPlaintextCodec>().Setup(d => d.Deserialize(Matches(plaintext))).Returns(value);
+
+        var subject = CreateSubject<EnvelopeEncryptionEngine>();
+        var started = subject.TryStartDecrypt(
+            Profile(),
+            encrypted,
+            aad: null,
+            TestContext.Current.CancellationToken,
+            out var decryptedTask);
+
+        started.Should().BeTrue();
+        var result = await decryptedTask!;
+
+        result.Should().Be(value);
+    }
+
+    [Fact]
+    public async Task TryStartDecrypt_SuppliedAadWithAadBaselineNewerThanLatestKnown_Throws()
+    {
+        var encrypted = new byte[] { 0xEE };
+        var structureMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
+        var structure = new EncryptedStructure(ProfileName, [0xC0, 0xD0], "INTEGER", 1, 0, structureMetadata);
+        var envelopeMetadata = new EnvelopeMetadata(
+            "key-1",
+            Iv,
+            [0xAA],
+            AadProtocolMajor: 7,
+            AadProtocolMinor: 0,
+            new Dictionary<string, object>());
+
+        Freeze<IEncryptedStructureCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
+        Freeze<IEnvelopeMetadataExtractor>().Setup(e => e.Extract(structureMetadata)).Returns(envelopeMetadata);
+
+        var subject = CreateSubject<EnvelopeEncryptionEngine>();
+        var started = subject.TryStartDecrypt(
+            Profile(),
+            encrypted,
+            aad: [0x99],
+            TestContext.Current.CancellationToken,
+            out var decryptedTask);
+
+        started.Should().BeTrue();
+        var act = async () => await decryptedTask!;
+
+        await act.Should().ThrowAsync<ClientException>();
+    }
+
     [Fact]
     public void TryStartEncrypt_WithNonEnvelopeProfile_ReturnsFalse()
     {

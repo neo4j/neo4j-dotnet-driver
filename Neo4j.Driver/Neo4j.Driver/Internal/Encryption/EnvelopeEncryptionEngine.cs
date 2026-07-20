@@ -16,6 +16,7 @@
 #nullable enable
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Protocol;
@@ -149,7 +150,14 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         CancellationToken cancellationToken)
     {
         var structure = _encryptedStructureCodec.Decode(encrypted);
+
+        if (IsUnsupportedBaselineType(structure, out var unsupported))
+        {
+            return unsupported;
+        }
+
         var metadata = _envelopeMetadataExtractor.Extract(structure.Metadata);
+        EnsureAadProtocolCompatibility(aad, metadata);
         var key = await profile.KeyRepository
             .FindAsync(new KeyReference(metadata.KeyId, KeyReferenceType.Id), cancellationToken)
             .ConfigureAwait(false);
@@ -159,6 +167,42 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         var aadToUse = aad ?? metadata.Aad;
         var plaintext = _aeadCipher.Decrypt(dataKey, metadata.Iv, structure.CipherOutput, aadToUse);
         return _plaintextCodec.Deserialize(plaintext);
+    }
+
+    private static bool IsUnsupportedBaselineType(
+        EncryptedStructure structure,
+        [NotNullWhen(true)] out UnsupportedType? unsupported)
+    {
+        var typeBaseline = new BoltProtocolVersion(structure.TypeProtocolMajor, structure.TypeProtocolMinor);
+        if (typeBaseline > BoltProtocolVersion.LatestVersion)
+        {
+            unsupported = new UnsupportedType(
+                structure.TypeName,
+                structure.TypeProtocolMajor,
+                structure.TypeProtocolMinor,
+                null);
+
+            return true;
+        }
+
+        unsupported = null;
+        return false;
+    }
+
+    private static void EnsureAadProtocolCompatibility(byte[]? aad, EnvelopeMetadata metadata)
+    {
+        if (aad == null)
+        {
+            return;
+        }
+
+        var aadBaseline = new BoltProtocolVersion(metadata.AadProtocolMajor, metadata.AadProtocolMinor);
+        if (aadBaseline > BoltProtocolVersion.LatestVersion)
+        {
+            throw new ClientException(
+                $"Cannot reproduce AAD bytes: recorded AAD protocol version {aadBaseline} is newer than " +
+                $"the maximum supported version {BoltProtocolVersion.LatestVersion}.");
+        }
     }
 
     private async Task<byte[]> ResolveDataEncryptionKeyAsync(
