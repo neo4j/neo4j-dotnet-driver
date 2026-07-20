@@ -73,7 +73,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         KeyReference keyRef,
         byte[]? aad,
         CancellationToken cancellationToken,
-        out Task<byte[]>? encryptionTask)
+        [NotNullWhen(true)] out Task<byte[]>? encryptionTask)
     {
         if (profile is not IEnvelopeProfile envelopeProfile)
         {
@@ -90,7 +90,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         byte[] encrypted,
         byte[]? aad,
         CancellationToken cancellationToken,
-        out Task<object>? decryptionTask)
+        [NotNullWhen(true)] out Task<object>? decryptionTask)
     {
         if (profile is not IEnvelopeProfile envelopeProfile)
         {

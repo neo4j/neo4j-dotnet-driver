@@ -15,32 +15,27 @@
 
 #nullable enable
 
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-internal interface IEncryptionEngine
+// Finds the IEncryptionEngine that accepts the given profile (via TryStartEncrypt/
+// TryStartDecrypt's pattern-match) and awaits its result. Throws
+// EncryptionEngineNotFoundException if no registered engine accepts the profile.
+internal interface IEncryptionEngineDispatcher
 {
-    // If the encryption profile is supported, start the encryption process.
-    // If the return value is false, the encryption profile is not supported
-    // and the encryptionTask will be null. If true, the profile is supported
-    // and the encryptionTask will be a task that will complete with the encrypted value.
-    bool TryStartEncrypt(
+    Task<byte[]> DispatchEncryptAsync(
         IEncryptionProfile profile,
         object value,
         KeyReference keyRef,
         byte[]? aad,
-        CancellationToken cancellationToken,
-        [NotNullWhen(true)] out Task<byte[]>? encryptionTask);
+        CancellationToken cancellationToken);
 
-    // Works the same as TryStartEncrypt. 
-    bool TryStartDecrypt(
+    Task<object> DispatchDecryptAsync(
         IEncryptionProfile profile,
         byte[] encrypted,
         byte[]? aad,
-        CancellationToken cancellationToken,
-        [NotNullWhen(true)] out Task<object>? decryptionTask);
+        CancellationToken cancellationToken);
 }
