@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Neo4j.Driver.Internal.DependencyInjection;
+using Neo4j.Driver.Internal.Encryption;
 
 namespace Neo4j.Driver.Internal;
 
@@ -26,6 +27,12 @@ internal static class RootContainerFactory
         container.RegisterInstance(context);
         container.RegisterInstance(context.Neo4JLogger);
         container.RegisterModule<LoggingModule>();
+
+        foreach (var profile in context.Config.Preview_PropertyEncryptionProfiles)
+        {
+            container.RegisterInstance((IInternalEncryptionProfile)profile);
+        }
+
         return container;
     }
 }

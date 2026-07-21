@@ -16,6 +16,8 @@
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Encryption;
+using Neo4j.Driver.Preview.Encryption;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal;
@@ -26,6 +28,20 @@ public class RootContainerFactoryTests
     {
         var config = logger is null ? new Config() : Config.Builder.WithLogger(logger).Build();
         return new DriverContext(new("bolt://localhost"), null, config);
+    }
+
+    private static DriverContext ContextWithProfiles(params IPropertyEncryptionProfile[] profiles)
+    {
+        var config = Config.Builder.WithPropertyEncryptionProfiles(profiles).Build();
+        return new DriverContext(new("bolt://localhost"), null, config);
+    }
+
+    private static IPropertyEncryptionProfile EnvelopeProfile(string name)
+    {
+        return PropertyEncryptionProfile.Envelope(
+            name,
+            Mock.Of<IKeyEncapsulationService>(),
+            Mock.Of<IEncapsulatedKeyRepository>());
     }
 
     [Fact]
@@ -59,5 +75,28 @@ public class RootContainerFactoryTests
 
         userLogger.Verify(
             x => x.Debug("[RootContainerFactoryTests] value is {0}", It.Is<object[]>(a => a[0].Equals(42))));
+    }
+
+    [Fact]
+    public void Build_RegistersConfiguredEncryptionProfilesIntoTheRegistry()
+    {
+        var profile = EnvelopeProfile("p");
+
+        var scope = RootContainerFactory.Build(ContextWithProfiles(profile));
+
+        scope.Resolve<IEncryptionProfileRegistry>().Get("p").Should().BeSameAs(profile);
+    }
+
+    [Fact]
+    public void Build_RegistersEveryConfiguredEncryptionProfile()
+    {
+        var a = EnvelopeProfile("a");
+        var b = EnvelopeProfile("b");
+
+        var scope = RootContainerFactory.Build(ContextWithProfiles(a, b));
+
+        var registry = scope.Resolve<IEncryptionProfileRegistry>();
+        registry.Get("a").Should().BeSameAs(a);
+        registry.Get("b").Should().BeSameAs(b);
     }
 }
