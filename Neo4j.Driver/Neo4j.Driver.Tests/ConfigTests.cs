@@ -21,8 +21,10 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector.Trust;
+using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Types;
+using Neo4j.Driver.Preview.Encryption;
 using Xunit;
 
 namespace Neo4j.Driver.Tests;
@@ -67,6 +69,14 @@ public class ConfigTests
             config.NullableEncryptionLevel.Should().BeNull();
             config.EncryptionLevel.Should().Be(EncryptionLevel.None);
             config.TrustManager.Should().BeNull();
+        }
+
+        [Fact]
+        public void EncryptionProfiles_ShouldDefaultToEmpty()
+        {
+            var config = new Config();
+
+            config.Preview_EncryptionProfiles.Should().BeEmpty();
         }
 
         [Fact]
@@ -464,6 +474,52 @@ public class ConfigTests
                 .Which
                 .MinimumSeverity.Should()
                 .Be(Severity.Warning);
+        }
+
+        // this class implements our internal IEncryptionProfile interface which is how
+        // we know it's one we created
+        private class ValidProfile(string name) : IEncryptionProfile
+        {
+            public string Name => name;
+        }
+
+        [Fact]
+        public void WithEncryptionProfiles_ShouldSetTheProfiles()
+        {
+            var profile = new ValidProfile("profile-1");
+            var config = Config.Builder.WithEncryptionProfiles([profile]).Build();
+            config.EncryptionProfiles.Should().ContainSingle().Which.Should().Be(profile);
+        }
+
+        [Fact]
+        public void EncryptionProfiles_PublicGetter_ReturnsTheConfiguredProfiles()
+        {
+            var profile = new ValidProfile("profile-1");
+            var config = Config.Builder.WithEncryptionProfiles([profile]).Build();
+
+            config.EncryptionProfiles.Should().ContainSingle().Which.Should().Be(profile);
+        }
+
+        // this class only implements the public IPropertyEncryptionProfile interface, which is just the wrapper
+        // interface we use to avoid leaking encryption internals to public scope
+        private class AttackerProfile : IPropertyEncryptionProfile
+        {
+            public string Name => "thisisfine";
+        }
+
+        [Fact]
+        public void WithEncryptionProfiles_ShouldThrowWithInvalidProfile()
+        {
+            var profile = new AttackerProfile();
+            var act = () => Config.Builder.WithEncryptionProfiles([profile]).Build();
+            act.Should().Throw<ArgumentException>();
+        }
+
+        [Fact]
+        public void WithEncryptionProfiles_ShouldThrowWhenProfilesNull()
+        {
+            var act = () => Config.Builder.WithEncryptionProfiles(null);
+            act.Should().Throw<ArgumentNullException>();
         }
 
         private class MockTlsNegotiator : ITlsNegotiator
