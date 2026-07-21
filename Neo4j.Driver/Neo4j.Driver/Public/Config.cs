@@ -257,7 +257,7 @@ public class Config
     /// </summary>
     public ITlsNegotiator TlsNegotiator { get; internal set; }
 
-    internal IReadOnlyList<IPropertyEncryptionProfile> Preview_EncryptionProfiles { get; set; } = [];
+    internal IReadOnlyList<IPropertyEncryptionProfile> Preview_PropertyEncryptionProfiles { get; set; } = [];
 }
 
 /// <summary>The configuration for the driver's underlying message reading from the network.</summary>

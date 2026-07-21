@@ -19,7 +19,7 @@ using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-internal interface IEnvelopeProfile : IEncryptionProfile
+internal interface IEnvelopeEncryptionProfile : IInternalEncryptionProfile
 {
     IKeyEncapsulationService KeyEncapsulationService { get; }
     IEncapsulatedKeyRepository KeyRepository { get; }

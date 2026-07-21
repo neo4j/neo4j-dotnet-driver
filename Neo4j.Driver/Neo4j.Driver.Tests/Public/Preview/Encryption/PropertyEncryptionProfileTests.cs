@@ -45,7 +45,7 @@ public class PropertyEncryptionProfileTests
 
         var profile = PropertyEncryptionProfile.Envelope("profile-name", kes, repository);
 
-        var envelope = profile.Should().BeAssignableTo<IEnvelopeProfile>().Subject;
+        var envelope = profile.Should().BeAssignableTo<IEnvelopeEncryptionProfile>().Subject;
         envelope.KeyEncapsulationService.Should().BeSameAs(kes);
         envelope.KeyRepository.Should().BeSameAs(repository);
     }

@@ -72,11 +72,11 @@ public class ConfigTests
         }
 
         [Fact]
-        public void EncryptionProfiles_ShouldDefaultToEmpty()
+        public void PropertyEncryptionProfiles_ShouldDefaultToEmpty()
         {
             var config = new Config();
 
-            config.Preview_EncryptionProfiles.Should().BeEmpty();
+            config.Preview_PropertyEncryptionProfiles.Should().BeEmpty();
         }
 
         [Fact]
@@ -476,28 +476,28 @@ public class ConfigTests
                 .Be(Severity.Warning);
         }
 
-        // this class implements our internal IEncryptionProfile interface which is how
+        // this class implements our internal IInternalEncryptionProfile interface which is how
         // we know it's one we created
-        private class ValidProfile(string name) : IEncryptionProfile
+        private class ValidProfile(string name) : IInternalEncryptionProfile
         {
             public string Name => name;
         }
 
         [Fact]
-        public void WithEncryptionProfiles_ShouldSetTheProfiles()
+        public void WithPropertyEncryptionProfiles_ShouldSetTheProfiles()
         {
             var profile = new ValidProfile("profile-1");
-            var config = Config.Builder.WithEncryptionProfiles([profile]).Build();
-            config.EncryptionProfiles.Should().ContainSingle().Which.Should().Be(profile);
+            var config = Config.Builder.WithPropertyEncryptionProfiles([profile]).Build();
+            config.PropertyEncryptionProfiles.Should().ContainSingle().Which.Should().Be(profile);
         }
 
         [Fact]
-        public void EncryptionProfiles_PublicGetter_ReturnsTheConfiguredProfiles()
+        public void PropertyEncryptionProfiles_PublicGetter_ReturnsTheConfiguredProfiles()
         {
             var profile = new ValidProfile("profile-1");
-            var config = Config.Builder.WithEncryptionProfiles([profile]).Build();
+            var config = Config.Builder.WithPropertyEncryptionProfiles([profile]).Build();
 
-            config.EncryptionProfiles.Should().ContainSingle().Which.Should().Be(profile);
+            config.PropertyEncryptionProfiles.Should().ContainSingle().Which.Should().Be(profile);
         }
 
         // this class only implements the public IPropertyEncryptionProfile interface, which is just the wrapper
@@ -508,17 +508,17 @@ public class ConfigTests
         }
 
         [Fact]
-        public void WithEncryptionProfiles_ShouldThrowWithInvalidProfile()
+        public void WithPropertyEncryptionProfiles_ShouldThrowWithInvalidProfile()
         {
             var profile = new AttackerProfile();
-            var act = () => Config.Builder.WithEncryptionProfiles([profile]).Build();
+            var act = () => Config.Builder.WithPropertyEncryptionProfiles([profile]).Build();
             act.Should().Throw<ArgumentException>();
         }
 
         [Fact]
-        public void WithEncryptionProfiles_ShouldThrowWhenProfilesNull()
+        public void WithPropertyEncryptionProfiles_ShouldThrowWhenProfilesNull()
         {
-            var act = () => Config.Builder.WithEncryptionProfiles(null);
+            var act = () => Config.Builder.WithPropertyEncryptionProfiles(null);
             act.Should().Throw<ArgumentNullException>();
         }
 

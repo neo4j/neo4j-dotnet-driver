@@ -29,7 +29,7 @@ internal interface IEncryptionEngine
     // and the encryptionTask will be null. If true, the profile is supported
     // and the encryptionTask will be a task that will complete with the encrypted value.
     bool TryStartEncrypt(
-        IEncryptionProfile profile,
+        IInternalEncryptionProfile profile,
         object value,
         KeyReference keyRef,
         byte[]? aad,
@@ -38,7 +38,7 @@ internal interface IEncryptionEngine
 
     // Works the same as TryStartEncrypt. 
     bool TryStartDecrypt(
-        IEncryptionProfile profile,
+        IInternalEncryptionProfile profile,
         byte[] encrypted,
         byte[]? aad,
         CancellationToken cancellationToken,

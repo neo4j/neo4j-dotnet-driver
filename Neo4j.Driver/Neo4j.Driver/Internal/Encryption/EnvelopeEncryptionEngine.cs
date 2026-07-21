@@ -68,14 +68,14 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
     }
 
     public bool TryStartEncrypt(
-        IEncryptionProfile profile,
+        IInternalEncryptionProfile profile,
         object value,
         KeyReference keyRef,
         byte[]? aad,
         CancellationToken cancellationToken,
         [NotNullWhen(true)] out Task<byte[]>? encryptionTask)
     {
-        if (profile is not IEnvelopeProfile envelopeProfile)
+        if (profile is not IEnvelopeEncryptionProfile envelopeProfile)
         {
             encryptionTask = null;
             return false;
@@ -86,13 +86,13 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
     }
 
     public bool TryStartDecrypt(
-        IEncryptionProfile profile,
+        IInternalEncryptionProfile profile,
         byte[] encrypted,
         byte[]? aad,
         CancellationToken cancellationToken,
         [NotNullWhen(true)] out Task<object>? decryptionTask)
     {
-        if (profile is not IEnvelopeProfile envelopeProfile)
+        if (profile is not IEnvelopeEncryptionProfile envelopeProfile)
         {
             decryptionTask = null;
             return false;
@@ -103,7 +103,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
     }
 
     private async Task<byte[]> EncryptAsync(
-        IEnvelopeProfile profile,
+        IEnvelopeEncryptionProfile profile,
         object value,
         KeyReference keyRef,
         byte[]? aad,
@@ -144,7 +144,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
     }
 
     private async Task<object> DecryptAsync(
-        IEnvelopeProfile profile,
+        IEnvelopeEncryptionProfile profile,
         byte[] encrypted,
         byte[]? aad,
         CancellationToken cancellationToken)
@@ -206,7 +206,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
     }
 
     private async Task<byte[]> ResolveDataEncryptionKeyAsync(
-        IEnvelopeProfile profile,
+        IEnvelopeEncryptionProfile profile,
         EncapsulatedKey key,
         CancellationToken cancellationToken = default)
     {

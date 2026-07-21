@@ -25,9 +25,9 @@ namespace Neo4j.Driver.Tests.Internal.Encryption;
 
 public class EncryptionProfileRegistryTests
 {
-    private static IEncryptionProfile Profile(string name)
+    private static IInternalEncryptionProfile Profile(string name)
     {
-        return Mock.Of<IEncryptionProfile>(p => p.Name == name);
+        return Mock.Of<IInternalEncryptionProfile>(p => p.Name == name);
     }
 
     [Fact]

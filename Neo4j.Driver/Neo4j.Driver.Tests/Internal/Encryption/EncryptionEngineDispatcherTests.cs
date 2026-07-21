@@ -27,7 +27,8 @@ namespace Neo4j.Driver.Tests.Internal.Encryption;
 
 public class EncryptionEngineDispatcherTests
 {
-    private static readonly IEncryptionProfile Profile = Mock.Of<IEncryptionProfile>(p => p.Name == "profile-a");
+    private static readonly IInternalEncryptionProfile Profile =
+        Mock.Of<IInternalEncryptionProfile>(p => p.Name == "profile-a");
     private static readonly KeyReference KeyRef = new("key-1", KeyReferenceType.Id);
 
     [Fact]

@@ -19,6 +19,6 @@ using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-internal interface IEncryptionProfile : IPropertyEncryptionProfile
+internal interface IInternalEncryptionProfile : IPropertyEncryptionProfile
 {
 }

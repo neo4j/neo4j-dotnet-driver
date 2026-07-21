@@ -24,9 +24,9 @@ namespace Neo4j.Driver.Internal.Encryption;
 [DriverAutoRegister(singleton: true)]
 internal class EncryptionProfileRegistry : IEncryptionProfileRegistry
 {
-    private readonly Dictionary<string, IEncryptionProfile> _profilesByName = new();
+    private readonly Dictionary<string, IInternalEncryptionProfile> _profilesByName = new();
 
-    public EncryptionProfileRegistry(IEnumerable<IEncryptionProfile> profiles)
+    public EncryptionProfileRegistry(IEnumerable<IInternalEncryptionProfile> profiles)
     {
         foreach (var profile in profiles)
         {
@@ -39,7 +39,7 @@ internal class EncryptionProfileRegistry : IEncryptionProfileRegistry
         }
     }
 
-    public IEncryptionProfile Get(string? name)
+    public IInternalEncryptionProfile Get(string? name)
     {
         if (name is null)
         {

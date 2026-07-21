@@ -47,9 +47,9 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         Fixture.Inject<ICryptoRandomProvider>(new SequentialRandom());
     }
 
-    private IEnvelopeProfile Profile()
+    private IEnvelopeEncryptionProfile Profile()
     {
-        var profile = new Mock<IEnvelopeProfile>();
+        var profile = new Mock<IEnvelopeEncryptionProfile>();
         profile.SetupGet(p => p.Name).Returns(ProfileName);
         profile.SetupGet(p => p.KeyEncapsulationService).Returns(_kes.Object);
         profile.SetupGet(p => p.KeyRepository).Returns(_repository.Object);
@@ -328,7 +328,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         var subject = CreateSubject<EnvelopeEncryptionEngine>();
 
         var result = subject.TryStartEncrypt(
-            Mock.Of<IEncryptionProfile>(),
+            Mock.Of<IInternalEncryptionProfile>(),
             5L,
             keyRef: new KeyReference("main", KeyReferenceType.Alias),
             aad: null,
@@ -345,7 +345,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         var subject = CreateSubject<EnvelopeEncryptionEngine>();
 
         var result = subject.TryStartDecrypt(
-            Mock.Of<IEncryptionProfile>(),
+            Mock.Of<IInternalEncryptionProfile>(),
             [0xEE],
             aad: null,
             TestContext.Current.CancellationToken,

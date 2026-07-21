@@ -19,5 +19,5 @@ namespace Neo4j.Driver.Internal.Encryption;
 
 internal interface IEncryptionProfileRegistry
 {
-    IEncryptionProfile Get(string? name);
+    IInternalEncryptionProfile Get(string? name);
 }

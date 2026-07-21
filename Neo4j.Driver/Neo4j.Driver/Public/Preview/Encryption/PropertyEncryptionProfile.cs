@@ -40,6 +40,6 @@ public static class PropertyEncryptionProfile
         ArgumentNullException.ThrowIfNull(keyEncapsulationService);
         ArgumentNullException.ThrowIfNull(keyRepository);
 
-        return new EnvelopePropertyEncryptionProfile(name, keyEncapsulationService, keyRepository);
+        return new EnvelopeEncryptionProfile(name, keyEncapsulationService, keyRepository);
     }
 }

@@ -36,8 +36,8 @@ public static class EncryptionPreviewExtensions
         /// This method is part of the encryption preview and is subject to change or removal.
         /// </summary>
         /// <value>A read-only list of property encryption profiles.</value>
-        public IReadOnlyList<IPropertyEncryptionProfile> EncryptionProfiles =>
-            config.Preview_EncryptionProfiles;
+        public IReadOnlyList<IPropertyEncryptionProfile> PropertyEncryptionProfiles =>
+            config.Preview_PropertyEncryptionProfiles;
     }
 
     extension(ConfigBuilder configBuilder)
@@ -47,11 +47,12 @@ public static class EncryptionPreviewExtensions
         /// Encryption profiles define how specific properties should be encrypted when stored in the database.
         /// This method is part of the encryption preview and is subject to change or removal.
         /// </summary>
-        /// <param name="encryptionProfiles">A read-only list of property encryption profiles to be used for encrypting and decrypting properties.</param>
+        /// <param name="propertyEncryptionProfiles">A read-only list of property encryption profiles to be used for encrypting and decrypting properties.</param>
         /// <returns>The current <see cref="ConfigBuilder"/> instance to allow method chaining.</returns>
-        public ConfigBuilder WithEncryptionProfiles(IReadOnlyList<IPropertyEncryptionProfile> encryptionProfiles)
+        public ConfigBuilder WithPropertyEncryptionProfiles(
+            IReadOnlyList<IPropertyEncryptionProfile> propertyEncryptionProfiles)
         {
-            return configBuilder.Preview_WithEncryptionProfiles(encryptionProfiles);
+            return configBuilder.Preview_WithPropertyEncryptionProfiles(propertyEncryptionProfiles);
         }
     }
 }

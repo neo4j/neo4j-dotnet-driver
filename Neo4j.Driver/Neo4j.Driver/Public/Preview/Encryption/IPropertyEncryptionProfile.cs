@@ -20,7 +20,7 @@ namespace Neo4j.Driver.Preview.Encryption;
 /// <summary>
 /// Configures a client-side property encryption profile. Create instances via
 /// <see cref="PropertyEncryptionProfile"/> and pass them to
-/// <c>ConfigBuilder.WithEncryptionProfiles</c>.
+/// <c>ConfigBuilder.WithPropertyEncryptionProfiles</c>.
 /// </summary>
 public interface IPropertyEncryptionProfile
 {

@@ -617,17 +617,18 @@ public sealed class ConfigBuilder
         return this;
     }
 
-    internal ConfigBuilder Preview_WithEncryptionProfiles(IReadOnlyList<IPropertyEncryptionProfile> encryptionProfiles)
+    internal ConfigBuilder Preview_WithPropertyEncryptionProfiles(
+        IReadOnlyList<IPropertyEncryptionProfile> propertyEncryptionProfiles)
     {
-        ArgumentNullException.ThrowIfNull(encryptionProfiles);
+        ArgumentNullException.ThrowIfNull(propertyEncryptionProfiles);
 
-        if(!encryptionProfiles.All(x => x is IEncryptionProfile))
+        if(!propertyEncryptionProfiles.All(x => x is IInternalEncryptionProfile))
         {
             throw new ArgumentException(
                 "Encryption profiles must be built using a factory method in the PropertyEncryptionProfile class."
-                , nameof(encryptionProfiles));
+                , nameof(propertyEncryptionProfiles));
         }
-        _config.Preview_EncryptionProfiles = encryptionProfiles;
+        _config.Preview_PropertyEncryptionProfiles = propertyEncryptionProfiles;
         return this;
     }
 }

@@ -27,14 +27,14 @@ namespace Neo4j.Driver.Internal.Encryption;
 internal interface IEncryptionEngineDispatcher
 {
     Task<byte[]> DispatchEncryptAsync(
-        IEncryptionProfile profile,
+        IInternalEncryptionProfile profile,
         object value,
         KeyReference keyRef,
         byte[]? aad,
         CancellationToken cancellationToken);
 
     Task<object> DispatchDecryptAsync(
-        IEncryptionProfile profile,
+        IInternalEncryptionProfile profile,
         byte[] encrypted,
         byte[]? aad,
         CancellationToken cancellationToken);
