@@ -78,6 +78,14 @@ public class RootContainerFactoryTests
     }
 
     [Fact]
+    public void Build_ResolvesPropertyEncryption()
+    {
+        var scope = RootContainerFactory.Build(Context());
+
+        scope.Resolve<IPropertyEncryption>().Should().NotBeNull();
+    }
+
+    [Fact]
     public void Build_RegistersConfiguredEncryptionProfilesIntoTheRegistry()
     {
         var profile = EnvelopeProfile("p");

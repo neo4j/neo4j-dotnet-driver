@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
+using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal;
 
@@ -50,6 +51,11 @@ internal sealed class Driver : IInternalDriver
     private bool IsClosed => _closedMarker > 0;
     public bool Encrypted => Context.EncryptionManager.UseTls;
     public Config Config => Context.Config;
+
+    public IPropertyEncryption PropertyEncryption()
+    {
+        return _rootScope.Resolve<IPropertyEncryption>();
+    }
 
     public IBookmarkManager GetExecutableQueryBookmarkManager()
     {

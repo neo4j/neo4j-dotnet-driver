@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.Preview.Encryption;
 
@@ -26,6 +27,20 @@ namespace Neo4j.Driver.Preview.Encryption;
 /// </summary>
 public static class EncryptionPreviewExtensions
 {
+    extension(IDriver driver)
+    {
+        /// <summary>
+        /// Gets the client-side property encryption entry point for this driver. Use it to encrypt
+        /// and decrypt property values and to manage encapsulated keys. This method is part of the
+        /// encryption preview and is subject to change or removal.
+        /// </summary>
+        /// <returns>The <see cref="IPropertyEncryption"/> entry point for this driver.</returns>
+        public IPropertyEncryption PropertyEncryption()
+        {
+            return ((IInternalDriver)driver).PropertyEncryption();
+        }
+    }
+
     extension(Config config)
     {
         /// <summary>

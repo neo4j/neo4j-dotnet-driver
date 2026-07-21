@@ -19,6 +19,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.DependencyInjection;
+using Neo4j.Driver.Preview.Encryption;
 using Xunit;
 using InternalDriver = Neo4j.Driver.Internal.Driver;
 
@@ -133,6 +134,21 @@ public class DriverTests
         var ex = Record.Exception(() => driver.AsyncSession());
         ex.Should().NotBeNull();
         ex.Should().BeOfType<ObjectDisposedException>();
+    }
+
+    [Fact]
+    public void PropertyEncryptionResolvesFromRootScope()
+    {
+        var propertyEncryption = Mock.Of<IPropertyEncryption>();
+        var scope = new Mock<IResolutionScope>();
+        scope.Setup(x => x.Resolve<IPropertyEncryption>()).Returns(propertyEncryption);
+        var driver = new InternalDriver(
+            new Uri("bolt://localhost"),
+            Mock.Of<IProtocolAdapter>(),
+            TestDriverContext.MockContext,
+            scope.Object);
+
+        driver.PropertyEncryption().Should().BeSameAs(propertyEncryption);
     }
 
     [Fact]

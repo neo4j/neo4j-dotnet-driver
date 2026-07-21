@@ -17,11 +17,14 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal;
 
 internal interface IInternalDriver : IDriver
 {
+    IPropertyEncryption PropertyEncryption();
+
     IInternalAsyncSession Session(Action<SessionConfigBuilder> action, bool reactive);
 
     Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
