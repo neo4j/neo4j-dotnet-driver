@@ -14,17 +14,8 @@
 // limitations under the License.
 
 #nullable enable
+namespace Neo4j.Driver.Internal;
 
-using System;
-using System.Diagnostics.CodeAnalysis;
-
-namespace Neo4j.Driver.Internal.DependencyInjection;
-
-internal interface IResolutionInterceptor
-{
-    bool TryResolve(
-        Type serviceType,
-        Type? requestingType,
-        IServiceResolver resolver,
-        [NotNullWhen(true)] out object? service);
-}
+// Stands in for the requesting type when ILogger is resolved directly rather than injected,
+// so log lines are attributed to "[UnknownLoggingSource]" instead of throwing on a null type.
+internal class UnknownLoggingSource;

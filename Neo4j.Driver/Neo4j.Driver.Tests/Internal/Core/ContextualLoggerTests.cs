@@ -88,6 +88,23 @@ public class ContextualLoggerTests
     }
 
     [Fact]
+    public void Log_WithNoTrackedContexts_SkipsBeginScope()
+    {
+        var subject = CreateSubject();
+
+        subject.Log(LogLevel.Debug, new EventId(0, ""), "state", null, (_, _) => "unused");
+
+        _downstream.Verify(d => d.BeginScope(It.IsAny<List<KeyValuePair<string, object?>>>()), Times.Never);
+        _downstream.Verify(
+            d => d.Log(
+                LogLevel.Debug,
+                new EventId(0, ""),
+                "state",
+                null,
+                It.IsAny<Func<string, Exception?, string>>()));
+    }
+
+    [Fact]
     public void Log_WhenLevelDisabled_DoesNotBeginScopeOrLog()
     {
         _downstream.Setup(d => d.IsEnabled(LogLevel.Debug)).Returns(false);
@@ -109,6 +126,7 @@ public class ContextualLoggerTests
     [Fact]
     public void Log_DisposesDownstreamScopeAfterLogging()
     {
+        _tracker.Add("sid", 456);
         var scopeMock = new Mock<IDisposable>();
         _downstream.Setup(d => d.BeginScope(It.IsAny<List<KeyValuePair<string, object?>>>())).Returns(scopeMock.Object);
         var subject = CreateSubject();

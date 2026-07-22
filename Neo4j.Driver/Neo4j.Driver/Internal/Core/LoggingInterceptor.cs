@@ -13,29 +13,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#nullable enable
+
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal;
 
 internal class LoggingInterceptor : IResolutionInterceptor
 {
-    private ILoggerFactory _loggerFactory;
+    private readonly ILoggerFactory _loggerFactory;
 
     public LoggingInterceptor(ILoggerFactory loggerFactory)
     {
         _loggerFactory = loggerFactory;
     }
 
-    public bool TryResolve(Type serviceType, Type requestingType, IServiceResolver resolver, out object service)
+    public bool TryResolve(
+        Type serviceType,
+        Type? requestingType,
+        IServiceResolver resolver,
+        [NotNullWhen(true)] out object? service)
     {
         if (serviceType == typeof(ILogger))
         {
             var tracker = resolver.Resolve<ILoggingContextTracker>();
-            service = _loggerFactory.GetLoggerForType(requestingType, tracker);
+            service = _loggerFactory.GetLoggerForType(requestingType ?? typeof(UnknownLoggingSource), tracker);
             return true;
         }
-        
+
         service = null;
         return false;
     }

@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Xunit;
@@ -142,6 +143,64 @@ public class LegacyLoggerAdapterTests
             .Verify(l => l.Debug(
                 $$$"""[{{{TypeName}}}] {0} then {{b}}""",
                 It.Is<object[]>(a => a.Length == 1 && a[0].Equals(1))));
+    }
+
+    // The invariant for the whole adapter: whatever template it hands to the legacy logger
+    // must survive String.Format with the args it supplies, no matter how hostile the input.
+    [Theory]
+    [InlineData("plain {name} placeholder", "x")]
+    [InlineData("specifier {ms:D3} and alignment {v,10}", 42, "x")]
+    [InlineData("stray { open brace")]
+    [InlineData("stray } close brace")]
+    [InlineData("{not a placeholder!}")]
+    [InlineData("mel-style {{escaped}} braces")]
+    [InlineData("mel-style {{name}} escaped placeholder", "x")]
+    [InlineData("json {\"a\": {\"b\": 1}} payload")]
+    [InlineData("{}")]
+    [InlineData("under-supplied {a} then {b}", 1)]
+    [InlineData("over-supplied {a}", 1, 2)]
+    [InlineData("braces in {arg} value", "{value}")]
+    public void Debug_AlwaysProducesTemplateThatSurvivesStringFormat(string template, params object[] args)
+    {
+        string? capturedTemplate = null;
+        object[]? capturedArgs = null;
+        _mockLegacyLogger
+            .Setup(l => l.Debug(It.IsAny<string>(), It.IsAny<object[]>()))
+            .Callback<string, object[]>((t, a) =>
+            {
+                capturedTemplate = t;
+                capturedArgs = a;
+            });
+
+        _subject.LogDebug(template, args);
+
+        capturedTemplate.Should().NotBeNull();
+        var act = () => string.Format(capturedTemplate!, capturedArgs!);
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Debug_WithBracesInScopeContextValue_ProducesTemplateThatSurvivesStringFormat()
+    {
+        string? capturedTemplate = null;
+        object[]? capturedArgs = null;
+        _mockLegacyLogger
+            .Setup(l => l.Debug(It.IsAny<string>(), It.IsAny<object[]>()))
+            .Callback<string, object[]>((t, a) =>
+            {
+                capturedTemplate = t;
+                capturedArgs = a;
+            });
+        var scopeState = new[] { new KeyValuePair<string, object?>("db", "{graph}") };
+
+        using (_subject.BeginScope(scopeState))
+        {
+            _subject.LogDebug("hello {name}", "x");
+        }
+
+        capturedTemplate.Should().NotBeNull();
+        var act = () => string.Format(capturedTemplate!, capturedArgs!);
+        act.Should().NotThrow();
     }
 
     [Fact]

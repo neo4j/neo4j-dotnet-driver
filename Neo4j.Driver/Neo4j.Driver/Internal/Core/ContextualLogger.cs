@@ -45,7 +45,14 @@ internal class ContextualLogger : ILogger
             return;
         }
 
-        using var scope = _downstream.BeginScope(_tracker.Contexts.AsMicrosoftStateItems().ToList());
+        var contexts = _tracker.Contexts;
+        if (contexts.Count == 0)
+        {
+            _downstream.Log(logLevel, eventId, state, exception, formatter);
+            return;
+        }
+
+        using var scope = _downstream.BeginScope(contexts.AsMicrosoftStateItems().ToList());
         _downstream.Log(logLevel, eventId, state, exception, formatter);
     }
 

@@ -16,6 +16,7 @@
 #nullable enable
 
 using System;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Neo4j.Driver.Internal.Util;
@@ -36,30 +37,54 @@ internal class LegacyLoggerAdapter : ILogger
 
     private string GetModifiedFormat(string messageTemplate, int argCount)
     {
-        // Replace "{id}, {name:D3}" with "{0}, {1:D3}", preserving alignment/format suffixes.
-        // Placeholders beyond the supplied args are escaped to render literally rather than
-        // making String.Format throw into the calling path.
+        var format = new StringBuilder();
+        format.Append('[').Append(_loggingType.Name).Append("] ");
+        AppendEscaped(format, _scopePrefix.Value);
+
         var index = 0;
-        var indexedFormat = LogParams.PlaceholderRegex.Replace(messageTemplate, RewritePlaceholder);
-
-        // add the name of the type that's doing the logging
-        var typeName = _loggingType.Name;
-        var finalFormat = $"[{typeName}] {_scopePrefix.Value}{indexedFormat}";
-
-        return finalFormat;
-
-        string RewritePlaceholder(Match match)
+        var position = 0;
+        foreach (Match match in LogParams.PlaceholderRegex.Matches(messageTemplate))
         {
-            if (index >= argCount)
+            AppendEscaped(format, messageTemplate[position..match.Index]);
+            if (index < argCount)
             {
-                // No arg for this placeholder: wrapping in another {} renders the placeholder literally.
-                return $"{{{match.Value}}}";
+                var suffix = match.Groups["suffix"].Value; // includes its leading ':' or ',' if present
+                format.Append('{').Append(index++).Append(suffix).Append('}');
+            }
+            else
+            {
+                // No arg for this placeholder: render it literally.
+                AppendEscaped(format, match.Value);
             }
 
-            var suffix = match.Groups["suffix"].Value;
-            var result = $"{{{index}{suffix}}}"; // suffix already includes leading ':' or ',' if present
-            ++index;
-            return result;
+            position = match.Index + match.Length;
+        }
+
+        AppendEscaped(format, messageTemplate[position..]);
+        return format.ToString();
+    }
+
+    private static void AppendEscaped(StringBuilder builder, string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        foreach (var ch in text)
+        {
+            switch (ch)
+            {
+                case '{':
+                    builder.Append("{{");
+                    break;
+                case '}':
+                    builder.Append("}}");
+                    break;
+                default:
+                    builder.Append(ch);
+                    break;
+            }
         }
     }
 

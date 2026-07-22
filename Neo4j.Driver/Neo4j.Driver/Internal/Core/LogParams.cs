@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal;
 
 internal partial class LogParams : IReadOnlyList<KeyValuePair<string, object?>>
 {
-    // Single source of truth for message-template placeholders ({name}, {name,alignment}, {name:format}).
+    // finds {x} or {x:y} or {x,y}
     [GeneratedRegex(@"\{(?<name>\w+)(?<suffix>[,:][^}]*)?\}", RegexOptions.Compiled)]
     private static partial Regex GeneratePlaceholderRegex();
     internal static readonly Regex PlaceholderRegex = GeneratePlaceholderRegex();

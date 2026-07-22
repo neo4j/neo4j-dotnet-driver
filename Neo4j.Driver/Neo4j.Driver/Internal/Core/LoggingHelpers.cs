@@ -28,24 +28,14 @@ internal static class LoggingHelpers
     public static bool TryBuildScopePrefix<TState>(TState state, [NotNullWhen(true)] out string? prefix)
         where TState : notnull
     {
-        // LogParams is message state, not scope context, even though it has the same enumerable shape.
         if (state is LogParams || state is not IEnumerable<KeyValuePair<string, object?>> contexts)
         {
             prefix = null;
             return false;
         }
 
-        // The prefix ends up inside a String.Format() format string, so braces must be escaped.
-        prefix = string.Concat(contexts.Select(kvp => DoubleBraces($"[{kvp.Key}:{kvp.Value}] ")));
-
+        prefix = string.Concat(contexts.Select(kvp => $"[{kvp.Key}:{kvp.Value}] "));
         return true;
-    }
-
-    private static string DoubleBraces(string input)
-    {
-        return input
-            .Replace("{", "{{")
-            .Replace("}", "}}");
     }
 
     public static bool ExtractFormatAndArguments<TState>(
