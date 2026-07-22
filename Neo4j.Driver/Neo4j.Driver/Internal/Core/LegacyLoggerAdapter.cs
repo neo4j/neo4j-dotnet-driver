@@ -16,6 +16,7 @@
 #nullable enable
 
 using System;
+using System.Text.RegularExpressions;
 using System.Threading;
 using Neo4j.Driver.Internal.Util;
 
@@ -33,20 +34,33 @@ internal class LegacyLoggerAdapter : ILogger
         _loggingType = loggingType;
     }
 
-    private string GetModifiedFormat(string messageTemplate)
+    private string GetModifiedFormat(string messageTemplate, int argCount)
     {
         // Replace "{id}, {name:D3}" with "{0}, {1:D3}", preserving alignment/format suffixes.
-        // Must use the same placeholder definition as LogParams so args stay paired with placeholders.
+        // Placeholders beyond the supplied args are escaped to render literally rather than
+        // making String.Format throw into the calling path.
         var index = 0;
-        var indexedFormat = LogParams.PlaceholderRegex.Replace(
-            messageTemplate,
-            m => $"{{{index++}{m.Groups[2].Value}}}");
+        var indexedFormat = LogParams.PlaceholderRegex.Replace(messageTemplate, RewritePlaceholder);
 
         // add the name of the type that's doing the logging
         var typeName = _loggingType.Name;
         var finalFormat = $"[{typeName}] {_scopePrefix.Value}{indexedFormat}";
 
         return finalFormat;
+
+        string RewritePlaceholder(Match match)
+        {
+            if (index >= argCount)
+            {
+                // No arg for this placeholder: wrapping in another {} renders the placeholder literally.
+                return $"{{{match.Value}}}";
+            }
+
+            var suffix = match.Groups["suffix"].Value;
+            var result = $"{{{index}{suffix}}}"; // suffix already includes leading ':' or ',' if present
+            ++index;
+            return result;
+        }
     }
 
     public void Log<TState>(
@@ -66,7 +80,7 @@ internal class LegacyLoggerAdapter : ILogger
             return;
         }
 
-        var template = GetModifiedFormat(format);
+        var template = GetModifiedFormat(format, args.Length);
         switch (logLevel)
         {
             case LogLevel.Trace:

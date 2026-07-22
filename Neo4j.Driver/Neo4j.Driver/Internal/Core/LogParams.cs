@@ -26,8 +26,7 @@ namespace Neo4j.Driver.Internal;
 internal partial class LogParams : IReadOnlyList<KeyValuePair<string, object?>>
 {
     // Single source of truth for message-template placeholders ({name}, {name,alignment}, {name:format}).
-    // Group 1 is the parameter name; group 2 is the optional alignment/format suffix.
-    [GeneratedRegex(@"\{(\w+)([,:][^}]*)?\}", RegexOptions.Compiled)]
+    [GeneratedRegex(@"\{(?<name>\w+)(?<suffix>[,:][^}]*)?\}", RegexOptions.Compiled)]
     private static partial Regex GeneratePlaceholderRegex();
     internal static readonly Regex PlaceholderRegex = GeneratePlaceholderRegex();
     private readonly List<KeyValuePair<string, object?>> _extractedList;
@@ -56,7 +55,7 @@ internal partial class LogParams : IReadOnlyList<KeyValuePair<string, object?>>
     private static List<string> ExtractParameterNames(string messageTemplate)
     {
         var matches = PlaceholderRegex.Matches(messageTemplate);
-        return [..matches.Select(m => m.Groups[1].Value)];
+        return [..matches.Select(m => m.Groups["name"].Value)];
     }
 
     public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
