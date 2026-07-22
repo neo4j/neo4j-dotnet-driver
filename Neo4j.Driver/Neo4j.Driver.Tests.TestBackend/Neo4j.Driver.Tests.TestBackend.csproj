@@ -3,28 +3,16 @@
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
         <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <Configurations>Debug;Release;CI</Configurations>
-        <LangVersion>default</LangVersion>
         <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
-    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-      <Optimize Condition=" '$(Optimize)' == '' ">true</Optimize>
-      <SignAssembly>true</SignAssembly>
-      <DelaySign>false</DelaySign>
-      <AssemblyOriginatorKeyFile>..\neo4j.snk</AssemblyOriginatorKeyFile>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <PackageReference Include="BouncyCastle.Cryptography" Version="2.4.0"/>
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.1"/>
-    </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj"/>
     </ItemGroup>
-
-
 </Project>

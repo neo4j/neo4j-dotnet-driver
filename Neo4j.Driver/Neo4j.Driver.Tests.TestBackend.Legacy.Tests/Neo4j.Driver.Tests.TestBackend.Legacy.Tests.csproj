@@ -18,6 +18,6 @@
         </PackageReference>
     </ItemGroup>
     <ItemGroup>
-        <ProjectReference Include="..\Neo4j.Driver.Tests.TestBackend\Neo4j.Driver.Tests.TestBackend.csproj" />
+        <ProjectReference Include="..\Neo4j.Driver.Tests.TestBackend.Legacy\Neo4j.Driver.Tests.TestBackend.Legacy.csproj" />
     </ItemGroup>
 </Project>
