@@ -40,6 +40,17 @@ public class LoggingHelpersTests
     }
 
     [Fact]
+    public void TryBuildScopePrefix_WithBracesInContextValue_EscapesThemForFormatting()
+    {
+        var state = new[] { new KeyValuePair<string, object?>("db", "{graph}") };
+
+        var result = LoggingHelpers.TryBuildScopePrefix(state, out var prefix);
+
+        result.Should().BeTrue();
+        prefix.Should().Be("[db:{{graph}}] ");
+    }
+
+    [Fact]
     public void TryBuildScopePrefix_WithNonContextState_ReturnsFalse()
     {
         var result = LoggingHelpers.TryBuildScopePrefix("not a context", out var prefix);

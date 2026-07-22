@@ -35,13 +35,22 @@ internal static class LoggingHelpers
             return false;
         }
 
-        prefix = string.Concat(contexts.Select(kvp => $"[{kvp.Key}:{kvp.Value}] "));
+        // The prefix ends up inside a String.Format() format string, so braces must be escaped.
+        prefix = string.Concat(contexts.Select(kvp => DoubleBraces($"[{kvp.Key}:{kvp.Value}] ")));
+
         return true;
     }
 
+    private static string DoubleBraces(string input)
+    {
+        return input
+            .Replace("{", "{{")
+            .Replace("}", "}}");
+    }
+
     public static bool ExtractFormatAndArguments<TState>(
-        TState state, 
-        [NotNullWhen(true)] out string? format, 
+        TState state,
+        [NotNullWhen(true)] out string? format,
         [NotNullWhen(true)] out object?[]? args)
     {
         if (state is not LogParams logParams)

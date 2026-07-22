@@ -134,6 +134,17 @@ public class LegacyLoggerAdapterTests
     }
 
     [Fact]
+    public void Debug_WithFewerArgsThanPlaceholders_EscapesUnmatchedPlaceholdersInsteadOfThrowing()
+    {
+        _subject.LogDebug("{a} then {b}", 1);
+
+        _mockLegacyLogger
+            .Verify(l => l.Debug(
+                $$$"""[{{{TypeName}}}] {0} then {{b}}""",
+                It.Is<object[]>(a => a.Length == 1 && a[0].Equals(1))));
+    }
+
+    [Fact]
     public async Task BeginScope_InOneAsyncFlow_DoesNotLeakIntoAnother()
     {
         var scopeState = new[] { new KeyValuePair<string, object?>("tx", "tx-1") };
