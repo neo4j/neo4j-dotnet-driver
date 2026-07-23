@@ -21,11 +21,13 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-public class Program
+public class TestkitBackend
 {
     public static Task Main(string[] args)
     {
@@ -49,15 +51,15 @@ public class Program
                         listen => listen.UseConnectionHandler<TestkitConnectionHandler>());
                 }))
             .Build();
-
+                  
+        Console.WriteLine("Testkit backend starting up...");
         return host.RunAsync();
     }
 
-    // Testkit launches the backend as `<dll> <address> <port> [logfile]`; positional args
-    // override appsettings.json.
     private static Dictionary<string, string?> MapLaunchArgs(string[] args)
     {
-
+        // testkit launches the backend with positional args, which
+        // override these three config values if present
         string[] positionalArgsOverrides = ["Backend:Address", "Backend:Port", "Backend:LogFile"];
 
         var overrides = new Dictionary<string, string?>();
