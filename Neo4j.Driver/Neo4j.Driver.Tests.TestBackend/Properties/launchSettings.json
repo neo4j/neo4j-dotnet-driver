@@ -1,0 +1,8 @@
+{
+    "profiles": {
+        "TestKit Backend": {
+            "commandName": "Project",
+            "commandLineArgs": "0.0.0.0 9876"
+        }
+    }
+}

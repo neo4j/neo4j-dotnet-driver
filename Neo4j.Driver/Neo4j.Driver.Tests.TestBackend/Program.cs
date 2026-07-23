@@ -57,20 +57,16 @@ public class Program
     // override appsettings.json.
     private static Dictionary<string, string?> MapLaunchArgs(string[] args)
     {
+
+        string[] positionalArgsOverrides = ["Backend:Address", "Backend:Port", "Backend:LogFile"];
+
         var overrides = new Dictionary<string, string?>();
-        if (args.Length > 0)
+        for(var i = 0; i < positionalArgsOverrides.Length; i++)
         {
-            overrides["Backend:Address"] = args[0];
-        }
-
-        if (args.Length > 1)
-        {
-            overrides["Backend:Port"] = args[1];
-        }
-
-        if (args.Length > 2)
-        {
-            overrides["Backend:LogFile"] = args[2];
+            if (args.Length > i)
+            {
+                overrides[positionalArgsOverrides[i]] = args[i];
+            }
         }
 
         return overrides;
