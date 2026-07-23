@@ -13,13 +13,66 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Net;
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Serilog;
+
 namespace Neo4j.Driver.Tests.TestBackend;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public static Task Main(string[] args)
     {
-        // Skeleton: host wiring (Generic Host, Autofac, MEL, appsettings) comes next.
-        Console.WriteLine("Neo4j.Driver.Tests.TestBackend (rewrite) — not yet implemented.");
+        var host = Host.CreateDefaultBuilder()
+            .UseServiceProviderFactory(new AutofacServiceProviderFactory(b => b.RegisterModule<BackendModule>()))
+            .UseSerilog((_, logger) => logger.WriteTo.Console())
+            .ConfigureAppConfiguration(config => config.AddInMemoryCollection(MapLaunchArgs(args)))
+            .ConfigureWebHostDefaults(host => host
+                .Configure(_ => { })
+                .ConfigureServices((context, services) =>
+                {
+                    services.Configure<BackendOptions>(context.Configuration.GetSection("Backend"));
+                    services.AddSingleton<TestkitConnectionHandler>();
+                })
+                .UseKestrel((context, kestrel) =>
+                {
+                    var options = context.Configuration.GetSection("Backend").Get<BackendOptions>()!;
+                    kestrel.Listen(
+                        IPAddress.Parse(options.Address),
+                        options.Port,
+                        listen => listen.UseConnectionHandler<TestkitConnectionHandler>());
+                }))
+            .Build();
+
+        return host.RunAsync();
+    }
+
+    // Testkit launches the backend as `<dll> <address> <port> [logfile]`; positional args
+    // override appsettings.json.
+    private static Dictionary<string, string?> MapLaunchArgs(string[] args)
+    {
+        var overrides = new Dictionary<string, string?>();
+        if (args.Length > 0)
+        {
+            overrides["Backend:Address"] = args[0];
+        }
+
+        if (args.Length > 1)
+        {
+            overrides["Backend:Port"] = args[1];
+        }
+
+        if (args.Length > 2)
+        {
+            overrides["Backend:LogFile"] = args[2];
+        }
+
+        return overrides;
     }
 }
