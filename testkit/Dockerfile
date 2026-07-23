@@ -14,6 +14,7 @@ RUN apt update \
 RUN wget https://dot.net/v1/dotnet-install.sh
 RUN bash dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet
 RUN bash dotnet-install.sh --channel 9.0 --install-dir /usr/share/dotnet
+RUN bash dotnet-install.sh --channel 10.0 --install-dir /usr/share/dotnet
 
 ENV PYTHON=python3
 ENV DOTNET_DRIVER_USING_LOCAL_SERVER=true

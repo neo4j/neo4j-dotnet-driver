@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Autofac;
+using Neo4j.Driver.Tests.TestBackend.Protocol;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
@@ -21,6 +22,19 @@ public class BackendModule : Module
 {
     protected override void Load(ContainerBuilder builder)
     {
-        // Scoped (per-connection/per-test) registrations land here as the backend grows.
+        var singletons = new List<object> {
+            MessageRegistry.FromAssembly(typeof(IProtocolMessage).Assembly)
+        };
+
+        builder
+            .RegisterAssemblyTypes(typeof(BackendModule).Assembly)
+            .Where(t => singletons.All(s => s.GetType() != t))
+            .AsImplementedInterfaces()
+            .InstancePerDependency();
+
+        foreach (var singleton in singletons)
+        {
+            builder.RegisterInstance(singleton).AsImplementedInterfaces();
+        }
     }
 }
