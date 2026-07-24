@@ -16,7 +16,7 @@
 using FluentAssertions;
 using Neo4j.Driver.TestKitBackend.Logging;
 using Serilog.Events;
-using Serilog.Formatting;
+using Serilog.Formatting.Display;
 using Serilog.Parsing;
 using Xunit;
 
@@ -24,47 +24,51 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class TruncatingTextFormatterTests
 {
+    // Bare message so the rendered length is predictable and driven by the payload.
+    private const string OutputTemplate = "{Message:l}";
+
     [Fact]
     public void Truncates_rendered_output_over_the_limit_and_keeps_a_trailing_newline()
     {
-        var rendered = new string('x', 5000);
-        var formatter = new TruncatingTextFormatter(new StubFormatter(rendered), maxLength: 2048);
+        const int maxLength = 64;
+        var payload = new string('x', 5000);
+        var formatter = new TruncatingTextFormatter(OutputTemplate, maxLength);
         var output = new StringWriter();
 
-        formatter.Format(AnyEvent(), output);
+        formatter.Format(EventWithMessage(payload), output);
 
         var result = output.ToString();
-        result.Should().StartWith(new string('x', 2048));
+        result.Should().StartWith(new string('x', maxLength));
         result.Should().EndWith(Environment.NewLine);
-        result.TrimEnd(Environment.NewLine.ToCharArray()).Length.Should().BeLessThan(rendered.Length);
+        result.Length.Should().BeLessThan(payload.Length);
     }
 
     [Fact]
     public void Passes_rendered_output_within_the_limit_through_unchanged()
     {
-        const string rendered = "[00:00:00 INF] hello\n";
-        var formatter = new TruncatingTextFormatter(new StubFormatter(rendered), maxLength: 2048);
+        var formatter = new TruncatingTextFormatter(OutputTemplate, maxLength: 2048);
+        var logEvent = EventWithMessage("hello");
         var output = new StringWriter();
 
-        formatter.Format(AnyEvent(), output);
+        formatter.Format(logEvent, output);
 
-        output.ToString().Should().Be(rendered);
+        output.ToString().Should().Be(Render(logEvent, OutputTemplate));
     }
 
-    private static LogEvent AnyEvent() =>
-        new(
+    private static LogEvent EventWithMessage(string message)
+    {
+        return new LogEvent(
             DateTimeOffset.UnixEpoch,
             LogEventLevel.Information,
             exception: null,
-            new MessageTemplateParser().Parse("irrelevant"),
-            []);
+            new MessageTemplateParser().Parse("{Payload}"),
+            [new LogEventProperty("Payload", new ScalarValue(message))]);
+    }
 
-    private class StubFormatter : ITextFormatter
+    private static string Render(LogEvent logEvent, string outputTemplate)
     {
-        private readonly string _output;
-
-        public StubFormatter(string output) => _output = output;
-
-        public void Format(LogEvent logEvent, TextWriter output) => output.Write(_output);
+        var buffer = new StringWriter();
+        new MessageTemplateTextFormatter(outputTemplate).Format(logEvent, buffer);
+        return buffer.ToString();
     }
 }

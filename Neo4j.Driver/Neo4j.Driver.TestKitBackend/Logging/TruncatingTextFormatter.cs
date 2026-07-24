@@ -15,17 +15,18 @@
 
 using Serilog.Events;
 using Serilog.Formatting;
+using Serilog.Formatting.Display;
 
 namespace Neo4j.Driver.TestKitBackend.Logging;
 
-internal class TruncatingTextFormatter : ITextFormatter
+public class TruncatingTextFormatter : ITextFormatter
 {
     private readonly ITextFormatter _inner;
     private readonly int _maxLength;
 
-    public TruncatingTextFormatter(ITextFormatter inner, int maxLength)
+    public TruncatingTextFormatter(string outputTemplate, int maxLength)
     {
-        _inner = inner;
+        _inner = new MessageTemplateTextFormatter(outputTemplate);
         _maxLength = maxLength;
     }
 

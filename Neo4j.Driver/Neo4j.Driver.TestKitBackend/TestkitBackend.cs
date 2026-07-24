@@ -23,27 +23,18 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Neo4j.Driver.TestKitBackend.Logging;
 using Serilog;
-using Serilog.Formatting.Display;
 
 namespace Neo4j.Driver.TestKitBackend;
 
 public class TestkitBackend
 {
-    private const string ConsoleOutputTemplate =
-        "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}";
-
     public static Task Main(string[] args)
     {
         var host = Host.CreateDefaultBuilder()
+            .UseContentRoot(AppContext.BaseDirectory)
             .UseServiceProviderFactory(new AutofacServiceProviderFactory(b => b.RegisterModule<BackendModule>()))
-            .UseSerilog((context, logger) =>
-            {
-                var maxLogLength = context.Configuration.GetSection("Backend").Get<BackendOptions>()!.MaxLogLength;
-                logger.WriteTo.Console(
-                    new TruncatingTextFormatter(new MessageTemplateTextFormatter(ConsoleOutputTemplate), maxLogLength));
-            })
+            .UseSerilog((context, logger) => logger.ReadFrom.Configuration(context.Configuration))
             .ConfigureAppConfiguration(config => config.AddInMemoryCollection(MapLaunchArgs(args)))
             .ConfigureWebHostDefaults(host => host
                 .Configure(_ => { })
