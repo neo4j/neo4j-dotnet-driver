@@ -14,10 +14,10 @@
 // limitations under the License.
 
 using FluentAssertions;
-using Neo4j.Driver.Tests.TestBackend.Protocol;
+using Neo4j.Driver.TestKitBackend.Protocol;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.TestBackend.Tests;
+namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class MessageTypeMapTests
 {

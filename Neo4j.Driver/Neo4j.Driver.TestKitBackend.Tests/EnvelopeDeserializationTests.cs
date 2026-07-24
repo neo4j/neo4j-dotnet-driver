@@ -17,10 +17,10 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Tests.TestBackend.Protocol;
+using Neo4j.Driver.TestKitBackend.Protocol;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.TestBackend.Tests;
+namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class EnvelopeDeserializationTests
 {

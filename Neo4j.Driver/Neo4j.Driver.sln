@@ -25,13 +25,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Tests.SimpleDr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Tests.TestBackend.Legacy", "Neo4j.Driver.Tests.TestBackend.Legacy\Neo4j.Driver.Tests.TestBackend.Legacy.csproj", "{D68071A7-6012-43BD-9C65-146D1D22B931}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Tests.TestBackend", "Neo4j.Driver.Tests.TestBackend\Neo4j.Driver.Tests.TestBackend.csproj", "{3A7DB4F5-0E7B-4C4B-9A2D-6E8F1B5C9D21}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.TestKitBackend", "Neo4j.Driver.TestKitBackend\Neo4j.Driver.TestKitBackend.csproj", "{3A7DB4F5-0E7B-4C4B-9A2D-6E8F1B5C9D21}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Neo4j.Driver.Tests.BenchkitBackend", "Neo4j.Driver.Tests.BenchkitBackend\Neo4j.Driver.Tests.BenchkitBackend.csproj", "{EFFB6047-6BD4-4CEE-9D5B-09DFE8B8340E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Tests.TestBackend.Legacy.Tests", "Neo4j.Driver.Tests.TestBackend.Legacy.Tests\Neo4j.Driver.Tests.TestBackend.Legacy.Tests.csproj", "{5B1611FB-06FF-4BF7-BE1C-B0D938702D2E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Tests.TestBackend.Tests", "Neo4j.Driver.Tests.TestBackend.Tests\Neo4j.Driver.Tests.TestBackend.Tests.csproj", "{860DDE98-3A74-47DA-9557-6CBB8BBDE55E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.TestKitBackend.Tests", "Neo4j.Driver.TestKitBackend.Tests\Neo4j.Driver.TestKitBackend.Tests.csproj", "{860DDE98-3A74-47DA-9557-6CBB8BBDE55E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -14,13 +14,13 @@
 // limitations under the License.
 
 using FluentAssertions;
-using Neo4j.Driver.Tests.TestBackend.Logging;
+using Neo4j.Driver.TestKitBackend.Logging;
 using Serilog.Events;
 using Serilog.Formatting;
 using Serilog.Parsing;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.TestBackend.Tests;
+namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class TruncatingTextFormatterTests
 {

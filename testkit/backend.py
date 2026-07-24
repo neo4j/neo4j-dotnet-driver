@@ -9,7 +9,7 @@ import os, subprocess, sys
 
 if __name__ == "__main__":
     backend_path = os.path.join(
-        "bin", "Publish", "Neo4j.Driver.Tests.TestBackend.dll"
+        "bin", "Publish", "Neo4j.Driver.TestKitBackend.dll"
     )
     logfile_path = os.path.join("..", "artifacts", "backend.log")
 

@@ -13,19 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Tests.TestBackend.Protocol;
+namespace Neo4j.Driver.TestKitBackend.Protocol;
 
-internal class MessageTypeMap : IMessageTypeMap
+internal interface IProtocolMessage
 {
-    private readonly IReadOnlyDictionary<string, Type> _byName;
-
-    public MessageTypeMap(IEnumerable<Type> messageTypes)
-    {
-        _byName = messageTypes.ToDictionary(t => t.Name);
-    }
-
-    public Type GetTypeByName(string name) =>
-        _byName.TryGetValue(name, out var type)
-            ? type
-            : throw new TestKitProtocolException($"Unrecognized message name \"{name}\".");
 }

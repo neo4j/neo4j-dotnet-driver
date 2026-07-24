@@ -16,7 +16,7 @@
 using Serilog.Events;
 using Serilog.Formatting;
 
-namespace Neo4j.Driver.Tests.TestBackend.Logging;
+namespace Neo4j.Driver.TestKitBackend.Logging;
 
 internal class TruncatingTextFormatter : ITextFormatter
 {

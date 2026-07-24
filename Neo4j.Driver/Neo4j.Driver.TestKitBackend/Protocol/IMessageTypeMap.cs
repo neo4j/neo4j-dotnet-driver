@@ -13,7 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Runtime.CompilerServices;
+namespace Neo4j.Driver.TestKitBackend.Protocol;
 
-[assembly: InternalsVisibleTo("Neo4j.Driver.Tests.TestBackend.Tests")]
-[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] // lets Moq proxy internal interfaces
+internal interface IMessageTypeMap
+{
+    Type GetTypeByName(string name);
+}

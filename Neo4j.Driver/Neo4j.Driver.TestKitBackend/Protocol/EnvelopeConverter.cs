@@ -16,7 +16,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Neo4j.Driver.Tests.TestBackend.Protocol;
+namespace Neo4j.Driver.TestKitBackend.Protocol;
 
 internal class EnvelopeConverter : JsonConverter<IProtocolMessage>
 {

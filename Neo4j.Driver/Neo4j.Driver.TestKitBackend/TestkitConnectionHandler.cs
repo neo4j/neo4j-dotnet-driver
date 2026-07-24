@@ -17,7 +17,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.TestKitBackend;
 
 public class TestkitConnectionHandler : ConnectionHandler
 {

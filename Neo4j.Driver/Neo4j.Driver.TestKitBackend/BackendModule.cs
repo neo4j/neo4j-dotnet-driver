@@ -15,10 +15,10 @@
 
 using System.Reflection;
 using Autofac;
-using Neo4j.Driver.Tests.TestBackend.Protocol;
+using Neo4j.Driver.TestKitBackend.Protocol;
 using Module = Autofac.Module;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.TestKitBackend;
 
 public class BackendModule : Module
 {

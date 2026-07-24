@@ -23,11 +23,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Neo4j.Driver.Tests.TestBackend.Logging;
+using Neo4j.Driver.TestKitBackend.Logging;
 using Serilog;
 using Serilog.Formatting.Display;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.TestKitBackend;
 
 public class TestkitBackend
 {

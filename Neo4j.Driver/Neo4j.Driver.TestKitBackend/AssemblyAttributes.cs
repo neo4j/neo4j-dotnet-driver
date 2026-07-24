@@ -13,15 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Tests.TestBackend.Protocol;
+using System.Runtime.CompilerServices;
 
-internal class TestKitProtocolException : Exception
-{
-    public TestKitProtocolException(string message) : base(message)
-    {
-    }
-
-    public TestKitProtocolException(string message, Exception innerException) : base(message, innerException)
-    {
-    }
-}
+[assembly: InternalsVisibleTo("Neo4j.Driver.TestKitBackend.Tests")]
+[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] // lets Moq proxy internal interfaces

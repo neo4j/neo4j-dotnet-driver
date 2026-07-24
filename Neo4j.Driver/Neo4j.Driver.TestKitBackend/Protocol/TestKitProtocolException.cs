@@ -13,8 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Tests.TestBackend.Protocol;
+namespace Neo4j.Driver.TestKitBackend.Protocol;
 
-internal interface IProtocolMessage
+internal class TestKitProtocolException : Exception
 {
+    public TestKitProtocolException(string message) : base(message)
+    {
+    }
+
+    public TestKitProtocolException(string message, Exception innerException) : base(message, innerException)
+    {
+    }
 }
