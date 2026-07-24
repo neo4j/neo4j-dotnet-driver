@@ -100,12 +100,18 @@ internal class LegacyLoggerAdapter : ILogger
             return;
         }
 
-        if (!LoggingHelpers.ExtractFormatAndArguments(state, out var format, out var args))
+        string template;
+        object?[] args;
+        if (LoggingHelpers.ExtractFormatAndArguments(state, out var format, out var extractedArgs))
         {
-            return;
+            args = extractedArgs;
+            template = GetModifiedFormat(format, args.Length);
         }
-
-        var template = GetModifiedFormat(format, args.Length);
+        else
+        {
+            args = [];
+            template = GetModifiedFormat(formatter(state, exception), 0);
+        }
         switch (logLevel)
         {
             case LogLevel.Trace:

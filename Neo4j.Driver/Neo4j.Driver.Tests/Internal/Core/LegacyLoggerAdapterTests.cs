@@ -145,6 +145,37 @@ public class LegacyLoggerAdapterTests
                 It.Is<object[]>(a => a.Length == 1 && a[0].Equals(1))));
     }
 
+    [Fact]
+    public void Log_WithNonLogParamsState_FallsBackToFormatterInsteadOfSilentlyDropping()
+    {
+        _subject.Log(LogLevel.Debug, new EventId(0, ""), "arbitrary state", null, (s, _) => $"formatted: {s}");
+
+        _mockLegacyLogger
+            .Verify(l => l.Debug(
+                $$"""[{{TypeName}}] formatted: arbitrary state""",
+                It.IsAny<object[]>()));
+    }
+
+    [Fact]
+    public void Log_WithNonLogParamsStateAndBracesInFormatterOutput_ProducesTemplateThatSurvivesStringFormat()
+    {
+        string? capturedTemplate = null;
+        object[]? capturedArgs = null;
+        _mockLegacyLogger
+            .Setup(l => l.Debug(It.IsAny<string>(), It.IsAny<object[]>()))
+            .Callback<string, object[]>((t, a) =>
+            {
+                capturedTemplate = t;
+                capturedArgs = a;
+            });
+
+        _subject.Log(LogLevel.Debug, new EventId(0, ""), "state", null, (_, _) => "message with {braces}");
+
+        capturedTemplate.Should().NotBeNull();
+        var act = () => string.Format(capturedTemplate!, capturedArgs!);
+        act.Should().NotThrow();
+    }
+
     // The invariant for the whole adapter: whatever template it hands to the legacy logger
     // must survive String.Format with the args it supplies, no matter how hostile the input.
     [Theory]
