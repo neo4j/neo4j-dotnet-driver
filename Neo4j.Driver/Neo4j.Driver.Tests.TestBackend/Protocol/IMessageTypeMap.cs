@@ -15,7 +15,7 @@
 
 namespace Neo4j.Driver.Tests.TestBackend.Protocol;
 
-internal interface IMessageRegistry
+internal interface IMessageTypeMap
 {
-    Type Resolve(string name);
+    Type GetTypeByName(string name);
 }

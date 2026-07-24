@@ -16,6 +16,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FluentAssertions;
+using Moq;
 using Neo4j.Driver.Tests.TestBackend.Protocol;
 using Xunit;
 
@@ -23,15 +24,22 @@ namespace Neo4j.Driver.Tests.TestBackend.Tests;
 
 public class EnvelopeDeserializationTests
 {
-    private static readonly MessageRegistry Registry = new(new[] { typeof(SampleRequest) });
+    private readonly Mock<IMessageTypeMap> _messageTypeMap = new();
 
-    private static JsonSerializerOptions Options()
+    public EnvelopeDeserializationTests()
+    {
+        _messageTypeMap
+            .Setup(m => m.GetTypeByName("SampleRequest"))
+            .Returns(typeof(SampleRequest));
+    }
+
+    private JsonSerializerOptions Options()
     {
         return new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
-            Converters = { new EnvelopeConverter(Registry) }
+            Converters = { new EnvelopeConverter(_messageTypeMap.Object) }
         };
     }
 
@@ -117,6 +125,10 @@ public class EnvelopeDeserializationTests
                 "data": {}
             }
             """;
+
+        _messageTypeMap
+            .Setup(m => m.GetTypeByName("NoSuchMessage"))
+            .Throws(() => new TestKitProtocolException("Test"));
 
         var deserialize = () => JsonSerializer.Deserialize<IProtocolMessage>(json, Options());
 

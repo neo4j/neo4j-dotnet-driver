@@ -16,3 +16,4 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Neo4j.Driver.Tests.TestBackend.Tests")]
+[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] // lets Moq proxy internal interfaces

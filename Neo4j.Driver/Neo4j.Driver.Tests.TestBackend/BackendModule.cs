@@ -13,8 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Reflection;
 using Autofac;
 using Neo4j.Driver.Tests.TestBackend.Protocol;
+using Module = Autofac.Module;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
@@ -22,8 +24,13 @@ public class BackendModule : Module
 {
     protected override void Load(ContainerBuilder builder)
     {
+        var messageTypes = typeof(IProtocolMessage).Assembly.GetTypes()
+            .Where(t => 
+                t is { IsClass: true, IsAbstract: false } && 
+                typeof(IProtocolMessage).IsAssignableFrom(t));
+
         var singletons = new List<object> {
-            MessageRegistry.FromAssembly(typeof(IProtocolMessage).Assembly)
+            new MessageTypeMap(messageTypes)
         };
 
         builder

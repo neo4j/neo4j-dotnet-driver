@@ -19,26 +19,26 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.TestBackend.Tests;
 
-public class MessageRegistryTests
+public class MessageTypeMapTests
 {
     [Fact]
-    public void FromAssembly_discovers_every_concrete_message_type_by_name()
+    public void GetTypeByName_throws_for_an_unknown_message_name()
     {
-        var registry = MessageRegistry.FromAssembly(typeof(MessageRegistryTests).Assembly);
-
-        registry.Resolve(nameof(FirstSampleMessage)).Should().Be(typeof(FirstSampleMessage));
-        registry.Resolve(nameof(SecondSampleMessage)).Should().Be(typeof(SecondSampleMessage));
+        Type[] messageTypes = [typeof(FirstSampleMessage), typeof(SecondSampleMessage)];
+        var map = new MessageTypeMap(messageTypes);
+        var lookup = () => map.GetTypeByName(nameof(NotAMessage));
+        lookup.Should().Throw<TestKitProtocolException>();
     }
 
     [Fact]
-    public void FromAssembly_ignores_types_that_do_not_implement_the_marker()
+    public void GetTypeByName_finds_type_by_name()
     {
-        var registry = MessageRegistry.FromAssembly(typeof(MessageRegistryTests).Assembly);
-
-        var resolve = () => registry.Resolve(nameof(NotAMessage));
-
-        resolve.Should().Throw<TestKitProtocolException>();
+        Type[] messageTypes = [typeof(FirstSampleMessage), typeof(SecondSampleMessage)];
+        var map = new MessageTypeMap(messageTypes);
+        var result = map.GetTypeByName("FirstSampleMessage");
+        result.Should().BeSameAs(typeof(FirstSampleMessage));
     }
+
 
     private record FirstSampleMessage : IProtocolMessage;
 

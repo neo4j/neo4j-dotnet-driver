@@ -20,11 +20,11 @@ namespace Neo4j.Driver.Tests.TestBackend.Protocol;
 
 internal class EnvelopeConverter : JsonConverter<IProtocolMessage>
 {
-    private readonly IMessageRegistry _registry;
+    private readonly IMessageTypeMap _messageTypeMap;
 
-    public EnvelopeConverter(IMessageRegistry registry)
+    public EnvelopeConverter(IMessageTypeMap messageTypeMap)
     {
-        _registry = registry;
+        _messageTypeMap = messageTypeMap;
     }
 
     public override IProtocolMessage Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -37,8 +37,8 @@ internal class EnvelopeConverter : JsonConverter<IProtocolMessage>
             throw new TestKitProtocolException("Message envelope is missing a string \"name\".");
         }
 
-        var name = nameElement.GetString()!;
-        var messageType = _registry.Resolve(name);
+        var name = nameElement.GetString()!; // we know nameElement.ValueKind == JsonValueKind.String 
+        var messageType = _messageTypeMap.GetTypeByName(name);
 
         var dataJson = root.TryGetProperty("data", out var dataElement)
             ? dataElement.GetRawText()

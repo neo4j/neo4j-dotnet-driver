@@ -13,31 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Reflection;
-
 namespace Neo4j.Driver.Tests.TestBackend.Protocol;
 
-internal class MessageRegistry : IMessageRegistry
+internal class MessageTypeMap : IMessageTypeMap
 {
     private readonly IReadOnlyDictionary<string, Type> _byName;
 
-    public MessageRegistry(IEnumerable<Type> messageTypes)
+    public MessageTypeMap(IEnumerable<Type> messageTypes)
     {
         _byName = messageTypes.ToDictionary(t => t.Name);
     }
 
-    public static MessageRegistry FromAssembly(Assembly assembly)
-    {
-        var messageTypes = assembly.GetTypes()
-            .Where(t => t is { IsClass: true, IsAbstract: false } && typeof(IProtocolMessage).IsAssignableFrom(t));
-
-        return new MessageRegistry(messageTypes);
-    }
-
-    public Type Resolve(string name)
-    {
-        return _byName.TryGetValue(name, out var type)
+    public Type GetTypeByName(string name) =>
+        _byName.TryGetValue(name, out var type)
             ? type
             : throw new TestKitProtocolException($"Unrecognized message name \"{name}\".");
-    }
 }
