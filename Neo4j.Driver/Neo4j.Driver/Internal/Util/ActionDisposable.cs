@@ -16,15 +16,19 @@
 #nullable enable
 
 using System;
-using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
-namespace Neo4j.Driver.Internal.DependencyInjection;
+namespace Neo4j.Driver.Internal.Util;
 
-internal interface IResolutionInterceptor
+internal sealed class ActionDisposable(Action onDispose) : IDisposable
 {
-    bool TryResolve(
-        Type serviceType,
-        Type? requestingType,
-        IServiceResolver resolver,
-        [NotNullWhen(true)] out object? service);
+    private int _disposed;
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) == 0)
+        {
+            onDispose();
+        }
+    }
 }

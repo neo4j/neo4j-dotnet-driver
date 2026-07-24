@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -13,18 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#nullable enable
-
 using System;
-using System.Diagnostics.CodeAnalysis;
 
-namespace Neo4j.Driver.Internal.DependencyInjection;
+namespace Neo4j.Driver.Internal;
 
-internal interface IResolutionInterceptor
+internal interface ILoggerFactory
 {
-    bool TryResolve(
-        Type serviceType,
-        Type? requestingType,
-        IServiceResolver resolver,
-        [NotNullWhen(true)] out object? service);
+    ILogger GetLoggerForType(Type type, ILoggingContextTracker tracker);
 }

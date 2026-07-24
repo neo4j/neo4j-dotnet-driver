@@ -13,18 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#nullable enable
-
 using System;
-using System.Diagnostics.CodeAnalysis;
+using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.DependencyInjection;
+namespace Neo4j.Driver.Internal;
 
-internal interface IResolutionInterceptor
+internal interface ILoggingContextTracker
 {
-    bool TryResolve(
-        Type serviceType,
-        Type? requestingType,
-        IServiceResolver resolver,
-        [NotNullWhen(true)] out object? service);
+    IReadOnlyList<ILoggingContext> Contexts { get; }
+    IDisposable Add(string key, object value);
+    ILoggingContextTracker CreateChild();
 }
