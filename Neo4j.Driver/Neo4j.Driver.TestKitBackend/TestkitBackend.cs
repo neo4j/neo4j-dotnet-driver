@@ -35,7 +35,6 @@ public class TestkitBackend
             .UseContentRoot(AppContext.BaseDirectory)
             .UseServiceProviderFactory(new AutofacServiceProviderFactory(b => b.RegisterModule<BackendModule>()))
             .UseSerilog((context, logger) => logger.ReadFrom.Configuration(context.Configuration))
-            .ConfigureAppConfiguration(config => config.AddInMemoryCollection(MapLaunchArgs(args)))
             .ConfigureWebHostDefaults(host => host
                 .Configure(_ => { })
                 .ConfigureServices((context, services) =>
@@ -55,23 +54,5 @@ public class TestkitBackend
                   
         Console.WriteLine("Testkit backend starting up...");
         return host.RunAsync();
-    }
-
-    private static Dictionary<string, string?> MapLaunchArgs(string[] args)
-    {
-        // testkit launches the backend with positional args, which
-        // override these three config values if present
-        string[] positionalArgsOverrides = ["Backend:Address", "Backend:Port", "Backend:LogFile"];
-
-        var overrides = new Dictionary<string, string?>();
-        for(var i = 0; i < positionalArgsOverrides.Length; i++)
-        {
-            if (args.Length > i)
-            {
-                overrides[positionalArgsOverrides[i]] = args[i];
-            }
-        }
-
-        return overrides;
     }
 }

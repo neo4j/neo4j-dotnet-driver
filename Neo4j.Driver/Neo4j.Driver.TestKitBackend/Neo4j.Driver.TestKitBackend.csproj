@@ -22,6 +22,8 @@
 
     <ItemGroup>
         <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+        <None Update="appsettings.dev.json" CopyToOutputDirectory="PreserveNewest" />
+        <None Update="appsettings.ci.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup>

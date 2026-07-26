@@ -10,7 +10,7 @@ RUN apt update \
 	&& apt install -y python3 \
 	&& rm -rf /var/lib/apt/lists/*
 
-# install .NET runtime 8.0.0
+# install .NET runtimes
 RUN wget https://dot.net/v1/dotnet-install.sh
 RUN bash dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet
 RUN bash dotnet-install.sh --channel 9.0 --install-dir /usr/share/dotnet
@@ -27,3 +27,6 @@ COPY CAs/* /usr/local/share/ca-certificates/
 RUN update-ca-certificates
 
 COPY CustomCAs/* /usr/local/share/custom-ca-certificates/
+
+# controls which config the testkit backend loads
+ENV ASPNETCORE_ENVIRONMENT=ci

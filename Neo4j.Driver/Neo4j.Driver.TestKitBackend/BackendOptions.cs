@@ -19,6 +19,4 @@ public class BackendOptions
 {
     public string Address { get; set; } = "0.0.0.0";
     public int Port { get; set; } = 9876;
-    public string? LogFile { get; set; }
-    public int MaxLogLength { get; set; } = 2048;
 }

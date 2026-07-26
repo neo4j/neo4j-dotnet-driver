@@ -2,7 +2,9 @@
     "profiles": {
         "TestKit Backend": {
             "commandName": "Project",
-            "commandLineArgs": "0.0.0.0 9876"
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "dev"
+            }
         }
     }
 }
