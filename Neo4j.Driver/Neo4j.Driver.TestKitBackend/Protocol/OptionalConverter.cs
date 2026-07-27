@@ -19,13 +19,13 @@ using Neo4j.Driver.TestKitBackend.Types;
 
 namespace Neo4j.Driver.TestKitBackend.Protocol;
 
-// IOptional<T> is open-generic, so a factory closes OptionalConverter<T> per value type.
+// Optional<T> is open-generic, so a factory closes OptionalConverter<T> per value type.
 internal class OptionalConverterFactory : JsonConverterFactory, IProtocolJsonConverter
 {
     public override bool CanConvert(Type typeToConvert)
     {
         return typeToConvert.IsGenericType &&
-            typeToConvert.GetGenericTypeDefinition() == typeof(IOptional<>);
+            typeToConvert.GetGenericTypeDefinition() == typeof(Optional<>);
     }
 
     public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
@@ -35,21 +35,20 @@ internal class OptionalConverterFactory : JsonConverterFactory, IProtocolJsonCon
     }
 }
 
-internal class OptionalConverter<T> : JsonConverter<IOptional<T>>
+internal class OptionalConverter<T> : JsonConverter<Optional<T>>
 {
     // A present JSON null must become Specified(null), distinct from an absent key. Without this,
-    // STJ short-circuits null to a bare null value and never invokes Read.
+    // STJ short-circuits null and never invokes Read. Absence is handled by the struct's default
+    // (Absent), reached only when the key is missing so the converter isn't invoked at all.
     public override bool HandleNull => true;
 
-    public override IOptional<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override Optional<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        // The converter is only invoked when the key is present; absence is handled by the
-        // message record defaulting the property to Missing. So present ⇒ Specified.
         var value = JsonSerializer.Deserialize<T>(ref reader, options);
-        return Optional.Specified<T>(value!);
+        return Optional<T>.Specified(value!);
     }
 
-    public override void Write(Utf8JsonWriter writer, IOptional<T> value, JsonSerializerOptions options)
+    public override void Write(Utf8JsonWriter writer, Optional<T> value, JsonSerializerOptions options)
     {
         throw new NotImplementedException();
     }

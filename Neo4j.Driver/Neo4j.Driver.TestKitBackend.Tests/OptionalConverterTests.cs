@@ -29,34 +29,50 @@ public class OptionalConverterTests
     }
 
     [Fact]
-    public void Reads_a_present_value_as_Specified()
+    public void Reads_a_present_value_as_specified()
     {
-        var opt = JsonSerializer.Deserialize<IOptional<string>>("\"hello\"", Options());
+        var opt = JsonSerializer.Deserialize<Optional<long?>>("5", Options());
 
-        opt.Should().BeOfType<Specified<string>>().Which.Value.Should().Be("hello");
+        opt.IsSpecified(out var value).Should().BeTrue();
+        value.Should().Be(5L);
     }
 
     [Fact]
-    public void Reads_a_present_null_as_Specified_with_a_null_value()
+    public void Reads_a_present_null_as_specified_with_a_null_value()
     {
-        var opt = JsonSerializer.Deserialize<IOptional<string>>("null", Options());
+        var opt = JsonSerializer.Deserialize<Optional<long?>>("null", Options());
 
-        opt.Should().BeOfType<Specified<string>>().Which.Value.Should().BeNull();
-    }
-
-    [Fact]
-    public void Reads_a_present_null_for_a_nullable_value_type_as_Specified_null()
-    {
-        var opt = JsonSerializer.Deserialize<IOptional<int?>>("null", Options());
-
-        opt.Should().BeOfType<Specified<int?>>().Which.Value.Should().BeNull();
+        opt.IsSpecified(out var value).Should().BeTrue();
+        value.Should().BeNull();
     }
 
     [Fact]
     public void Rejects_a_present_null_for_a_non_nullable_value_type()
     {
-        var read = () => JsonSerializer.Deserialize<IOptional<int>>("null", Options());
+        var read = () => JsonSerializer.Deserialize<Optional<long>>("null", Options());
 
         read.Should().Throw<JsonException>();
+    }
+
+    [Fact]
+    public void An_absent_optional_property_is_not_specified()
+    {
+        var message = JsonSerializer.Deserialize<Message>("{}", Options());
+
+        message!.Timeout.IsSpecified(out _).Should().BeFalse();
+    }
+
+    [Fact]
+    public void A_present_optional_property_is_specified()
+    {
+        var message = JsonSerializer.Deserialize<Message>("""{"Timeout":5}""", Options());
+
+        message!.Timeout.IsSpecified(out var value).Should().BeTrue();
+        value.Should().Be(5L);
+    }
+
+    private record Message
+    {
+        public Optional<long?> Timeout { get; init; }
     }
 }
