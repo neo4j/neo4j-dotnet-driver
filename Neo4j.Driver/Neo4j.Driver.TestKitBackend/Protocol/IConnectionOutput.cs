@@ -15,22 +15,11 @@
 
 namespace Neo4j.Driver.TestKitBackend.Protocol;
 
-internal class ResponseWriter : IResponseWriter
+// The outbound text sink for a single connection; the production implementation writes to the
+// connection's transport pipe.
+internal interface IConnectionOutput
 {
-    private readonly IConnectionOutput _output;
-    private readonly IMessageSerializer _serializer;
+    Task WriteAsync(string text);
 
-    public ResponseWriter(IConnectionOutput output, IMessageSerializer serializer)
-    {
-        _output = output;
-        _serializer = serializer;
-    }
-
-    public async Task WriteAsync(IProtocolMessage message)
-    {
-        var json = _serializer.Serialize(message);
-
-        await _output.WriteAsync($"#response begin\n{json}\n#response end\n");
-        await _output.FlushAsync();
-    }
+    Task FlushAsync();
 }

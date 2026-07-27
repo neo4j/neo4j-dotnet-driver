@@ -13,8 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Text.Json;
-using FluentAssertions;
 using Moq;
 using Neo4j.Driver.TestKitBackend.Protocol;
 using Xunit;
@@ -26,24 +24,18 @@ public class ResponseWriterTests
     [Fact]
     public async Task Writes_the_serialized_message_wrapped_in_response_sentinels()
     {
-        var options = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            Converters = { new EnvelopeConverter(Mock.Of<IMessageTypeMap>()) }
-        };
-        var output = new StringWriter();
-        var writer = new ResponseWriter(output, options);
+        var message = Mock.Of<IProtocolMessage>();
+        var serializer = new Mock<IMessageSerializer>();
+        serializer.Setup(s => s.Serialize(message)).Returns("""{"name":"Sample","data":{}}""");
+        var output = new Mock<IConnectionOutput>();
+        var writer = new ResponseWriter(output.Object, serializer.Object);
 
-        await writer.WriteAsync(new SampleResponse { Value = "x" });
+        await writer.WriteAsync(message);
 
-        output.ToString().Should().Be(
+        output.Verify(o => o.WriteAsync(
             "#response begin\n" +
-            """{"name":"SampleResponse","data":{"value":"x"}}""" + "\n" +
-            "#response end\n");
-    }
-
-    private record SampleResponse : IProtocolMessage
-    {
-        public string Value { get; init; } = "";
+            """{"name":"Sample","data":{}}""" + "\n" +
+            "#response end\n"), Times.Once);
+        output.Verify(o => o.FlushAsync(), Times.Once);
     }
 }
