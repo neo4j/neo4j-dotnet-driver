@@ -17,6 +17,7 @@ using System.Text;
 using Autofac;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
+using Neo4j.Driver.TestKitBackend.Logging;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.Protocol;
 
@@ -28,6 +29,7 @@ internal class TestkitConnectionHandler : ConnectionHandler
     private readonly IConnectionInputFactory _inputFactory;
     private readonly IConnectionOutputFactory _outputFactory;
     private readonly IConnectionIdProvider _connectionIdProvider;
+    private readonly ILoggingContextAccessor _loggingContextAccessor;
     private readonly ILogger<TestkitConnectionHandler> _logger;
 
     public TestkitConnectionHandler(
@@ -35,12 +37,14 @@ internal class TestkitConnectionHandler : ConnectionHandler
         IConnectionInputFactory inputFactory,
         IConnectionOutputFactory outputFactory,
         IConnectionIdProvider connectionIdProvider,
+        ILoggingContextAccessor loggingContextAccessor,
         ILogger<TestkitConnectionHandler> logger)
     {
         _rootScope = rootScope;
         _inputFactory = inputFactory;
         _outputFactory = outputFactory;
         _connectionIdProvider = connectionIdProvider;
+        _loggingContextAccessor = loggingContextAccessor;
         _logger = logger;
     }
 
@@ -48,7 +52,6 @@ internal class TestkitConnectionHandler : ConnectionHandler
     {
         var connectionId = _connectionIdProvider.GetConnectionId();
         connection.ConnectionId = connectionId;
-        _logger.LogDebug("New connection {ConnectionId}", connectionId);
 
         // leaveOpen: we own these reader/writer wrappers, but Kestrel owns the underlying transport
         // pipe, so disposing them must not complete the pipe.
@@ -67,6 +70,11 @@ internal class TestkitConnectionHandler : ConnectionHandler
             builder.RegisterInstance(input).As<IConnectionInput>();
             builder.RegisterInstance(output).As<IConnectionOutput>();
         });
+
+        var loggingContext = scope.Resolve<ILoggingContext>();
+        _loggingContextAccessor.Publish(loggingContext);
+        loggingContext.Set("ConnectionId", connectionId);
+        _logger.LogDebug("New connection {ConnectionId}", connectionId);
 
         var serializer = scope.Resolve<IMessageSerializer>();
         var dispatcher = scope.Resolve<IMessageDispatcher>();

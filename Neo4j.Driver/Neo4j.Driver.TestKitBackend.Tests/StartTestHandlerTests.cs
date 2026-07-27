@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using FluentAssertions;
+using Neo4j.Driver.TestKitBackend.Logging;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Xunit;
 
@@ -24,10 +25,21 @@ public class StartTestHandlerTests
     [Fact]
     public async Task Returns_RunTest()
     {
-        var handler = new StartTestHandler();
+        var handler = new StartTestHandler(new LoggingContext());
 
         var response = await handler.ProcessAsync(new StartTest { TestName = "some.test.name" });
 
         response.Should().BeOfType<RunTest>();
+    }
+
+    [Fact]
+    public async Task Sets_TestName_on_the_logging_context()
+    {
+        var loggingContext = new LoggingContext();
+        var handler = new StartTestHandler(loggingContext);
+
+        await handler.ProcessAsync(new StartTest { TestName = "some.test.name" });
+
+        loggingContext.Current["TestName"].Should().Be("some.test.name");
     }
 }

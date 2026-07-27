@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Neo4j.Driver.TestKitBackend.Logging;
 using Serilog;
 
 namespace Neo4j.Driver.TestKitBackend;
@@ -32,7 +33,11 @@ public class TestkitBackend
         var host = Host.CreateDefaultBuilder()
             .UseContentRoot(AppContext.BaseDirectory)
             .UseServiceProviderFactory(new AutofacServiceProviderFactory(b => b.RegisterModule<BackendModule>()))
-            .UseSerilog((context, logger) => logger.ReadFrom.Configuration(context.Configuration))
+            .UseSerilog((context, services, logger) => logger
+                .ReadFrom.Configuration(context.Configuration)
+                .Enrich.With(
+                    new LoggingContextEnricher(services.GetRequiredService<ILoggingContextAccessor>()),
+                    new ShortSourceContextEnricher()))
             .ConfigureWebHostDefaults(host => host
                 .Configure(_ => { })
                 .ConfigureServices((context, services) =>

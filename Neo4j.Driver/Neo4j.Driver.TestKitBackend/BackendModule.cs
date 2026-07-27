@@ -15,6 +15,7 @@
 
 using System.Reflection;
 using Autofac;
+using Neo4j.Driver.TestKitBackend.Logging;
 using Neo4j.Driver.TestKitBackend.Protocol;
 using Module = Autofac.Module;
 
@@ -33,14 +34,19 @@ internal class BackendModule : Module
         var singletons = new List<object>
         {
             new MessageTypeMap(messageTypes),
-            new ConnectionIdProvider()
+            new ConnectionIdProvider(),
+            new LoggingContextAccessor()
         };
 
         builder
             .RegisterAssemblyTypes(assembly)
-            .Where(t => singletons.All(s => s.GetType() != t) && !handlerTypes.Contains(t))
+            .Where(t => singletons.All(s => s.GetType() != t) && !handlerTypes.Contains(t) && t != typeof(LoggingContext))
             .AsImplementedInterfaces()
             .InstancePerDependency();
+
+        // One logging context per connection scope; handlers mutate it, the connection handler
+        // publishes it to the accessor so the process-wide enricher can find it.
+        builder.RegisterType<LoggingContext>().As<ILoggingContext>().InstancePerLifetimeScope();
 
         foreach (var singleton in singletons)
         {

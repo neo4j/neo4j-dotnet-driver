@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.TestKitBackend.Logging;
 using Neo4j.Driver.TestKitBackend.Protocol;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -26,8 +27,17 @@ internal record RunTest : IProtocolMessage;
 
 internal class StartTestHandler : MessageHandler<StartTest>
 {
+    private readonly ILoggingContext _loggingContext;
+
+    public StartTestHandler(ILoggingContext loggingContext)
+    {
+        _loggingContext = loggingContext;
+    }
+
     public override Task<IProtocolMessage?> ProcessAsync(StartTest message)
     {
+        _loggingContext.Set("TestName", message.TestName);
+
         // Always run for now; a skip policy (blacklist) comes later.
         return Task.FromResult<IProtocolMessage?>(new RunTest());
     }
