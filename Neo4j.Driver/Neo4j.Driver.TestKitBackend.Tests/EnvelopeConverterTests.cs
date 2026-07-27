@@ -22,11 +22,11 @@ using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests;
 
-public class EnvelopeDeserializationTests
+public class EnvelopeConverterTests
 {
     private readonly Mock<IMessageTypeMap> _messageTypeMap = new();
 
-    public EnvelopeDeserializationTests()
+    public EnvelopeConverterTests()
     {
         _messageTypeMap
             .Setup(m => m.GetTypeByName("SampleRequest"))
@@ -135,9 +135,65 @@ public class EnvelopeDeserializationTests
         deserialize.Should().Throw<TestKitProtocolException>();
     }
 
+    [Fact]
+    public void Writes_the_type_name_and_camelCase_data()
+    {
+        var json = JsonSerializer.Serialize<IProtocolMessage>(new SampleResponse { Value = "x" }, Options());
+
+        json.Should().Be("""{"name":"SampleResponse","data":{"value":"x"}}""");
+    }
+
+    [Fact]
+    public void Writes_nested_protocol_message_properties_as_envelopes()
+    {
+        var message = new SampleEnvelope { Inner = new SampleResponse { Value = "y" } };
+
+        var json = JsonSerializer.Serialize<IProtocolMessage>(message, Options());
+
+        json.Should().Be(
+            """{"name":"SampleEnvelope","data":{"inner":{"name":"SampleResponse","data":{"value":"y"}}}}""");
+    }
+
+    [Fact]
+    public void Reads_nested_envelopes_into_protocol_message_properties()
+    {
+        _messageTypeMap
+            .Setup(m => m.GetTypeByName("SampleEnvelope"))
+            .Returns(typeof(SampleEnvelope));
+
+        const string json =
+            """
+            {
+                "name": "SampleEnvelope",
+                "data": {
+                    "inner": {
+                        "name": "SampleRequest",
+                        "data": { "uri": "neo4j://y" }
+                    }
+                }
+            }
+            """;
+
+        var message = JsonSerializer.Deserialize<IProtocolMessage>(json, Options());
+
+        message.Should().BeOfType<SampleEnvelope>()
+            .Which.Inner.Should().BeOfType<SampleRequest>()
+            .Which.Uri.Should().Be("neo4j://y");
+    }
+
     private record SampleRequest : IProtocolMessage
     {
         public string Uri { get; init; } = "";
         public string? UserAgent { get; init; }
+    }
+
+    private record SampleResponse : IProtocolMessage
+    {
+        public string Value { get; init; } = "";
+    }
+
+    private record SampleEnvelope : IProtocolMessage
+    {
+        public IProtocolMessage Inner { get; init; } = null!;
     }
 }

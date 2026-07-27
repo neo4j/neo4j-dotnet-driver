@@ -56,6 +56,10 @@ internal class EnvelopeConverter : JsonConverter<IProtocolMessage>
 
     public override void Write(Utf8JsonWriter writer, IProtocolMessage value, JsonSerializerOptions options)
     {
-        throw new NotImplementedException();
+        writer.WriteStartObject();
+        writer.WriteString("name", value.GetType().Name);
+        writer.WritePropertyName("data");
+        JsonSerializer.Serialize(writer, value, value.GetType(), options);
+        writer.WriteEndObject();
     }
 }
