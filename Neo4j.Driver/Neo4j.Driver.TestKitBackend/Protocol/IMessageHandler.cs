@@ -15,7 +15,12 @@
 
 namespace Neo4j.Driver.TestKitBackend.Protocol;
 
-internal interface IProtocolInstruction
+internal interface IMessageHandler
 {
     Task<IProtocolMessage?> ProcessAsync(IProtocolMessage message);
+}
+
+internal interface IMessageHandler<in T> : IMessageHandler where T : IProtocolMessage
+{
+    Task<IProtocolMessage?> ProcessAsync(T message);
 }

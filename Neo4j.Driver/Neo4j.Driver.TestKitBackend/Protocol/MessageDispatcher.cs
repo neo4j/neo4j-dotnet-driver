@@ -19,10 +19,10 @@ namespace Neo4j.Driver.TestKitBackend.Protocol;
 
 internal class MessageDispatcher : IMessageDispatcher
 {
-    private readonly IIndex<Type, IProtocolInstruction> _handlers;
+    private readonly IIndex<Type, IMessageHandler> _handlers;
     private readonly IResponseWriter _writer;
 
-    public MessageDispatcher(IIndex<Type, IProtocolInstruction> handlers, IResponseWriter writer)
+    public MessageDispatcher(IIndex<Type, IMessageHandler> handlers, IResponseWriter writer)
     {
         _handlers = handlers;
         _writer = writer;

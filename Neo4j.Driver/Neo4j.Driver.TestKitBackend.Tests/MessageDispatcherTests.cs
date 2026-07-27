@@ -23,7 +23,7 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class MessageDispatcherTests
 {
-    private readonly Mock<IIndex<Type, IProtocolInstruction>> _handlers = new();
+    private readonly Mock<IIndex<Type, IMessageHandler>> _handlers = new();
     private readonly Mock<IResponseWriter> _writer = new();
 
     private MessageDispatcher Subject() => new(_handlers.Object, _writer.Object);
@@ -34,10 +34,10 @@ public class MessageDispatcherTests
         var request = new SampleRequest();
         var response = new SampleResponse();
 
-        var handler = new Mock<IProtocolInstruction>();
+        var handler = new Mock<IMessageHandler>();
         handler.Setup(h => h.ProcessAsync(request)).ReturnsAsync(response);
 
-        IProtocolInstruction resolved = handler.Object;
+        IMessageHandler resolved = handler.Object;
         _handlers.Setup(h => h.TryGetValue(typeof(SampleRequest), out resolved!)).Returns(true);
 
         await Subject().DispatchAsync(request);
@@ -48,7 +48,7 @@ public class MessageDispatcherTests
     [Fact]
     public async Task Throws_when_no_handler_is_registered_for_the_message_type()
     {
-        IProtocolInstruction resolved = null!;
+        IMessageHandler resolved = null!;
         _handlers.Setup(h => h.TryGetValue(It.IsAny<Type>(), out resolved!)).Returns(false);
 
         var dispatch = async () => await Subject().DispatchAsync(new SampleRequest());
