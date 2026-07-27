@@ -20,14 +20,16 @@ using Module = Autofac.Module;
 
 namespace Neo4j.Driver.TestKitBackend;
 
-public class BackendModule : Module
+internal class BackendModule : Module
 {
     protected override void Load(ContainerBuilder builder)
     {
-        var assembly = typeof(BackendModule).Assembly;
+        var assembly = Assembly.GetExecutingAssembly();
 
-        var messageTypes = DoMessageDiscoveryRegistration(builder, assembly, out var handlerTypes);
+        var handlerTypes = ConcreteImplementationsOf<IMessageHandler>(assembly);
+        RegisterHandlersKeyedByMessageType(builder, handlerTypes);
 
+        var messageTypes = ConcreteImplementationsOf<IProtocolMessage>(assembly);
         var singletons = new List<object> {
             new MessageTypeMap(messageTypes)
         };
@@ -44,24 +46,19 @@ public class BackendModule : Module
         }
     }
 
-    private static IEnumerable<Type> DoMessageDiscoveryRegistration(
-        ContainerBuilder builder,
-        Assembly assembly,
-        out List<Type> handlerTypes)
+    private static Type[] ConcreteImplementationsOf<T>(Assembly assembly)
     {
-        var messageTypes = assembly.GetTypes()
+        return assembly.GetTypes()
             .Where(t =>
                 t is { IsClass: true, IsAbstract: false } &&
-                typeof(IProtocolMessage).IsAssignableFrom(t));
+                typeof(T).IsAssignableFrom(t))
+            .ToArray();
+    }
 
-        handlerTypes = assembly.GetTypes()
-            .Where(t =>
-                t is { IsClass: true, IsAbstract: false } &&
-                typeof(IMessageHandler).IsAssignableFrom(t))
-            .ToList();
-
-        // Key each handler by the message type it handles so the dispatcher can resolve it via
-        // IIndex<Type, IMessageHandler>[message.GetType()].
+    // Key each handler by the message type it handles so the dispatcher can resolve it via
+    // IIndex<Type, IMessageHandler>[message.GetType()].
+    private static void RegisterHandlersKeyedByMessageType(ContainerBuilder builder, Type[] handlerTypes)
+    {
         foreach (var handlerType in handlerTypes)
         {
             builder
@@ -69,7 +66,5 @@ public class BackendModule : Module
                 .Keyed<IMessageHandler>(MessageHandlingHelper.MessageTypeFor(handlerType))
                 .InstancePerDependency();
         }
-
-        return messageTypes;
     }
 }
