@@ -38,15 +38,21 @@ internal class BackendModule : Module
             new LoggingContextAccessor()
         };
 
+        var scopedTypes = new[] { typeof(LoggingContext), typeof(Registry) };
+
         builder
             .RegisterAssemblyTypes(assembly)
-            .Where(t => singletons.All(s => s.GetType() != t) && !handlerTypes.Contains(t) && t != typeof(LoggingContext))
+            .Where(t => singletons.All(s => s.GetType() != t) && !handlerTypes.Contains(t) && !scopedTypes.Contains(t))
             .AsImplementedInterfaces()
             .InstancePerDependency();
 
         // One logging context per connection scope; handlers mutate it, the connection handler
         // publishes it to the accessor so the process-wide enricher can find it.
         builder.RegisterType<LoggingContext>().As<ILoggingContext>().InstancePerLifetimeScope();
+
+        // One registry per connection scope, so handlers and the handle converters share it and
+        // handle IDs can never resolve across tests.
+        builder.RegisterType<Registry>().As<IRegistry>().InstancePerLifetimeScope();
 
         foreach (var singleton in singletons)
         {
