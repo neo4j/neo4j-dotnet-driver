@@ -13,23 +13,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Extensions.Logging;
+
 namespace Neo4j.Driver.TestKitBackend.Protocol;
 
 internal class ResponseWriter : IResponseWriter
 {
     private readonly IConnectionOutput _output;
     private readonly IMessageSerializer _serializer;
+    private readonly ILogger<ResponseWriter> _logger;
 
-    public ResponseWriter(IConnectionOutput output, IMessageSerializer serializer)
+    public ResponseWriter(
+        IConnectionOutput output, 
+        IMessageSerializer serializer,
+        ILogger<ResponseWriter> logger)
     {
         _output = output;
         _serializer = serializer;
+        _logger = logger;
     }
 
     public async Task WriteAsync(IProtocolMessage message)
     {
         var json = _serializer.Serialize(message);
-
+        _logger.LogDebug("Response: {Json}", json);
         await _output.WriteAsync($"#response begin\n{json}\n#response end\n");
         await _output.FlushAsync();
     }

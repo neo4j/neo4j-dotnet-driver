@@ -13,32 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Autofac.Features.Indexed;
-
 namespace Neo4j.Driver.TestKitBackend.Protocol;
 
-internal class MessageDispatcher : IMessageDispatcher
+internal class ConnectionOutput : IConnectionOutput
 {
-    private readonly IIndex<Type, IMessageHandler> _handlers;
-    private readonly IResponseWriter _writer;
+    private readonly TextWriter _writer;
 
-    public MessageDispatcher(IIndex<Type, IMessageHandler> handlers, IResponseWriter writer)
+    public ConnectionOutput(TextWriter writer)
     {
-        _handlers = handlers;
         _writer = writer;
     }
 
-    public async Task DispatchAsync(IProtocolMessage message)
+    public Task WriteAsync(string text)
     {
-        if (!_handlers.TryGetValue(message.GetType(), out var handler))
-        {
-            throw new UnknownMessageException(message.GetType());
-        }
+        return _writer.WriteAsync(text);
+    }
 
-        var response = await handler.ProcessAsync(message);
-        if (response is not null)
-        {
-            await _writer.WriteAsync(response);
-        }
+    public Task FlushAsync()
+    {
+        return _writer.FlushAsync();
     }
 }

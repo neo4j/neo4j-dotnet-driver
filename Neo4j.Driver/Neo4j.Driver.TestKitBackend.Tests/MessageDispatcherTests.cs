@@ -53,7 +53,7 @@ public class MessageDispatcherTests
 
         var dispatch = async () => await Subject().DispatchAsync(new SampleRequest());
 
-        await dispatch.Should().ThrowAsync<InvalidOperationException>();
+        await dispatch.Should().ThrowAsync<UnknownMessageException>();
     }
 
     private record SampleRequest : IProtocolMessage;

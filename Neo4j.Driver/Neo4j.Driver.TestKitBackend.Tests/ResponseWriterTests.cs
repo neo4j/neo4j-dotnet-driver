@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.TestKitBackend.Protocol;
 using Xunit;
@@ -28,7 +29,7 @@ public class ResponseWriterTests
         var serializer = new Mock<IMessageSerializer>();
         serializer.Setup(s => s.Serialize(message)).Returns("""{"name":"Sample","data":{}}""");
         var output = new Mock<IConnectionOutput>();
-        var writer = new ResponseWriter(output.Object, serializer.Object);
+        var writer = new ResponseWriter(output.Object, serializer.Object, Mock.Of<ILogger<ResponseWriter>>());
 
         await writer.WriteAsync(message);
 

@@ -50,7 +50,6 @@ public class TestkitBackend
                 }))
             .Build();
                   
-        Console.WriteLine("Testkit backend starting up...");
         return host.RunAsync();
     }
 }
