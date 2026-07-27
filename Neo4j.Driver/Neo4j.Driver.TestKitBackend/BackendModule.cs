@@ -24,18 +24,17 @@ public class BackendModule : Module
 {
     protected override void Load(ContainerBuilder builder)
     {
-        var messageTypes = typeof(IProtocolMessage).Assembly.GetTypes()
-            .Where(t => 
-                t is { IsClass: true, IsAbstract: false } && 
-                typeof(IProtocolMessage).IsAssignableFrom(t));
+        var assembly = typeof(BackendModule).Assembly;
+
+        var messageTypes = DoMessageDiscoveryRegistration(builder, assembly, out var handlerTypes);
 
         var singletons = new List<object> {
             new MessageTypeMap(messageTypes)
         };
 
         builder
-            .RegisterAssemblyTypes(typeof(BackendModule).Assembly)
-            .Where(t => singletons.All(s => s.GetType() != t))
+            .RegisterAssemblyTypes(assembly)
+            .Where(t => singletons.All(s => s.GetType() != t) && !handlerTypes.Contains(t))
             .AsImplementedInterfaces()
             .InstancePerDependency();
 
@@ -43,5 +42,34 @@ public class BackendModule : Module
         {
             builder.RegisterInstance(singleton).AsImplementedInterfaces();
         }
+    }
+
+    private static IEnumerable<Type> DoMessageDiscoveryRegistration(
+        ContainerBuilder builder,
+        Assembly assembly,
+        out List<Type> handlerTypes)
+    {
+        var messageTypes = assembly.GetTypes()
+            .Where(t =>
+                t is { IsClass: true, IsAbstract: false } &&
+                typeof(IProtocolMessage).IsAssignableFrom(t));
+
+        handlerTypes = assembly.GetTypes()
+            .Where(t =>
+                t is { IsClass: true, IsAbstract: false } &&
+                typeof(IMessageHandler).IsAssignableFrom(t))
+            .ToList();
+
+        // Key each handler by the message type it handles so the dispatcher can resolve it via
+        // IIndex<Type, IMessageHandler>[message.GetType()].
+        foreach (var handlerType in handlerTypes)
+        {
+            builder
+                .RegisterType(handlerType)
+                .Keyed<IMessageHandler>(MessageHandlingHelper.MessageTypeFor(handlerType))
+                .InstancePerDependency();
+        }
+
+        return messageTypes;
     }
 }

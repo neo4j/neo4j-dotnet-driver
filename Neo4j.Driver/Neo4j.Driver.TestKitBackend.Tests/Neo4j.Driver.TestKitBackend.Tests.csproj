@@ -8,6 +8,12 @@
         <Nullable>enable</Nullable>
         <Platforms>AnyCPU</Platforms>
         <TargetFramework>net10.0</TargetFramework>
+        <!-- Make unused usings (IDE0005) a build error, as in the main Neo4j.Driver project.
+             See the matching comment in Neo4j.Driver.TestKitBackend.csproj. -->
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="AutoFixture" Version="4.18.1" />

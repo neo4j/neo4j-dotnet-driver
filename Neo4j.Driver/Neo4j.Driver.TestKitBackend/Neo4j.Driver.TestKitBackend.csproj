@@ -10,6 +10,15 @@
         <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
         <Configurations>Debug;Release;CI</Configurations>
         <Platforms>AnyCPU</Platforms>
+        <!-- Make unused usings (IDE0005) a build error, as in the main Neo4j.Driver project.
+             EnforceCodeStyleInBuild runs the IDE analyzers at build; GenerateDocumentationFile is
+             required for IDE0005 to be reported during build; TreatWarningsAsErrors promotes it.
+             CS1591 (missing XML doc), which GenerateDocumentationFile also enables, is suppressed
+             to keep the "no XML docs" convention. -->
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
