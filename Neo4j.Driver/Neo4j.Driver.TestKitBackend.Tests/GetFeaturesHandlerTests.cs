@@ -13,21 +13,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.TestKitBackend.Protocol;
+using FluentAssertions;
+using Neo4j.Driver.TestKitBackend.Messages;
+using Xunit;
 
-namespace Neo4j.Driver.TestKitBackend.Messages;
+namespace Neo4j.Driver.TestKitBackend.Tests;
 
-internal record GetFeatures : IProtocolMessage;
-
-internal record FeatureList : IProtocolMessage
+public class GetFeaturesHandlerTests
 {
-    public string[] Features { get; init; } = [];
-}
-
-internal class GetFeaturesHandler : MessageHandler<GetFeatures>
-{
-    public override Task<IProtocolMessage?> ProcessAsync(GetFeatures message)
+    [Fact]
+    public async Task Returns_an_empty_feature_list()
     {
-        return Task.FromResult<IProtocolMessage?>(new FeatureList());
+        var handler = new GetFeaturesHandler();
+
+        var response = await handler.ProcessAsync(new GetFeatures());
+
+        response.Should().BeOfType<FeatureList>().Which.Features.Should().BeEmpty();
     }
 }
