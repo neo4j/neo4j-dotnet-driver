@@ -17,6 +17,7 @@ using System.Text;
 using Autofac;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
+using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.Protocol;
 
 namespace Neo4j.Driver.TestKitBackend;
@@ -69,6 +70,7 @@ internal class TestkitConnectionHandler : ConnectionHandler
 
         var serializer = scope.Resolve<IMessageSerializer>();
         var dispatcher = scope.Resolve<IMessageDispatcher>();
+        var responseWriter = scope.Resolve<IResponseWriter>();
 
         try
         {
@@ -76,19 +78,39 @@ internal class TestkitConnectionHandler : ConnectionHandler
             while ((json = await input.ReadRequestAsync()) is not null)
             {
                 _logger.LogDebug("Request: {Request}", json);
-                var message = serializer.Deserialize(json);
-                await dispatcher.DispatchAsync(message);
+                await HandleRequestAsync(json, serializer, dispatcher, responseWriter, connection.ConnectionId);
             }
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "Error handling connection {ConnectionId}", connection.ConnectionId);
+            _logger.LogError(exception, "Connection {ConnectionId} failed", connection.ConnectionId);
         }
         finally
         {
             _logger.LogDebug("Closing connection {ConnectionId}", connection.ConnectionId);
             reader.Dispose();
             await writer.DisposeAsync();
+        }
+    }
+
+    // A failure handling one request (unknown message, malformed data, unexpected exception) is
+    // reported to testkit as a BackendError and logged; the connection stays up for the next request.
+    private async Task HandleRequestAsync(
+        string json,
+        IMessageSerializer serializer,
+        IMessageDispatcher dispatcher,
+        IResponseWriter responseWriter,
+        string connectionId)
+    {
+        try
+        {
+            var message = serializer.Deserialize(json);
+            await dispatcher.DispatchAsync(message);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "Error handling request on {ConnectionId}: {Request}", connectionId, json);
+            await responseWriter.WriteAsync(new BackendError { Msg = exception.Message });
         }
     }
 }

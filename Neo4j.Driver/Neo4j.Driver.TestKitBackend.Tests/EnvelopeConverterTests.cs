@@ -17,6 +17,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.Protocol;
 using Xunit;
 
@@ -141,6 +142,14 @@ public class EnvelopeConverterTests
         var json = JsonSerializer.Serialize<IProtocolMessage>(new SampleResponse { Value = "x" }, Options());
 
         json.Should().Be("""{"name":"SampleResponse","data":{"value":"x"}}""");
+    }
+
+    [Fact]
+    public void Serializes_BackendError_with_a_msg_field()
+    {
+        var json = JsonSerializer.Serialize<IProtocolMessage>(new BackendError { Msg = "boom" }, Options());
+
+        json.Should().Be("""{"name":"BackendError","data":{"msg":"boom"}}""");
     }
 
     [Fact]
