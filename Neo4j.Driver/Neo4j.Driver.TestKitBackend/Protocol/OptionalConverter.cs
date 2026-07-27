@@ -37,6 +37,10 @@ internal class OptionalConverterFactory : JsonConverterFactory, IProtocolJsonCon
 
 internal class OptionalConverter<T> : JsonConverter<IOptional<T>>
 {
+    // A present JSON null must become Specified(null), distinct from an absent key. Without this,
+    // STJ short-circuits null to a bare null value and never invokes Read.
+    public override bool HandleNull => true;
+
     public override IOptional<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         // The converter is only invoked when the key is present; absence is handled by the

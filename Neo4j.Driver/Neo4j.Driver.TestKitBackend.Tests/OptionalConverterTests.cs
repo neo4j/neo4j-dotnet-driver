@@ -35,4 +35,28 @@ public class OptionalConverterTests
 
         opt.Should().BeOfType<Specified<string>>().Which.Value.Should().Be("hello");
     }
+
+    [Fact]
+    public void Reads_a_present_null_as_Specified_with_a_null_value()
+    {
+        var opt = JsonSerializer.Deserialize<IOptional<string>>("null", Options());
+
+        opt.Should().BeOfType<Specified<string>>().Which.Value.Should().BeNull();
+    }
+
+    [Fact]
+    public void Reads_a_present_null_for_a_nullable_value_type_as_Specified_null()
+    {
+        var opt = JsonSerializer.Deserialize<IOptional<int?>>("null", Options());
+
+        opt.Should().BeOfType<Specified<int?>>().Which.Value.Should().BeNull();
+    }
+
+    [Fact]
+    public void Rejects_a_present_null_for_a_non_nullable_value_type()
+    {
+        var read = () => JsonSerializer.Deserialize<IOptional<int>>("null", Options());
+
+        read.Should().Throw<JsonException>();
+    }
 }
