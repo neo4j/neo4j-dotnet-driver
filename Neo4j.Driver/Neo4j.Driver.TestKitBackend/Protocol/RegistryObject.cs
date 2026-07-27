@@ -13,21 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using FluentAssertions;
-using Neo4j.Driver.TestKitBackend.Messages;
-using Xunit;
+namespace Neo4j.Driver.TestKitBackend.Protocol;
 
-namespace Neo4j.Driver.TestKitBackend.Tests;
-
-public class GetFeaturesHandlerTests
-{
-    [Fact]
-    public async Task Responds_with_the_feature_list()
-    {
-        var handler = new GetFeaturesHandler();
-
-        var response = await handler.ProcessAsync(new GetFeatures());
-
-        response.Should().BeOfType<FeatureList>();
-    }
-}
+internal record RegistryObject<T>(string Id, T Object);

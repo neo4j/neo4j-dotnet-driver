@@ -26,8 +26,15 @@ internal record FeatureList : IProtocolMessage
 
 internal class GetFeaturesHandler : MessageHandler<GetFeatures>
 {
+    // Strings must come from testkit's Feature enum (nutkit/protocol/feature.py);
+    // an unknown string makes testkit raise. Keep sorted alphabetically.
+    private static readonly string[] SupportedFeatures =
+    [
+        "Feature:API:Driver.VerifyConnectivity"
+    ];
+
     public override Task<IProtocolMessage?> ProcessAsync(GetFeatures message)
     {
-        return Task.FromResult<IProtocolMessage?>(new FeatureList());
+        return Task.FromResult<IProtocolMessage?>(new FeatureList { Features = SupportedFeatures });
     }
 }

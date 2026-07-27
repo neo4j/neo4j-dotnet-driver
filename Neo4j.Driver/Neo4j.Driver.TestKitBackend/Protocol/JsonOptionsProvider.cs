@@ -15,6 +15,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Neo4j.Driver.TestKitBackend.Protocol;
 
@@ -28,6 +29,7 @@ internal class JsonOptionsProvider : IJsonOptionsProvider
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+            TypeInfoResolver = new DefaultJsonTypeInfoResolver { Modifiers = { BindHandlesToIdMembers } },
         };
 
         foreach (var converter in converters)
@@ -37,4 +39,21 @@ internal class JsonOptionsProvider : IJsonOptionsProvider
     }
 
     public JsonSerializerOptions GetOptions() => _options;
+
+    // A RegistryObject<T> property Foo binds to wire member fooId (requests), except a property
+    // already named Id, which binds to bare id (responses). A naming policy can't do this — it
+    // never sees the property type.
+    private static void BindHandlesToIdMembers(JsonTypeInfo typeInfo)
+    {
+        foreach (var property in typeInfo.Properties)
+        {
+            var isRegistryObject = property.PropertyType.IsGenericType &&
+                property.PropertyType.GetGenericTypeDefinition() == typeof(RegistryObject<>);
+
+            if (isRegistryObject && property.Name != "id")
+            {
+                property.Name += "Id";
+            }
+        }
+    }
 }
