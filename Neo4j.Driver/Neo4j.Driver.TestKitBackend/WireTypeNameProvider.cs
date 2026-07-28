@@ -13,9 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.TestKitBackend.Protocol;
+using System.Runtime.CompilerServices;
 
-internal interface IResponseWireNameProvider
+namespace Neo4j.Driver.TestKitBackend;
+
+internal class WireTypeNameProvider : IWireTypeNameProvider
 {
-    string GetResponseWireName(Type messageType);
+    // Wire names are needed before any instance exists (building the inbound name→type map),
+    // but they are instance members so a type can override them. An uninitialized instance is
+    // safe because name implementations must never touch instance state.
+    public string GetInboundTypeName(Type type)
+    {
+        return ((IWireType)RuntimeHelpers.GetUninitializedObject(type)).InboundTypeName;
+    }
 }

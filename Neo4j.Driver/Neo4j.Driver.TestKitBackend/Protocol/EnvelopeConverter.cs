@@ -21,12 +21,10 @@ namespace Neo4j.Driver.TestKitBackend.Protocol;
 internal class EnvelopeConverter : JsonConverter<IProtocolMessage>, IProtocolJsonConverter
 {
     private readonly IMessageTypeMap _messageTypeMap;
-    private readonly IResponseWireNameProvider _wireNameProvider;
 
-    public EnvelopeConverter(IMessageTypeMap messageTypeMap, IResponseWireNameProvider wireNameProvider)
+    public EnvelopeConverter(IMessageTypeMap messageTypeMap)
     {
         _messageTypeMap = messageTypeMap;
-        _wireNameProvider = wireNameProvider;
     }
 
     public override IProtocolMessage Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -59,7 +57,7 @@ internal class EnvelopeConverter : JsonConverter<IProtocolMessage>, IProtocolJso
     public override void Write(Utf8JsonWriter writer, IProtocolMessage value, JsonSerializerOptions options)
     {
         writer.WriteStartObject();
-        writer.WriteString("name", _wireNameProvider.GetResponseWireName(value.GetType()));
+        writer.WriteString("name", value.OutboundTypeName);
         writer.WritePropertyName("data");
         JsonSerializer.Serialize(writer, value, value.GetType(), options);
         writer.WriteEndObject();

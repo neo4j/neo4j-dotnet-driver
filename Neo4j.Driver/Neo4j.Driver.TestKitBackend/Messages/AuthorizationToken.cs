@@ -15,21 +15,12 @@
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record AuthorizationToken
+internal record AuthorizationToken(
+    string Scheme,
+    string Principal,
+    string Credentials,
+    string? Realm = null) : IWireType
 {
-    public string Scheme { get; }
-    public string Principal { get; }
-    public string Credentials { get; }
-    public string? Realm { get; }
-
-    public AuthorizationToken(string scheme, string principal, string credentials, string? realm = null)
-    {
-        Scheme = scheme;
-        Principal = principal;
-        Credentials = credentials;
-        Realm = realm;
-    }
-
     public IAuthToken ToAuthToken()
     {
         return AuthTokens.Custom(Principal, Credentials, Realm, Scheme);

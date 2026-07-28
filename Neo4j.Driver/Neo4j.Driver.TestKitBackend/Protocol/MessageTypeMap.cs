@@ -22,10 +22,10 @@ internal class MessageTypeMap : IMessageTypeMap
 
     public MessageTypeMap(
         IProtocolMessageTypesProvider protocolMessageTypesProvider,
-        IRequestWireNameProvider wireNameProvider)
+        IWireTypeNameProvider wireTypeNameProvider)
     {
         var messageTypes = protocolMessageTypesProvider.GetTypes();
-        _byName = messageTypes.ToDictionary(wireNameProvider.GetRequestWireName);
+        _byName = messageTypes.ToDictionary(t => wireTypeNameProvider.GetInboundTypeName(t));
     }
 
     public Type GetTypeByName(string name)

@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.TestKitBackend.Protocol;
+namespace Neo4j.Driver.TestKitBackend;
 
-internal interface IRequestWireNameProvider
+internal interface IWireTypeNameProvider
 {
-    string GetRequestWireName(Type messageType);
+    string GetInboundTypeName(Type type);
 }

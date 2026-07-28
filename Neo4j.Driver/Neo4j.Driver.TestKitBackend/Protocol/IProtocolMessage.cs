@@ -15,6 +15,6 @@
 
 namespace Neo4j.Driver.TestKitBackend.Protocol;
 
-internal interface IProtocolMessage
+internal interface IProtocolMessage : IWireType
 {
 }

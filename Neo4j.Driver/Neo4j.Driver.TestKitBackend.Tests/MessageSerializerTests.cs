@@ -23,14 +23,11 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 public class MessageSerializerTests
 {
     private readonly Mock<IMessageTypeMap> _messageTypeMap = new();
-    private readonly Mock<IResponseWireNameProvider> _wireNameProvider = new();
 
     private IMessageSerializer Subject()
     {
-        _messageTypeMap.Setup(m => m.GetTypeByName("SampleMessage")).Returns(typeof(Sample));
-        _wireNameProvider.Setup(p => p.GetResponseWireName(typeof(Sample))).Returns("SampleMessage");
-        var optionsProvider = new JsonOptionsProvider(
-            [new EnvelopeConverter(_messageTypeMap.Object, _wireNameProvider.Object)]);
+        _messageTypeMap.Setup(m => m.GetTypeByName("Sample")).Returns(typeof(Sample));
+        var optionsProvider = new JsonOptionsProvider([new EnvelopeConverter(_messageTypeMap.Object)]);
         return new MessageSerializer(optionsProvider);
     }
 
@@ -39,13 +36,13 @@ public class MessageSerializerTests
     {
         var json = Subject().Serialize(new Sample { Value = "x" });
 
-        json.Should().Be("""{"name":"SampleMessage","data":{"value":"x"}}""");
+        json.Should().Be("""{"name":"Sample","data":{"value":"x"}}""");
     }
 
     [Fact]
     public void Deserialize_reads_an_envelope_into_its_message_type()
     {
-        var message = Subject().Deserialize("""{"name":"SampleMessage","data":{"value":"x"}}""");
+        var message = Subject().Deserialize("""{"name":"Sample","data":{"value":"x"}}""");
 
         message.Should().BeOfType<Sample>().Which.Value.Should().Be("x");
     }

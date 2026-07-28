@@ -26,17 +26,12 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 public class EnvelopeConverterTests
 {
     private readonly Mock<IMessageTypeMap> _messageTypeMap = new();
-    private readonly Mock<IResponseWireNameProvider> _wireNameProvider = new();
 
     public EnvelopeConverterTests()
     {
         _messageTypeMap
             .Setup(m => m.GetTypeByName("Sample"))
             .Returns(typeof(SampleRequest));
-
-        _wireNameProvider
-            .Setup(p => p.GetResponseWireName(It.IsAny<Type>()))
-            .Returns((Type t) => "WireNameOf" + t.Name);
     }
 
     private JsonSerializerOptions Options()
@@ -45,7 +40,7 @@ public class EnvelopeConverterTests
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
-            Converters = { new EnvelopeConverter(_messageTypeMap.Object, _wireNameProvider.Object) }
+            Converters = { new EnvelopeConverter(_messageTypeMap.Object) }
         };
     }
 
@@ -142,11 +137,11 @@ public class EnvelopeConverterTests
     }
 
     [Fact]
-    public void Writes_the_wire_name_from_the_provider_and_camelCase_data()
+    public void Writes_the_outbound_wire_name_and_camelCase_data()
     {
         var json = JsonSerializer.Serialize<IProtocolMessage>(new SampleResponse { Value = "x" }, Options());
 
-        json.Should().Be("""{"name":"WireNameOfSampleResponse","data":{"value":"x"}}""");
+        json.Should().Be("""{"name":"Sample","data":{"value":"x"}}""");
     }
 
     [Fact]
@@ -154,7 +149,7 @@ public class EnvelopeConverterTests
     {
         var json = JsonSerializer.Serialize<IProtocolMessage>(new BackendErrorResponse { Msg = "boom" }, Options());
 
-        json.Should().Be("""{"name":"WireNameOfBackendErrorResponse","data":{"msg":"boom"}}""");
+        json.Should().Be("""{"name":"BackendError","data":{"msg":"boom"}}""");
     }
 
     [Fact]
@@ -165,7 +160,7 @@ public class EnvelopeConverterTests
         var json = JsonSerializer.Serialize<IProtocolMessage>(message, Options());
 
         json.Should().Be(
-            """{"name":"WireNameOfSampleEnvelope","data":{"inner":{"name":"WireNameOfSampleResponse","data":{"value":"y"}}}}""");
+            """{"name":"SampleEnvelope","data":{"inner":{"name":"Sample","data":{"value":"y"}}}}""");
     }
 
     [Fact]

@@ -22,27 +22,18 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class MessageTypeMapTests
 {
-    private readonly Mock<IRequestWireNameProvider> _wireNameProvider = new();
     private readonly Mock<IProtocolMessageTypesProvider> _protocolTypesProvider = new();
 
     public MessageTypeMapTests()
     {
-        _wireNameProvider
-            .Setup(p => p.GetRequestWireName(typeof(FirstSampleMessage)))
-            .Returns("First");
-
-        _wireNameProvider
-            .Setup(p => p.GetRequestWireName(typeof(SecondSampleMessage)))
-            .Returns("Second");
-
         _protocolTypesProvider
             .Setup(p => p.GetTypes())
-            .Returns(new[] { typeof(FirstSampleMessage), typeof(SecondSampleMessage) });
+            .Returns(new[] { typeof(FirstSampleRequest), typeof(SecondSampleRequest) });
     }
 
     private MessageTypeMap Subject()
     {
-        return new MessageTypeMap(_protocolTypesProvider.Object, _wireNameProvider.Object);
+        return new MessageTypeMap(_protocolTypesProvider.Object, new WireTypeNameProvider());
     }
 
     [Fact]
@@ -53,15 +44,15 @@ public class MessageTypeMapTests
     }
 
     [Fact]
-    public void GetTypeByName_finds_types_by_the_wire_name_from_the_provider()
+    public void GetTypeByName_finds_types_by_their_inbound_wire_name()
     {
-        var result = Subject().GetTypeByName("First");
-        result.Should().BeSameAs(typeof(FirstSampleMessage));
+        var result = Subject().GetTypeByName("FirstSample");
+        result.Should().BeSameAs(typeof(FirstSampleRequest));
     }
 
-    private record FirstSampleMessage : IProtocolMessage;
+    private record FirstSampleRequest : IProtocolMessage;
 
-    private record SecondSampleMessage : IProtocolMessage;
+    private record SecondSampleRequest : IProtocolMessage;
 
     private class NotAMessage;
 }

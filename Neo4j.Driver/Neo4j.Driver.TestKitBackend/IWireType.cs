@@ -13,18 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.TestKitBackend.Protocol;
+namespace Neo4j.Driver.TestKitBackend;
 
-internal class WireNameProvider : IRequestWireNameProvider, IResponseWireNameProvider
+internal interface IWireType
 {
-    public string GetRequestWireName(Type messageType) => StripSuffix(messageType.Name, "Request");
+    string InboundTypeName => RemoveSuffix(GetType().Name, "Request");
 
-    public string GetResponseWireName(Type messageType) => StripSuffix(messageType.Name, "Response");
+    string OutboundTypeName => RemoveSuffix(GetType().Name, "Response");
 
-    private static string StripSuffix(string name, string suffix)
+    private string RemoveSuffix(string str, string suffix)
     {
-        return name.EndsWith(suffix, StringComparison.Ordinal)
-            ? name[..^suffix.Length]
-            : name;
+        return str.EndsWith(suffix, StringComparison.Ordinal)
+            ? str[..^suffix.Length]
+            : str;
     }
 }
