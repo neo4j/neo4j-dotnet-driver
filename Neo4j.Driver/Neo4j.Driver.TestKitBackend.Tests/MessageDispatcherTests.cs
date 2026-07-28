@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Autofac.Features.Indexed;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.TestKitBackend.Protocol;
@@ -23,35 +22,28 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class MessageDispatcherTests
 {
-    private readonly Mock<IIndex<Type, IMessageHandler>> _handlers = new();
     private readonly Mock<IResponseWriter> _writer = new();
 
-    private MessageDispatcher Subject() => new(_handlers.Object, _writer.Object);
-
     [Fact]
-    public async Task Dispatches_to_the_handler_keyed_by_message_type_and_writes_its_response()
+    public async Task Dispatches_to_the_handler_for_the_message_type_and_writes_its_response()
     {
-        var request = new SampleRequest();
         var response = new SampleResponse();
+        var sampleHandler = new SampleHandler(response);
+        var otherHandler = new OtherHandler();
+        var dispatcher = new MessageDispatcher([otherHandler, sampleHandler], _writer.Object);
 
-        var handler = new Mock<IMessageHandler>();
-        handler.Setup(h => h.ProcessAsync(request)).ReturnsAsync(response);
-
-        IMessageHandler resolved = handler.Object;
-        _handlers.Setup(h => h.TryGetValue(typeof(SampleRequest), out resolved!)).Returns(true);
-
-        await Subject().DispatchAsync(request);
+        await dispatcher.DispatchAsync(new SampleRequest());
 
         _writer.Verify(w => w.WriteAsync(response), Times.Once);
+        otherHandler.WasCalled.Should().BeFalse();
     }
 
     [Fact]
-    public async Task Throws_when_no_handler_is_registered_for_the_message_type()
+    public async Task Throws_when_no_handler_exists_for_the_message_type()
     {
-        IMessageHandler resolved = null!;
-        _handlers.Setup(h => h.TryGetValue(It.IsAny<Type>(), out resolved!)).Returns(false);
+        var dispatcher = new MessageDispatcher([new OtherHandler()], _writer.Object);
 
-        var dispatch = async () => await Subject().DispatchAsync(new SampleRequest());
+        var dispatch = async () => await dispatcher.DispatchAsync(new SampleRequest());
 
         await dispatch.Should().ThrowAsync<UnknownMessageException>();
     }
@@ -59,4 +51,30 @@ public class MessageDispatcherTests
     private record SampleRequest : IProtocolMessage;
 
     private record SampleResponse : IProtocolMessage;
+
+    private record OtherRequest : IProtocolMessage;
+
+    private class SampleHandler : MessageHandler<SampleRequest>
+    {
+        private readonly IProtocolMessage? _response;
+
+        public SampleHandler(IProtocolMessage? response)
+        {
+            _response = response;
+        }
+
+        public override Task<IProtocolMessage?> ProcessAsync(SampleRequest message) =>
+            Task.FromResult(_response);
+    }
+
+    private class OtherHandler : MessageHandler<OtherRequest>
+    {
+        public bool WasCalled { get; private set; }
+
+        public override Task<IProtocolMessage?> ProcessAsync(OtherRequest message)
+        {
+            WasCalled = true;
+            return Task.FromResult<IProtocolMessage?>(null);
+        }
+    }
 }

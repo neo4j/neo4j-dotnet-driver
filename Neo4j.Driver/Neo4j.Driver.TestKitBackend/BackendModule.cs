@@ -15,7 +15,6 @@
 
 using System.Reflection;
 using Autofac;
-using Neo4j.Driver.TestKitBackend.Protocol;
 using Module = Autofac.Module;
 
 namespace Neo4j.Driver.TestKitBackend;
@@ -24,46 +23,30 @@ internal class BackendModule : Module
 {
     protected override void Load(ContainerBuilder builder)
     {
-        var assembly = Assembly.GetExecutingAssembly();
+        foreach (var type in RegisterableTypes(Assembly.GetExecutingAssembly()))
+        {
+            var registration = builder.RegisterType(type).AsImplementedInterfaces();
 
-        var handlerTypes = new MessageHandlerTypesProvider().GetTypes();
-        RegisterHandlersKeyedByMessageType(builder, handlerTypes);
+            _ = LifetimeOf(type) switch
+            {
+                RegistrationLifetime.PerDependency => registration.InstancePerDependency(),
+                RegistrationLifetime.PerLifetimeScope => registration.InstancePerLifetimeScope(),
+                RegistrationLifetime.Singleton => registration.SingleInstance(),
+                _ => throw new ArgumentOutOfRangeException()
+            };
+        }
+    }
 
-        builder
-            .RegisterAssemblyTypes(assembly)
-            .Where(t => !handlerTypes.Contains(t) && LifetimeOf(t) == RegistrationLifetime.PerDependency)
-            .AsImplementedInterfaces()
-            .InstancePerDependency();
-
-        builder
-            .RegisterAssemblyTypes(assembly)
-            .Where(t => LifetimeOf(t) == RegistrationLifetime.PerLifetimeScope)
-            .AsImplementedInterfaces()
-            .InstancePerLifetimeScope();
-
-        builder
-            .RegisterAssemblyTypes(assembly)
-            .Where(t => LifetimeOf(t) == RegistrationLifetime.Singleton)
-            .AsImplementedInterfaces()
-            .SingleInstance();
+    private static IEnumerable<Type> RegisterableTypes(Assembly assembly)
+    {
+        return assembly.GetTypes()
+            .Where(t =>
+                t is { IsClass: true, IsAbstract: false, IsGenericTypeDefinition: false });
     }
 
     private static RegistrationLifetime LifetimeOf(Type type)
     {
-        return type.GetCustomAttribute<RegistrationLifetimeAttribute>()?.Lifetime
-            ?? RegistrationLifetime.PerDependency;
-    }
-
-    // Key each handler by the message type it handles so the dispatcher can resolve it via
-    // IIndex<Type, IMessageHandler>[message.GetType()].
-    private static void RegisterHandlersKeyedByMessageType(ContainerBuilder builder, Type[] handlerTypes)
-    {
-        foreach (var handlerType in handlerTypes)
-        {
-            builder
-                .RegisterType(handlerType)
-                .Keyed<IMessageHandler>(MessageHandlingHelper.MessageTypeFor(handlerType))
-                .InstancePerDependency();
-        }
+        return type.GetCustomAttribute<RegistrationLifetimeAttribute>()?.Lifetime 
+         ?? RegistrationLifetime.PerDependency;
     }
 }

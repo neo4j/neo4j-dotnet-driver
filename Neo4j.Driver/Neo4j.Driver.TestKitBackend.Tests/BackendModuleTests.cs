@@ -16,6 +16,9 @@
 using System.Text.Json;
 using Autofac;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Neo4j.Driver.TestKitBackend.Protocol;
 using Xunit;
 
@@ -43,6 +46,27 @@ public class BackendModuleTests
             $$"""{"thingId":"{{registered.Id}}"}""", options);
 
         request!.Thing.Object.Should().BeSameAs(registered.Object);
+    }
+
+    [Fact]
+    public void The_message_dispatcher_resolves_with_every_handler_constructed()
+    {
+        var container = BuildContainer();
+
+        // The connection handler registers the transport-bound output into each connection
+        // scope, and the host supplies ILogger<>; emulate both so the dispatcher's
+        // ResponseWriter dependency can resolve.
+        using var scope = container.BeginLifetimeScope(b =>
+        {
+            b.RegisterInstance(Mock.Of<IConnectionOutput>()).As<IConnectionOutput>();
+            b.RegisterGeneric(typeof(NullLogger<>)).As(typeof(ILogger<>));
+        });
+
+        // Constructs all handlers and builds the type→handler map, so this throws if any
+        // handler has an unresolvable dependency or two handlers claim one message type.
+        var resolve = () => scope.Resolve<IMessageDispatcher>();
+
+        resolve.Should().NotThrow();
     }
 
     [Fact]

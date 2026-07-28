@@ -18,7 +18,7 @@ namespace Neo4j.Driver.TestKitBackend.Protocol;
 internal static class MessageHandlingHelper
 {
     // The message type a handler handles, i.e. the T in its IMessageHandler<T> — used as the
-    // dispatch key when registering handlers into IIndex<Type, IMessageHandler>.
+    // dispatch key when the dispatcher builds its message-type→handler map.
     public static Type MessageTypeFor(Type handlerType)
     {
         var handlerInterface = handlerType.GetInterfaces()
