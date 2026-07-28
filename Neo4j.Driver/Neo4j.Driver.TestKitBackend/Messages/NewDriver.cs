@@ -20,14 +20,25 @@ namespace Neo4j.Driver.TestKitBackend.Messages;
 internal record NewDriverRequest : IProtocolMessage
 {
     public string Uri { get; init; } = "";
+    public AuthorizationToken? AuthorizationToken { get; init; }
 }
 
 internal record DriverResponse(string Id) : IProtocolMessage;
 
 internal class NewDriverHandler : MessageHandler<NewDriverRequest>
 {
+    private readonly IRegistry _registry;
+
+    public NewDriverHandler(IRegistry registry)
+    {
+        _registry = registry;
+    }
+
     public override Task<IProtocolMessage?> ProcessAsync(NewDriverRequest message)
     {
-        throw new NotImplementedException();
+        var driver = GraphDatabase.Driver(message.Uri, message.AuthorizationToken?.ToAuthToken());
+        var registryObject = _registry.Register(driver);
+        var response = new DriverResponse(registryObject.Id);
+        return Task.FromResult<IProtocolMessage?>(response);
     }
 }
