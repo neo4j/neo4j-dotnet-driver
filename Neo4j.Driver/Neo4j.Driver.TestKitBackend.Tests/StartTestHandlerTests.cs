@@ -27,9 +27,9 @@ public class StartTestHandlerTests
     {
         var handler = new StartTestHandler(new LoggingContext());
 
-        var response = await handler.ProcessAsync(new StartTest { TestName = "some.test.name" });
+        var response = await handler.ProcessAsync(new StartTestRequest { TestName = "some.test.name" });
 
-        response.Should().BeOfType<RunTest>();
+        response.Should().BeOfType<RunTestResponse>();
     }
 
     [Fact]
@@ -38,7 +38,7 @@ public class StartTestHandlerTests
         var loggingContext = new LoggingContext();
         var handler = new StartTestHandler(loggingContext);
 
-        await handler.ProcessAsync(new StartTest { TestName = "some.test.name" });
+        await handler.ProcessAsync(new StartTestRequest { TestName = "some.test.name" });
 
         loggingContext.Current["TestName"].Should().Be("some.test.name");
     }

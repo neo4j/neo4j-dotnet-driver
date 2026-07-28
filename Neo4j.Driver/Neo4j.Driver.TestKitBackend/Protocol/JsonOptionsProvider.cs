@@ -40,9 +40,8 @@ internal class JsonOptionsProvider : IJsonOptionsProvider
 
     public JsonSerializerOptions GetOptions() => _options;
 
-    // A RegistryObject<T> property Foo binds to wire member fooId (requests), except a property
-    // already named Id, which binds to bare id (responses). A naming policy can't do this — it
-    // never sees the property type.
+    // A RegistryObject<T> property Foo binds to wire member fooId. A naming policy can't do
+    // this — it never sees the property type.
     private static void BindHandlesToIdMembers(JsonTypeInfo typeInfo)
     {
         foreach (var property in typeInfo.Properties)
@@ -50,7 +49,7 @@ internal class JsonOptionsProvider : IJsonOptionsProvider
             var isRegistryObject = property.PropertyType.IsGenericType &&
                 property.PropertyType.GetGenericTypeDefinition() == typeof(RegistryObject<>);
 
-            if (isRegistryObject && property.Name != "id")
+            if (isRegistryObject)
             {
                 property.Name += "Id";
             }

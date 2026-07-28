@@ -19,9 +19,9 @@ internal class MessageTypeMap : IMessageTypeMap
 {
     private readonly IReadOnlyDictionary<string, Type> _byName;
 
-    public MessageTypeMap(IEnumerable<Type> messageTypes)
+    public MessageTypeMap(IEnumerable<Type> messageTypes, IRequestWireNameProvider wireNameProvider)
     {
-        _byName = messageTypes.ToDictionary(t => t.Name);
+        _byName = messageTypes.ToDictionary(wireNameProvider.GetRequestWireName);
     }
 
     public Type GetTypeByName(string name) =>

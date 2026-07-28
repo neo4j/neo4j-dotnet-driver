@@ -26,8 +26,8 @@ public class GetFeaturesHandlerTests
     {
         var handler = new GetFeaturesHandler();
 
-        var response = await handler.ProcessAsync(new GetFeatures());
+        var response = await handler.ProcessAsync(new GetFeaturesRequest());
 
-        response.Should().BeOfType<FeatureList>();
+        response.Should().BeOfType<FeatureListResponse>();
     }
 }

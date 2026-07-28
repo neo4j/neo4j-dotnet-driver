@@ -26,12 +26,17 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 public class EnvelopeConverterTests
 {
     private readonly Mock<IMessageTypeMap> _messageTypeMap = new();
+    private readonly Mock<IResponseWireNameProvider> _wireNameProvider = new();
 
     public EnvelopeConverterTests()
     {
         _messageTypeMap
-            .Setup(m => m.GetTypeByName("SampleRequest"))
+            .Setup(m => m.GetTypeByName("Sample"))
             .Returns(typeof(SampleRequest));
+
+        _wireNameProvider
+            .Setup(p => p.GetResponseWireName(It.IsAny<Type>()))
+            .Returns((Type t) => "WireNameOf" + t.Name);
     }
 
     private JsonSerializerOptions Options()
@@ -40,7 +45,7 @@ public class EnvelopeConverterTests
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
-            Converters = { new EnvelopeConverter(_messageTypeMap.Object) }
+            Converters = { new EnvelopeConverter(_messageTypeMap.Object, _wireNameProvider.Object) }
         };
     }
 
@@ -50,7 +55,7 @@ public class EnvelopeConverterTests
         const string json =
             """
             {
-                "name": "SampleRequest",
+                "name": "Sample",
                 "data": {
                     "uri": "neo4j://x"
                 }
@@ -68,7 +73,7 @@ public class EnvelopeConverterTests
         const string json =
             """
             {
-                "name": "SampleRequest",
+                "name": "Sample",
                 "data": {
                     "uri": "neo4j://x",
                     "userAgent": "ua/1"
@@ -88,7 +93,7 @@ public class EnvelopeConverterTests
         const string json =
             """
             {
-                "name": "SampleRequest"
+                "name": "Sample"
             }
             """;
 
@@ -103,7 +108,7 @@ public class EnvelopeConverterTests
         const string json =
             """
             {
-                "name": "SampleRequest",
+                "name": "Sample",
                 "data": {
                     "uri": "neo4j://x",
                     "bogus": true
@@ -137,19 +142,19 @@ public class EnvelopeConverterTests
     }
 
     [Fact]
-    public void Writes_the_type_name_and_camelCase_data()
+    public void Writes_the_wire_name_from_the_provider_and_camelCase_data()
     {
         var json = JsonSerializer.Serialize<IProtocolMessage>(new SampleResponse { Value = "x" }, Options());
 
-        json.Should().Be("""{"name":"SampleResponse","data":{"value":"x"}}""");
+        json.Should().Be("""{"name":"WireNameOfSampleResponse","data":{"value":"x"}}""");
     }
 
     [Fact]
     public void Serializes_BackendError_with_a_msg_field()
     {
-        var json = JsonSerializer.Serialize<IProtocolMessage>(new BackendError { Msg = "boom" }, Options());
+        var json = JsonSerializer.Serialize<IProtocolMessage>(new BackendErrorResponse { Msg = "boom" }, Options());
 
-        json.Should().Be("""{"name":"BackendError","data":{"msg":"boom"}}""");
+        json.Should().Be("""{"name":"WireNameOfBackendErrorResponse","data":{"msg":"boom"}}""");
     }
 
     [Fact]
@@ -160,7 +165,7 @@ public class EnvelopeConverterTests
         var json = JsonSerializer.Serialize<IProtocolMessage>(message, Options());
 
         json.Should().Be(
-            """{"name":"SampleEnvelope","data":{"inner":{"name":"SampleResponse","data":{"value":"y"}}}}""");
+            """{"name":"WireNameOfSampleEnvelope","data":{"inner":{"name":"WireNameOfSampleResponse","data":{"value":"y"}}}}""");
     }
 
     [Fact]
@@ -176,7 +181,7 @@ public class EnvelopeConverterTests
                 "name": "SampleEnvelope",
                 "data": {
                     "inner": {
-                        "name": "SampleRequest",
+                        "name": "Sample",
                         "data": { "uri": "neo4j://y" }
                     }
                 }

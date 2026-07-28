@@ -62,6 +62,6 @@ internal class RegistryObjectConverter<T> : JsonConverter<RegistryObject<T>> whe
 
     public override void Write(Utf8JsonWriter writer, RegistryObject<T> value, JsonSerializerOptions options)
     {
-        writer.WriteStringValue(value.Id);
+        throw new NotSupportedException("RegistryObject<T> is never serialized.");
     }
 }

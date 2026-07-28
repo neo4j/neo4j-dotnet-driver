@@ -13,13 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.TestKitBackend.Protocol;
+namespace Neo4j.Driver.TestKitBackend.Protocol;
 
-namespace Neo4j.Driver.TestKitBackend.Messages;
-
-// Sent to testkit when the backend itself fails to handle a request (unknown message, malformed
-// data, unexpected exception) — as opposed to a driver error. Testkit raises it, surfacing Msg.
-internal record BackendErrorResponse : IProtocolMessage
+internal interface IResponseWireNameProvider
 {
-    public string Msg { get; init; } = "";
+    string GetResponseWireName(Type messageType);
 }

@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using FluentAssertions;
+using Moq;
 using Neo4j.Driver.TestKitBackend.Protocol;
 using Xunit;
 
@@ -21,24 +22,38 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class MessageTypeMapTests
 {
+    private readonly Mock<IRequestWireNameProvider> _wireNameProvider = new();
+
+    public MessageTypeMapTests()
+    {
+        _wireNameProvider
+            .Setup(p => p.GetRequestWireName(typeof(FirstSampleMessage)))
+            .Returns("First");
+
+        _wireNameProvider
+            .Setup(p => p.GetRequestWireName(typeof(SecondSampleMessage)))
+            .Returns("Second");
+    }
+
+    private MessageTypeMap Subject()
+    {
+        return new MessageTypeMap(
+            [typeof(FirstSampleMessage), typeof(SecondSampleMessage)], _wireNameProvider.Object);
+    }
+
     [Fact]
     public void GetTypeByName_throws_for_an_unknown_message_name()
     {
-        Type[] messageTypes = [typeof(FirstSampleMessage), typeof(SecondSampleMessage)];
-        var map = new MessageTypeMap(messageTypes);
-        var lookup = () => map.GetTypeByName(nameof(NotAMessage));
+        var lookup = () => Subject().GetTypeByName(nameof(NotAMessage));
         lookup.Should().Throw<TestKitProtocolException>();
     }
 
     [Fact]
-    public void GetTypeByName_finds_type_by_name()
+    public void GetTypeByName_finds_types_by_the_wire_name_from_the_provider()
     {
-        Type[] messageTypes = [typeof(FirstSampleMessage), typeof(SecondSampleMessage)];
-        var map = new MessageTypeMap(messageTypes);
-        var result = map.GetTypeByName("FirstSampleMessage");
+        var result = Subject().GetTypeByName("First");
         result.Should().BeSameAs(typeof(FirstSampleMessage));
     }
-
 
     private record FirstSampleMessage : IProtocolMessage;
 

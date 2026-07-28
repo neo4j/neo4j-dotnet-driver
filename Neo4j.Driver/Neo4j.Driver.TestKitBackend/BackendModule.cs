@@ -31,9 +31,11 @@ internal class BackendModule : Module
         RegisterHandlersKeyedByMessageType(builder, handlerTypes);
 
         var messageTypes = ConcreteImplementationsOf<IProtocolMessage>(assembly);
+        var wireNameProvider = new WireNameProvider();
         var singletons = new List<object>
         {
-            new MessageTypeMap(messageTypes),
+            wireNameProvider,
+            new MessageTypeMap(messageTypes, wireNameProvider),
             new ConnectionIdProvider(),
             new LoggingContextAccessor()
         };

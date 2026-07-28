@@ -13,13 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.TestKitBackend.Protocol;
+namespace Neo4j.Driver.TestKitBackend.Protocol;
 
-namespace Neo4j.Driver.TestKitBackend.Messages;
-
-// Sent to testkit when the backend itself fails to handle a request (unknown message, malformed
-// data, unexpected exception) — as opposed to a driver error. Testkit raises it, surfacing Msg.
-internal record BackendErrorResponse : IProtocolMessage
+internal class WireNameProvider : IRequestWireNameProvider, IResponseWireNameProvider
 {
-    public string Msg { get; init; } = "";
+    public string GetRequestWireName(Type messageType) => StripSuffix(messageType.Name, "Request");
+
+    public string GetResponseWireName(Type messageType) => StripSuffix(messageType.Name, "Response");
+
+    private static string StripSuffix(string name, string suffix)
+    {
+        return name.EndsWith(suffix, StringComparison.Ordinal)
+            ? name[..^suffix.Length]
+            : name;
+    }
 }

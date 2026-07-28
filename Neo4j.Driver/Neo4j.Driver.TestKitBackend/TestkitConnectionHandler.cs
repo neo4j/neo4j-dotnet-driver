@@ -118,7 +118,7 @@ internal class TestkitConnectionHandler : ConnectionHandler
         catch (Exception exception)
         {
             _logger.LogError(exception, "Error handling request on {ConnectionId}: {Request}", connectionId, json);
-            await responseWriter.WriteAsync(new BackendError { Msg = exception.Message });
+            await responseWriter.WriteAsync(new BackendErrorResponse { Msg = exception.Message });
         }
     }
 }

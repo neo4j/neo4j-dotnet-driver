@@ -17,14 +17,14 @@ using Neo4j.Driver.TestKitBackend.Protocol;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record GetFeatures : IProtocolMessage;
+internal record GetFeaturesRequest : IProtocolMessage;
 
-internal record FeatureList : IProtocolMessage
+internal record FeatureListResponse : IProtocolMessage
 {
     public string[] Features { get; init; } = [];
 }
 
-internal class GetFeaturesHandler : MessageHandler<GetFeatures>
+internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
 {
     // Strings must come from testkit's Feature enum (nutkit/protocol/feature.py);
     // an unknown string makes testkit raise. Keep sorted alphabetically.
@@ -33,8 +33,8 @@ internal class GetFeaturesHandler : MessageHandler<GetFeatures>
         "Feature:API:Driver.VerifyConnectivity"
     ];
 
-    public override Task<IProtocolMessage?> ProcessAsync(GetFeatures message)
+    public override Task<IProtocolMessage?> ProcessAsync(GetFeaturesRequest message)
     {
-        return Task.FromResult<IProtocolMessage?>(new FeatureList { Features = SupportedFeatures });
+        return Task.FromResult<IProtocolMessage?>(new FeatureListResponse { Features = SupportedFeatures });
     }
 }

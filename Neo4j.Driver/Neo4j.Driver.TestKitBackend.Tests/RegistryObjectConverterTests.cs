@@ -39,24 +39,9 @@ public class RegistryObjectConverterTests
         request.Thing.Id.Should().Be(registered.Id);
     }
 
-    [Fact]
-    public void Writes_the_id_as_a_plain_json_string()
-    {
-        var registered = _registry.Register(new Stored());
-
-        var json = JsonSerializer.Serialize(new Response { Id = registered }, Options());
-
-        json.Should().Be($$"""{"id":"{{registered.Id}}"}""");
-    }
-
     private record Request
     {
         public RegistryObject<Stored> Thing { get; init; } = null!;
-    }
-
-    private record Response
-    {
-        public RegistryObject<Stored> Id { get; init; } = null!;
     }
 
     private class Stored;
