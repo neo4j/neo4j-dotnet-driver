@@ -15,6 +15,9 @@
 
 namespace Neo4j.Driver.TestKitBackend.Protocol;
 
+// One per connection scope, so handlers and the handle converters share it and handle IDs can
+// never resolve across tests.
+[RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
 internal class Registry : IRegistry
 {
     private readonly Dictionary<string, object> _objects = [];

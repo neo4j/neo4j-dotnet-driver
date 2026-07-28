@@ -23,6 +23,7 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 public class MessageTypeMapTests
 {
     private readonly Mock<IRequestWireNameProvider> _wireNameProvider = new();
+    private readonly Mock<IProtocolMessageTypesProvider> _protocolTypesProvider = new();
 
     public MessageTypeMapTests()
     {
@@ -33,12 +34,15 @@ public class MessageTypeMapTests
         _wireNameProvider
             .Setup(p => p.GetRequestWireName(typeof(SecondSampleMessage)))
             .Returns("Second");
+
+        _protocolTypesProvider
+            .Setup(p => p.GetTypes())
+            .Returns(new[] { typeof(FirstSampleMessage), typeof(SecondSampleMessage) });
     }
 
     private MessageTypeMap Subject()
     {
-        return new MessageTypeMap(
-            [typeof(FirstSampleMessage), typeof(SecondSampleMessage)], _wireNameProvider.Object);
+        return new MessageTypeMap(_protocolTypesProvider.Object, _wireNameProvider.Object);
     }
 
     [Fact]

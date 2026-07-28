@@ -15,7 +15,6 @@
 
 using System.Reflection;
 using Autofac;
-using Neo4j.Driver.TestKitBackend.Logging;
 using Neo4j.Driver.TestKitBackend.Protocol;
 using Module = Autofac.Module;
 
@@ -27,48 +26,32 @@ internal class BackendModule : Module
     {
         var assembly = Assembly.GetExecutingAssembly();
 
-        var handlerTypes = ConcreteImplementationsOf<IMessageHandler>(assembly);
+        var handlerTypes = new MessageHandlerTypesProvider().GetTypes();
         RegisterHandlersKeyedByMessageType(builder, handlerTypes);
-
-        var messageTypes = ConcreteImplementationsOf<IProtocolMessage>(assembly);
-        var wireNameProvider = new WireNameProvider();
-        var singletons = new List<object>
-        {
-            wireNameProvider,
-            new MessageTypeMap(messageTypes, wireNameProvider),
-            new ConnectionIdProvider(),
-            new LoggingContextAccessor()
-        };
-
-        var scopedTypes = new[] { typeof(LoggingContext), typeof(Registry) };
 
         builder
             .RegisterAssemblyTypes(assembly)
-            .Where(t => singletons.All(s => s.GetType() != t) && !handlerTypes.Contains(t) && !scopedTypes.Contains(t))
+            .Where(t => !handlerTypes.Contains(t) && LifetimeOf(t) == RegistrationLifetime.PerDependency)
             .AsImplementedInterfaces()
             .InstancePerDependency();
 
-        // One logging context per connection scope; handlers mutate it, the connection handler
-        // publishes it to the accessor so the process-wide enricher can find it.
-        builder.RegisterType<LoggingContext>().As<ILoggingContext>().InstancePerLifetimeScope();
+        builder
+            .RegisterAssemblyTypes(assembly)
+            .Where(t => LifetimeOf(t) == RegistrationLifetime.PerLifetimeScope)
+            .AsImplementedInterfaces()
+            .InstancePerLifetimeScope();
 
-        // One registry per connection scope, so handlers and the handle converters share it and
-        // handle IDs can never resolve across tests.
-        builder.RegisterType<Registry>().As<IRegistry>().InstancePerLifetimeScope();
-
-        foreach (var singleton in singletons)
-        {
-            builder.RegisterInstance(singleton).AsImplementedInterfaces();
-        }
+        builder
+            .RegisterAssemblyTypes(assembly)
+            .Where(t => LifetimeOf(t) == RegistrationLifetime.Singleton)
+            .AsImplementedInterfaces()
+            .SingleInstance();
     }
 
-    private static Type[] ConcreteImplementationsOf<T>(Assembly assembly)
+    private static RegistrationLifetime LifetimeOf(Type type)
     {
-        return assembly.GetTypes()
-            .Where(t =>
-                t is { IsClass: true, IsAbstract: false } &&
-                typeof(T).IsAssignableFrom(t))
-            .ToArray();
+        return type.GetCustomAttribute<RegistrationLifetimeAttribute>()?.Lifetime
+            ?? RegistrationLifetime.PerDependency;
     }
 
     // Key each handler by the message type it handles so the dispatcher can resolve it via

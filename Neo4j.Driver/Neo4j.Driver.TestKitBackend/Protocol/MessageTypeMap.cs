@@ -15,17 +15,23 @@
 
 namespace Neo4j.Driver.TestKitBackend.Protocol;
 
+[RegistrationLifetime(RegistrationLifetime.Singleton)]
 internal class MessageTypeMap : IMessageTypeMap
 {
     private readonly IReadOnlyDictionary<string, Type> _byName;
 
-    public MessageTypeMap(IEnumerable<Type> messageTypes, IRequestWireNameProvider wireNameProvider)
+    public MessageTypeMap(
+        IProtocolMessageTypesProvider protocolMessageTypesProvider,
+        IRequestWireNameProvider wireNameProvider)
     {
+        var messageTypes = protocolMessageTypesProvider.GetTypes();
         _byName = messageTypes.ToDictionary(wireNameProvider.GetRequestWireName);
     }
 
-    public Type GetTypeByName(string name) =>
-        _byName.TryGetValue(name, out var type)
+    public Type GetTypeByName(string name)
+    {
+        return _byName.TryGetValue(name, out var type)
             ? type
             : throw new TestKitProtocolException($"Unrecognized message name \"{name}\".");
+    }
 }

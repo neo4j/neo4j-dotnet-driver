@@ -73,7 +73,7 @@ internal class TestkitConnectionHandler : ConnectionHandler
 
         var loggingContext = scope.Resolve<ILoggingContext>();
         _loggingContextAccessor.Publish(loggingContext);
-        loggingContext.Set("ConnectionId", connectionId);
+        loggingContext.Set("conn", connectionId);
         _logger.LogDebug("New connection {ConnectionId}", connectionId);
 
         var serializer = scope.Resolve<IMessageSerializer>();
@@ -101,8 +101,6 @@ internal class TestkitConnectionHandler : ConnectionHandler
         }
     }
 
-    // A failure handling one request (unknown message, malformed data, unexpected exception) is
-    // reported to testkit as a BackendError and logged; the connection stays up for the next request.
     private async Task HandleRequestAsync(
         string json,
         IMessageSerializer serializer,

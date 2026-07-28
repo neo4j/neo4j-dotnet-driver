@@ -13,21 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.TestKitBackend.Logging;
+namespace Neo4j.Driver.TestKitBackend;
 
-// The process-wide Serilog enricher and the per-connection publishers must share one instance.
-[RegistrationLifetime(RegistrationLifetime.Singleton)]
-internal class LoggingContextAccessor : ILoggingContextAccessor
+internal enum RegistrationLifetime
 {
-    private readonly AsyncLocal<ILoggingContext?> _current = new();
+    PerDependency,
+    PerLifetimeScope,
+    Singleton
+}
 
-    public void Publish(ILoggingContext context)
+// BackendModule sweeps every concrete type into the container as its interfaces; this attribute
+// overrides the default InstancePerDependency lifetime.
+[AttributeUsage(AttributeTargets.Class)]
+internal sealed class RegistrationLifetimeAttribute : Attribute
+{
+    public RegistrationLifetimeAttribute(RegistrationLifetime lifetime)
     {
-        _current.Value = context;
+        Lifetime = lifetime;
     }
 
-    public ILoggingContext? GetCurrent()
-    {
-        return _current.Value;
-    }
+    public RegistrationLifetime Lifetime { get; }
 }

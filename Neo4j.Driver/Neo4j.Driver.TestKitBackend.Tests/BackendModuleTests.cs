@@ -46,6 +46,17 @@ public class BackendModuleTests
     }
 
     [Fact]
+    public void Singleton_services_resolve_to_one_instance_across_connection_scopes()
+    {
+        var container = BuildContainer();
+        using var scopeA = container.BeginLifetimeScope();
+        using var scopeB = container.BeginLifetimeScope();
+
+        scopeA.Resolve<IMessageTypeMap>().Should().BeSameAs(scopeB.Resolve<IMessageTypeMap>());
+        scopeA.Resolve<IConnectionIdProvider>().Should().BeSameAs(scopeB.Resolve<IConnectionIdProvider>());
+    }
+
+    [Fact]
     public void Handles_registered_in_one_connection_scope_do_not_resolve_in_another()
     {
         var container = BuildContainer();
