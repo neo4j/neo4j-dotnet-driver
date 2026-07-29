@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.Protocol;
 using Xunit;
@@ -26,7 +27,7 @@ public class NewDriverHandlerTests
     public async Task Registers_a_driver_and_responds_with_its_id()
     {
         var registry = new Registry();
-        var handler = new NewDriverHandler(registry);
+        var handler = new NewDriverHandler(registry, NullLogger<NewDriverHandler>.Instance);
         var request = new NewDriverRequest
         {
             Uri = "bolt://localhost:7687",
