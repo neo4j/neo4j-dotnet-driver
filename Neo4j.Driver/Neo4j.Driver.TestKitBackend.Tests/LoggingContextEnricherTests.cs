@@ -64,7 +64,7 @@ public class LoggingContextEnricherTests
         var accessor = new LoggingContextAccessor();
         var context = new LoggingContext();
         context.Set("ConnectionId", "testkit-1");
-        context.Set("TestName", "some.test");
+        context.Set("test", "some.test");
         accessor.Publish(context);
         var enricher = new LoggingContextEnricher(accessor);
         var logEvent = NewLogEvent();
@@ -78,7 +78,7 @@ public class LoggingContextEnricherTests
         parsed.Should().BeEquivalentTo(new Dictionary<string, string>
         {
             ["ConnectionId"] = "testkit-1",
-            ["TestName"] = "some.test"
+            ["test"] = "some.test"
         });
     }
 }

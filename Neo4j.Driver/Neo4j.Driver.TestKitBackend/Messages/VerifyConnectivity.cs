@@ -13,32 +13,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.TestKitBackend.Logging;
 using Neo4j.Driver.TestKitBackend.Protocol;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record StartTestRequest : IProtocolMessage
+internal record VerifyConnectivityRequest : IProtocolMessage
 {
-    public string TestName { get; init; } = "";
+    public required RegistryObject<IDriver> Driver { get; init; }
 }
 
-internal record RunTestResponse : IProtocolMessage;
-
-internal class StartTestHandler : MessageHandler<StartTestRequest>
+internal class VerifyConnectivityHandler : MessageHandler<VerifyConnectivityRequest>
 {
-    private readonly ILoggingContext _loggingContext;
-
-    public StartTestHandler(ILoggingContext loggingContext)
+    public override async Task<IProtocolMessage?> ProcessAsync(VerifyConnectivityRequest message)
     {
-        _loggingContext = loggingContext;
-    }
-
-    public override Task<IProtocolMessage?> ProcessAsync(StartTestRequest message)
-    {
-        _loggingContext.Set("test", message.TestName);
-
-        // Always run for now; a skip policy (blacklist) comes later.
-        return Task.FromResult<IProtocolMessage?>(new RunTestResponse());
+        await message.Driver.Object.VerifyConnectivityAsync();
+        return new DriverResponse(message.Driver.Id);
     }
 }

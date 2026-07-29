@@ -44,21 +44,21 @@ public class LoggingContextTests
     {
         var context = new LoggingContext();
 
-        context.Set("TestName", "first");
-        context.Set("TestName", "second");
+        context.Set("test", "first");
+        context.Set("test", "second");
 
-        context.Current["TestName"].Should().Be("second");
+        context.Current["test"].Should().Be("second");
     }
 
     [Fact]
     public void Remove_removes_a_key()
     {
         var context = new LoggingContext();
-        context.Set("TestName", "some.test");
+        context.Set("test", "some.test");
 
-        context.Remove("TestName");
+        context.Remove("test");
 
-        context.Current.ContainsKey("TestName").Should().BeFalse();
+        context.Current.ContainsKey("test").Should().BeFalse();
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public class LoggingContextTests
     {
         var context = new LoggingContext();
 
-        context.Remove("TestName");
+        context.Remove("test");
 
         context.Current.Should().BeEmpty();
     }
@@ -76,8 +76,8 @@ public class LoggingContextTests
     {
         var context = new LoggingContext();
 
-        await Task.Run(() => context.Set("TestName", "some.test"), TestContext.Current.CancellationToken);
+        await Task.Run(() => context.Set("test", "some.test"), TestContext.Current.CancellationToken);
 
-        context.Current["TestName"].Should().Be("some.test");
+        context.Current["test"].Should().Be("some.test");
     }
 }
