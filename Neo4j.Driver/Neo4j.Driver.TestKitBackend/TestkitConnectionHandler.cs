@@ -86,37 +86,20 @@ internal class TestkitConnectionHandler : ConnectionHandler
             while ((json = await input.ReadRequestAsync()) is not null)
             {
                 _logger.LogDebug("Request: {Request}", json);
-                await HandleRequestAsync(json, serializer, dispatcher, responseWriter, connection.ConnectionId);
+                var message = serializer.Deserialize(json);
+                await dispatcher.DispatchAsync(message);
             }
         }
         catch (Exception exception)
         {
             _logger.LogError(exception, "Connection {ConnectionId} failed", connection.ConnectionId);
+            await responseWriter.WriteAsync(new BackendErrorResponse { Msg = exception.Message });
         }
         finally
         {
             _logger.LogDebug("Closing connection {ConnectionId}", connection.ConnectionId);
             reader.Dispose();
             await writer.DisposeAsync();
-        }
-    }
-
-    private async Task HandleRequestAsync(
-        string json,
-        IMessageSerializer serializer,
-        IMessageDispatcher dispatcher,
-        IResponseWriter responseWriter,
-        string connectionId)
-    {
-        try
-        {
-            var message = serializer.Deserialize(json);
-            await dispatcher.DispatchAsync(message);
-        }
-        catch (Exception exception)
-        {
-            _logger.LogError(exception, "Error handling request on {ConnectionId}: {Request}", connectionId, json);
-            await responseWriter.WriteAsync(new BackendErrorResponse { Msg = exception.Message });
         }
     }
 }
