@@ -21,10 +21,10 @@ using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests;
 
-public class VerifyConnectivityHandlerTests
+public class DriverCloseHandlerTests
 {
     [Fact]
-    public async Task Verifies_connectivity_on_the_registered_driver_and_responds_with_its_id()
+    public async Task Closes_the_driver_removes_it_from_the_registry_and_responds_with_its_id()
     {
         var driverMock = new Mock<IDriver>();
         var registered = new RegistryObject<IDriver>("driver-1", driverMock.Object);
@@ -32,12 +32,13 @@ public class VerifyConnectivityHandlerTests
         var registry = new Mock<IRegistry>();
         registry.Setup(r => r.Get<IDriver>("driver-1")).Returns(registered);
 
-        var handler = new VerifyConnectivityHandler();
-        var request = new VerifyConnectivityRequest { Driver = registered };
+        var handler = new DriverCloseHandler(registry.Object);
+        var request = new DriverCloseRequest { Driver = registered };
 
         var response = await handler.ProcessAsync(request);
 
-        driverMock.Verify(d => d.VerifyConnectivityAsync(), Times.Once);
+        driverMock.Verify(d => d.DisposeAsync(), Times.Once);
+        registry.Verify(r => r.Remove("driver-1"), Times.Once);
         response.Should().BeOfType<DriverResponse>().Subject.Id.Should().Be(registered.Id);
     }
 }
