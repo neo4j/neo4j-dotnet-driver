@@ -32,7 +32,25 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
     private static readonly string[] SupportedFeatures =
     [
         "Feature:API:Driver.VerifyConnectivity",
-        "Feature:API:Driver:GetServerInfo"
+        "Feature:API:Driver:GetServerInfo",
+        "Feature:Bolt:3.0",
+        "Feature:Bolt:4.1",
+        "Feature:Bolt:4.2",
+        "Feature:Bolt:4.3",
+        "Feature:Bolt:4.4",
+        "Feature:Bolt:5.0",
+        "Feature:Bolt:5.1",
+        "Feature:Bolt:5.2",
+        "Feature:Bolt:5.3",
+        "Feature:Bolt:5.4",
+        "Feature:Bolt:5.5",
+        "Feature:Bolt:5.6",
+        "Feature:Bolt:5.7",
+        "Feature:Bolt:5.8",
+        "Feature:Bolt:6.0",
+        "Feature:Bolt:6.1",
+        "Feature:Bolt:HandshakeManifestV1",
+        "Feature:Bolt:Patch:UTC"
     ];
 
     private readonly ILogger _logger;
