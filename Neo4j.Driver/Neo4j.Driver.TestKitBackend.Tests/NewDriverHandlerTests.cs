@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using FluentAssertions;
+using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.Protocol;
@@ -41,5 +42,22 @@ public class NewDriverHandlerTests
 
         var driverResponse = response.Should().BeOfType<DriverResponse>().Subject;
         registry.Get<IDriver>(driverResponse.Id).Object.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Applies_config_via_the_config_mapper()
+    {
+        _autoMocker.Use<IRegistry>(new Registry());
+        var handler = _autoMocker.CreateInstance<NewDriverHandler>();
+        var request = new NewDriverRequest
+        {
+            Uri = "bolt://localhost:7687",
+            AuthorizationToken = new AuthorizationToken("basic", "neo4j", "secret")
+        };
+
+        await handler.ProcessAsync(request);
+
+        _autoMocker.GetMock<INewDriverConfigMapper>()
+            .Verify(m => m.Apply(request, It.IsAny<IConfigBuilder>()), Times.Once);
     }
 }

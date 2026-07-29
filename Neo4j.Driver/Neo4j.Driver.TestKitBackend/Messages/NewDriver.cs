@@ -49,19 +49,26 @@ internal record DriverResponse(string Id) : IProtocolMessage;
 internal class NewDriverHandler : MessageHandler<NewDriverRequest>
 {
     private readonly IRegistry _registry;
+    private readonly INewDriverConfigMapper _configMapper;
     private readonly ILogger _logger;
 
     public NewDriverHandler(
         IRegistry registry,
+        INewDriverConfigMapper configMapper,
         ILogger logger)
     {
         _registry = registry;
+        _configMapper = configMapper;
         _logger = logger;
     }
 
     public override Task<IProtocolMessage?> ProcessAsync(NewDriverRequest message)
     {
-        var driver = GraphDatabase.Driver(message.Uri, message.AuthorizationToken?.ToAuthToken());
+        var driver = GraphDatabase.Driver(
+            message.Uri,
+            message.AuthorizationToken?.ToAuthToken(),
+            builder => _configMapper.Apply(message, builder));
+
         var registryObject = _registry.Register(driver);
         var response = new DriverResponse(registryObject.Id);
         _logger.LogDebug("Created driver with id '{Id}'", registryObject.Id);
