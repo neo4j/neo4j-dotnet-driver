@@ -38,17 +38,19 @@ internal record SessionResponse(string Id) : IProtocolMessage;
 internal class NewSessionHandler : MessageHandler<NewSessionRequest>
 {
     private readonly IRegistry _registry;
+    private readonly INewSessionConfigMapper _configMapper;
     private readonly ILogger _logger;
 
-    public NewSessionHandler(IRegistry registry, ILogger logger)
+    public NewSessionHandler(IRegistry registry, INewSessionConfigMapper configMapper, ILogger logger)
     {
         _registry = registry;
+        _configMapper = configMapper;
         _logger = logger;
     }
 
     public override Task<IProtocolMessage?> ProcessAsync(NewSessionRequest message)
     {
-        var session = message.Driver.Object.AsyncSession();
+        var session = message.Driver.Object.AsyncSession(builder => _configMapper.Apply(message, builder));
         var registryObject = _registry.Register(session);
         _logger.LogDebug("Created session with id '{Id}'", registryObject.Id);
         return Task.FromResult<IProtocolMessage?>(new SessionResponse(registryObject.Id));

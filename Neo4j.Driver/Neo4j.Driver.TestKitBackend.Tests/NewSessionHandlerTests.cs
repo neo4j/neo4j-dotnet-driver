@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using FluentAssertions;
+using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.Protocol;
@@ -33,7 +34,7 @@ public class NewSessionHandlerTests
 
         var sessionMock = _autoMocker.GetMock<IAsyncSession>();
         var driverMock = _autoMocker.GetMock<IDriver>();
-        driverMock.Setup(d => d.AsyncSession()).Returns(sessionMock.Object);
+        driverMock.Setup(d => d.AsyncSession(It.IsAny<Action<SessionConfigBuilder>>())).Returns(sessionMock.Object);
         var registeredDriver = registry.Register(driverMock.Object);
 
         var handler = _autoMocker.CreateInstance<NewSessionHandler>();
