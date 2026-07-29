@@ -54,12 +54,13 @@ public class BackendModuleTests
         var container = BuildContainer();
 
         // The connection handler registers the transport-bound output into each connection
-        // scope, and the host supplies ILogger<>; emulate both so the dispatcher's
-        // ResponseWriter dependency can resolve.
+        // scope, and the host supplies ILoggerFactory (which LoggerMiddleware resolves to
+        // satisfy plain ILogger parameters); emulate both so the dispatcher's ResponseWriter
+        // dependency can resolve.
         using var scope = container.BeginLifetimeScope(b =>
         {
             b.RegisterInstance(Mock.Of<IConnectionOutput>()).As<IConnectionOutput>();
-            b.RegisterGeneric(typeof(NullLogger<>)).As(typeof(ILogger<>));
+            b.RegisterInstance(NullLoggerFactory.Instance).As<ILoggerFactory>();
         });
 
         // Constructs all handlers and builds the type→handler map, so this throws if any
@@ -67,6 +68,24 @@ public class BackendModuleTests
         var resolve = () => scope.Resolve<IMessageDispatcher>();
 
         resolve.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Classes_injecting_a_plain_ILogger_get_one_categorised_by_their_own_type()
+    {
+        var container = BuildContainer();
+        var factory = new Mock<ILoggerFactory>();
+        factory.Setup(f => f.CreateLogger(It.IsAny<string>())).Returns(NullLogger.Instance);
+        using var scope = container.BeginLifetimeScope(b =>
+        {
+            b.RegisterInstance(Mock.Of<IConnectionOutput>()).As<IConnectionOutput>();
+            b.RegisterInstance(factory.Object).As<ILoggerFactory>();
+        });
+
+        scope.Resolve<IMessageDispatcher>();
+
+        factory.Verify(f => f.CreateLogger(typeof(Messages.NewDriverHandler).FullName!));
+        factory.Verify(f => f.CreateLogger(typeof(ResponseWriter).FullName!));
     }
 
     [Fact]

@@ -30,7 +30,7 @@ internal class TestkitConnectionHandler : ConnectionHandler
     private readonly IConnectionOutputFactory _outputFactory;
     private readonly IConnectionIdProvider _connectionIdProvider;
     private readonly ILoggingContextAccessor _loggingContextAccessor;
-    private readonly ILogger<TestkitConnectionHandler> _logger;
+    private readonly ILogger _logger;
 
     public TestkitConnectionHandler(
         ILifetimeScope rootScope,
@@ -38,7 +38,7 @@ internal class TestkitConnectionHandler : ConnectionHandler
         IConnectionOutputFactory outputFactory,
         IConnectionIdProvider connectionIdProvider,
         ILoggingContextAccessor loggingContextAccessor,
-        ILogger<TestkitConnectionHandler> logger)
+        ILogger logger)
     {
         _rootScope = rootScope;
         _inputFactory = inputFactory;

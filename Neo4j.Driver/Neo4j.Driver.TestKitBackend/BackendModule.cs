@@ -15,12 +15,17 @@
 
 using System.Reflection;
 using Autofac;
+using Autofac.Core;
+using Autofac.Core.Registration;
+using Neo4j.Driver.TestKitBackend.Infrastructure;
 using Module = Autofac.Module;
 
 namespace Neo4j.Driver.TestKitBackend;
 
 internal class BackendModule : Module
 {
+    private static readonly LoggerMiddleware LoggerMiddleware = new();
+
     protected override void Load(ContainerBuilder builder)
     {
         foreach (var type in RegisterableTypes(Assembly.GetExecutingAssembly()))
@@ -35,6 +40,13 @@ internal class BackendModule : Module
                 _ => throw new ArgumentOutOfRangeException()
             };
         }
+    }
+
+    protected override void AttachToComponentRegistration(
+        IComponentRegistryBuilder componentRegistry,
+        IComponentRegistration registration)
+    {
+        registration.PipelineBuilding += (_, pipeline) => pipeline.Use(LoggerMiddleware);
     }
 
     private static IEnumerable<Type> RegisterableTypes(Assembly assembly)

@@ -29,7 +29,7 @@ public class ResponseWriterTests
         var serializer = new Mock<IMessageSerializer>();
         serializer.Setup(s => s.Serialize(message)).Returns("""{"name":"Sample","data":{}}""");
         var output = new Mock<IConnectionOutput>();
-        var writer = new ResponseWriter(output.Object, serializer.Object, Mock.Of<ILogger<ResponseWriter>>());
+        var writer = new ResponseWriter(output.Object, serializer.Object, Mock.Of<ILogger>());
 
         await writer.WriteAsync(message);
 

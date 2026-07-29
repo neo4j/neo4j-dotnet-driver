@@ -21,12 +21,12 @@ internal class ResponseWriter : IResponseWriter
 {
     private readonly IConnectionOutput _output;
     private readonly IMessageSerializer _serializer;
-    private readonly ILogger<ResponseWriter> _logger;
+    private readonly ILogger _logger;
 
     public ResponseWriter(
-        IConnectionOutput output, 
+        IConnectionOutput output,
         IMessageSerializer serializer,
-        ILogger<ResponseWriter> logger)
+        ILogger logger)
     {
         _output = output;
         _serializer = serializer;

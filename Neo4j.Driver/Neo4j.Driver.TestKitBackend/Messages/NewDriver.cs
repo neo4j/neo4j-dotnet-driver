@@ -49,11 +49,11 @@ internal record DriverResponse(string Id) : IProtocolMessage;
 internal class NewDriverHandler : MessageHandler<NewDriverRequest>
 {
     private readonly IRegistry _registry;
-    private readonly ILogger<NewDriverHandler> _logger;
+    private readonly ILogger _logger;
 
     public NewDriverHandler(
         IRegistry registry,
-        ILogger<NewDriverHandler> logger)
+        ILogger logger)
     {
         _registry = registry;
         _logger = logger;

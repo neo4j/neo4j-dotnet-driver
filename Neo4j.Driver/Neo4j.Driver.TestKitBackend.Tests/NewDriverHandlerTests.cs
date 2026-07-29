@@ -27,7 +27,7 @@ public class NewDriverHandlerTests
     public async Task Registers_a_driver_and_responds_with_its_id()
     {
         var registry = new Registry();
-        var handler = new NewDriverHandler(registry, NullLogger<NewDriverHandler>.Instance);
+        var handler = new NewDriverHandler(registry, NullLogger.Instance);
         var request = new NewDriverRequest
         {
             Uri = "bolt://localhost:7687",
