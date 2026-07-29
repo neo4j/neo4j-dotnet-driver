@@ -14,7 +14,7 @@
 // limitations under the License.
 
 using FluentAssertions;
-using Microsoft.Extensions.Logging.Abstractions;
+using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.Protocol;
 using Xunit;
@@ -23,11 +23,14 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class NewDriverHandlerTests
 {
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<NewDriverHandler>();
+
     [Fact]
     public async Task Registers_a_driver_and_responds_with_its_id()
     {
         var registry = new Registry();
-        var handler = new NewDriverHandler(registry, NullLogger.Instance);
+        _autoMocker.Use<IRegistry>(registry);
+        var handler = _autoMocker.CreateInstance<NewDriverHandler>();
         var request = new NewDriverRequest
         {
             Uri = "bolt://localhost:7687",

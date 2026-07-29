@@ -15,6 +15,7 @@
 
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.Protocol;
 using Xunit;
@@ -23,22 +24,22 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class DriverCloseHandlerTests
 {
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<DriverCloseHandler>();
+
     [Fact]
     public async Task Closes_the_driver_removes_it_from_the_registry_and_responds_with_its_id()
     {
-        var driverMock = new Mock<IDriver>();
+        var driverMock = _autoMocker.GetMock<IDriver>();
         var registered = new RegistryObject<IDriver>("driver-1", driverMock.Object);
+        _autoMocker.GetMock<IRegistry>().Setup(r => r.Get<IDriver>("driver-1")).Returns(registered);
 
-        var registry = new Mock<IRegistry>();
-        registry.Setup(r => r.Get<IDriver>("driver-1")).Returns(registered);
-
-        var handler = new DriverCloseHandler(registry.Object);
+        var handler = _autoMocker.CreateInstance<DriverCloseHandler>();
         var request = new DriverCloseRequest { Driver = registered };
 
         var response = await handler.ProcessAsync(request);
 
         driverMock.Verify(d => d.DisposeAsync(), Times.Once);
-        registry.Verify(r => r.Remove("driver-1"), Times.Once);
+        _autoMocker.GetMock<IRegistry>().Verify(r => r.Remove("driver-1"), Times.Once);
         response.Should().BeOfType<DriverResponse>().Subject.Id.Should().Be(registered.Id);
     }
 }

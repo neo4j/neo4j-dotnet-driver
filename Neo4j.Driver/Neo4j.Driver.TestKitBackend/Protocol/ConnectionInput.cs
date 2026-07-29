@@ -22,9 +22,9 @@ internal class ConnectionInput : IConnectionInput
     private const string Begin = "#request begin";
     private const string End = "#request end";
 
-    private readonly TextReader _reader;
+    private readonly ILineReader _reader;
 
-    public ConnectionInput(TextReader reader)
+    public ConnectionInput(ILineReader reader)
     {
         _reader = reader;
     }

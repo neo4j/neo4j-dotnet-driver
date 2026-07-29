@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Microsoft.Extensions.Logging;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Protocol;
 using Xunit;
 
@@ -22,17 +22,20 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class ResponseWriterTests
 {
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<ResponseWriter>();
+
     [Fact]
     public async Task Writes_the_serialized_message_wrapped_in_response_sentinels()
     {
         var message = Mock.Of<IProtocolMessage>();
-        var serializer = new Mock<IMessageSerializer>();
-        serializer.Setup(s => s.Serialize(message)).Returns("""{"name":"Sample","data":{}}""");
-        var output = new Mock<IConnectionOutput>();
-        var writer = new ResponseWriter(output.Object, serializer.Object, Mock.Of<ILogger>());
+        _autoMocker.GetMock<IMessageSerializer>()
+            .Setup(s => s.Serialize(message))
+            .Returns("""{"name":"Sample","data":{}}""");
+        var writer = _autoMocker.CreateInstance<ResponseWriter>();
 
         await writer.WriteAsync(message);
 
+        var output = _autoMocker.GetMock<IConnectionOutput>();
         output.Verify(o => o.WriteAsync(
             "#response begin\n" +
             """{"name":"Sample","data":{}}""" + "\n" +

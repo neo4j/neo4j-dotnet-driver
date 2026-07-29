@@ -16,7 +16,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FluentAssertions;
-using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.Protocol;
 using Xunit;
@@ -25,11 +25,11 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class EnvelopeConverterTests
 {
-    private readonly Mock<IMessageTypeMap> _messageTypeMap = new();
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<EnvelopeConverter>();
 
     public EnvelopeConverterTests()
     {
-        _messageTypeMap
+        _autoMocker.GetMock<IMessageTypeMap>()
             .Setup(m => m.GetTypeByName("Sample"))
             .Returns(typeof(SampleRequest));
     }
@@ -40,7 +40,7 @@ public class EnvelopeConverterTests
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
-            Converters = { new EnvelopeConverter(_messageTypeMap.Object) }
+            Converters = { _autoMocker.CreateInstance<EnvelopeConverter>() }
         };
     }
 
@@ -127,7 +127,7 @@ public class EnvelopeConverterTests
             }
             """;
 
-        _messageTypeMap
+        _autoMocker.GetMock<IMessageTypeMap>()
             .Setup(m => m.GetTypeByName("NoSuchMessage"))
             .Throws(() => new TestKitProtocolException("Test"));
 
@@ -166,7 +166,7 @@ public class EnvelopeConverterTests
     [Fact]
     public void Reads_nested_envelopes_into_protocol_message_properties()
     {
-        _messageTypeMap
+        _autoMocker.GetMock<IMessageTypeMap>()
             .Setup(m => m.GetTypeByName("SampleEnvelope"))
             .Returns(typeof(SampleEnvelope));
 

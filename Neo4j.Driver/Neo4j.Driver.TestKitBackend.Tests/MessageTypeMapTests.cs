@@ -14,7 +14,7 @@
 // limitations under the License.
 
 using FluentAssertions;
-using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Protocol;
 using Xunit;
 
@@ -22,18 +22,19 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class MessageTypeMapTests
 {
-    private readonly Mock<IProtocolMessageTypesProvider> _protocolTypesProvider = new();
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<MessageTypeMap>();
 
     public MessageTypeMapTests()
     {
-        _protocolTypesProvider
+        _autoMocker.GetMock<IProtocolMessageTypesProvider>()
             .Setup(p => p.GetTypes())
             .Returns(new[] { typeof(FirstSampleRequest), typeof(SecondSampleRequest) });
+        _autoMocker.Use<IWireTypeNameProvider>(new WireTypeNameProvider());
     }
 
     private MessageTypeMap Subject()
     {
-        return new MessageTypeMap(_protocolTypesProvider.Object, new WireTypeNameProvider());
+        return _autoMocker.CreateInstance<MessageTypeMap>();
     }
 
     [Fact]

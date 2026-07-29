@@ -15,7 +15,7 @@
 
 using System.Text.Json;
 using FluentAssertions;
-using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.Protocol;
 using Xunit;
@@ -24,18 +24,26 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class PayloadEnvelopeConverterTests
 {
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<PayloadEnvelopeConverterFactory>();
+
+    public PayloadEnvelopeConverterTests()
+    {
+        _autoMocker.Use<IWireTypeNameProvider>(new WireTypeNameProvider());
+    }
+
     [Fact]
     public void Reads_the_nested_authorization_token_envelope_inside_NewDriverRequest()
     {
-        var messageTypeMap = new Mock<IMessageTypeMap>();
-        messageTypeMap.Setup(m => m.GetTypeByName("NewDriver")).Returns(typeof(NewDriverRequest));
+        _autoMocker.GetMock<IMessageTypeMap>()
+            .Setup(m => m.GetTypeByName("NewDriver"))
+            .Returns(typeof(NewDriverRequest));
 
-        var optionsProvider = new JsonOptionsProvider(
+        _autoMocker.Use<IJsonOptionsProvider>(new JsonOptionsProvider(
         [
-            new EnvelopeConverter(messageTypeMap.Object),
-            new PayloadEnvelopeConverterFactory(new WireTypeNameProvider())
-        ]);
-        var serializer = new MessageSerializer(optionsProvider);
+            new EnvelopeConverter(_autoMocker.Get<IMessageTypeMap>()),
+            _autoMocker.CreateInstance<PayloadEnvelopeConverterFactory>()
+        ]));
+        var serializer = _autoMocker.CreateInstance<MessageSerializer>();
 
         const string json =
             """
@@ -67,7 +75,7 @@ public class PayloadEnvelopeConverterTests
         var options = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            Converters = { new PayloadEnvelopeConverterFactory(new WireTypeNameProvider()) }
+            Converters = { _autoMocker.CreateInstance<PayloadEnvelopeConverterFactory>() }
         };
 
         const string json =

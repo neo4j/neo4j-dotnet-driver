@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using FluentAssertions;
+using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Protocol;
 using Xunit;
 
@@ -21,10 +22,21 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class ConnectionInputTests
 {
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<ConnectionInput>();
+
+    private ConnectionInput Input(params string[] lines)
+    {
+        var remaining = new Queue<string>(lines);
+        _autoMocker.GetMock<ILineReader>()
+            .Setup(r => r.ReadLineAsync())
+            .Returns(() => Task.FromResult(remaining.TryDequeue(out var line) ? line : null));
+        return _autoMocker.CreateInstance<ConnectionInput>();
+    }
+
     [Fact]
     public async Task Returns_the_json_between_request_sentinels()
     {
-        var input = Input("#request begin\n" + """{"name":"GetFeatures"}""" + "\n#request end\n");
+        var input = Input("#request begin", """{"name":"GetFeatures"}""", "#request end");
 
         (await input.ReadRequestAsync()).Should().Be("""{"name":"GetFeatures"}""");
     }
@@ -33,8 +45,8 @@ public class ConnectionInputTests
     public async Task Returns_successive_requests_on_successive_calls()
     {
         var input = Input(
-            "#request begin\n" + """{"name":"A"}""" + "\n#request end\n" +
-            "#request begin\n" + """{"name":"B"}""" + "\n#request end\n");
+            "#request begin", """{"name":"A"}""", "#request end",
+            "#request begin", """{"name":"B"}""", "#request end");
 
         (await input.ReadRequestAsync()).Should().Be("""{"name":"A"}""");
         (await input.ReadRequestAsync()).Should().Be("""{"name":"B"}""");
@@ -43,10 +55,8 @@ public class ConnectionInputTests
     [Fact]
     public async Task Returns_null_at_end_of_stream()
     {
-        var input = Input("");
+        var input = Input();
 
         (await input.ReadRequestAsync()).Should().BeNull();
     }
-
-    private static ConnectionInput Input(string data) => new(new StringReader(data));
 }

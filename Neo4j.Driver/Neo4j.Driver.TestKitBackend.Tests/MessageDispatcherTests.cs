@@ -15,6 +15,7 @@
 
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Protocol;
 using Xunit;
 
@@ -22,7 +23,13 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class MessageDispatcherTests
 {
-    private readonly Mock<IResponseWriter> _writer = new();
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<MessageDispatcher>();
+
+    private MessageDispatcher Subject(params IMessageHandler[] handlers)
+    {
+        _autoMocker.Use(handlers);
+        return _autoMocker.CreateInstance<MessageDispatcher>();
+    }
 
     [Fact]
     public async Task Dispatches_to_the_handler_for_the_message_type_and_writes_its_response()
@@ -30,18 +37,18 @@ public class MessageDispatcherTests
         var response = new SampleResponse();
         var sampleHandler = new SampleHandler(response);
         var otherHandler = new OtherHandler();
-        var dispatcher = new MessageDispatcher([otherHandler, sampleHandler], _writer.Object);
+        var dispatcher = Subject(otherHandler, sampleHandler);
 
         await dispatcher.DispatchAsync(new SampleRequest());
 
-        _writer.Verify(w => w.WriteAsync(response), Times.Once);
+        _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(response), Times.Once);
         otherHandler.WasCalled.Should().BeFalse();
     }
 
     [Fact]
     public async Task Throws_when_no_handler_exists_for_the_message_type()
     {
-        var dispatcher = new MessageDispatcher([new OtherHandler()], _writer.Object);
+        var dispatcher = Subject(new OtherHandler());
 
         var dispatch = async () => await dispatcher.DispatchAsync(new SampleRequest());
 

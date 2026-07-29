@@ -15,10 +15,19 @@
 
 namespace Neo4j.Driver.TestKitBackend.Protocol;
 
-internal class ConnectionInputFactory : IConnectionInputFactory
+// The adapter that confines TextReader to the composition edge; it does not own the reader's
+// lifetime (the connection handler disposes the wrappers it creates).
+internal class LineReader : ILineReader
 {
-    public IConnectionInput Create(TextReader reader)
+    private readonly TextReader _reader;
+
+    public LineReader(TextReader reader)
     {
-        return new ConnectionInput(new LineReader(reader));
+        _reader = reader;
+    }
+
+    public Task<string?> ReadLineAsync()
+    {
+        return _reader.ReadLineAsync();
     }
 }

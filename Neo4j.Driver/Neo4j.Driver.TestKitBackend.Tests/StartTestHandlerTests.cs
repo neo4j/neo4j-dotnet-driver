@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using FluentAssertions;
+using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Logging;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Xunit;
@@ -22,10 +23,17 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class StartTestHandlerTests
 {
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<StartTestHandler>();
+
+    public StartTestHandlerTests()
+    {
+        _autoMocker.Use<ILoggingContext>(new LoggingContext());
+    }
+
     [Fact]
     public async Task Returns_RunTest()
     {
-        var handler = new StartTestHandler(new LoggingContext());
+        var handler = _autoMocker.CreateInstance<StartTestHandler>();
 
         var response = await handler.ProcessAsync(new StartTestRequest { TestName = "some.test.name" });
 
@@ -35,11 +43,10 @@ public class StartTestHandlerTests
     [Fact]
     public async Task Sets_TestName_on_the_logging_context()
     {
-        var loggingContext = new LoggingContext();
-        var handler = new StartTestHandler(loggingContext);
+        var handler = _autoMocker.CreateInstance<StartTestHandler>();
 
         await handler.ProcessAsync(new StartTestRequest { TestName = "some.test.name" });
 
-        loggingContext.Current["test"].Should().Be("some.test.name");
+        _autoMocker.Get<ILoggingContext>().Current["test"].Should().Be("some.test.name");
     }
 }

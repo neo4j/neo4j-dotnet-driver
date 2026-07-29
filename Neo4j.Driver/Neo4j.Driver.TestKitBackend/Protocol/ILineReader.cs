@@ -15,10 +15,7 @@
 
 namespace Neo4j.Driver.TestKitBackend.Protocol;
 
-internal class ConnectionInputFactory : IConnectionInputFactory
+internal interface ILineReader
 {
-    public IConnectionInput Create(TextReader reader)
-    {
-        return new ConnectionInput(new LineReader(reader));
-    }
+    Task<string?> ReadLineAsync();
 }

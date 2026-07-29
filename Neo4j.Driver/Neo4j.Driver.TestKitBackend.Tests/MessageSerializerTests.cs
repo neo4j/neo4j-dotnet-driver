@@ -14,7 +14,7 @@
 // limitations under the License.
 
 using FluentAssertions;
-using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Protocol;
 using Xunit;
 
@@ -22,13 +22,16 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class MessageSerializerTests
 {
-    private readonly Mock<IMessageTypeMap> _messageTypeMap = new();
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<MessageSerializer>();
 
     private IMessageSerializer Subject()
     {
-        _messageTypeMap.Setup(m => m.GetTypeByName("Sample")).Returns(typeof(Sample));
-        var optionsProvider = new JsonOptionsProvider([new EnvelopeConverter(_messageTypeMap.Object)]);
-        return new MessageSerializer(optionsProvider);
+        _autoMocker.GetMock<IMessageTypeMap>()
+            .Setup(m => m.GetTypeByName("Sample"))
+            .Returns(typeof(Sample));
+        _autoMocker.Use<IJsonOptionsProvider>(
+            new JsonOptionsProvider([new EnvelopeConverter(_autoMocker.Get<IMessageTypeMap>())]));
+        return _autoMocker.CreateInstance<MessageSerializer>();
     }
 
     [Fact]

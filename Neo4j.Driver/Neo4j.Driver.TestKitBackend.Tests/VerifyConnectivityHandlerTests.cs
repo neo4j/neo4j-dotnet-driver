@@ -15,6 +15,7 @@
 
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.Protocol;
 using Xunit;
@@ -23,16 +24,16 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class VerifyConnectivityHandlerTests
 {
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<VerifyConnectivityHandler>();
+
     [Fact]
     public async Task Verifies_connectivity_on_the_registered_driver_and_responds_with_its_id()
     {
-        var driverMock = new Mock<IDriver>();
+        var driverMock = _autoMocker.GetMock<IDriver>();
         var registered = new RegistryObject<IDriver>("driver-1", driverMock.Object);
+        _autoMocker.GetMock<IRegistry>().Setup(r => r.Get<IDriver>("driver-1")).Returns(registered);
 
-        var registry = new Mock<IRegistry>();
-        registry.Setup(r => r.Get<IDriver>("driver-1")).Returns(registered);
-
-        var handler = new VerifyConnectivityHandler();
+        var handler = _autoMocker.CreateInstance<VerifyConnectivityHandler>();
         var request = new VerifyConnectivityRequest { Driver = registered };
 
         var response = await handler.ProcessAsync(request);
