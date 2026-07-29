@@ -21,6 +21,16 @@ namespace Neo4j.Driver.TestKitBackend.Messages;
 internal record NewSessionRequest : IProtocolMessage
 {
     public required RegistryObject<IDriver> Driver { get; init; }
+    public required string AccessMode { get; init; }
+    public string[]? Bookmarks { get; init; }
+    public string? Database { get; init; }
+    public long? FetchSize { get; init; }
+    public string? ImpersonatedUser { get; init; }
+    public string? NotificationsMinSeverity { get; init; }
+    public string[]? NotificationsDisabledCategories { get; init; }
+    public bool? DisableAutoCommitRetries { get; init; }
+    public string? BookmarkManagerId { get; init; }
+    public AuthorizationToken? AuthorizationToken { get; init; }
 }
 
 internal record SessionResponse(string Id) : IProtocolMessage;

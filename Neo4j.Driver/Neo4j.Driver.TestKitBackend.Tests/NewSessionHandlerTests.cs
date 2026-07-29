@@ -37,7 +37,7 @@ public class NewSessionHandlerTests
         var registeredDriver = registry.Register(driverMock.Object);
 
         var handler = _autoMocker.CreateInstance<NewSessionHandler>();
-        var request = new NewSessionRequest { Driver = registeredDriver };
+        var request = new NewSessionRequest { Driver = registeredDriver, AccessMode = "r" };
 
         var response = await handler.ProcessAsync(request);
 
