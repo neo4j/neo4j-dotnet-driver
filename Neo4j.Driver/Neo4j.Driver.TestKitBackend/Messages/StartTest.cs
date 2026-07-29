@@ -25,20 +25,32 @@ internal record StartTestRequest : IProtocolMessage
 
 internal record RunTestResponse : IProtocolMessage;
 
+internal record SkipTestResponse(string Reason) : IProtocolMessage;
+
+internal interface ISkipPolicy
+{
+    bool TryGetSkipReason(string testName, out string reason);
+}
+
 internal class StartTestHandler : MessageHandler<StartTestRequest>
 {
     private readonly ILoggingContext _loggingContext;
+    private readonly ISkipPolicy _skipPolicy;
 
-    public StartTestHandler(ILoggingContext loggingContext)
+    public StartTestHandler(ILoggingContext loggingContext, ISkipPolicy skipPolicy)
     {
         _loggingContext = loggingContext;
+        _skipPolicy = skipPolicy;
     }
 
     public override Task<IProtocolMessage?> ProcessAsync(StartTestRequest message)
     {
         _loggingContext.Set("test", message.TestName);
 
-        // Always run for now; a skip policy (blacklist) comes later.
-        return Task.FromResult<IProtocolMessage?>(new RunTestResponse());
+        IProtocolMessage response = _skipPolicy.TryGetSkipReason(message.TestName, out var reason)
+            ? new SkipTestResponse(reason)
+            : new RunTestResponse();
+
+        return Task.FromResult<IProtocolMessage?>(response);
     }
 }

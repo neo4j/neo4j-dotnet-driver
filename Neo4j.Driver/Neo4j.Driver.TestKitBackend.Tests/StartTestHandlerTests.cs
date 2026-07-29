@@ -31,13 +31,28 @@ public class StartTestHandlerTests
     }
 
     [Fact]
-    public async Task Returns_RunTest()
+    public async Task Returns_RunTest_when_the_skip_policy_has_no_match()
     {
         var handler = _autoMocker.CreateInstance<StartTestHandler>();
 
         var response = await handler.ProcessAsync(new StartTestRequest { TestName = "some.test.name" });
 
         response.Should().BeOfType<RunTestResponse>();
+    }
+
+    [Fact]
+    public async Task Returns_SkipTest_with_the_policys_reason_when_the_skip_policy_matches()
+    {
+        var reason = "known flaky";
+        _autoMocker.GetMock<ISkipPolicy>()
+            .Setup(p => p.TryGetSkipReason("some.test.name", out reason))
+            .Returns(true);
+
+        var handler = _autoMocker.CreateInstance<StartTestHandler>();
+
+        var response = await handler.ProcessAsync(new StartTestRequest { TestName = "some.test.name" });
+
+        response.Should().BeOfType<SkipTestResponse>().Subject.Reason.Should().Be(reason);
     }
 
     [Fact]
