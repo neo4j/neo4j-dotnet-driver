@@ -84,7 +84,44 @@ public class RegistryTests
         get.Should().Throw<TestKitProtocolException>();
     }
 
+    [Fact]
+    public async Task DisposeAsync_disposes_every_registered_disposable_object()
+    {
+        var first = new DisposableStored();
+        var second = new DisposableStored();
+        _registry.Register(first);
+        _registry.Register(second);
+
+        await _registry.DisposeAsync();
+
+        first.Disposed.Should().BeTrue();
+        second.Disposed.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DisposeAsync_does_not_dispose_an_object_that_was_already_removed()
+    {
+        var stored = new DisposableStored();
+        var registered = _registry.Register(stored);
+        _registry.Remove(registered.Id);
+
+        await _registry.DisposeAsync();
+
+        stored.Disposed.Should().BeFalse();
+    }
+
     private class Stored;
 
     private class OtherStored;
+
+    private class DisposableStored : IAsyncDisposable
+    {
+        public bool Disposed { get; private set; }
+
+        public ValueTask DisposeAsync()
+        {
+            Disposed = true;
+            return ValueTask.CompletedTask;
+        }
+    }
 }

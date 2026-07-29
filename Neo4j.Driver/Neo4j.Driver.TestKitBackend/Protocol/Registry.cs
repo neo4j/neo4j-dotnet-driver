@@ -15,10 +15,9 @@
 
 namespace Neo4j.Driver.TestKitBackend.Protocol;
 
-// One per connection scope, so handlers and the handle converters share it and handle IDs can
-// never resolve across tests.
+// One per connection scope, disposed after each test
 [RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
-internal class Registry : IRegistry
+internal class Registry : IRegistry, IAsyncDisposable
 {
     private readonly Dictionary<string, object> _objects = [];
     private int _nextId;
@@ -49,5 +48,18 @@ internal class Registry : IRegistry
     public void Remove(string id)
     {
         _objects.Remove(id);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        foreach (var obj in _objects.Values)
+        {
+            if (obj is IAsyncDisposable disposable)
+            {
+                await disposable.DisposeAsync();
+            }
+        }
+
+        _objects.Clear();
     }
 }
