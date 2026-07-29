@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Protocol;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -33,8 +34,16 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
         "Feature:API:Driver.VerifyConnectivity"
     ];
 
+    private readonly ILogger _logger;
+
+    public GetFeaturesHandler(ILogger logger)
+    {
+        _logger = logger;
+    }
+
     public override Task<IProtocolMessage?> ProcessAsync(GetFeaturesRequest message)
     {
+        _logger.LogDebug("Advertising {Count} feature(s)", SupportedFeatures.Length);
         return Task.FromResult<IProtocolMessage?>(new FeatureListResponse { Features = SupportedFeatures });
     }
 }

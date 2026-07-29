@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Protocol;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -25,16 +26,19 @@ internal record DriverCloseRequest : IProtocolMessage
 internal class DriverCloseHandler : MessageHandler<DriverCloseRequest>
 {
     private readonly IRegistry _registry;
+    private readonly ILogger _logger;
 
-    public DriverCloseHandler(IRegistry registry)
+    public DriverCloseHandler(IRegistry registry, ILogger logger)
     {
         _registry = registry;
+        _logger = logger;
     }
 
     public override async Task<IProtocolMessage?> ProcessAsync(DriverCloseRequest message)
     {
         await message.Driver.Object.DisposeAsync();
         _registry.Remove(message.Driver.Id);
+        _logger.LogDebug("Closed driver with id '{Id}'", message.Driver.Id);
         return new DriverResponse(message.Driver.Id);
     }
 }

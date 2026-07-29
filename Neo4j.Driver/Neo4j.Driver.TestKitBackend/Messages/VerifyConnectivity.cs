@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Protocol;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -24,9 +25,17 @@ internal record VerifyConnectivityRequest : IProtocolMessage
 
 internal class VerifyConnectivityHandler : MessageHandler<VerifyConnectivityRequest>
 {
+    private readonly ILogger _logger;
+
+    public VerifyConnectivityHandler(ILogger logger)
+    {
+        _logger = logger;
+    }
+
     public override async Task<IProtocolMessage?> ProcessAsync(VerifyConnectivityRequest message)
     {
         await message.Driver.Object.VerifyConnectivityAsync();
+        _logger.LogDebug("Verified connectivity for driver with id '{Id}'", message.Driver.Id);
         return new DriverResponse(message.Driver.Id);
     }
 }

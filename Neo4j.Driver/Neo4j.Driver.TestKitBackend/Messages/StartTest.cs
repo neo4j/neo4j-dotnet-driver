@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Logging;
 using Neo4j.Driver.TestKitBackend.Protocol;
 
@@ -36,20 +37,30 @@ internal class StartTestHandler : MessageHandler<StartTestRequest>
 {
     private readonly ILoggingContext _loggingContext;
     private readonly ISkipPolicy _skipPolicy;
+    private readonly ILogger _logger;
 
-    public StartTestHandler(ILoggingContext loggingContext, ISkipPolicy skipPolicy)
+    public StartTestHandler(ILoggingContext loggingContext, ISkipPolicy skipPolicy, ILogger logger)
     {
         _loggingContext = loggingContext;
         _skipPolicy = skipPolicy;
+        _logger = logger;
     }
 
     public override Task<IProtocolMessage?> ProcessAsync(StartTestRequest message)
     {
         _loggingContext.Set("test", message.TestName);
 
-        IProtocolMessage response = _skipPolicy.TryGetSkipReason(message.TestName, out var reason)
-            ? new SkipTestResponse(reason)
-            : new RunTestResponse();
+        IProtocolMessage response;
+        if (_skipPolicy.TryGetSkipReason(message.TestName, out var reason))
+        {
+            _logger.LogDebug("Skipping test '{TestName}': {Reason}", message.TestName, reason);
+            response = new SkipTestResponse(reason);
+        }
+        else
+        {
+            _logger.LogDebug("Running test '{TestName}'", message.TestName);
+            response = new RunTestResponse();
+        }
 
         return Task.FromResult<IProtocolMessage?>(response);
     }

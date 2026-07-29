@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Protocol;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -27,16 +28,19 @@ internal record SessionResponse(string Id) : IProtocolMessage;
 internal class NewSessionHandler : MessageHandler<NewSessionRequest>
 {
     private readonly IRegistry _registry;
+    private readonly ILogger _logger;
 
-    public NewSessionHandler(IRegistry registry)
+    public NewSessionHandler(IRegistry registry, ILogger logger)
     {
         _registry = registry;
+        _logger = logger;
     }
 
     public override Task<IProtocolMessage?> ProcessAsync(NewSessionRequest message)
     {
         var session = message.Driver.Object.AsyncSession();
         var registryObject = _registry.Register(session);
+        _logger.LogDebug("Created session with id '{Id}'", registryObject.Id);
         return Task.FromResult<IProtocolMessage?>(new SessionResponse(registryObject.Id));
     }
 }
