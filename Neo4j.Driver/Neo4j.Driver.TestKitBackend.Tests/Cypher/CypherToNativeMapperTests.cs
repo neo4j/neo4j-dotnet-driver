@@ -112,6 +112,30 @@ public class CypherToNativeMapperTests
     }
 
     [Fact]
+    public void Maps_cypher_vector_to_an_integer_vector()
+    {
+        var mapped = _mapper.Map(new CypherVector("i8", "01 ff"));
+
+        mapped.Should().BeOfType<Vector<sbyte>>().Which.Values.Should().Equal((sbyte)1, (sbyte)-1);
+    }
+
+    [Fact]
+    public void Maps_cypher_vector_to_a_float_vector()
+    {
+        var mapped = _mapper.Map(new CypherVector("f32", "3f 80 00 00"));
+
+        mapped.Should().BeOfType<Vector<float>>().Which.Values.Should().Equal(1.0f);
+    }
+
+    [Fact]
+    public void Maps_an_empty_cypher_vector_to_an_empty_vector()
+    {
+        var mapped = _mapper.Map(new CypherVector("i8", ""));
+
+        mapped.Should().BeOfType<Vector<sbyte>>().Which.Values.Should().BeEmpty();
+    }
+
+    [Fact]
     public void Throws_for_an_unmapped_cypher_type_naming_the_type()
     {
         var act = () => _mapper.Map(new CypherList([]));
