@@ -142,4 +142,18 @@ public class CypherToNativeMapperTests
 
         act.Should().Throw<NotSupportedException>().WithMessage("*CypherList*");
     }
+
+    [Fact]
+    public void Maps_absent_query_params_to_an_empty_dictionary()
+    {
+        _mapper.Map((Dictionary<string, ICypherValue>?)null).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Maps_query_params_to_a_native_dictionary()
+    {
+        var value = new Dictionary<string, ICypherValue> { ["a"] = new CypherInt(1), ["b"] = new CypherString("two") };
+
+        _mapper.Map(value).Should().Equal(new Dictionary<string, object> { ["a"] = 1L, ["b"] = "two" });
+    }
 }

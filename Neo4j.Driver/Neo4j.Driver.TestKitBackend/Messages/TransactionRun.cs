@@ -13,40 +13,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
-using Neo4j.Driver.TestKitBackend.Types;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record SessionRunRequest : IProtocolMessage
+internal record TransactionRunRequest : IProtocolMessage
 {
-    public required RegistryObject<IAsyncSession> Session { get; init; }
+    public required RegistryObject<IAsyncTransaction> Tx { get; init; }
     public required string Cypher { get; init; }
-
     public Dictionary<string, ICypherValue>? Params { get; init; }
-
-    // Cypher-envelope dict on the wire; parsed but not yet converted to native values (M7).
-    public Dictionary<string, JsonElement>? TxMeta { get; init; }
-
-    // Absent = driver default, null = explicitly no timeout, number = timeout in ms.
-    public Optional<long?> Timeout { get; init; }
 }
 
-internal record ResultResponse(string Id, string[]? Keys) : IProtocolMessage;
-
-internal class SessionRunHandler : MessageHandler<SessionRunRequest>
+internal class TransactionRunHandler : MessageHandler<TransactionRunRequest>
 {
     private readonly IRegistry _registry;
     private readonly IResponseWriter _responseWriter;
     private readonly ICypherToNativeMapper _cypherToNativeMapper;
     private readonly ILogger _logger;
 
-    public SessionRunHandler(
+    public TransactionRunHandler(
         IRegistry registry,
         IResponseWriter responseWriter,
         ICypherToNativeMapper cypherToNativeMapper,
@@ -58,14 +47,14 @@ internal class SessionRunHandler : MessageHandler<SessionRunRequest>
         _logger = logger;
     }
 
-    public override async Task ProcessAsync(SessionRunRequest message)
+    public override async Task ProcessAsync(TransactionRunRequest message)
     {
         _logger.LogDebug(
-            "Running query '{Cypher}' on session with id '{SessionId}'",
+            "Running query '{Cypher}' on transaction with id '{TxId}'",
             message.Cypher,
-            message.Session.Id);
+            message.Tx.Id);
 
-        var cursor = await message.Session.Object.RunAsync(message.Cypher, _cypherToNativeMapper.Map(message.Params));
+        var cursor = await message.Tx.Object.RunAsync(message.Cypher, _cypherToNativeMapper.Map(message.Params));
 
         var keys = await cursor.KeysAsync();
         var registeredResult = _registry.Register(cursor);

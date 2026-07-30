@@ -23,9 +23,9 @@ using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
-public class SessionRunHandlerTests
+public class TransactionRunHandlerTests
 {
-    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<SessionRunHandler>();
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<TransactionRunHandler>();
 
     [Fact]
     public async Task Runs_the_query_and_responds_with_the_cursor_id_and_keys()
@@ -37,18 +37,18 @@ public class SessionRunHandlerTests
             .Setup(m => m.Map((Dictionary<string, ICypherValue>?)null))
             .Returns(new Dictionary<string, object>());
 
-        var sessionMock = _autoMocker.GetMock<IAsyncSession>();
-        sessionMock
-            .Setup(s => s.RunAsync("RETURN 1 AS n", It.Is<IDictionary<string, object>>(p => p.Count == 0)))
+        var txMock = _autoMocker.GetMock<IAsyncTransaction>();
+        txMock
+            .Setup(t => t.RunAsync("RETURN 1 AS n", It.Is<IDictionary<string, object>>(p => p.Count == 0)))
             .ReturnsAsync(cursorMock.Object);
 
         var registeredCursor = new RegistryObject<IResultCursor>("result-1", cursorMock.Object);
         _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(cursorMock.Object)).Returns(registeredCursor);
 
-        var handler = _autoMocker.CreateInstance<SessionRunHandler>();
-        var request = new SessionRunRequest
+        var handler = _autoMocker.CreateInstance<TransactionRunHandler>();
+        var request = new TransactionRunRequest
         {
-            Session = new RegistryObject<IAsyncSession>("session-1", sessionMock.Object),
+            Tx = new RegistryObject<IAsyncTransaction>("tx-1", txMock.Object),
             Cypher = "RETURN 1 AS n"
         };
 
@@ -72,27 +72,27 @@ public class SessionRunHandlerTests
             .Setup(m => m.Map(parameters))
             .Returns(new Dictionary<string, object> { ["p"] = 1L });
 
-        var sessionMock = _autoMocker.GetMock<IAsyncSession>();
-        sessionMock
-            .Setup(s => s.RunAsync("RETURN $p AS n", It.Is<IDictionary<string, object>>(
+        var txMock = _autoMocker.GetMock<IAsyncTransaction>();
+        txMock
+            .Setup(t => t.RunAsync("RETURN $p AS n", It.Is<IDictionary<string, object>>(
                 p => p.Count == 1 && Equals(p["p"], 1L))))
             .ReturnsAsync(cursorMock.Object);
 
         var registeredCursor = new RegistryObject<IResultCursor>("result-1", cursorMock.Object);
         _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(cursorMock.Object)).Returns(registeredCursor);
 
-        var handler = _autoMocker.CreateInstance<SessionRunHandler>();
-        var request = new SessionRunRequest
+        var handler = _autoMocker.CreateInstance<TransactionRunHandler>();
+        var request = new TransactionRunRequest
         {
-            Session = new RegistryObject<IAsyncSession>("session-1", sessionMock.Object),
+            Tx = new RegistryObject<IAsyncTransaction>("tx-1", txMock.Object),
             Cypher = "RETURN $p AS n",
             Params = parameters
         };
 
         await handler.ProcessAsync(request);
 
-        sessionMock.Verify(
-            s => s.RunAsync("RETURN $p AS n", It.Is<IDictionary<string, object>>(
+        txMock.Verify(
+            t => t.RunAsync("RETURN $p AS n", It.Is<IDictionary<string, object>>(
                 p => p.Count == 1 && Equals(p["p"], 1L))),
             Times.Once);
     }

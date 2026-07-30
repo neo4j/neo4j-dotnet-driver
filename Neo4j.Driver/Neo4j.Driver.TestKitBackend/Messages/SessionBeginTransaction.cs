@@ -16,61 +16,47 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Types;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record SessionRunRequest : IProtocolMessage
+internal record SessionBeginTransactionRequest : IProtocolMessage
 {
     public required RegistryObject<IAsyncSession> Session { get; init; }
-    public required string Cypher { get; init; }
 
-    public Dictionary<string, ICypherValue>? Params { get; init; }
-
-    // Cypher-envelope dict on the wire; parsed but not yet converted to native values (M7).
+    // Cypher-envelope dict on the wire; parsed but not yet converted to native values (M11).
     public Dictionary<string, JsonElement>? TxMeta { get; init; }
 
     // Absent = driver default, null = explicitly no timeout, number = timeout in ms.
     public Optional<long?> Timeout { get; init; }
 }
 
-internal record ResultResponse(string Id, string[]? Keys) : IProtocolMessage;
+internal record TransactionResponse(string Id) : IProtocolMessage;
 
-internal class SessionRunHandler : MessageHandler<SessionRunRequest>
+internal class SessionBeginTransactionHandler : MessageHandler<SessionBeginTransactionRequest>
 {
     private readonly IRegistry _registry;
     private readonly IResponseWriter _responseWriter;
-    private readonly ICypherToNativeMapper _cypherToNativeMapper;
     private readonly ILogger _logger;
 
-    public SessionRunHandler(
-        IRegistry registry,
-        IResponseWriter responseWriter,
-        ICypherToNativeMapper cypherToNativeMapper,
-        ILogger logger)
+    public SessionBeginTransactionHandler(IRegistry registry, IResponseWriter responseWriter, ILogger logger)
     {
         _registry = registry;
         _responseWriter = responseWriter;
-        _cypherToNativeMapper = cypherToNativeMapper;
         _logger = logger;
     }
 
-    public override async Task ProcessAsync(SessionRunRequest message)
+    public override async Task ProcessAsync(SessionBeginTransactionRequest message)
     {
+        var transaction = await message.Session.Object.BeginTransactionAsync();
+        var registered = _registry.Register(transaction);
         _logger.LogDebug(
-            "Running query '{Cypher}' on session with id '{SessionId}'",
-            message.Cypher,
+            "Began transaction with id '{Id}' on session with id '{SessionId}'",
+            registered.Id,
             message.Session.Id);
 
-        var cursor = await message.Session.Object.RunAsync(message.Cypher, _cypherToNativeMapper.Map(message.Params));
-
-        var keys = await cursor.KeysAsync();
-        var registeredResult = _registry.Register(cursor);
-        _logger.LogDebug("Query result id '{ResultId}' returned keys: {@keys}", registeredResult.Id, keys);
-
-        await _responseWriter.WriteAsync(new ResultResponse(registeredResult.Id, keys));
+        await _responseWriter.WriteAsync(new TransactionResponse(registered.Id));
     }
 }

@@ -18,6 +18,8 @@ namespace Neo4j.Driver.TestKitBackend.Cypher;
 internal interface ICypherToNativeMapper
 {
     object? Map(ICypherValue value);
+
+    Dictionary<string, object> Map(Dictionary<string, ICypherValue>? parameters);
 }
 
 internal class CypherToNativeMapper : ICypherToNativeMapper
@@ -38,5 +40,10 @@ internal class CypherToNativeMapper : ICypherToNativeMapper
             CypherVector v => v.ToVector(),
             _ => throw new NotSupportedException($"No native mapping for cypher type {value.GetType().Name}")
         };
+    }
+
+    public Dictionary<string, object> Map(Dictionary<string, ICypherValue>? parameters)
+    {
+        return parameters?.ToDictionary(kv => kv.Key, kv => Map(kv.Value)!) ?? [];
     }
 }
