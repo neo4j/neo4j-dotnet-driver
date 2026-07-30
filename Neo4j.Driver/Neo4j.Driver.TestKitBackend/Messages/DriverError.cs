@@ -22,4 +22,5 @@ internal record DriverErrorResponse : IProtocolMessage
     public required string Id { get; init; }
     public required string ErrorType { get; init; }
     public string? Msg { get; init; }
+    public string? Code { get; init; }
 }

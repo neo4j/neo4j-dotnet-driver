@@ -88,7 +88,8 @@ internal class MessageLoop : IMessageLoop
                 {
                     Id = registered.Id,
                     ErrorType = _exceptionTypeMapper.Map(exception),
-                    Msg = exception.Message
+                    Msg = exception.Message,
+                    Code = exception.Code
                 });
         }
     }

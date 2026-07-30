@@ -96,7 +96,7 @@ public class MessageLoopTests
         const string goodJson = """{"name":"GetFeatures","data":{}}""";
         var failingMessage = Mock.Of<IProtocolMessage>();
         var goodMessage = Mock.Of<IProtocolMessage>();
-        Neo4jException exception = new ClientException("bad cypher");
+        Neo4jException exception = new ClientException("Neo.ClientError.Statement.SyntaxError", "bad cypher");
 
         _autoMocker.GetMock<IConnectionInput>()
             .SetupSequence(i => i.ReadRequestAsync())
@@ -119,7 +119,10 @@ public class MessageLoopTests
         _autoMocker.GetMock<IResponseWriter>()
             .Verify(
                 w => w.WriteAsync(It.Is<DriverErrorResponse>(
-                    e => e.Id == "error-1" && e.ErrorType == "ClientError" && e.Msg == "bad cypher")),
+                    e => e.Id == "error-1" &&
+                        e.ErrorType == "ClientError" &&
+                        e.Msg == "bad cypher" &&
+                        e.Code == "Neo.ClientError.Statement.SyntaxError")),
                 Times.Once);
 
         // The loop survives a driver error - the next request must still reach the dispatcher.
