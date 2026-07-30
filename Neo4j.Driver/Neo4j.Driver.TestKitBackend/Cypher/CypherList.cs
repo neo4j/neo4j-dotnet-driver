@@ -15,4 +15,4 @@
 
 namespace Neo4j.Driver.TestKitBackend.Cypher;
 
-internal record CypherList(List<ICypherValue> Value) : ICypherValue;
+internal record CypherList(IReadOnlyList<ICypherValue> Value) : ICypherValue;

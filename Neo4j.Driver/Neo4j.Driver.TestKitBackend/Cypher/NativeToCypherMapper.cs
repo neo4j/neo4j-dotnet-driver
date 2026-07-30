@@ -32,8 +32,7 @@ internal class NativeToCypherMapper : INativeToCypherMapper
             double d => new CypherFloat(d),
             string s => new CypherString(s),
             List<object> list => new CypherList([..list.Select(Map)]),
-            _ => throw new NotSupportedException(
-                $"No cypher mapping for native type {value.GetType().Name}")
+            _ => throw new NotSupportedException($"No cypher mapping for native type {value.GetType().Name}")
         };
     }
 }
