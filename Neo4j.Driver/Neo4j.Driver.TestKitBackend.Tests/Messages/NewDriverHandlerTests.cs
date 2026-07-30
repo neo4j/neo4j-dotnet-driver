@@ -60,4 +60,24 @@ public class NewDriverHandlerTests
         _autoMocker.GetMock<INewDriverConfigMapper>()
             .Verify(m => m.Apply(request, It.IsAny<IConfigBuilder>()), Times.Once);
     }
+
+    [Fact]
+    public async Task Configures_the_driver_with_the_injected_neo4j_logger()
+    {
+        var registry = new Registry();
+        _autoMocker.Use<IRegistry>(registry);
+        var neo4JLogger = Mock.Of<INeo4jLogger>();
+        _autoMocker.Use(neo4JLogger);
+        var handler = _autoMocker.CreateInstance<NewDriverHandler>();
+        var request = new NewDriverRequest
+        {
+            Uri = "bolt://localhost:7687",
+            AuthorizationToken = new AuthorizationToken("basic", "neo4j", "secret")
+        };
+
+        var response = await handler.ProcessAsync(request);
+
+        var driverResponse = response.Should().BeOfType<DriverResponse>().Subject;
+        registry.Get<IDriver>(driverResponse.Id).Object.Config.Neo4JLogger.Should().BeSameAs(neo4JLogger);
+    }
 }

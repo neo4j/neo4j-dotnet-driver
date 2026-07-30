@@ -52,15 +52,18 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
 {
     private readonly IRegistry _registry;
     private readonly INewDriverConfigMapper _configMapper;
+    private readonly INeo4jLogger _neo4JLogger;
     private readonly ILogger _logger;
 
     public NewDriverHandler(
         IRegistry registry,
         INewDriverConfigMapper configMapper,
+        INeo4jLogger neo4JLogger,
         ILogger logger)
     {
         _registry = registry;
         _configMapper = configMapper;
+        _neo4JLogger = neo4JLogger;
         _logger = logger;
     }
 
@@ -69,7 +72,11 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
         var driver = GraphDatabase.Driver(
             message.Uri,
             message.AuthorizationToken?.Value.ToAuthToken(),
-            builder => _configMapper.Apply(message, builder));
+            builder =>
+            {
+                _configMapper.Apply(message, builder);
+                builder.WithLogger(_neo4JLogger);
+            });
 
         var registryObject = _registry.Register(driver);
         var response = new DriverResponse(registryObject.Id);
