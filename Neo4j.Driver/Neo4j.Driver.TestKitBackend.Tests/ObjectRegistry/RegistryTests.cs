@@ -100,6 +100,19 @@ public class RegistryTests
     }
 
     [Fact]
+    public async Task DisposeAsync_disposes_in_reverse_registration_order()
+    {
+        var disposalOrder = new List<string>();
+        _registry.Register(new SequencedDisposable("first", disposalOrder));
+        _registry.Register(new SequencedDisposable("second", disposalOrder));
+        _registry.Register(new SequencedDisposable("third", disposalOrder));
+
+        await _registry.DisposeAsync();
+
+        disposalOrder.Should().Equal("third", "second", "first");
+    }
+
+    [Fact]
     public async Task DisposeAsync_does_not_dispose_an_object_that_was_already_removed()
     {
         var stored = new DisposableStored();
@@ -122,6 +135,24 @@ public class RegistryTests
         public ValueTask DisposeAsync()
         {
             Disposed = true;
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    private class SequencedDisposable : IAsyncDisposable
+    {
+        private readonly string _name;
+        private readonly List<string> _disposalOrder;
+
+        public SequencedDisposable(string name, List<string> disposalOrder)
+        {
+            _name = name;
+            _disposalOrder = disposalOrder;
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            _disposalOrder.Add(_name);
             return ValueTask.CompletedTask;
         }
     }

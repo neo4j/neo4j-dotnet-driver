@@ -20,7 +20,7 @@ namespace Neo4j.Driver.TestKitBackend.ObjectRegistry;
 [RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
 internal class Registry : IRegistry, IAsyncDisposable
 {
-    private readonly Dictionary<string, object> _objects = [];
+    private readonly OrderedDictionary<string, object> _objects = [];
     private int _nextId;
 
     public RegistryObject<T> Register<T>(T obj) where T : notnull
@@ -51,13 +51,20 @@ internal class Registry : IRegistry, IAsyncDisposable
         _objects.Remove(id);
     }
 
+    // Reverse registration order: the newest objects depend on the oldest (results on sessions,
+    // sessions on drivers), so tear down dependents first.
     public async ValueTask DisposeAsync()
     {
-        foreach (var obj in _objects.Values)
+        for (var i = _objects.Count - 1; i >= 0; i--)
         {
-            if (obj is IAsyncDisposable disposable)
+            var obj = _objects.GetAt(i).Value;
+            if (obj is IAsyncDisposable asyncDisposable)
             {
-                await disposable.DisposeAsync();
+                await asyncDisposable.DisposeAsync();
+            }
+            else if (obj is IDisposable disposable)
+            {
+                disposable.Dispose();
             }
         }
 

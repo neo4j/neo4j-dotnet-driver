@@ -17,6 +17,7 @@ using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Logging;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
@@ -38,18 +39,24 @@ internal class StartTestHandler : MessageHandler<StartTestRequest>
 {
     private readonly ILoggingContext _loggingContext;
     private readonly ISkipPolicy _skipPolicy;
+    private readonly ILoggingDisposableFactory _loggingDisposableFactory;
     private readonly IResponseWriter _responseWriter;
+    private readonly IRegistry _registry;
     private readonly ILogger _logger;
 
     public StartTestHandler(
         ILoggingContext loggingContext,
         ISkipPolicy skipPolicy,
+        ILoggingDisposableFactory loggingDisposableFactory,
         IResponseWriter responseWriter,
+        IRegistry registry,
         ILogger logger)
     {
         _loggingContext = loggingContext;
         _skipPolicy = skipPolicy;
+        _loggingDisposableFactory = loggingDisposableFactory;
         _responseWriter = responseWriter;
+        _registry = registry;
         _logger = logger;
     }
 
@@ -62,13 +69,21 @@ internal class StartTestHandler : MessageHandler<StartTestRequest>
         {
             _logger.LogDebug("Skipping test '{TestName}': {Reason}", message.TestName, reason);
             response = new SkipTestResponse(reason);
+            await _responseWriter.WriteAsync(response);
         }
         else
         {
-            _logger.LogDebug("Running test '{TestName}'", message.TestName);
+            _logger.LogDebug("Accepting test '{TestName}'", message.TestName);
             response = new RunTestResponse();
-        }
+            await _responseWriter.WriteAsync(response);
 
-        await _responseWriter.WriteAsync(response);
+            // everything after this point is logging from the test execution
+            _logger.LogDebug("START TEST {TestName}", message.TestName);
+
+            // automatically log the test end when the test lifetime ends
+            var endTestMsg = $"END TEST {message.TestName}";
+            var endTestLogger = _loggingDisposableFactory.GetLoggingDisposable("Test closedown", endTestMsg);
+            _registry.Register(endTestLogger);
+        }
     }
 }
