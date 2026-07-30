@@ -34,6 +34,7 @@ internal class NativeToCypherMapper : INativeToCypherMapper
             List<object> list => new CypherList([..list.Select(Map)]),
             Dictionary<string, object> map => new CypherMap(map.ToDictionary(kv => kv.Key, kv => Map(kv.Value))),
             Guid guid => new CypherUuid(guid),
+            ZonedDateTime { Zone: ZoneOffset offset } zdt => new CypherDateTime(zdt, offset.OffsetSeconds),
             _ => throw new NotSupportedException($"No cypher mapping for native type {value.GetType().Name}")
         };
     }

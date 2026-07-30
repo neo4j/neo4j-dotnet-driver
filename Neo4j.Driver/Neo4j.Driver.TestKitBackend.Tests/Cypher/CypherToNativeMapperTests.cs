@@ -96,6 +96,14 @@ public class CypherToNativeMapperTests
     }
 
     [Fact]
+    public void Maps_cypher_date_time_with_an_offset_to_zoned_date_time()
+    {
+        var expected = new ZonedDateTime(2022, 6, 7, 11, 52, 5, 0, Zone.Of(7200));
+
+        _mapper.Map(new CypherDateTime(2022, 6, 7, 11, 52, 5, 0, 7200)).Should().Be(expected);
+    }
+
+    [Fact]
     public void Throws_for_an_unmapped_cypher_type_naming_the_type()
     {
         var act = () => _mapper.Map(new CypherList([]));
