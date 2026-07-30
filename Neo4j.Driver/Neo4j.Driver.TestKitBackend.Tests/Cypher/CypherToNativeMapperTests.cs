@@ -56,6 +56,38 @@ public class CypherToNativeMapperTests
     }
 
     [Fact]
+    public void Maps_an_empty_cypher_map_to_an_empty_dictionary()
+    {
+        _mapper.Map(new CypherMap(new Dictionary<string, ICypherValue>()))
+            .Should().BeOfType<Dictionary<string, object>>()
+            .Which.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Maps_a_cypher_map_of_scalars_to_a_dictionary()
+    {
+        var value = new Dictionary<string, ICypherValue> { ["a"] = new CypherInt(1), ["b"] = new CypherString("two") };
+
+        _mapper.Map(new CypherMap(value))
+            .Should().BeOfType<Dictionary<string, object>>()
+            .Which.Should().Equal(new Dictionary<string, object> { ["a"] = 1L, ["b"] = "two" });
+    }
+
+    [Fact]
+    public void Maps_a_nested_cypher_map_recursively()
+    {
+        var outer = new CypherMap(
+            new Dictionary<string, ICypherValue> { ["outer"] = new CypherMap(new Dictionary<string, ICypherValue> { ["inner"] = new CypherBool(true) }) });
+
+        var mapped = _mapper.Map(outer)
+            .Should().BeOfType<Dictionary<string, object>>().Subject;
+
+        var inner = mapped["outer"].Should().BeOfType<Dictionary<string, object>>().Subject;
+
+        inner.Should().Equal(new Dictionary<string, object> { ["inner"] = true });
+    }
+
+    [Fact]
     public void Throws_for_an_unmapped_cypher_type_naming_the_type()
     {
         var act = () => _mapper.Map(new CypherList([]));

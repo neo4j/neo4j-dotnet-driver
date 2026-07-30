@@ -15,24 +15,4 @@
 
 namespace Neo4j.Driver.TestKitBackend.Cypher;
 
-internal interface ICypherToNativeMapper
-{
-    object? Map(ICypherValue value);
-}
-
-internal class CypherToNativeMapper : ICypherToNativeMapper
-{
-    public object? Map(ICypherValue value)
-    {
-        return value switch
-        {
-            CypherNull => null,
-            CypherBool b => b.Value,
-            CypherInt i => i.Value,
-            CypherFloat f => f.Value,
-            CypherString s => s.Value,
-            CypherMap m => m.Value.ToDictionary(kv => kv.Key, kv => Map(kv.Value)!),
-            _ => throw new NotSupportedException($"No native mapping for cypher type {value.GetType().Name}")
-        };
-    }
-}
+internal record CypherMap(IReadOnlyDictionary<string, ICypherValue> Value) : ICypherValue;
