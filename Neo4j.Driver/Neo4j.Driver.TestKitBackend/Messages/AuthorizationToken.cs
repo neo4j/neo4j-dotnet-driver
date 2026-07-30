@@ -20,7 +20,7 @@ internal record AuthorizationToken(
     string Scheme,
     string Principal,
     string Credentials,
-    string? Realm = null) : IWireType
+    string? Realm = null) : IWireType<AuthorizationToken>
 {
     public IAuthToken ToAuthToken()
     {

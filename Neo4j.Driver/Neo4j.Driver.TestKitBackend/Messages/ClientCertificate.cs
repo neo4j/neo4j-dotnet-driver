@@ -19,4 +19,4 @@ namespace Neo4j.Driver.TestKitBackend.Messages;
 internal record ClientCertificate(
     string Certfile,
     string Keyfile,
-    string? Password = null) : IWireType;
+    string? Password = null) : IWireType<ClientCertificate>;

@@ -28,3 +28,8 @@ internal interface IWireType
             : str;
     }
 }
+
+internal interface IWireType<T> : IWireType where T : IWireType<T>
+{
+    T Value => (T)this;
+}

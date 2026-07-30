@@ -23,11 +23,11 @@ using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Serialization;
 
-public class PayloadEnvelopeConverterTests
+public class WireTypeConverterTests
 {
-    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<PayloadEnvelopeConverterFactory>();
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<WireTypeConverterFactory>();
 
-    public PayloadEnvelopeConverterTests()
+    public WireTypeConverterTests()
     {
         _autoMocker.Use<IWireTypeNameProvider>(new WireTypeNameProvider());
     }
@@ -42,7 +42,7 @@ public class PayloadEnvelopeConverterTests
         _autoMocker.Use<IJsonOptionsProvider>(new JsonOptionsProvider(
         [
             new EnvelopeConverter(_autoMocker.Get<IMessageTypeMap>()),
-            _autoMocker.CreateInstance<PayloadEnvelopeConverterFactory>()
+            _autoMocker.CreateInstance<WireTypeConverterFactory>()
         ]));
         var serializer = _autoMocker.CreateInstance<MessageSerializer>();
 
@@ -71,12 +71,43 @@ public class PayloadEnvelopeConverterTests
     }
 
     [Fact]
-    public void Rejects_a_payload_whose_name_does_not_match_the_declared_type()
+    public void Reads_a_wire_type_nested_inside_another_wire_type()
     {
         var options = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            Converters = { _autoMocker.CreateInstance<PayloadEnvelopeConverterFactory>() }
+            Converters = { _autoMocker.CreateInstance<WireTypeConverterFactory>() }
+        };
+
+        const string json =
+            """
+            {
+                "name": "OuterTestWireType",
+                "data": {
+                    "token": {
+                        "name": "AuthorizationToken",
+                        "data": {
+                            "scheme": "basic",
+                            "principal": "neo4j",
+                            "credentials": "secret"
+                        }
+                    }
+                }
+            }
+            """;
+
+        var outer = JsonSerializer.Deserialize<IWireType<OuterTestWireType>>(json, options);
+
+        outer!.Value.Token.Should().Be(new AuthorizationToken("basic", "neo4j", "secret"));
+    }
+
+    [Fact]
+    public void Rejects_a_wire_type_whose_name_does_not_match_the_declared_type()
+    {
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            Converters = { _autoMocker.CreateInstance<WireTypeConverterFactory>() }
         };
 
         const string json =
@@ -91,8 +122,13 @@ public class PayloadEnvelopeConverterTests
             }
             """;
 
-        var deserialize = () => JsonSerializer.Deserialize<AuthorizationToken>(json, options);
+        var deserialize = () => JsonSerializer.Deserialize<IWireType<AuthorizationToken>>(json, options);
 
         deserialize.Should().Throw<TestKitProtocolException>();
     }
+}
+
+internal record OuterTestWireType : IWireType<OuterTestWireType>
+{
+    public IWireType<AuthorizationToken>? Token { get; init; }
 }
