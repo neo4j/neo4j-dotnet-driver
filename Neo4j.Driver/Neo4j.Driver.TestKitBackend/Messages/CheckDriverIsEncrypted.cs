@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
@@ -28,17 +29,19 @@ internal record DriverIsEncryptedResponse(bool Encrypted) : IProtocolMessage;
 
 internal class CheckDriverIsEncryptedHandler : MessageHandler<CheckDriverIsEncryptedRequest>
 {
+    private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
-    public CheckDriverIsEncryptedHandler(ILogger logger)
+    public CheckDriverIsEncryptedHandler(IResponseWriter responseWriter, ILogger logger)
     {
+        _responseWriter = responseWriter;
         _logger = logger;
     }
 
-    public override Task<IProtocolMessage?> ProcessAsync(CheckDriverIsEncryptedRequest message)
+    public override async Task ProcessAsync(CheckDriverIsEncryptedRequest message)
     {
         var encrypted = message.Driver.Object.Encrypted;
         _logger.LogDebug("Checked encryption for driver with id '{Id}': {Encrypted}", message.Driver.Id, encrypted);
-        return Task.FromResult<IProtocolMessage?>(new DriverIsEncryptedResponse(encrypted));
+        await _responseWriter.WriteAsync(new DriverIsEncryptedResponse(encrypted));
     }
 }

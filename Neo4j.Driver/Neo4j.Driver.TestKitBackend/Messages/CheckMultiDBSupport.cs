@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
@@ -28,17 +29,19 @@ internal record MultiDBSupportResponse(string Id, bool Available) : IProtocolMes
 
 internal class CheckMultiDBSupportHandler : MessageHandler<CheckMultiDBSupportRequest>
 {
+    private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
-    public CheckMultiDBSupportHandler(ILogger logger)
+    public CheckMultiDBSupportHandler(IResponseWriter responseWriter, ILogger logger)
     {
+        _responseWriter = responseWriter;
         _logger = logger;
     }
 
-    public override async Task<IProtocolMessage?> ProcessAsync(CheckMultiDBSupportRequest message)
+    public override async Task ProcessAsync(CheckMultiDBSupportRequest message)
     {
         var available = await message.Driver.Object.SupportsMultiDbAsync();
         _logger.LogDebug("Checked multi-db support for driver with id '{Id}': {Available}", message.Driver.Id, available);
-        return new MultiDBSupportResponse(message.Driver.Id, available);
+        await _responseWriter.WriteAsync(new MultiDBSupportResponse(message.Driver.Id, available));
     }
 }

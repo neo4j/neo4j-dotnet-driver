@@ -17,7 +17,7 @@ namespace Neo4j.Driver.TestKitBackend.Dispatch;
 
 internal abstract class MessageHandler<T> : IMessageHandler<T> where T : IProtocolMessage
 {
-    Task<IProtocolMessage?> IMessageHandler.ProcessAsync(IProtocolMessage message)
+    Task IMessageHandler.ProcessAsync(IProtocolMessage message)
     {
         return message is T typedMessage
             ? ProcessAsync(typedMessage)
@@ -25,5 +25,5 @@ internal abstract class MessageHandler<T> : IMessageHandler<T> where T : IProtoc
                 $"Message of type {message.GetType().Name} is not supported by this handler.");
     }
 
-    public abstract Task<IProtocolMessage?> ProcessAsync(T message);
+    public abstract Task ProcessAsync(T message);
 }

@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
@@ -28,17 +29,19 @@ internal record ServerInfoResponse(string Address, string Agent, string Protocol
 
 internal class GetServerInfoHandler : MessageHandler<GetServerInfoRequest>
 {
+    private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
-    public GetServerInfoHandler(ILogger logger)
+    public GetServerInfoHandler(IResponseWriter responseWriter, ILogger logger)
     {
+        _responseWriter = responseWriter;
         _logger = logger;
     }
 
-    public override async Task<IProtocolMessage?> ProcessAsync(GetServerInfoRequest message)
+    public override async Task ProcessAsync(GetServerInfoRequest message)
     {
         var info = await message.Driver.Object.GetServerInfoAsync();
         _logger.LogDebug("Got server info for driver with id '{Id}'", message.Driver.Id);
-        return new ServerInfoResponse(info.Address, info.Agent, info.ProtocolVersion);
+        await _responseWriter.WriteAsync(new ServerInfoResponse(info.Address, info.Agent, info.ProtocolVersion));
     }
 }

@@ -14,9 +14,7 @@
 // limitations under the License.
 
 using FluentAssertions;
-using Moq;
 using Moq.AutoMock;
-using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Xunit;
 
@@ -33,16 +31,15 @@ public class MessageDispatcherTests
     }
 
     [Fact]
-    public async Task Dispatches_to_the_handler_for_the_message_type_and_writes_its_response()
+    public async Task Dispatches_to_the_handler_for_the_message_type()
     {
-        var response = new SampleResponse();
-        var sampleHandler = new SampleHandler(response);
+        var sampleHandler = new SampleHandler();
         var otherHandler = new OtherHandler();
         var dispatcher = Subject(otherHandler, sampleHandler);
 
         await dispatcher.DispatchAsync(new SampleRequest());
 
-        _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(response), Times.Once);
+        sampleHandler.WasCalled.Should().BeTrue();
         otherHandler.WasCalled.Should().BeFalse();
     }
 
@@ -58,31 +55,27 @@ public class MessageDispatcherTests
 
     private record SampleRequest : IProtocolMessage;
 
-    private record SampleResponse : IProtocolMessage;
-
     private record OtherRequest : IProtocolMessage;
 
     private class SampleHandler : MessageHandler<SampleRequest>
     {
-        private readonly IProtocolMessage? _response;
+        public bool WasCalled { get; private set; }
 
-        public SampleHandler(IProtocolMessage? response)
+        public override Task ProcessAsync(SampleRequest message)
         {
-            _response = response;
+            WasCalled = true;
+            return Task.CompletedTask;
         }
-
-        public override Task<IProtocolMessage?> ProcessAsync(SampleRequest message) =>
-            Task.FromResult(_response);
     }
 
     private class OtherHandler : MessageHandler<OtherRequest>
     {
         public bool WasCalled { get; private set; }
 
-        public override Task<IProtocolMessage?> ProcessAsync(OtherRequest message)
+        public override Task ProcessAsync(OtherRequest message)
         {
             WasCalled = true;
-            return Task.FromResult<IProtocolMessage?>(null);
+            return Task.CompletedTask;
         }
     }
 }

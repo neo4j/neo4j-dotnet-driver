@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Serialization;
@@ -53,21 +54,24 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
     private readonly IRegistry _registry;
     private readonly INewDriverConfigMapper _configMapper;
     private readonly INeo4jLogger _neo4JLogger;
+    private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewDriverHandler(
         IRegistry registry,
         INewDriverConfigMapper configMapper,
         INeo4jLogger neo4JLogger,
+        IResponseWriter responseWriter,
         ILogger logger)
     {
         _registry = registry;
         _configMapper = configMapper;
         _neo4JLogger = neo4JLogger;
+        _responseWriter = responseWriter;
         _logger = logger;
     }
 
-    public override Task<IProtocolMessage?> ProcessAsync(NewDriverRequest message)
+    public override async Task ProcessAsync(NewDriverRequest message)
     {
         var driver = GraphDatabase.Driver(
             message.Uri,
@@ -79,8 +83,7 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
             });
 
         var registryObject = _registry.Register(driver);
-        var response = new DriverResponse(registryObject.Id);
         _logger.LogDebug("Created driver with id '{Id}'", registryObject.Id);
-        return Task.FromResult<IProtocolMessage?>(response);
+        await _responseWriter.WriteAsync(new DriverResponse(registryObject.Id));
     }
 }

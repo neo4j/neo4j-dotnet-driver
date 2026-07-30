@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Serialization;
@@ -41,20 +42,26 @@ internal class NewSessionHandler : MessageHandler<NewSessionRequest>
 {
     private readonly IRegistry _registry;
     private readonly INewSessionConfigMapper _configMapper;
+    private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
-    public NewSessionHandler(IRegistry registry, INewSessionConfigMapper configMapper, ILogger logger)
+    public NewSessionHandler(
+        IRegistry registry,
+        INewSessionConfigMapper configMapper,
+        IResponseWriter responseWriter,
+        ILogger logger)
     {
         _registry = registry;
         _configMapper = configMapper;
+        _responseWriter = responseWriter;
         _logger = logger;
     }
 
-    public override Task<IProtocolMessage?> ProcessAsync(NewSessionRequest message)
+    public override async Task ProcessAsync(NewSessionRequest message)
     {
         var session = message.Driver.Object.AsyncSession(builder => _configMapper.Apply(message, builder));
         var registryObject = _registry.Register(session);
         _logger.LogDebug("Created session with id '{Id}'", registryObject.Id);
-        return Task.FromResult<IProtocolMessage?>(new SessionResponse(registryObject.Id));
+        await _responseWriter.WriteAsync(new SessionResponse(registryObject.Id));
     }
 }

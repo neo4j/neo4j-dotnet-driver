@@ -13,8 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using FluentAssertions;
+using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Xunit;
@@ -35,9 +36,12 @@ public class SessionLastBookmarksHandlerTests
         var handler = _autoMocker.CreateInstance<SessionLastBookmarksHandler>();
         var request = new SessionLastBookmarksRequest { Session = registered };
 
-        var response = await handler.ProcessAsync(request);
+        await handler.ProcessAsync(request);
 
-        response.Should().BeOfType<BookmarksResponse>().Subject.Bookmarks
-            .Should().BeEquivalentTo(["bookmark-1", "bookmark-2"]);
+        _autoMocker.GetMock<IResponseWriter>()
+            .Verify(
+                w => w.WriteAsync(It.Is<BookmarksResponse>(
+                    r => r.Bookmarks.SequenceEqual(new[] { "bookmark-1", "bookmark-2" }))),
+                Times.Once);
     }
 }

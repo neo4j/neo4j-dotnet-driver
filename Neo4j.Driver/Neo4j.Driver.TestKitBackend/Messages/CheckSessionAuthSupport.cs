@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
@@ -28,14 +29,16 @@ internal record SessionAuthSupportResponse(string Id, bool Available) : IProtoco
 
 internal class CheckSessionAuthSupportHandler : MessageHandler<CheckSessionAuthSupportRequest>
 {
+    private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
-    public CheckSessionAuthSupportHandler(ILogger logger)
+    public CheckSessionAuthSupportHandler(IResponseWriter responseWriter, ILogger logger)
     {
+        _responseWriter = responseWriter;
         _logger = logger;
     }
 
-    public override async Task<IProtocolMessage?> ProcessAsync(CheckSessionAuthSupportRequest message)
+    public override async Task ProcessAsync(CheckSessionAuthSupportRequest message)
     {
         var available = await message.Driver.Object.SupportsSessionAuthAsync();
         _logger.LogDebug(
@@ -43,6 +46,6 @@ internal class CheckSessionAuthSupportHandler : MessageHandler<CheckSessionAuthS
             message.Driver.Id,
             available);
 
-        return new SessionAuthSupportResponse(message.Driver.Id, available);
+        await _responseWriter.WriteAsync(new SessionAuthSupportResponse(message.Driver.Id, available));
     }
 }

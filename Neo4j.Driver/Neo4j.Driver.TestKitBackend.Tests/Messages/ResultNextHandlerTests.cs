@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
@@ -50,10 +50,13 @@ public class ResultNextHandlerTests
 
         var handler = _autoMocker.CreateInstance<ResultNextHandler>();
 
-        var response = await handler.ProcessAsync(RequestFor(cursorMock.Object));
+        await handler.ProcessAsync(RequestFor(cursorMock.Object));
 
-        var recordResponse = response.Should().BeOfType<RecordResponse>().Subject;
-        recordResponse.Values.Should().Equal(new CypherInt(1), new CypherString("hi"));
+        _autoMocker.GetMock<IResponseWriter>()
+            .Verify(
+                w => w.WriteAsync(It.Is<RecordResponse>(
+                    r => r.Values.SequenceEqual(new ICypherValue[] { new CypherInt(1), new CypherString("hi") }))),
+                Times.Once);
     }
 
     [Fact]
@@ -64,8 +67,9 @@ public class ResultNextHandlerTests
 
         var handler = _autoMocker.CreateInstance<ResultNextHandler>();
 
-        var response = await handler.ProcessAsync(RequestFor(cursorMock.Object));
+        await handler.ProcessAsync(RequestFor(cursorMock.Object));
 
-        response.Should().BeOfType<NullRecordResponse>();
+        _autoMocker.GetMock<IResponseWriter>()
+            .Verify(w => w.WriteAsync(new NullRecordResponse()), Times.Once);
     }
 }

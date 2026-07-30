@@ -13,31 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.TestKitBackend.Connection;
 namespace Neo4j.Driver.TestKitBackend.Dispatch;
 
 internal class MessageDispatcher : IMessageDispatcher
 {
     private readonly IReadOnlyDictionary<Type, IMessageHandler> _handlers;
-    private readonly IResponseWriter _writer;
 
-    public MessageDispatcher(IMessageHandler[] handlers, IResponseWriter writer)
+    public MessageDispatcher(IMessageHandler[] handlers)
     {
         _handlers = handlers.ToDictionary(h => MessageHandlingHelper.MessageTypeFor(h.GetType()));
-        _writer = writer;
     }
 
-    public async Task DispatchAsync(IProtocolMessage message)
+    public Task DispatchAsync(IProtocolMessage message)
     {
         if (!_handlers.TryGetValue(message.GetType(), out var handler))
         {
             throw new UnknownMessageException(message.GetType());
         }
 
-        var response = await handler.ProcessAsync(message);
-        if (response is not null)
-        {
-            await _writer.WriteAsync(response);
-        }
+        return handler.ProcessAsync(message);
     }
 }

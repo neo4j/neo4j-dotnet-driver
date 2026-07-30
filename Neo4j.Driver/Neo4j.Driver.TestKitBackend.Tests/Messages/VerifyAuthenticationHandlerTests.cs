@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Xunit;
@@ -40,10 +40,9 @@ public class VerifyAuthenticationHandlerTests
             AuthorizationToken = new AuthorizationToken("basic", "neo4j", "secret")
         };
 
-        var response = await handler.ProcessAsync(request);
+        await handler.ProcessAsync(request);
 
-        var authResponse = response.Should().BeOfType<DriverIsAuthenticatedResponse>().Subject;
-        authResponse.Id.Should().Be("driver-1");
-        authResponse.Authenticated.Should().BeTrue();
+        _autoMocker.GetMock<IResponseWriter>()
+            .Verify(w => w.WriteAsync(new DriverIsAuthenticatedResponse("driver-1", true)), Times.Once);
     }
 }

@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Xunit;
@@ -45,10 +45,12 @@ public class SessionRunHandlerTests
             Cypher = "RETURN 1 AS n"
         };
 
-        var response = await handler.ProcessAsync(request);
+        await handler.ProcessAsync(request);
 
-        var resultResponse = response.Should().BeOfType<ResultResponse>().Subject;
-        resultResponse.Id.Should().Be("result-1");
-        resultResponse.Keys.Should().Equal("n");
+        _autoMocker.GetMock<IResponseWriter>()
+            .Verify(
+                w => w.WriteAsync(It.Is<ResultResponse>(
+                    r => r.Id == "result-1" && r.Keys!.SequenceEqual(new[] { "n" }))),
+                Times.Once);
     }
 }

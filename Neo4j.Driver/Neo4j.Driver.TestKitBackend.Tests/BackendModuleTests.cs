@@ -59,7 +59,7 @@ public class BackendModuleTests
 
         // The connection handler registers the transport-bound output into each connection
         // scope, and the host supplies ILoggerFactory (which LoggerMiddleware resolves to
-        // satisfy plain ILogger parameters); emulate both so the dispatcher's ResponseWriter
+        // satisfy plain ILogger parameters); emulate both so the handlers' ResponseWriter
         // dependency can resolve.
         using var scope = container.BeginLifetimeScope(b =>
         {

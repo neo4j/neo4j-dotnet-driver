@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Logging;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 
@@ -37,16 +38,22 @@ internal class StartTestHandler : MessageHandler<StartTestRequest>
 {
     private readonly ILoggingContext _loggingContext;
     private readonly ISkipPolicy _skipPolicy;
+    private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
-    public StartTestHandler(ILoggingContext loggingContext, ISkipPolicy skipPolicy, ILogger logger)
+    public StartTestHandler(
+        ILoggingContext loggingContext,
+        ISkipPolicy skipPolicy,
+        IResponseWriter responseWriter,
+        ILogger logger)
     {
         _loggingContext = loggingContext;
         _skipPolicy = skipPolicy;
+        _responseWriter = responseWriter;
         _logger = logger;
     }
 
-    public override Task<IProtocolMessage?> ProcessAsync(StartTestRequest message)
+    public override async Task ProcessAsync(StartTestRequest message)
     {
         _loggingContext.Set("test", message.TestName);
 
@@ -62,6 +69,6 @@ internal class StartTestHandler : MessageHandler<StartTestRequest>
             response = new RunTestResponse();
         }
 
-        return Task.FromResult<IProtocolMessage?>(response);
+        await _responseWriter.WriteAsync(response);
     }
 }

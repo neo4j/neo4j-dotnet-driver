@@ -14,7 +14,9 @@
 // limitations under the License.
 
 using FluentAssertions;
+using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Logging;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Xunit;
@@ -35,9 +37,10 @@ public class StartTestHandlerTests
     {
         var handler = _autoMocker.CreateInstance<StartTestHandler>();
 
-        var response = await handler.ProcessAsync(new StartTestRequest { TestName = "some.test.name" });
+        await handler.ProcessAsync(new StartTestRequest { TestName = "some.test.name" });
 
-        response.Should().BeOfType<RunTestResponse>();
+        _autoMocker.GetMock<IResponseWriter>()
+            .Verify(w => w.WriteAsync(new RunTestResponse()), Times.Once);
     }
 
     [Fact]
@@ -50,9 +53,10 @@ public class StartTestHandlerTests
 
         var handler = _autoMocker.CreateInstance<StartTestHandler>();
 
-        var response = await handler.ProcessAsync(new StartTestRequest { TestName = "some.test.name" });
+        await handler.ProcessAsync(new StartTestRequest { TestName = "some.test.name" });
 
-        response.Should().BeOfType<SkipTestResponse>().Subject.Reason.Should().Be(reason);
+        _autoMocker.GetMock<IResponseWriter>()
+            .Verify(w => w.WriteAsync(new SkipTestResponse(reason)), Times.Once);
     }
 
     [Fact]

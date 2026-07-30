@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Xunit;
@@ -36,10 +36,9 @@ public class CheckMultiDBSupportHandlerTests
         var handler = _autoMocker.CreateInstance<CheckMultiDBSupportHandler>();
         var request = new CheckMultiDBSupportRequest { Driver = registered };
 
-        var response = await handler.ProcessAsync(request);
+        await handler.ProcessAsync(request);
 
-        var supportResponse = response.Should().BeOfType<MultiDBSupportResponse>().Subject;
-        supportResponse.Id.Should().Be("driver-1");
-        supportResponse.Available.Should().BeTrue();
+        _autoMocker.GetMock<IResponseWriter>()
+            .Verify(w => w.WriteAsync(new MultiDBSupportResponse("driver-1", true)), Times.Once);
     }
 }

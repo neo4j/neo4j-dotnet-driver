@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
@@ -26,17 +27,19 @@ internal record VerifyConnectivityRequest : IProtocolMessage
 
 internal class VerifyConnectivityHandler : MessageHandler<VerifyConnectivityRequest>
 {
+    private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
-    public VerifyConnectivityHandler(ILogger logger)
+    public VerifyConnectivityHandler(IResponseWriter responseWriter, ILogger logger)
     {
+        _responseWriter = responseWriter;
         _logger = logger;
     }
 
-    public override async Task<IProtocolMessage?> ProcessAsync(VerifyConnectivityRequest message)
+    public override async Task ProcessAsync(VerifyConnectivityRequest message)
     {
         await message.Driver.Object.VerifyConnectivityAsync();
         _logger.LogDebug("Verified connectivity for driver with id '{Id}'", message.Driver.Id);
-        return new DriverResponse(message.Driver.Id);
+        await _responseWriter.WriteAsync(new DriverResponse(message.Driver.Id));
     }
 }

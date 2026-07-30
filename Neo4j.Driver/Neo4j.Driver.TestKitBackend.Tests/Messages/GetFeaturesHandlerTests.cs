@@ -13,8 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using FluentAssertions;
+using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Xunit;
 
@@ -29,8 +30,9 @@ public class GetFeaturesHandlerTests
     {
         var handler = _autoMocker.CreateInstance<GetFeaturesHandler>();
 
-        var response = await handler.ProcessAsync(new GetFeaturesRequest());
+        await handler.ProcessAsync(new GetFeaturesRequest());
 
-        response.Should().BeOfType<FeatureListResponse>();
+        _autoMocker.GetMock<IResponseWriter>()
+            .Verify(w => w.WriteAsync(It.IsAny<FeatureListResponse>()), Times.Once);
     }
 }

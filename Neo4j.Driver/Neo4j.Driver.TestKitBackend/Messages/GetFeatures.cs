@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -53,16 +54,18 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
         "Feature:Bolt:Patch:UTC"
     ];
 
+    private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
-    public GetFeaturesHandler(ILogger logger)
+    public GetFeaturesHandler(IResponseWriter responseWriter, ILogger logger)
     {
+        _responseWriter = responseWriter;
         _logger = logger;
     }
 
-    public override Task<IProtocolMessage?> ProcessAsync(GetFeaturesRequest message)
+    public override async Task ProcessAsync(GetFeaturesRequest message)
     {
         _logger.LogDebug("Advertising {Count} feature(s)", SupportedFeatures.Length);
-        return Task.FromResult<IProtocolMessage?>(new FeatureListResponse { Features = SupportedFeatures });
+        await _responseWriter.WriteAsync(new FeatureListResponse { Features = SupportedFeatures });
     }
 }

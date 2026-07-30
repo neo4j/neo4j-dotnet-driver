@@ -17,10 +17,10 @@ namespace Neo4j.Driver.TestKitBackend.Dispatch;
 
 internal interface IMessageHandler
 {
-    Task<IProtocolMessage?> ProcessAsync(IProtocolMessage message);
+    Task ProcessAsync(IProtocolMessage message);
 }
 
 internal interface IMessageHandler<in T> : IMessageHandler where T : IProtocolMessage
 {
-    Task<IProtocolMessage?> ProcessAsync(T message);
+    Task ProcessAsync(T message);
 }

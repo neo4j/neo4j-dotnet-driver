@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
@@ -27,19 +28,21 @@ internal record SessionCloseRequest : IProtocolMessage
 internal class SessionCloseHandler : MessageHandler<SessionCloseRequest>
 {
     private readonly IRegistry _registry;
+    private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
-    public SessionCloseHandler(IRegistry registry, ILogger logger)
+    public SessionCloseHandler(IRegistry registry, IResponseWriter responseWriter, ILogger logger)
     {
         _registry = registry;
+        _responseWriter = responseWriter;
         _logger = logger;
     }
 
-    public override async Task<IProtocolMessage?> ProcessAsync(SessionCloseRequest message)
+    public override async Task ProcessAsync(SessionCloseRequest message)
     {
         await message.Session.Object.CloseAsync();
         _registry.Remove(message.Session.Id);
         _logger.LogDebug("Closed session with id '{Id}'", message.Session.Id);
-        return new SessionResponse(message.Session.Id);
+        await _responseWriter.WriteAsync(new SessionResponse(message.Session.Id));
     }
 }

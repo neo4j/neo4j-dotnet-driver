@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
@@ -28,17 +29,19 @@ internal record BookmarksResponse(string[] Bookmarks) : IProtocolMessage;
 
 internal class SessionLastBookmarksHandler : MessageHandler<SessionLastBookmarksRequest>
 {
+    private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
-    public SessionLastBookmarksHandler(ILogger logger)
+    public SessionLastBookmarksHandler(IResponseWriter responseWriter, ILogger logger)
     {
+        _responseWriter = responseWriter;
         _logger = logger;
     }
 
-    public override Task<IProtocolMessage?> ProcessAsync(SessionLastBookmarksRequest message)
+    public override async Task ProcessAsync(SessionLastBookmarksRequest message)
     {
         var bookmarks = message.Session.Object.LastBookmarks.Values;
         _logger.LogDebug("Got {Count} last bookmark(s) for session with id '{Id}'", bookmarks.Length, message.Session.Id);
-        return Task.FromResult<IProtocolMessage?>(new BookmarksResponse(bookmarks));
+        await _responseWriter.WriteAsync(new BookmarksResponse(bookmarks));
     }
 }

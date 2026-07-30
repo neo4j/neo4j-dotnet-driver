@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
@@ -31,22 +32,25 @@ internal record NullRecordResponse : IProtocolMessage;
 internal class ResultNextHandler : MessageHandler<ResultNextRequest>
 {
     private readonly INativeToCypherMapper _mapper;
+    private readonly IResponseWriter _responseWriter;
 
-    public ResultNextHandler(INativeToCypherMapper mapper)
+    public ResultNextHandler(INativeToCypherMapper mapper, IResponseWriter responseWriter)
     {
         _mapper = mapper;
+        _responseWriter = responseWriter;
     }
 
-    public override async Task<IProtocolMessage?> ProcessAsync(ResultNextRequest message)
+    public override async Task ProcessAsync(ResultNextRequest message)
     {
         var cursor = message.Result.Object;
         if (!await cursor.FetchAsync())
         {
-            return new NullRecordResponse();
+            await _responseWriter.WriteAsync(new NullRecordResponse());
+            return;
         }
 
         var record = cursor.Current;
         var values = record.Keys.Select(key => _mapper.Map(record[key])).ToList();
-        return new RecordResponse(values);
+        await _responseWriter.WriteAsync(new RecordResponse(values));
     }
 }

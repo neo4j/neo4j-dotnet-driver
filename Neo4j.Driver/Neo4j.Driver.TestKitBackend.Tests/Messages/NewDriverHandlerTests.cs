@@ -16,6 +16,7 @@
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Xunit;
@@ -26,34 +27,40 @@ public class NewDriverHandlerTests
 {
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<NewDriverHandler>();
 
-    [Fact]
-    public async Task Registers_a_driver_and_responds_with_its_id()
+    private static NewDriverRequest MinimalRequest()
     {
-        var registry = new Registry();
-        _autoMocker.Use<IRegistry>(registry);
-        var handler = _autoMocker.CreateInstance<NewDriverHandler>();
-        var request = new NewDriverRequest
+        return new NewDriverRequest
         {
             Uri = "bolt://localhost:7687",
             AuthorizationToken = new AuthorizationToken("basic", "neo4j", "secret")
         };
+    }
 
-        var response = await handler.ProcessAsync(request);
+    private void RegisterCreatedDriverAs(string id)
+    {
+        _autoMocker.GetMock<IRegistry>()
+            .Setup(r => r.Register(It.IsAny<IDriver>()))
+            .Returns((IDriver driver) => new RegistryObject<IDriver>(id, driver));
+    }
 
-        var driverResponse = response.Should().BeOfType<DriverResponse>().Subject;
-        registry.Get<IDriver>(driverResponse.Id).Object.Should().NotBeNull();
+    [Fact]
+    public async Task Registers_a_driver_and_responds_with_its_id()
+    {
+        RegisterCreatedDriverAs("driver-1");
+        var handler = _autoMocker.CreateInstance<NewDriverHandler>();
+
+        await handler.ProcessAsync(MinimalRequest());
+
+        _autoMocker.GetMock<IResponseWriter>()
+            .Verify(w => w.WriteAsync(new DriverResponse("driver-1")), Times.Once);
     }
 
     [Fact]
     public async Task Applies_config_via_the_config_mapper()
     {
-        _autoMocker.Use<IRegistry>(new Registry());
+        RegisterCreatedDriverAs("driver-1");
         var handler = _autoMocker.CreateInstance<NewDriverHandler>();
-        var request = new NewDriverRequest
-        {
-            Uri = "bolt://localhost:7687",
-            AuthorizationToken = new AuthorizationToken("basic", "neo4j", "secret")
-        };
+        var request = MinimalRequest();
 
         await handler.ProcessAsync(request);
 
@@ -64,20 +71,18 @@ public class NewDriverHandlerTests
     [Fact]
     public async Task Configures_the_driver_with_the_injected_neo4j_logger()
     {
-        var registry = new Registry();
-        _autoMocker.Use<IRegistry>(registry);
+        IDriver? created = null;
+        _autoMocker.GetMock<IRegistry>()
+            .Setup(r => r.Register(It.IsAny<IDriver>()))
+            .Callback((IDriver driver) => created = driver)
+            .Returns((IDriver driver) => new RegistryObject<IDriver>("driver-1", driver));
+
         var neo4JLogger = Mock.Of<INeo4jLogger>();
         _autoMocker.Use(neo4JLogger);
         var handler = _autoMocker.CreateInstance<NewDriverHandler>();
-        var request = new NewDriverRequest
-        {
-            Uri = "bolt://localhost:7687",
-            AuthorizationToken = new AuthorizationToken("basic", "neo4j", "secret")
-        };
 
-        var response = await handler.ProcessAsync(request);
+        await handler.ProcessAsync(MinimalRequest());
 
-        var driverResponse = response.Should().BeOfType<DriverResponse>().Subject;
-        registry.Get<IDriver>(driverResponse.Id).Object.Config.Neo4JLogger.Should().BeSameAs(neo4JLogger);
+        created!.Config.Neo4JLogger.Should().BeSameAs(neo4JLogger);
     }
 }

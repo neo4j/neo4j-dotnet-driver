@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Xunit;
@@ -36,10 +36,11 @@ public class SessionCloseHandlerTests
         var handler = _autoMocker.CreateInstance<SessionCloseHandler>();
         var request = new SessionCloseRequest { Session = registered };
 
-        var response = await handler.ProcessAsync(request);
+        await handler.ProcessAsync(request);
 
         sessionMock.Verify(s => s.CloseAsync(), Times.Once);
         _autoMocker.GetMock<IRegistry>().Verify(r => r.Remove("session-1"), Times.Once);
-        response.Should().BeOfType<SessionResponse>().Subject.Id.Should().Be(registered.Id);
+        _autoMocker.GetMock<IResponseWriter>()
+            .Verify(w => w.WriteAsync(new SessionResponse("session-1")), Times.Once);
     }
 }

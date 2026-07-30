@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Serialization;
@@ -30,14 +31,16 @@ internal record DriverIsAuthenticatedResponse(string Id, bool Authenticated) : I
 
 internal class VerifyAuthenticationHandler : MessageHandler<VerifyAuthenticationRequest>
 {
+    private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
-    public VerifyAuthenticationHandler(ILogger logger)
+    public VerifyAuthenticationHandler(IResponseWriter responseWriter, ILogger logger)
     {
+        _responseWriter = responseWriter;
         _logger = logger;
     }
 
-    public override async Task<IProtocolMessage?> ProcessAsync(VerifyAuthenticationRequest message)
+    public override async Task ProcessAsync(VerifyAuthenticationRequest message)
     {
         var authenticated =
             await message.Driver.Object.VerifyAuthenticationAsync(message.AuthorizationToken.Value.ToAuthToken());
@@ -47,6 +50,6 @@ internal class VerifyAuthenticationHandler : MessageHandler<VerifyAuthentication
             message.Driver.Id,
             authenticated);
 
-        return new DriverIsAuthenticatedResponse(message.Driver.Id, authenticated);
+        await _responseWriter.WriteAsync(new DriverIsAuthenticatedResponse(message.Driver.Id, authenticated));
     }
 }

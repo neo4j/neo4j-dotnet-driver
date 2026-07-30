@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Xunit;
@@ -41,11 +41,11 @@ public class GetServerInfoHandlerTests
         var handler = _autoMocker.CreateInstance<GetServerInfoHandler>();
         var request = new GetServerInfoRequest { Driver = registered };
 
-        var response = await handler.ProcessAsync(request);
+        await handler.ProcessAsync(request);
 
-        var serverInfoResponse = response.Should().BeOfType<ServerInfoResponse>().Subject;
-        serverInfoResponse.Address.Should().Be("localhost:7687");
-        serverInfoResponse.Agent.Should().Be("Neo4j/5.20.0");
-        serverInfoResponse.ProtocolVersion.Should().Be("5.4");
+        _autoMocker.GetMock<IResponseWriter>()
+            .Verify(
+                w => w.WriteAsync(new ServerInfoResponse("localhost:7687", "Neo4j/5.20.0", "5.4")),
+                Times.Once);
     }
 }

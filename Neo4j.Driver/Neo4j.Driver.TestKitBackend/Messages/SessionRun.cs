@@ -15,6 +15,7 @@
 
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Types;
@@ -39,20 +40,22 @@ internal record ResultResponse(string Id, string[]? Keys) : IProtocolMessage;
 internal class SessionRunHandler : MessageHandler<SessionRunRequest>
 {
     private readonly IRegistry _registry;
+    private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
-    public SessionRunHandler(IRegistry registry, ILogger logger)
+    public SessionRunHandler(IRegistry registry, IResponseWriter responseWriter, ILogger logger)
     {
         _registry = registry;
+        _responseWriter = responseWriter;
         _logger = logger;
     }
 
-    public override async Task<IProtocolMessage?> ProcessAsync(SessionRunRequest message)
+    public override async Task ProcessAsync(SessionRunRequest message)
     {
         var cursor = await message.Session.Object.RunAsync(message.Cypher);
         var registryObject = _registry.Register(cursor);
         var keys = await cursor.KeysAsync();
         _logger.LogDebug("Ran query on session with id '{SessionId}', result id '{ResultId}'", message.Session.Id, registryObject.Id);
-        return new ResultResponse(registryObject.Id, keys);
+        await _responseWriter.WriteAsync(new ResultResponse(registryObject.Id, keys));
     }
 }

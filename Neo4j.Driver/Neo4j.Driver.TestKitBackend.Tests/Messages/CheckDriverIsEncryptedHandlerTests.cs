@@ -13,8 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using FluentAssertions;
+using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Xunit;
@@ -35,8 +36,9 @@ public class CheckDriverIsEncryptedHandlerTests
         var handler = _autoMocker.CreateInstance<CheckDriverIsEncryptedHandler>();
         var request = new CheckDriverIsEncryptedRequest { Driver = registered };
 
-        var response = await handler.ProcessAsync(request);
+        await handler.ProcessAsync(request);
 
-        response.Should().BeOfType<DriverIsEncryptedResponse>().Subject.Encrypted.Should().BeTrue();
+        _autoMocker.GetMock<IResponseWriter>()
+            .Verify(w => w.WriteAsync(new DriverIsEncryptedResponse(true)), Times.Once);
     }
 }
