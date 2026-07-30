@@ -29,3 +29,5 @@ internal record CypherInt(long Value) : ICypherValue;
 internal record CypherString(string Value) : ICypherValue;
 
 internal record CypherFloat([property: JsonConverter(typeof(CypherFloatValueConverter))] double Value) : ICypherValue;
+
+internal record CypherUuid(Guid Value) : ICypherValue;

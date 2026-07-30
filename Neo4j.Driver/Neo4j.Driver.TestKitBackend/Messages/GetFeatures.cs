@@ -34,6 +34,7 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
     [
         "Feature:API:Driver.VerifyConnectivity",
         "Feature:API:Driver:GetServerInfo",
+        "Feature:API:Type.UUID",
         "Feature:Bolt:3.0",
         "Feature:Bolt:4.1",
         "Feature:Bolt:4.2",

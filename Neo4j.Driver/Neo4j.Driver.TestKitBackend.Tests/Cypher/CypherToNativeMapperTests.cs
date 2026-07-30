@@ -88,6 +88,14 @@ public class CypherToNativeMapperTests
     }
 
     [Fact]
+    public void Maps_cypher_uuid_to_guid()
+    {
+        var guid = Guid.Parse("550e8400-e29b-41d4-a716-446655440000");
+
+        _mapper.Map(new CypherUuid(guid)).Should().Be(guid);
+    }
+
+    [Fact]
     public void Throws_for_an_unmapped_cypher_type_naming_the_type()
     {
         var act = () => _mapper.Map(new CypherList([]));

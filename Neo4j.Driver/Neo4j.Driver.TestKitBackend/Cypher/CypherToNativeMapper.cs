@@ -32,6 +32,7 @@ internal class CypherToNativeMapper : ICypherToNativeMapper
             CypherFloat f => f.Value,
             CypherString s => s.Value,
             CypherMap m => m.Value.ToDictionary(kv => kv.Key, kv => Map(kv.Value)!),
+            CypherUuid u => u.Value,
             _ => throw new NotSupportedException($"No native mapping for cypher type {value.GetType().Name}")
         };
     }
