@@ -18,9 +18,6 @@ using Autofac;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Logging;
-using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Connection;
 
@@ -77,28 +74,12 @@ internal class TestkitConnectionHandler : ConnectionHandler
         loggingContext.Set("conn", connectionId);
         _logger.LogDebug("New connection {ConnectionId}", connectionId);
 
-        var serializer = scope.Resolve<IMessageSerializer>();
-        var dispatcher = scope.Resolve<IMessageDispatcher>();
-        var responseWriter = scope.Resolve<IResponseWriter>();
-
         try
         {
-            string? json;
-            while ((json = await input.ReadRequestAsync()) is not null)
-            {
-                _logger.LogDebug("Request: {Request}", json);
-                var message = serializer.Deserialize(json);
-                await dispatcher.DispatchAsync(message);
-            }
-        }
-        catch (Exception exception)
-        {
-            _logger.LogError(exception, "Connection {ConnectionId} failed", connection.ConnectionId);
-            await responseWriter.WriteAsync(new BackendErrorResponse { Msg = exception.Message });
+            await scope.Resolve<IMessageLoop>().RunAsync(connectionId);
         }
         finally
         {
-            _logger.LogDebug("Closing connection {ConnectionId}", connection.ConnectionId);
             reader.Dispose();
             await writer.DisposeAsync();
         }

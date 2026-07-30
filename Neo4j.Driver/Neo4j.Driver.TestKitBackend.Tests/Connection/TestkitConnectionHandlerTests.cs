@@ -20,10 +20,7 @@ using Microsoft.AspNetCore.Connections;
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Logging;
-using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Connection;
@@ -33,19 +30,11 @@ public class TestkitConnectionHandlerTests
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<TestkitConnectionHandler>();
 
     [Fact]
-    public async Task Dispatches_each_request_read_from_the_connection()
+    public async Task Runs_the_message_loop_from_the_connection_scope()
     {
-        const string json = """{"name":"GetFeatures","data":{}}""";
-        var message = Mock.Of<IProtocolMessage>();
-
         _autoMocker.GetMock<IConnectionIdProvider>()
             .Setup(p => p.GetConnectionId())
             .Returns("testkit-1");
-
-        _autoMocker.GetMock<IConnectionInput>()
-            .SetupSequence(i => i.ReadRequestAsync())
-            .ReturnsAsync(json)
-            .ReturnsAsync((string?)null);
 
         _autoMocker.GetMock<IConnectionInputFactory>()
             .Setup(f => f.Create(It.IsAny<TextReader>()))
@@ -55,13 +44,6 @@ public class TestkitConnectionHandlerTests
             .Setup(f => f.Create(It.IsAny<TextWriter>()))
             .Returns(_autoMocker.Get<IConnectionOutput>());
 
-        _autoMocker.GetMock<IMessageSerializer>()
-            .Setup(s => s.Deserialize(json))
-            .Returns(message);
-
-        // OnConnectedAsync resolves the per-connection services from a child scope, and
-        // Resolve<T> is an extension method a mock can't intercept - so the root scope is a
-        // real (tiny) container seeded with this test's mocks.
         _autoMocker.Use(BuildRootScope());
 
         var handler = _autoMocker.CreateInstance<TestkitConnectionHandler>();
@@ -70,69 +52,14 @@ public class TestkitConnectionHandlerTests
         await handler.OnConnectedAsync(connection.Object);
 
         connection.Object.ConnectionId.Should().Be("testkit-1");
-        _autoMocker.GetMock<IMessageDispatcher>().Verify(d => d.DispatchAsync(message), Times.Once);
-
-        // The response writer is only used directly by the handler for BackendError.
-        _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(It.IsAny<IProtocolMessage>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task Reports_BackendError_for_a_failed_request_and_ends_the_connection()
-    {
-        const string badJson = """{"name":"Bogus","data":{}}""";
-        const string goodJson = """{"name":"GetFeatures","data":{}}""";
-        var goodMessage = Mock.Of<IProtocolMessage>();
-
-        _autoMocker.GetMock<IConnectionIdProvider>()
-            .Setup(p => p.GetConnectionId())
-            .Returns("testkit-1");
-
-        _autoMocker.GetMock<IConnectionInput>()
-            .SetupSequence(i => i.ReadRequestAsync())
-            .ReturnsAsync(badJson)
-            .ReturnsAsync(goodJson)
-            .ReturnsAsync((string?)null);
-
-        _autoMocker.GetMock<IConnectionInputFactory>()
-            .Setup(f => f.Create(It.IsAny<TextReader>()))
-            .Returns(_autoMocker.Get<IConnectionInput>());
-
-        _autoMocker.GetMock<IConnectionOutputFactory>()
-            .Setup(f => f.Create(It.IsAny<TextWriter>()))
-            .Returns(_autoMocker.Get<IConnectionOutput>());
-
-        _autoMocker.GetMock<IMessageSerializer>()
-            .Setup(s => s.Deserialize(badJson))
-            .Throws(new TestKitProtocolException("unknown message name 'Bogus'"));
-        _autoMocker.GetMock<IMessageSerializer>()
-            .Setup(s => s.Deserialize(goodJson))
-            .Returns(goodMessage);
-
-        _autoMocker.Use(BuildRootScope());
-
-        var handler = _autoMocker.CreateInstance<TestkitConnectionHandler>();
-        var connection = NewConnection();
-
-        await handler.OnConnectedAsync(connection.Object);
-
-        _autoMocker.GetMock<IResponseWriter>()
-            .Verify(
-                w => w.WriteAsync(It.Is<BackendErrorResponse>(e => e.Msg == "unknown message name 'Bogus'")),
-                Times.Once);
-
-        // The connection ends the test on error - a request after the failed one must never
-        // reach the dispatcher, and the good request must never even be read off the wire.
-        _autoMocker.GetMock<IMessageDispatcher>().Verify(d => d.DispatchAsync(goodMessage), Times.Never);
-        _autoMocker.GetMock<IConnectionInput>().Verify(i => i.ReadRequestAsync(), Times.Once);
+        _autoMocker.GetMock<IMessageLoop>().Verify(l => l.RunAsync("testkit-1"), Times.Once);
     }
 
     private ILifetimeScope BuildRootScope()
     {
         var builder = new ContainerBuilder();
         builder.RegisterInstance(new LoggingContext()).As<ILoggingContext>();
-        builder.RegisterInstance(_autoMocker.Get<IMessageSerializer>()).As<IMessageSerializer>();
-        builder.RegisterInstance(_autoMocker.Get<IMessageDispatcher>()).As<IMessageDispatcher>();
-        builder.RegisterInstance(_autoMocker.Get<IResponseWriter>()).As<IResponseWriter>();
+        builder.RegisterInstance(_autoMocker.Get<IMessageLoop>()).As<IMessageLoop>();
         return builder.Build();
     }
 

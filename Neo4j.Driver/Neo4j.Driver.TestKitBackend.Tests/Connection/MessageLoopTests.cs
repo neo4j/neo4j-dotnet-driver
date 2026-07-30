@@ -1,0 +1,89 @@
+// Copyright (c) "Neo4j"
+// Neo4j Sweden AB [https://neo4j.com]
+//
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using Moq;
+using Moq.AutoMock;
+using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Messages;
+using Neo4j.Driver.TestKitBackend.Serialization;
+using Xunit;
+
+namespace Neo4j.Driver.TestKitBackend.Tests.Connection;
+
+public class MessageLoopTests
+{
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<MessageLoop>();
+
+    [Fact]
+    public async Task Dispatches_each_request_read_from_the_connection()
+    {
+        const string json = """{"name":"GetFeatures","data":{}}""";
+        var message = Mock.Of<IProtocolMessage>();
+
+        _autoMocker.GetMock<IConnectionInput>()
+            .SetupSequence(i => i.ReadRequestAsync())
+            .ReturnsAsync(json)
+            .ReturnsAsync((string?)null);
+
+        _autoMocker.GetMock<IMessageSerializer>()
+            .Setup(s => s.Deserialize(json))
+            .Returns(message);
+
+        var loop = _autoMocker.CreateInstance<MessageLoop>();
+
+        await loop.RunAsync("testkit-1");
+
+        _autoMocker.GetMock<IMessageDispatcher>().Verify(d => d.DispatchAsync(message), Times.Once);
+
+        // The response writer is only used directly by the loop for BackendError.
+        _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(It.IsAny<IProtocolMessage>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Reports_BackendError_for_a_failed_request_and_ends_the_loop()
+    {
+        const string badJson = """{"name":"Bogus","data":{}}""";
+        const string goodJson = """{"name":"GetFeatures","data":{}}""";
+        var goodMessage = Mock.Of<IProtocolMessage>();
+
+        _autoMocker.GetMock<IConnectionInput>()
+            .SetupSequence(i => i.ReadRequestAsync())
+            .ReturnsAsync(badJson)
+            .ReturnsAsync(goodJson)
+            .ReturnsAsync((string?)null);
+
+        _autoMocker.GetMock<IMessageSerializer>()
+            .Setup(s => s.Deserialize(badJson))
+            .Throws(new TestKitProtocolException("unknown message name 'Bogus'"));
+        _autoMocker.GetMock<IMessageSerializer>()
+            .Setup(s => s.Deserialize(goodJson))
+            .Returns(goodMessage);
+
+        var loop = _autoMocker.CreateInstance<MessageLoop>();
+
+        await loop.RunAsync("testkit-1");
+
+        _autoMocker.GetMock<IResponseWriter>()
+            .Verify(
+                w => w.WriteAsync(It.Is<BackendErrorResponse>(e => e.Msg == "unknown message name 'Bogus'")),
+                Times.Once);
+
+        // The loop ends the test on error - a request after the failed one must never reach
+        // the dispatcher, and the good request must never even be read off the wire.
+        _autoMocker.GetMock<IMessageDispatcher>().Verify(d => d.DispatchAsync(goodMessage), Times.Never);
+        _autoMocker.GetMock<IConnectionInput>().Verify(i => i.ReadRequestAsync(), Times.Once);
+    }
+}
