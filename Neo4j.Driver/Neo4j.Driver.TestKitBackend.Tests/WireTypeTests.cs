@@ -16,6 +16,7 @@
 using FluentAssertions;
 using Xunit;
 
+using Neo4j.Driver.TestKitBackend.Serialization;
 namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class WireTypeTests

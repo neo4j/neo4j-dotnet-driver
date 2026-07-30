@@ -14,7 +14,8 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
-using Neo4j.Driver.TestKitBackend.Protocol;
+using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Types;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;

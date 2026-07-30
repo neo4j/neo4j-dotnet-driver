@@ -24,6 +24,7 @@ using Microsoft.Extensions.Hosting;
 using Neo4j.Driver.TestKitBackend.Logging;
 using Serilog;
 
+using Neo4j.Driver.TestKitBackend.Connection;
 namespace Neo4j.Driver.TestKitBackend;
 
 public class TestkitBackend

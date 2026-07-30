@@ -18,7 +18,8 @@ using System.Text.Json.Serialization;
 using FluentAssertions;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.Protocol;
+using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests;

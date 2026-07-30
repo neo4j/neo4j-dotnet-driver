@@ -15,7 +15,7 @@
 
 using System.Text.Json;
 using FluentAssertions;
-using Neo4j.Driver.TestKitBackend.Protocol;
+using Neo4j.Driver.TestKitBackend.Serialization;
 using Neo4j.Driver.TestKitBackend.Types;
 using Xunit;
 

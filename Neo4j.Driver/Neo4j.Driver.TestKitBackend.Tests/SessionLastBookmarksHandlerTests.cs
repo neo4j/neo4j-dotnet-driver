@@ -16,7 +16,7 @@
 using FluentAssertions;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.Protocol;
+using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests;

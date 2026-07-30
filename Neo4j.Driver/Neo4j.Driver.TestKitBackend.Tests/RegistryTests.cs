@@ -14,7 +14,8 @@
 // limitations under the License.
 
 using FluentAssertions;
-using Neo4j.Driver.TestKitBackend.Protocol;
+using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests;

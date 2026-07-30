@@ -15,7 +15,7 @@
 
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Logging;
-using Neo4j.Driver.TestKitBackend.Protocol;
+using Neo4j.Driver.TestKitBackend.Dispatch;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 

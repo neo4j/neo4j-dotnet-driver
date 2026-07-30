@@ -19,7 +19,10 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using Neo4j.Driver.TestKitBackend.Protocol;
+using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests;
