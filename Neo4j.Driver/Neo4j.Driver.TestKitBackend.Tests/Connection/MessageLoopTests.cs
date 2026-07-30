@@ -98,17 +98,29 @@ public class MessageLoopTests
         const string goodJson = """{"name":"GetFeatures","data":{}}""";
         var failingMessage = Mock.Of<IProtocolMessage>();
         var goodMessage = Mock.Of<IProtocolMessage>();
+        var causeFailureMessage = new FailureMessage
+        {
+            Message = "cause message",
+            GqlStatus = "01000",
+            GqlStatusDescription = "cause description",
+            GqlClassification = "CAUSE_CLASS",
+            GqlRawClassification = "CAUSE_RAW",
+            GqlDiagnosticRecord = new Dictionary<string, object> { ["OPERATION"] = "" }
+        };
         var failureMessage = new FailureMessage("Neo.ClientError.Statement.SyntaxError", "bad cypher")
         {
             GqlStatus = "50N42",
             GqlStatusDescription = "some description",
             GqlClassification = "CLIENT_ERROR",
             GqlRawClassification = "CLIENT_ERROR_RAW",
-            GqlDiagnosticRecord = new Dictionary<string, object> { ["CURRENT_SCHEMA"] = "/" }
+            GqlDiagnosticRecord = new Dictionary<string, object> { ["CURRENT_SCHEMA"] = "/" },
+            GqlCause = causeFailureMessage
         };
-        Neo4jException exception = new ClientException(failureMessage, null);
+        Neo4jException exception = Neo4jException.Create(failureMessage);
         var diagnosticRecordValue = new CypherString("/");
+        var causeDiagnosticRecordValue = new CypherString("");
         _autoMocker.GetMock<INativeToCypherMapper>().Setup(m => m.Map("/")).Returns(diagnosticRecordValue);
+        _autoMocker.GetMock<INativeToCypherMapper>().Setup(m => m.Map("")).Returns(causeDiagnosticRecordValue);
 
         _autoMocker.GetMock<IConnectionInput>()
             .SetupSequence(i => i.ReadRequestAsync())
@@ -141,7 +153,16 @@ public class MessageLoopTests
                         e.Classification == "CLIENT_ERROR" &&
                         e.RawClassification == "CLIENT_ERROR_RAW" &&
                         e.DiagnosticRecord!.Count == 1 &&
-                        e.DiagnosticRecord["CURRENT_SCHEMA"].Equals(diagnosticRecordValue))),
+                        e.DiagnosticRecord["CURRENT_SCHEMA"].Equals(diagnosticRecordValue) &&
+                        (e.Cause as GqlErrorResponse) != null &&
+                        ((GqlErrorResponse)e.Cause!).Msg == "cause message" &&
+                        ((GqlErrorResponse)e.Cause!).GqlStatus == "01000" &&
+                        ((GqlErrorResponse)e.Cause!).StatusDescription == "cause description" &&
+                        ((GqlErrorResponse)e.Cause!).Classification == "CAUSE_CLASS" &&
+                        ((GqlErrorResponse)e.Cause!).RawClassification == "CAUSE_RAW" &&
+                        ((GqlErrorResponse)e.Cause!).DiagnosticRecord!.Count == 1 &&
+                        ((GqlErrorResponse)e.Cause!).DiagnosticRecord!["OPERATION"].Equals(causeDiagnosticRecordValue) &&
+                        ((GqlErrorResponse)e.Cause!).Cause == null)),
                 Times.Once);
 
         // The loop survives a driver error - the next request must still reach the dispatcher.

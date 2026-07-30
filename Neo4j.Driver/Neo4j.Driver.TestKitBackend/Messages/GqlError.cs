@@ -18,13 +18,9 @@ using Neo4j.Driver.TestKitBackend.Dispatch;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record DriverErrorResponse : IProtocolMessage
+internal record GqlErrorResponse : IProtocolMessage
 {
-    public required string Id { get; init; }
-    public required string ErrorType { get; init; }
-    public string? Msg { get; init; }
-    public string? Code { get; init; }
-    public bool Retryable { get; init; }
+    public required string Msg { get; init; }
     public string? GqlStatus { get; init; }
     public string? StatusDescription { get; init; }
     public string? Classification { get; init; }

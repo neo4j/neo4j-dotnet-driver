@@ -100,8 +100,29 @@ internal class MessageLoop : IMessageLoop
                     Classification = exception.GqlClassification,
                     RawClassification = exception.GqlRawClassification,
                     DiagnosticRecord = exception.GqlDiagnosticRecord?
-                        .ToDictionary(kv => kv.Key, kv => _cypherMapper.Map(kv.Value))
+                        .ToDictionary(kv => kv.Key, kv => _cypherMapper.Map(kv.Value)),
+                    Cause = MapCause(exception.InnerException)
                 });
         }
+    }
+
+    private GqlErrorResponse? MapCause(Exception? cause)
+    {
+        if (cause is not Neo4jException gqlCause)
+        {
+            return null;
+        }
+
+        return new GqlErrorResponse
+        {
+            Msg = gqlCause.Message,
+            GqlStatus = gqlCause.GqlStatus,
+            StatusDescription = gqlCause.GqlStatusDescription,
+            Classification = gqlCause.GqlClassification,
+            RawClassification = gqlCause.GqlRawClassification,
+            DiagnosticRecord = gqlCause.GqlDiagnosticRecord?
+                .ToDictionary(kv => kv.Key, kv => _cypherMapper.Map(kv.Value)),
+            Cause = MapCause(gqlCause.InnerException)
+        };
     }
 }
