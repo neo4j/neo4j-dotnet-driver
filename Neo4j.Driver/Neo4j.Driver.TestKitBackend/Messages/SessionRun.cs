@@ -16,6 +16,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Types;
@@ -27,8 +28,9 @@ internal record SessionRunRequest : IProtocolMessage
     public required RegistryObject<IAsyncSession> Session { get; init; }
     public required string Cypher { get; init; }
 
-    // Cypher-envelope dicts on the wire; parsed but not yet converted to native values (M7).
-    public Dictionary<string, JsonElement>? Params { get; init; }
+    public Dictionary<string, ICypherValue>? Params { get; init; }
+
+    // Cypher-envelope dict on the wire; parsed but not yet converted to native values (M7).
     public Dictionary<string, JsonElement>? TxMeta { get; init; }
 
     // Absent = driver default, null = explicitly no timeout, number = timeout in ms.
@@ -41,21 +43,41 @@ internal class SessionRunHandler : MessageHandler<SessionRunRequest>
 {
     private readonly IRegistry _registry;
     private readonly IResponseWriter _responseWriter;
+    private readonly ICypherToNativeMapper _cypherToNativeMapper;
     private readonly ILogger _logger;
 
-    public SessionRunHandler(IRegistry registry, IResponseWriter responseWriter, ILogger logger)
+    public SessionRunHandler(
+        IRegistry registry,
+        IResponseWriter responseWriter,
+        ICypherToNativeMapper cypherToNativeMapper,
+        ILogger logger)
     {
         _registry = registry;
         _responseWriter = responseWriter;
+        _cypherToNativeMapper = cypherToNativeMapper;
         _logger = logger;
     }
 
     public override async Task ProcessAsync(SessionRunRequest message)
     {
-        var cursor = await message.Session.Object.RunAsync(message.Cypher);
-        var registryObject = _registry.Register(cursor);
+        _logger.LogDebug(
+            "Running query '{Cypher}' on session with id '{SessionId}'",
+            message.Cypher,
+            message.Session.Id);
+
+        var cursor = message.Params is null
+            ? await message.Session.Object.RunAsync(message.Cypher)
+            : await message.Session.Object.RunAsync(message.Cypher, MapParams(message.Params));
+
         var keys = await cursor.KeysAsync();
-        _logger.LogDebug("Ran query on session with id '{SessionId}', result id '{ResultId}'", message.Session.Id, registryObject.Id);
-        await _responseWriter.WriteAsync(new ResultResponse(registryObject.Id, keys));
+        var registeredResult = _registry.Register(cursor);
+        _logger.LogDebug("Query result id '{ResultId}' returned keys: {@keys}", registeredResult.Id, keys);
+
+        await _responseWriter.WriteAsync(new ResultResponse(registeredResult.Id, keys));
+    }
+
+    private Dictionary<string, object> MapParams(Dictionary<string, ICypherValue> parameters)
+    {
+        return parameters.ToDictionary(kv => kv.Key, kv => _cypherToNativeMapper.Map(kv.Value)!);
     }
 }

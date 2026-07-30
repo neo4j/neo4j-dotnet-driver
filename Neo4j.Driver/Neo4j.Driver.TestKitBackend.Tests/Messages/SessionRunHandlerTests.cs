@@ -16,6 +16,7 @@
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Xunit;
@@ -52,5 +53,38 @@ public class SessionRunHandlerTests
                 w => w.WriteAsync(It.Is<ResultResponse>(
                     r => r.Id == "result-1" && r.Keys!.SequenceEqual(new[] { "n" }))),
                 Times.Once);
+    }
+
+    [Fact]
+    public async Task Maps_params_and_runs_the_query_with_them()
+    {
+        var cursorMock = _autoMocker.GetMock<IResultCursor>();
+        cursorMock.Setup(c => c.KeysAsync()).ReturnsAsync(["n"]);
+
+        _autoMocker.GetMock<ICypherToNativeMapper>().Setup(m => m.Map(new CypherInt(1))).Returns(1L);
+
+        var sessionMock = _autoMocker.GetMock<IAsyncSession>();
+        sessionMock
+            .Setup(s => s.RunAsync("RETURN $p AS n", It.Is<IDictionary<string, object>>(
+                p => p.Count == 1 && Equals(p["p"], 1L))))
+            .ReturnsAsync(cursorMock.Object);
+
+        var registeredCursor = new RegistryObject<IResultCursor>("result-1", cursorMock.Object);
+        _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(cursorMock.Object)).Returns(registeredCursor);
+
+        var handler = _autoMocker.CreateInstance<SessionRunHandler>();
+        var request = new SessionRunRequest
+        {
+            Session = new RegistryObject<IAsyncSession>("session-1", sessionMock.Object),
+            Cypher = "RETURN $p AS n",
+            Params = new Dictionary<string, ICypherValue> { ["p"] = new CypherInt(1) }
+        };
+
+        await handler.ProcessAsync(request);
+
+        sessionMock.Verify(
+            s => s.RunAsync("RETURN $p AS n", It.Is<IDictionary<string, object>>(
+                p => p.Count == 1 && Equals(p["p"], 1L))),
+            Times.Once);
     }
 }
