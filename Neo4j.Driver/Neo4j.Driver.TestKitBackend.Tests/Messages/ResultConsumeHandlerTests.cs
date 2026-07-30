@@ -16,8 +16,11 @@
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.Summary;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -45,10 +48,26 @@ public class ResultConsumeHandlerTests
     }
 
     [Fact]
-    public async Task Throws_not_implemented_when_consume_succeeds()
+    public async Task Writes_the_mapped_summary_on_success()
     {
         var cursorMock = _autoMocker.GetMock<IResultCursor>();
-        cursorMock.Setup(c => c.ConsumeAsync()).ReturnsAsync(Mock.Of<IResultSummary>());
+        var summary = Mock.Of<IResultSummary>();
+        cursorMock.Setup(c => c.ConsumeAsync()).ReturnsAsync(summary);
+
+        var mapped = new SummaryResponse(
+            new SummaryQueryResponse("RETURN 1", new Dictionary<string, ICypherValue>()),
+            "r",
+            null,
+            null,
+            [],
+            null,
+            new SummaryServerInfoResponse(null, null, null),
+            new SummaryCountersResponse(false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false),
+            0,
+            0,
+            []);
+
+        _autoMocker.GetMock<ISummaryMapper>().Setup(m => m.Map(summary)).Returns(mapped);
 
         var handler = _autoMocker.CreateInstance<ResultConsumeHandler>();
         var request = new ResultConsumeRequest
@@ -56,8 +75,8 @@ public class ResultConsumeHandlerTests
             Result = new RegistryObject<IResultCursor>("result-1", cursorMock.Object)
         };
 
-        var act = () => handler.ProcessAsync(request);
+        await handler.ProcessAsync(request);
 
-        await act.Should().ThrowAsync<NotImplementedException>();
+        _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(mapped), Times.Once);
     }
 }

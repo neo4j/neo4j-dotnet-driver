@@ -13,8 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.Summary;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
@@ -23,14 +25,34 @@ internal record ResultConsumeRequest : IProtocolMessage
     public required RegistryObject<IResultCursor> Result { get; init; }
 }
 
+internal record SummaryResponse(
+    SummaryQueryResponse Query,
+    string? QueryType,
+    SummaryPlanResponse? Plan,
+    SummaryProfileResponse? Profile,
+    IReadOnlyList<SummaryNotificationResponse> Notifications,
+    string? Database,
+    SummaryServerInfoResponse ServerInfo,
+    SummaryCountersResponse Counters,
+    long? ResultAvailableAfter,
+    long? ResultConsumedAfter,
+    IReadOnlyList<SummaryGqlStatusObjectResponse> GqlStatusObjects) : IProtocolMessage;
+
 internal class ResultConsumeHandler : MessageHandler<ResultConsumeRequest>
 {
+    private readonly ISummaryMapper _summaryMapper;
+    private readonly IResponseWriter _responseWriter;
+
+    public ResultConsumeHandler(ISummaryMapper summaryMapper, IResponseWriter responseWriter)
+    {
+        _summaryMapper = summaryMapper;
+        _responseWriter = responseWriter;
+    }
+
     public override async Task ProcessAsync(ResultConsumeRequest message)
     {
-        await message.Result.Object.ConsumeAsync();
-
         // A driver exception during consume propagates past this point (handled by MessageLoop).
-        // Building a Summary response for the success path is separate, not-yet-built scope.
-        throw new NotImplementedException("Summary construction is not yet implemented");
+        var summary = await message.Result.Object.ConsumeAsync();
+        await _responseWriter.WriteAsync(_summaryMapper.Map(summary));
     }
 }
