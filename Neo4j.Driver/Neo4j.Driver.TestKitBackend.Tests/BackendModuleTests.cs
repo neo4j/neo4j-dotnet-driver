@@ -21,6 +21,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
@@ -87,7 +88,7 @@ public class BackendModuleTests
 
         scope.Resolve<IMessageDispatcher>();
 
-        factory.Verify(f => f.CreateLogger(typeof(Messages.NewDriverHandler).FullName!));
+        factory.Verify(f => f.CreateLogger(typeof(NewDriverHandler).FullName!));
         factory.Verify(f => f.CreateLogger(typeof(ResponseWriter).FullName!));
     }
 
