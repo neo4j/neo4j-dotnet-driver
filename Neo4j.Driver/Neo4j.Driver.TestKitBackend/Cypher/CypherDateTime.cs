@@ -28,8 +28,23 @@ internal record CypherDateTime(
     [property: JsonPropertyName("utc_offset_s")] int? UtcOffsetS = null,
     [property: JsonPropertyName("timezone_id")] string? TimezoneId = null) : ICypherValue
 {
-    public CypherDateTime(ZonedDateTime zdt, int offsetSeconds)
-        : this(zdt.Year, zdt.Month, zdt.Day, zdt.Hour, zdt.Minute, zdt.Second, zdt.Nanosecond, offsetSeconds)
+    internal CypherDateTime(ZonedDateTime zdt, int offsetSeconds, string? timezoneId = null)
+        : this(zdt.Year, zdt.Month, zdt.Day, zdt.Hour, zdt.Minute, zdt.Second, zdt.Nanosecond, offsetSeconds, timezoneId)
     {
+    }
+
+    internal ZonedDateTime ToZonedDateTime(int offset)
+    {
+        return ToZonedDateTime(Zone.Of(offset));
+    }
+
+    internal ZonedDateTime ToZonedDateTime(string zoneId)
+    {
+        return ToZonedDateTime(Zone.Of(zoneId));
+    }
+
+    private ZonedDateTime ToZonedDateTime(Zone zone)
+    {
+        return new ZonedDateTime(Year, Month, Day, Hour, Minute, Second, Nanosecond, zone);
     }
 }

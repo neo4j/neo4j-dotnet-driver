@@ -33,8 +33,8 @@ internal class CypherToNativeMapper : ICypherToNativeMapper
             CypherString s => s.Value,
             CypherMap m => m.Value.ToDictionary(kv => kv.Key, kv => Map(kv.Value)!),
             CypherUuid u => u.Value,
-            CypherDateTime { TimezoneId: null, UtcOffsetS: not null } dt =>
-                new ZonedDateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second, dt.Nanosecond, Zone.Of(dt.UtcOffsetS.Value)),
+            CypherDateTime { TimezoneId: null, UtcOffsetS: not null } dt => dt.ToZonedDateTime(dt.UtcOffsetS.Value),
+            CypherDateTime { TimezoneId: { } timezoneId } dt => dt.ToZonedDateTime(timezoneId),
             _ => throw new NotSupportedException($"No native mapping for cypher type {value.GetType().Name}")
         };
     }

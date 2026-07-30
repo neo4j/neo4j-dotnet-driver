@@ -130,6 +130,14 @@ public class NativeToCypherMapperTests
     }
 
     [Fact]
+    public void Maps_a_zoned_date_time_with_a_named_zone_to_cypher_date_time()
+    {
+        var zonedDateTime = new ZonedDateTime(2022, 6, 7, 11, 52, 5, 0, Zone.Of("Europe/Stockholm"));
+
+        _mapper.Map(zonedDateTime).Should().Be(new CypherDateTime(2022, 6, 7, 11, 52, 5, 0, 7200, "Europe/Stockholm"));
+    }
+
+    [Fact]
     public void Throws_for_an_unmapped_native_type_naming_the_type()
     {
         var act = () => _mapper.Map(TimeSpan.FromSeconds(1));

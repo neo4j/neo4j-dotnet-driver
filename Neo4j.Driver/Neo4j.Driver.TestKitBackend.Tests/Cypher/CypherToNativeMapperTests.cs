@@ -104,6 +104,14 @@ public class CypherToNativeMapperTests
     }
 
     [Fact]
+    public void Maps_cypher_date_time_with_a_named_zone_to_zoned_date_time()
+    {
+        var expected = new ZonedDateTime(2022, 6, 7, 11, 52, 5, 0, Zone.Of("Europe/Stockholm"));
+
+        _mapper.Map(new CypherDateTime(2022, 6, 7, 11, 52, 5, 0, 7200, "Europe/Stockholm")).Should().Be(expected);
+    }
+
+    [Fact]
     public void Throws_for_an_unmapped_cypher_type_naming_the_type()
     {
         var act = () => _mapper.Map(new CypherList([]));
