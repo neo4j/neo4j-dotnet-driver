@@ -13,13 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.TestKitBackend.Dispatch;
+using System.Text.Json.Serialization;
 
-namespace Neo4j.Driver.TestKitBackend.Serialization;
+namespace Neo4j.Driver.TestKitBackend.Cypher;
 
-internal class EnvelopeConverter : WireTypeUnionConverter<IProtocolMessage>
+internal record CypherNull : ICypherValue
 {
-    public EnvelopeConverter(IMessageTypeMap messageTypeMap) : base(messageTypeMap)
-    {
-    }
+    public object? Value { get; init; }
 }
+
+internal record CypherBool(bool Value) : ICypherValue;
+
+internal record CypherInt(long Value) : ICypherValue;
+
+internal record CypherString(string Value) : ICypherValue;
+
+internal record CypherFloat([property: JsonConverter(typeof(CypherFloatValueConverter))] double Value) : ICypherValue;

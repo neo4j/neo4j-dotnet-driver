@@ -15,11 +15,17 @@
 
 using Neo4j.Driver.TestKitBackend.Dispatch;
 
-namespace Neo4j.Driver.TestKitBackend.Serialization;
+namespace Neo4j.Driver.TestKitBackend.Cypher;
 
-internal class EnvelopeConverter : WireTypeUnionConverter<IProtocolMessage>
+internal interface ICypherValueTypesProvider
 {
-    public EnvelopeConverter(IMessageTypeMap messageTypeMap) : base(messageTypeMap)
+    Type[] GetTypes();
+}
+
+internal class CypherValueTypesProvider : FilteredTypeProvider, ICypherValueTypesProvider
+{
+    public Type[] GetTypes()
     {
+        return FindClasses(t => typeof(ICypherValue).IsAssignableFrom(t));
     }
 }

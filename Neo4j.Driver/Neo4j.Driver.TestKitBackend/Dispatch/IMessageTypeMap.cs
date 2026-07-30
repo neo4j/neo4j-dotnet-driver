@@ -13,9 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.TestKitBackend.Serialization;
+
 namespace Neo4j.Driver.TestKitBackend.Dispatch;
 
-internal interface IMessageTypeMap
-{
-    Type GetTypeByName(string name);
-}
+internal interface IMessageTypeMap : IWireTypeResolver;

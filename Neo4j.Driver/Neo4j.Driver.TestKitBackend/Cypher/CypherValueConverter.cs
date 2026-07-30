@@ -13,13 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
-namespace Neo4j.Driver.TestKitBackend.Serialization;
+namespace Neo4j.Driver.TestKitBackend.Cypher;
 
-internal class EnvelopeConverter : WireTypeUnionConverter<IProtocolMessage>
+internal class CypherValueConverter : WireTypeUnionConverter<ICypherValue>
 {
-    public EnvelopeConverter(IMessageTypeMap messageTypeMap) : base(messageTypeMap)
+    public CypherValueConverter(ICypherValueTypeMap cypherValueTypeMap) : base(cypherValueTypeMap)
     {
     }
 }

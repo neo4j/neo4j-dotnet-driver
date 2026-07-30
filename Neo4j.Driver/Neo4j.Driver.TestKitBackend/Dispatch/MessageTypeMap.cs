@@ -14,25 +14,14 @@
 // limitations under the License.
 
 using Neo4j.Driver.TestKitBackend.Serialization;
+
 namespace Neo4j.Driver.TestKitBackend.Dispatch;
 
 [RegistrationLifetime(RegistrationLifetime.Singleton)]
-internal class MessageTypeMap : IMessageTypeMap
+internal class MessageTypeMap : WireTypeMap, IMessageTypeMap
 {
-    private readonly IReadOnlyDictionary<string, Type> _byName;
-
-    public MessageTypeMap(
-        IProtocolMessageTypesProvider protocolMessageTypesProvider,
-        IWireTypeNameProvider wireTypeNameProvider)
+    public MessageTypeMap(IProtocolMessageTypesProvider protocolMessageTypesProvider, IWireTypeNameProvider wireTypeNameProvider)
+        : base(protocolMessageTypesProvider.GetTypes(), wireTypeNameProvider)
     {
-        var messageTypes = protocolMessageTypesProvider.GetTypes();
-        _byName = messageTypes.ToDictionary(t => wireTypeNameProvider.GetInboundTypeName(t));
-    }
-
-    public Type GetTypeByName(string name)
-    {
-        return _byName.TryGetValue(name, out var type)
-            ? type
-            : throw new TestKitProtocolException($"Unrecognized message name \"{name}\".");
     }
 }

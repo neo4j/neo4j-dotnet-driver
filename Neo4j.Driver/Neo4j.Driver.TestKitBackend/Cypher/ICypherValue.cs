@@ -13,13 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
-namespace Neo4j.Driver.TestKitBackend.Serialization;
+namespace Neo4j.Driver.TestKitBackend.Cypher;
 
-internal class EnvelopeConverter : WireTypeUnionConverter<IProtocolMessage>
-{
-    public EnvelopeConverter(IMessageTypeMap messageTypeMap) : base(messageTypeMap)
-    {
-    }
-}
+// The open-union side of the wire type scheme (see IWireType/IWireType<T>): the concrete type
+// is not known at the declaration site, only at parse time from the envelope's "name".
+internal interface ICypherValue : IWireType;

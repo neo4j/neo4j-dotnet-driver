@@ -13,13 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.TestKitBackend.Dispatch;
-
 namespace Neo4j.Driver.TestKitBackend.Serialization;
 
-internal class EnvelopeConverter : WireTypeUnionConverter<IProtocolMessage>
+// The shape shared by every wire-name-to-type lookup (IMessageTypeMap, ICypherValueTypeMap, ...),
+// so one converter base can dispatch envelopes for any open union without knowing which union.
+internal interface IWireTypeResolver
 {
-    public EnvelopeConverter(IMessageTypeMap messageTypeMap) : base(messageTypeMap)
-    {
-    }
+    Type GetTypeByName(string name);
 }
