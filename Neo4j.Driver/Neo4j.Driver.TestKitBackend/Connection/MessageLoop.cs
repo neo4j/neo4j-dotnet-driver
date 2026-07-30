@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
+using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
@@ -30,6 +31,7 @@ internal class MessageLoop : IMessageLoop
     private readonly IResponseWriter _responseWriter;
     private readonly IRegistry _registry;
     private readonly IExceptionTypeMapper _exceptionTypeMapper;
+    private readonly INativeToCypherMapper _cypherMapper;
     private readonly ILogger _logger;
 
     public MessageLoop(
@@ -39,6 +41,7 @@ internal class MessageLoop : IMessageLoop
         IResponseWriter responseWriter,
         IRegistry registry,
         IExceptionTypeMapper exceptionTypeMapper,
+        INativeToCypherMapper cypherMapper,
         ILogger logger)
     {
         _input = input;
@@ -47,6 +50,7 @@ internal class MessageLoop : IMessageLoop
         _responseWriter = responseWriter;
         _registry = registry;
         _exceptionTypeMapper = exceptionTypeMapper;
+        _cypherMapper = cypherMapper;
         _logger = logger;
     }
 
@@ -89,7 +93,14 @@ internal class MessageLoop : IMessageLoop
                     Id = registered.Id,
                     ErrorType = _exceptionTypeMapper.Map(exception),
                     Msg = exception.Message,
-                    Code = exception.Code
+                    Code = exception.Code,
+                    Retryable = exception.IsRetriable,
+                    GqlStatus = exception.GqlStatus,
+                    StatusDescription = exception.GqlStatusDescription,
+                    Classification = exception.GqlClassification,
+                    RawClassification = exception.GqlRawClassification,
+                    DiagnosticRecord = exception.GqlDiagnosticRecord?
+                        .ToDictionary(kv => kv.Key, kv => _cypherMapper.Map(kv.Value))
                 });
         }
     }

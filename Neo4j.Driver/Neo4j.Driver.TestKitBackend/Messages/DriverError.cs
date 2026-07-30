@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -23,4 +24,10 @@ internal record DriverErrorResponse : IProtocolMessage
     public required string ErrorType { get; init; }
     public string? Msg { get; init; }
     public string? Code { get; init; }
+    public bool Retryable { get; init; }
+    public string? GqlStatus { get; init; }
+    public string? StatusDescription { get; init; }
+    public string? Classification { get; init; }
+    public string? RawClassification { get; init; }
+    public IReadOnlyDictionary<string, ICypherValue>? DiagnosticRecord { get; init; }
 }

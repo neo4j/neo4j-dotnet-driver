@@ -15,7 +15,9 @@
 
 using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
@@ -96,7 +98,17 @@ public class MessageLoopTests
         const string goodJson = """{"name":"GetFeatures","data":{}}""";
         var failingMessage = Mock.Of<IProtocolMessage>();
         var goodMessage = Mock.Of<IProtocolMessage>();
-        Neo4jException exception = new ClientException("Neo.ClientError.Statement.SyntaxError", "bad cypher");
+        var failureMessage = new FailureMessage("Neo.ClientError.Statement.SyntaxError", "bad cypher")
+        {
+            GqlStatus = "50N42",
+            GqlStatusDescription = "some description",
+            GqlClassification = "CLIENT_ERROR",
+            GqlRawClassification = "CLIENT_ERROR_RAW",
+            GqlDiagnosticRecord = new Dictionary<string, object> { ["CURRENT_SCHEMA"] = "/" }
+        };
+        Neo4jException exception = new ClientException(failureMessage, null);
+        var diagnosticRecordValue = new CypherString("/");
+        _autoMocker.GetMock<INativeToCypherMapper>().Setup(m => m.Map("/")).Returns(diagnosticRecordValue);
 
         _autoMocker.GetMock<IConnectionInput>()
             .SetupSequence(i => i.ReadRequestAsync())
@@ -122,7 +134,14 @@ public class MessageLoopTests
                     e => e.Id == "error-1" &&
                         e.ErrorType == "ClientError" &&
                         e.Msg == "bad cypher" &&
-                        e.Code == "Neo.ClientError.Statement.SyntaxError")),
+                        e.Code == "Neo.ClientError.Statement.SyntaxError" &&
+                        e.Retryable == false &&
+                        e.GqlStatus == "50N42" &&
+                        e.StatusDescription == "some description" &&
+                        e.Classification == "CLIENT_ERROR" &&
+                        e.RawClassification == "CLIENT_ERROR_RAW" &&
+                        e.DiagnosticRecord!.Count == 1 &&
+                        e.DiagnosticRecord["CURRENT_SCHEMA"].Equals(diagnosticRecordValue))),
                 Times.Once);
 
         // The loop survives a driver error - the next request must still reach the dispatcher.
