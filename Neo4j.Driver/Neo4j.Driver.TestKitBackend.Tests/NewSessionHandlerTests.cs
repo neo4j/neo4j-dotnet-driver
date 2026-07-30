@@ -29,20 +29,22 @@ public class NewSessionHandlerTests
     [Fact]
     public async Task Creates_a_session_on_the_driver_and_responds_with_its_id()
     {
-        var registry = new Registry();
-        _autoMocker.Use<IRegistry>(registry);
-
         var sessionMock = _autoMocker.GetMock<IAsyncSession>();
         var driverMock = _autoMocker.GetMock<IDriver>();
         driverMock.Setup(d => d.AsyncSession(It.IsAny<Action<SessionConfigBuilder>>())).Returns(sessionMock.Object);
-        var registeredDriver = registry.Register(driverMock.Object);
+
+        var registeredSession = new RegistryObject<IAsyncSession>("session-1", sessionMock.Object);
+        _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(sessionMock.Object)).Returns(registeredSession);
 
         var handler = _autoMocker.CreateInstance<NewSessionHandler>();
-        var request = new NewSessionRequest { Driver = registeredDriver, AccessMode = "r" };
+        var request = new NewSessionRequest
+        {
+            Driver = new RegistryObject<IDriver>("driver-1", driverMock.Object),
+            AccessMode = "r"
+        };
 
         var response = await handler.ProcessAsync(request);
 
-        var sessionResponse = response.Should().BeOfType<SessionResponse>().Subject;
-        registry.Get<IAsyncSession>(sessionResponse.Id).Object.Should().Be(sessionMock.Object);
+        response.Should().BeOfType<SessionResponse>().Subject.Id.Should().Be("session-1");
     }
 }
