@@ -17,7 +17,9 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
+using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
 
@@ -85,5 +87,42 @@ public class MessageLoopTests
         // the dispatcher, and the good request must never even be read off the wire.
         _autoMocker.GetMock<IMessageDispatcher>().Verify(d => d.DispatchAsync(goodMessage), Times.Never);
         _autoMocker.GetMock<IConnectionInput>().Verify(i => i.ReadRequestAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task Reports_DriverError_for_a_driver_exception_and_continues_the_loop()
+    {
+        const string failingJson = """{"name":"SessionRun","data":{}}""";
+        const string goodJson = """{"name":"GetFeatures","data":{}}""";
+        var failingMessage = Mock.Of<IProtocolMessage>();
+        var goodMessage = Mock.Of<IProtocolMessage>();
+        Neo4jException exception = new ClientException("bad cypher");
+
+        _autoMocker.GetMock<IConnectionInput>()
+            .SetupSequence(i => i.ReadRequestAsync())
+            .ReturnsAsync(failingJson)
+            .ReturnsAsync(goodJson)
+            .ReturnsAsync((string?)null);
+
+        _autoMocker.GetMock<IMessageSerializer>().Setup(s => s.Deserialize(failingJson)).Returns(failingMessage);
+        _autoMocker.GetMock<IMessageSerializer>().Setup(s => s.Deserialize(goodJson)).Returns(goodMessage);
+        _autoMocker.GetMock<IMessageDispatcher>().Setup(d => d.DispatchAsync(failingMessage)).ThrowsAsync(exception);
+        _autoMocker.GetMock<IExceptionTypeMapper>().Setup(m => m.Map(exception)).Returns("ClientError");
+
+        var registered = new RegistryObject<Neo4jException>("error-1", exception);
+        _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(exception)).Returns(registered);
+
+        var loop = _autoMocker.CreateInstance<MessageLoop>();
+
+        await loop.RunAsync("testkit-1");
+
+        _autoMocker.GetMock<IResponseWriter>()
+            .Verify(
+                w => w.WriteAsync(It.Is<DriverErrorResponse>(
+                    e => e.Id == "error-1" && e.ErrorType == "ClientError" && e.Msg == "bad cypher")),
+                Times.Once);
+
+        // The loop survives a driver error - the next request must still reach the dispatcher.
+        _autoMocker.GetMock<IMessageDispatcher>().Verify(d => d.DispatchAsync(goodMessage), Times.Once);
     }
 }

@@ -15,7 +15,9 @@
 
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
+using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Connection;
@@ -26,6 +28,8 @@ internal class MessageLoop : IMessageLoop
     private readonly IMessageSerializer _serializer;
     private readonly IMessageDispatcher _dispatcher;
     private readonly IResponseWriter _responseWriter;
+    private readonly IRegistry _registry;
+    private readonly IExceptionTypeMapper _exceptionTypeMapper;
     private readonly ILogger _logger;
 
     public MessageLoop(
@@ -33,12 +37,16 @@ internal class MessageLoop : IMessageLoop
         IMessageSerializer serializer,
         IMessageDispatcher dispatcher,
         IResponseWriter responseWriter,
+        IRegistry registry,
+        IExceptionTypeMapper exceptionTypeMapper,
         ILogger logger)
     {
         _input = input;
         _serializer = serializer;
         _dispatcher = dispatcher;
         _responseWriter = responseWriter;
+        _registry = registry;
+        _exceptionTypeMapper = exceptionTypeMapper;
         _logger = logger;
     }
 
@@ -51,7 +59,7 @@ internal class MessageLoop : IMessageLoop
             {
                 _logger.LogDebug("Request: {Request}", json);
                 var message = _serializer.Deserialize(json);
-                await _dispatcher.DispatchAsync(message);
+                await DispatchWithErrorHandling(message);
             }
         }
         catch (Exception exception)
@@ -62,6 +70,26 @@ internal class MessageLoop : IMessageLoop
         finally
         {
             _logger.LogDebug("Closing connection {ConnectionId}", connectionId);
+        }
+    }
+
+    private async Task DispatchWithErrorHandling(IProtocolMessage message)
+    {
+        try
+        {
+            await _dispatcher.DispatchAsync(message);
+        }
+        catch (Neo4jException exception)
+        {
+            _logger.LogDebug(exception, "Driver error while handling request");
+            var registered = _registry.Register(exception);
+            await _responseWriter.WriteAsync(
+                new DriverErrorResponse
+                {
+                    Id = registered.Id,
+                    ErrorType = _exceptionTypeMapper.Map(exception),
+                    Msg = exception.Message
+                });
         }
     }
 }
