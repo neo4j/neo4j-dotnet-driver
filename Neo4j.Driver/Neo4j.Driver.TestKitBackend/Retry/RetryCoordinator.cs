@@ -70,4 +70,15 @@ internal class RetryCoordinator : IRetryCoordinator
 
         tcs.SetResult();
     }
+
+    public void FailOutcome(string sessionId, Exception exception)
+    {
+        if (!_pendingOutcomes.Remove(sessionId, out var tcs))
+        {
+            throw new InvalidOperationException(
+                $"No pending outcome continuation is registered for session '{sessionId}'.");
+        }
+
+        tcs.SetException(exception);
+    }
 }

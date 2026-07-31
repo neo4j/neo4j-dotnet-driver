@@ -15,13 +15,10 @@
 
 using Moq;
 using Moq.AutoMock;
-using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
 
@@ -98,29 +95,8 @@ public class MessageLoopTests
         const string goodJson = """{"name":"GetFeatures","data":{}}""";
         var failingMessage = Mock.Of<IProtocolMessage>();
         var goodMessage = Mock.Of<IProtocolMessage>();
-        var causeFailureMessage = new FailureMessage
-        {
-            Message = "cause message",
-            GqlStatus = "01000",
-            GqlStatusDescription = "cause description",
-            GqlClassification = "CAUSE_CLASS",
-            GqlRawClassification = "CAUSE_RAW",
-            GqlDiagnosticRecord = new Dictionary<string, object> { ["OPERATION"] = "" }
-        };
-        var failureMessage = new FailureMessage("Neo.ClientError.Statement.SyntaxError", "bad cypher")
-        {
-            GqlStatus = "50N42",
-            GqlStatusDescription = "some description",
-            GqlClassification = "CLIENT_ERROR",
-            GqlRawClassification = "CLIENT_ERROR_RAW",
-            GqlDiagnosticRecord = new Dictionary<string, object> { ["CURRENT_SCHEMA"] = "/" },
-            GqlCause = causeFailureMessage
-        };
-        Neo4jException exception = Neo4jException.Create(failureMessage);
-        var diagnosticRecordValue = new CypherString("/");
-        var causeDiagnosticRecordValue = new CypherString("");
-        _autoMocker.GetMock<INativeToCypherMapper>().Setup(m => m.Map("/")).Returns(diagnosticRecordValue);
-        _autoMocker.GetMock<INativeToCypherMapper>().Setup(m => m.Map("")).Returns(causeDiagnosticRecordValue);
+        var exception = new ClientException("Neo.ClientError.Statement.SyntaxError", "bad cypher");
+        var errorResponse = new DriverErrorResponse { Id = "error-1", ErrorType = "ClientError" };
 
         _autoMocker.GetMock<IConnectionInput>()
             .SetupSequence(i => i.ReadRequestAsync())
@@ -131,39 +107,13 @@ public class MessageLoopTests
         _autoMocker.GetMock<IMessageSerializer>().Setup(s => s.Deserialize(failingJson)).Returns(failingMessage);
         _autoMocker.GetMock<IMessageSerializer>().Setup(s => s.Deserialize(goodJson)).Returns(goodMessage);
         _autoMocker.GetMock<IMessageDispatcher>().Setup(d => d.DispatchAsync(failingMessage)).ThrowsAsync(exception);
-        _autoMocker.GetMock<IExceptionTypeMapper>().Setup(m => m.Map(exception)).Returns("ClientError");
-
-        var registered = new RegistryObject<Neo4jException>("error-1", exception);
-        _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(exception)).Returns(registered);
+        _autoMocker.GetMock<IDriverErrorMapper>().Setup(m => m.Map(exception)).Returns(errorResponse);
 
         var loop = _autoMocker.CreateInstance<MessageLoop>();
 
         await loop.RunAsync("testkit-1");
 
-        _autoMocker.GetMock<IResponseWriter>()
-            .Verify(
-                w => w.WriteAsync(It.Is<DriverErrorResponse>(
-                    e => e.Id == "error-1" &&
-                        e.ErrorType == "ClientError" &&
-                        e.Msg == "bad cypher" &&
-                        e.Code == "Neo.ClientError.Statement.SyntaxError" &&
-                        e.Retryable == false &&
-                        e.GqlStatus == "50N42" &&
-                        e.StatusDescription == "some description" &&
-                        e.Classification == "CLIENT_ERROR" &&
-                        e.RawClassification == "CLIENT_ERROR_RAW" &&
-                        e.DiagnosticRecord!.Count == 1 &&
-                        e.DiagnosticRecord["CURRENT_SCHEMA"].Equals(diagnosticRecordValue) &&
-                        (e.Cause as GqlErrorResponse) != null &&
-                        ((GqlErrorResponse)e.Cause!).Msg == "cause message" &&
-                        ((GqlErrorResponse)e.Cause!).GqlStatus == "01000" &&
-                        ((GqlErrorResponse)e.Cause!).StatusDescription == "cause description" &&
-                        ((GqlErrorResponse)e.Cause!).Classification == "CAUSE_CLASS" &&
-                        ((GqlErrorResponse)e.Cause!).RawClassification == "CAUSE_RAW" &&
-                        ((GqlErrorResponse)e.Cause!).DiagnosticRecord!.Count == 1 &&
-                        ((GqlErrorResponse)e.Cause!).DiagnosticRecord!["OPERATION"].Equals(causeDiagnosticRecordValue) &&
-                        ((GqlErrorResponse)e.Cause!).Cause == null)),
-                Times.Once);
+        _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(errorResponse), Times.Once);
 
         // The loop survives a driver error - the next request must still reach the dispatcher.
         _autoMocker.GetMock<IMessageDispatcher>().Verify(d => d.DispatchAsync(goodMessage), Times.Once);

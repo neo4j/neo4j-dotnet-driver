@@ -34,4 +34,6 @@ internal interface IRetryCoordinator
     Task WaitForOutcomeAsync(string sessionId);
 
     void CompleteOutcome(string sessionId);
+
+    void FailOutcome(string sessionId, Exception exception);
 }

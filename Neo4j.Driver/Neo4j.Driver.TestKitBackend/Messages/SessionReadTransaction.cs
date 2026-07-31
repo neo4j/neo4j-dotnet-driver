@@ -17,6 +17,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Retry;
 using Neo4j.Driver.TestKitBackend.Types;
@@ -44,8 +45,9 @@ internal class SessionReadTransactionHandler : RetryableTransactionHandler<Sessi
         IRegistry registry,
         IRetryCoordinator coordinator,
         IResponseWriter responseWriter,
+        IDriverErrorMapper driverErrorMapper,
         ILogger logger)
-        : base(registry, coordinator, responseWriter, logger)
+        : base(registry, coordinator, responseWriter, driverErrorMapper, logger)
     {
     }
 

@@ -14,11 +14,9 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
-using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Connection;
@@ -29,9 +27,7 @@ internal class MessageLoop : IMessageLoop
     private readonly IMessageSerializer _serializer;
     private readonly IMessageDispatcher _dispatcher;
     private readonly IResponseWriter _responseWriter;
-    private readonly IRegistry _registry;
-    private readonly IExceptionTypeMapper _exceptionTypeMapper;
-    private readonly INativeToCypherMapper _cypherMapper;
+    private readonly IDriverErrorMapper _driverErrorMapper;
     private readonly ILogger _logger;
 
     public MessageLoop(
@@ -39,18 +35,14 @@ internal class MessageLoop : IMessageLoop
         IMessageSerializer serializer,
         IMessageDispatcher dispatcher,
         IResponseWriter responseWriter,
-        IRegistry registry,
-        IExceptionTypeMapper exceptionTypeMapper,
-        INativeToCypherMapper cypherMapper,
+        IDriverErrorMapper driverErrorMapper,
         ILogger logger)
     {
         _input = input;
         _serializer = serializer;
         _dispatcher = dispatcher;
         _responseWriter = responseWriter;
-        _registry = registry;
-        _exceptionTypeMapper = exceptionTypeMapper;
-        _cypherMapper = cypherMapper;
+        _driverErrorMapper = driverErrorMapper;
         _logger = logger;
     }
 
@@ -86,43 +78,7 @@ internal class MessageLoop : IMessageLoop
         catch (Neo4jException exception)
         {
             _logger.LogDebug(exception, "Driver error while handling request");
-            var registered = _registry.Register(exception);
-            await _responseWriter.WriteAsync(
-                new DriverErrorResponse
-                {
-                    Id = registered.Id,
-                    ErrorType = _exceptionTypeMapper.Map(exception),
-                    Msg = exception.Message,
-                    Code = exception.Code,
-                    Retryable = exception.IsRetriable,
-                    GqlStatus = exception.GqlStatus,
-                    StatusDescription = exception.GqlStatusDescription,
-                    Classification = exception.GqlClassification,
-                    RawClassification = exception.GqlRawClassification,
-                    DiagnosticRecord = exception.GqlDiagnosticRecord?
-                        .ToDictionary(kv => kv.Key, kv => _cypherMapper.Map(kv.Value)),
-                    Cause = MapCause(exception.InnerException)
-                });
+            await _responseWriter.WriteAsync(_driverErrorMapper.Map(exception));
         }
-    }
-
-    private GqlErrorResponse? MapCause(Exception? cause)
-    {
-        if (cause is not Neo4jException gqlCause)
-        {
-            return null;
-        }
-
-        return new GqlErrorResponse
-        {
-            Msg = gqlCause.Message,
-            GqlStatus = gqlCause.GqlStatus,
-            StatusDescription = gqlCause.GqlStatusDescription,
-            Classification = gqlCause.GqlClassification,
-            RawClassification = gqlCause.GqlRawClassification,
-            DiagnosticRecord = gqlCause.GqlDiagnosticRecord?
-                .ToDictionary(kv => kv.Key, kv => _cypherMapper.Map(kv.Value)),
-            Cause = MapCause(gqlCause.InnerException)
-        };
     }
 }

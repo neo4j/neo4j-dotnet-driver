@@ -16,6 +16,7 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
@@ -36,17 +37,20 @@ internal abstract class RetryableTransactionHandler<T> : MessageHandler<T>
     private readonly IRegistry _registry;
     private readonly IRetryCoordinator _coordinator;
     private readonly IResponseWriter _responseWriter;
+    private readonly IDriverErrorMapper _driverErrorMapper;
     private readonly ILogger _logger;
 
     protected RetryableTransactionHandler(
         IRegistry registry,
         IRetryCoordinator coordinator,
         IResponseWriter responseWriter,
+        IDriverErrorMapper driverErrorMapper,
         ILogger logger)
     {
         _registry = registry;
         _coordinator = coordinator;
         _responseWriter = responseWriter;
+        _driverErrorMapper = driverErrorMapper;
         _logger = logger;
     }
 
@@ -66,6 +70,15 @@ internal abstract class RetryableTransactionHandler<T> : MessageHandler<T>
         {
             await ExecuteTransactionAsync(session, runner => RunAttemptAsync(runner, sessionId));
             _coordinator.CompleteNextResponse(sessionId, new RetryableDoneResponse());
+        }
+        catch (FrontendException exception)
+        {
+            _coordinator.CompleteNextResponse(sessionId, new FrontendErrorResponse { Msg = exception.Message });
+        }
+        catch (Neo4jException exception)
+        {
+            _logger.LogDebug(exception, "Retryable transaction for session '{SessionId}' failed", sessionId);
+            _coordinator.CompleteNextResponse(sessionId, _driverErrorMapper.Map(exception));
         }
         catch (Exception exception)
         {

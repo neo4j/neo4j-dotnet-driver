@@ -87,6 +87,20 @@ public class RetryCoordinatorTests
     }
 
     [Fact]
+    public async Task FailOutcome_makes_the_pending_outcome_throw_the_given_exception()
+    {
+        var coordinator = new RetryCoordinator();
+        var exception = new TransientException("code", "message");
+
+        var outcomeTask = coordinator.WaitForOutcomeAsync("session-1");
+
+        coordinator.FailOutcome("session-1", exception);
+
+        var thrown = await Assert.ThrowsAsync<TransientException>(() => WithTimeoutAsync(outcomeTask));
+        Assert.Same(exception, thrown);
+    }
+
+    [Fact]
     public async Task Registering_a_second_continuation_for_a_session_that_already_has_one_pending_fails_loudly()
     {
         var coordinator = new RetryCoordinator();
