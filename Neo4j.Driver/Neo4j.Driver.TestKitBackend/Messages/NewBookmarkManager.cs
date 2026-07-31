@@ -15,6 +15,7 @@
 
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
@@ -32,32 +33,63 @@ internal record BookmarkManagerResponse(string Id) : IProtocolMessage;
 internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequest>
 {
     private readonly IRegistry _registry;
+    private readonly IContinuationCoordinator _coordinator;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewBookmarkManagerHandler(
         IRegistry registry,
+        IContinuationCoordinator coordinator,
         IResponseWriter responseWriter,
         ILogger logger)
     {
         _registry = registry;
+        _coordinator = coordinator;
         _responseWriter = responseWriter;
         _logger = logger;
     }
 
     public override async Task ProcessAsync(NewBookmarkManagerRequest message)
     {
-        if (message.BookmarksSupplierRegistered || message.BookmarksConsumerRegistered)
-        {
-            throw new NotSupportedException(
-                "The bookmarks supplier/consumer callbacks are not implemented yet.");
-        }
+        // The callbacks need the manager's own registry id for their requests, which only
+        // exists once the manager is registered — hence the captured local.
+        var managerId = "";
+
+        Func<CancellationToken, Task<string[]>>? supplier = message.BookmarksSupplierRegistered
+            ? _ => SupplyBookmarksAsync(managerId)
+            : null;
+
+        Func<string[], CancellationToken, Task>? consumer = message.BookmarksConsumerRegistered
+            ? (bookmarks, _) => ConsumeBookmarksAsync(managerId, bookmarks)
+            : null;
 
         var manager = GraphDatabase.BookmarkManagerFactory.NewBookmarkManager(
-            new BookmarkManagerConfig(message.InitialBookmarks));
+            new BookmarkManagerConfig(message.InitialBookmarks, supplier, consumer));
 
         var registered = _registry.Register(manager);
+        managerId = registered.Id;
+
         _logger.LogDebug("Created bookmark manager with id '{Id}'", registered.Id);
         await _responseWriter.WriteAsync(new BookmarkManagerResponse(registered.Id));
+    }
+
+    // These run on a driver thread mid-operation: they borrow the open request's response slot
+    // to send the callback request, then pause until the ...Completed handler resolves it
+    // (spec §6).
+    private async Task<string[]> SupplyBookmarksAsync(string managerId)
+    {
+        var pending = _coordinator.RegisterCallback();
+        _coordinator.CompleteNextResponse(new BookmarksSupplierRequest(pending.Id, managerId));
+
+        var completion = (BookmarksSupplierCompletedRequest)await pending.Completion;
+        return completion.Bookmarks;
+    }
+
+    private async Task ConsumeBookmarksAsync(string managerId, string[] bookmarks)
+    {
+        var pending = _coordinator.RegisterCallback();
+        _coordinator.CompleteNextResponse(new BookmarksConsumerRequest(pending.Id, managerId, bookmarks));
+
+        await pending.Completion;
     }
 }
