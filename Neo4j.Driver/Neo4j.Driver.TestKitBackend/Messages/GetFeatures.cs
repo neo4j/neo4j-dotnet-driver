@@ -56,7 +56,8 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
         "Feature:Bolt:6.0",
         "Feature:Bolt:6.1",
         "Feature:Bolt:HandshakeManifestV1",
-        "Feature:Bolt:Patch:UTC"
+        "Feature:Bolt:Patch:UTC",
+        "Optimization:EagerTransactionBegin"
     ];
 
     private readonly IResponseWriter _responseWriter;
