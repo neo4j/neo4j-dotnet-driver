@@ -1,0 +1,114 @@
+// Copyright (c) "Neo4j"
+// Neo4j Sweden AB [https://neo4j.com]
+//
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using Microsoft.Extensions.Logging;
+using Moq;
+using Neo4j.Driver.Internal.Auth;
+using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Continuations;
+using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Messages;
+using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Xunit;
+
+namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
+
+// The manager handler and the completed handler only make sense as a pair — this pins the
+// callback handshake between them via a real IContinuationCoordinator, playing the roles of the
+// driver (invoking the registered manager) and of the detached operation whose response slot the
+// callback borrows.
+public class AuthTokenManagerFlowTests
+{
+    private record TerminalResponse(string Tag) : IProtocolMessage;
+
+    [Fact]
+    public async Task The_registered_manager_round_trips_a_GetAuth_callback_for_its_token()
+    {
+        var coordinator = new ContinuationCoordinator();
+        var responseWriterMock = new Mock<IResponseWriter>();
+
+        IAuthTokenManager? manager = null;
+        var registryMock = new Mock<IRegistry>();
+        registryMock
+            .Setup(r => r.Register(It.IsAny<IAuthTokenManager>()))
+            .Returns<IAuthTokenManager>(
+                m =>
+                {
+                    manager = m;
+                    return new RegistryObject<IAuthTokenManager>("manager-1", m);
+                });
+
+        var newManagerHandler = new NewAuthTokenManagerHandler(
+            registryMock.Object,
+            coordinator,
+            new AuthTokenManagerFactory(),
+            responseWriterMock.Object,
+            Mock.Of<ILogger>());
+
+        await newManagerHandler.ProcessAsync(new NewAuthTokenManagerRequest());
+
+        responseWriterMock.Verify(w => w.WriteAsync(new AuthTokenManagerResponse("manager-1")), Times.Once);
+        Assert.NotNull(manager);
+
+        // Play the detached operation whose response slot the callback borrows...
+        var openRequestTask = coordinator.WaitForNextResponseAsync();
+
+        // ...and the driver asking the manager for a token mid-operation.
+        var tokenTask = manager!.GetTokenAsync(TestContext.Current.CancellationToken);
+
+        var callbackRequest = Assert.IsType<AuthTokenManagerGetAuthRequest>(await WithTimeoutAsync(openRequestTask));
+        Assert.Equal("manager-1", callbackRequest.AuthTokenManagerId);
+
+        var completedHandler = new AuthTokenManagerGetAuthCompletedHandler(coordinator, responseWriterMock.Object);
+        var completedTask = completedHandler.ProcessAsync(
+            new AuthTokenManagerGetAuthCompletedRequest
+            {
+                RequestId = callbackRequest.Id,
+                Auth = new AuthorizationToken("basic", "neo4j", "pass")
+            });
+
+        var token = Assert.IsAssignableFrom<AuthToken>(await WithTimeoutAsync(tokenTask.AsTask()));
+        Assert.Equal("basic", token.Content["scheme"]);
+        Assert.Equal("neo4j", token.Content["principal"]);
+        Assert.Equal("pass", token.Content["credentials"]);
+
+        // The resumed operation eventually produces the terminal response; the completed handler
+        // is the one holding the response slot, so it writes it.
+        coordinator.CompleteNextResponse(new TerminalResponse("result"));
+        await WithTimeoutAsync(completedTask);
+
+        responseWriterMock.Verify(w => w.WriteAsync(new TerminalResponse("result")), Times.Once);
+    }
+
+    private static async Task<T> WithTimeoutAsync<T>(Task<T> task)
+    {
+        var completed = await Task.WhenAny(
+            task,
+            Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
+
+        Assert.Same(task, completed);
+        return await task;
+    }
+
+    private static async Task WithTimeoutAsync(Task task)
+    {
+        var completed = await Task.WhenAny(
+            task,
+            Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
+
+        Assert.Same(task, completed);
+        await task;
+    }
+}
