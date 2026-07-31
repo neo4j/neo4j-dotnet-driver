@@ -17,6 +17,7 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
+using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
@@ -41,7 +42,9 @@ public class SessionBeginTransactionHandlerTests
         var transactionMock = _autoMocker.GetMock<IAsyncTransaction>();
 
         var sessionMock = _autoMocker.GetMock<IAsyncSession>();
-        sessionMock.Setup(s => s.BeginTransactionAsync()).ReturnsAsync(transactionMock.Object);
+        sessionMock
+            .Setup(s => s.BeginTransactionAsync(It.IsAny<Action<TransactionConfigBuilder>>()))
+            .ReturnsAsync(transactionMock.Object);
 
         var registeredTransaction = new RegistryObject<IAsyncTransaction>("tx-1", transactionMock.Object);
         _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(transactionMock.Object)).Returns(registeredTransaction);
@@ -59,11 +62,47 @@ public class SessionBeginTransactionHandlerTests
     }
 
     [Fact]
+    public async Task Begins_the_transaction_with_the_mapped_tx_metadata()
+    {
+        var txMeta = new Dictionary<string, ICypherValue> { ["return_bookmark"] = new CypherString("bm1") };
+        var mapped = new Dictionary<string, object> { ["return_bookmark"] = "bm1" };
+        _autoMocker.GetMock<ICypherToNativeMapper>().Setup(m => m.Map(txMeta)).Returns(mapped);
+
+        var transactionMock = _autoMocker.GetMock<IAsyncTransaction>();
+
+        Action<TransactionConfigBuilder>? configure = null;
+        var sessionMock = _autoMocker.GetMock<IAsyncSession>();
+        sessionMock
+            .Setup(s => s.BeginTransactionAsync(It.IsAny<Action<TransactionConfigBuilder>>()))
+            .Callback<Action<TransactionConfigBuilder>>(action => configure = action)
+            .ReturnsAsync(transactionMock.Object);
+
+        var registeredTransaction = new RegistryObject<IAsyncTransaction>("tx-1", transactionMock.Object);
+        _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(transactionMock.Object)).Returns(registeredTransaction);
+
+        var handler = _autoMocker.CreateInstance<SessionBeginTransactionHandler>();
+        var request = new SessionBeginTransactionRequest
+        {
+            Session = new RegistryObject<IAsyncSession>("session-1", sessionMock.Object),
+            TxMeta = txMeta
+        };
+
+        await handler.ProcessAsync(request);
+
+        Assert.NotNull(configure);
+        var config = new TransactionConfig();
+        configure!(new TransactionConfigBuilder(Mock.Of<INeo4jLogger>(), config));
+        Assert.Equal(mapped, config.Metadata);
+    }
+
+    [Fact]
     public async Task Writes_the_mapped_driver_error_when_begin_throws()
     {
         var exception = new ClientException("boom");
         var sessionMock = _autoMocker.GetMock<IAsyncSession>();
-        sessionMock.Setup(s => s.BeginTransactionAsync()).ThrowsAsync(exception);
+        sessionMock
+            .Setup(s => s.BeginTransactionAsync(It.IsAny<Action<TransactionConfigBuilder>>()))
+            .ThrowsAsync(exception);
 
         var errorResponse = new DriverErrorResponse { Id = "error-1", ErrorType = "ClientError" };
         _autoMocker.GetMock<IDriverErrorMapper>().Setup(m => m.Map(exception)).Returns(errorResponse);

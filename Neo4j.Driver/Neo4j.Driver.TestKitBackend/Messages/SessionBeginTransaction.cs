@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
+using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
@@ -28,8 +28,7 @@ internal record SessionBeginTransactionRequest : IProtocolMessage
 {
     public required RegistryObject<IAsyncSession> Session { get; init; }
 
-    // Cypher-envelope dict on the wire; parsed but not yet converted to native values (M11).
-    public Dictionary<string, JsonElement>? TxMeta { get; init; }
+    public Dictionary<string, ICypherValue>? TxMeta { get; init; }
 
     // Absent = driver default, null = explicitly no timeout, number = timeout in ms.
     public Optional<long?> Timeout { get; init; }
@@ -42,23 +41,28 @@ internal record TransactionResponse(string Id) : IProtocolMessage;
 internal class SessionBeginTransactionHandler : DetachedOperationHandler<SessionBeginTransactionRequest>
 {
     private readonly IRegistry _registry;
+    private readonly ICypherToNativeMapper _cypherToNativeMapper;
     private readonly ILogger _logger;
 
     public SessionBeginTransactionHandler(
         IRegistry registry,
         IContinuationCoordinator coordinator,
         IResponseWriter responseWriter,
+        ICypherToNativeMapper cypherToNativeMapper,
         IDriverErrorMapper driverErrorMapper,
         ILogger logger)
         : base(coordinator, responseWriter, driverErrorMapper, logger)
     {
         _registry = registry;
+        _cypherToNativeMapper = cypherToNativeMapper;
         _logger = logger;
     }
 
     protected override async Task<IProtocolMessage> ExecuteAsync(SessionBeginTransactionRequest message)
     {
-        var transaction = await message.Session.Object.BeginTransactionAsync();
+        var transaction = await message.Session.Object.BeginTransactionAsync(
+            builder => Configure(builder, message));
+
         var registered = _registry.Register(transaction);
         _logger.LogDebug(
             "Began transaction with id '{Id}' on session with id '{SessionId}'",
@@ -66,5 +70,13 @@ internal class SessionBeginTransactionHandler : DetachedOperationHandler<Session
             message.Session.Id);
 
         return new TransactionResponse(registered.Id);
+    }
+
+    private void Configure(TransactionConfigBuilder builder, SessionBeginTransactionRequest message)
+    {
+        if (message.TxMeta is { } txMeta)
+        {
+            builder.WithMetadata(_cypherToNativeMapper.Map(txMeta));
+        }
     }
 }
