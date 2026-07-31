@@ -16,33 +16,39 @@
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record RetryablePositiveRequest : IProtocolMessage
+// Backend → testkit callback (spec §6): the driver needs a fresh basic auth token. Sent in place
+// of the open request's response; Id is the correlation token testkit echoes back.
+internal record BasicAuthTokenProviderRequest(string Id, string BasicAuthTokenManagerId) : IProtocolMessage;
+
+internal record BasicAuthTokenProviderCompletedRequest : IProtocolMessage
 {
-    public required RegistryObject<IAsyncSession> Session { get; init; }
+    public required string RequestId { get; init; }
+    public required IWireType<AuthorizationToken> Auth { get; init; }
 }
 
-// No direct response of its own — the reply is whatever the backgrounded retry flow produces
-// next (another RetryableTry, RetryableDone, or an error), per spec §7.
-internal class RetryablePositiveHandler : MessageHandler<RetryablePositiveRequest>
+// No direct response of its own — the reply is whatever the resumed driver operation produces
+// next (its terminal response or another callback request), per spec §6.
+internal class BasicAuthTokenProviderCompletedHandler : MessageHandler<BasicAuthTokenProviderCompletedRequest>
 {
     private readonly IContinuationCoordinator _coordinator;
     private readonly IResponseWriter _responseWriter;
 
-    public RetryablePositiveHandler(IContinuationCoordinator coordinator, IResponseWriter responseWriter)
+    public BasicAuthTokenProviderCompletedHandler(
+        IContinuationCoordinator coordinator,
+        IResponseWriter responseWriter)
     {
         _coordinator = coordinator;
         _responseWriter = responseWriter;
     }
 
-    public override async Task ProcessAsync(RetryablePositiveRequest message)
+    public override async Task ProcessAsync(BasicAuthTokenProviderCompletedRequest message)
     {
-        var sessionId = message.Session.Id;
         var responseTask = _coordinator.WaitForNextResponseAsync();
-        _coordinator.CompleteOutcome(sessionId);
+        _coordinator.CompleteCallback(message.RequestId, message);
         await _responseWriter.WriteAsync(await responseTask);
     }
 }

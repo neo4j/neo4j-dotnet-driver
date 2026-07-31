@@ -13,36 +13,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record RetryablePositiveRequest : IProtocolMessage
+internal record AuthTokenManagerCloseRequest : IProtocolMessage
 {
-    public required RegistryObject<IAsyncSession> Session { get; init; }
+    public required string Id { get; init; }
 }
 
-// No direct response of its own — the reply is whatever the backgrounded retry flow produces
-// next (another RetryableTry, RetryableDone, or an error), per spec §7.
-internal class RetryablePositiveHandler : MessageHandler<RetryablePositiveRequest>
-{
-    private readonly IContinuationCoordinator _coordinator;
-    private readonly IResponseWriter _responseWriter;
+// The reply is named AuthTokenManager even when closing basic/bearer managers (spec §4.2 trap).
+internal record AuthTokenManagerResponse(string Id) : IProtocolMessage;
 
-    public RetryablePositiveHandler(IContinuationCoordinator coordinator, IResponseWriter responseWriter)
+internal class AuthTokenManagerCloseHandler : MessageHandler<AuthTokenManagerCloseRequest>
+{
+    private readonly IRegistry _registry;
+    private readonly IResponseWriter _responseWriter;
+    private readonly ILogger _logger;
+
+    public AuthTokenManagerCloseHandler(IRegistry registry, IResponseWriter responseWriter, ILogger logger)
     {
-        _coordinator = coordinator;
+        _registry = registry;
         _responseWriter = responseWriter;
+        _logger = logger;
     }
 
-    public override async Task ProcessAsync(RetryablePositiveRequest message)
+    public override async Task ProcessAsync(AuthTokenManagerCloseRequest message)
     {
-        var sessionId = message.Session.Id;
-        var responseTask = _coordinator.WaitForNextResponseAsync();
-        _coordinator.CompleteOutcome(sessionId);
-        await _responseWriter.WriteAsync(await responseTask);
+        _registry.Remove(message.Id);
+        _logger.LogDebug("Closed auth token manager with id '{Id}'", message.Id);
+        await _responseWriter.WriteAsync(new AuthTokenManagerResponse(message.Id));
     }
 }

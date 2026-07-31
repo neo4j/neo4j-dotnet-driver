@@ -16,20 +16,20 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
-using Neo4j.Driver.TestKitBackend.Retry;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
 // The retryable-flow handlers only make sense as a set — these tests pin the handshakes between
-// them via a real IRetryCoordinator (the collaboration is the point; mocking the coordinator
+// them via a real IContinuationCoordinator (the collaboration is the point; mocking the coordinator
 // away would just re-assert the implementation).
 public class RetryableTransactionFlowTests
 {
-    private readonly RetryCoordinator _coordinator = new();
+    private readonly ContinuationCoordinator _coordinator = new();
     private readonly Mock<IRegistry> _registryMock = new();
     private readonly Mock<IResponseWriter> _responseWriterMock = new();
     private readonly Mock<IDriverErrorMapper> _driverErrorMapperMock = new();

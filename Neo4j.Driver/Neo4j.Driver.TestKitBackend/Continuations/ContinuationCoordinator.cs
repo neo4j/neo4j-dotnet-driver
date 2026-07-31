@@ -15,35 +15,36 @@
 
 using Neo4j.Driver.TestKitBackend.Dispatch;
 
-namespace Neo4j.Driver.TestKitBackend.Retry;
+namespace Neo4j.Driver.TestKitBackend.Continuations;
 
 [RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
-internal class RetryCoordinator : IRetryCoordinator
+internal class ContinuationCoordinator : IContinuationCoordinator
 {
-    private readonly Dictionary<string, TaskCompletionSource<IProtocolMessage>> _pendingResponses = new();
     private readonly Dictionary<string, TaskCompletionSource> _pendingOutcomes = new();
+    private readonly Dictionary<string, TaskCompletionSource<IProtocolMessage>> _pendingCallbacks = new();
+    private TaskCompletionSource<IProtocolMessage>? _pendingResponse;
+    private int _nextCallbackId;
 
-    public Task<IProtocolMessage> WaitForNextResponseAsync(string sessionId)
+    public Task<IProtocolMessage> WaitForNextResponseAsync()
     {
-        if (_pendingResponses.ContainsKey(sessionId))
+        if (_pendingResponse is not null)
         {
-            throw new InvalidOperationException(
-                $"A response continuation is already registered for session '{sessionId}'.");
+            throw new InvalidOperationException("A response continuation is already registered.");
         }
 
-        var tcs = new TaskCompletionSource<IProtocolMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
-        _pendingResponses[sessionId] = tcs;
-        return tcs.Task;
+        _pendingResponse = new TaskCompletionSource<IProtocolMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        return _pendingResponse.Task;
     }
 
-    public void CompleteNextResponse(string sessionId, IProtocolMessage response)
+    public void CompleteNextResponse(IProtocolMessage response)
     {
-        if (!_pendingResponses.Remove(sessionId, out var tcs))
+        if (_pendingResponse is null)
         {
-            throw new InvalidOperationException(
-                $"No pending response continuation is registered for session '{sessionId}'.");
+            throw new InvalidOperationException("No pending response continuation is registered.");
         }
 
+        var tcs = _pendingResponse;
+        _pendingResponse = null;
         tcs.SetResult(response);
     }
 
@@ -80,5 +81,23 @@ internal class RetryCoordinator : IRetryCoordinator
         }
 
         tcs.SetException(exception);
+    }
+
+    public PendingCallback RegisterCallback()
+    {
+        var id = $"callback-{_nextCallbackId++}";
+        var tcs = new TaskCompletionSource<IProtocolMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _pendingCallbacks[id] = tcs;
+        return new PendingCallback(id, tcs.Task);
+    }
+
+    public void CompleteCallback(string requestId, IProtocolMessage completion)
+    {
+        if (!_pendingCallbacks.Remove(requestId, out var tcs))
+        {
+            throw new InvalidOperationException($"No pending callback is registered with id '{requestId}'.");
+        }
+
+        tcs.SetResult(completion);
     }
 }

@@ -14,10 +14,10 @@
 // limitations under the License.
 
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
-using Neo4j.Driver.TestKitBackend.Retry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
@@ -36,12 +36,12 @@ internal record RetryableNegativeRequest : IProtocolMessage
 internal class RetryableNegativeHandler : MessageHandler<RetryableNegativeRequest>
 {
     private readonly IRegistry _registry;
-    private readonly IRetryCoordinator _coordinator;
+    private readonly IContinuationCoordinator _coordinator;
     private readonly IResponseWriter _responseWriter;
 
     public RetryableNegativeHandler(
         IRegistry registry,
-        IRetryCoordinator coordinator,
+        IContinuationCoordinator coordinator,
         IResponseWriter responseWriter)
     {
         _registry = registry;
@@ -52,7 +52,7 @@ internal class RetryableNegativeHandler : MessageHandler<RetryableNegativeReques
     public override async Task ProcessAsync(RetryableNegativeRequest message)
     {
         var sessionId = message.Session.Id;
-        var responseTask = _coordinator.WaitForNextResponseAsync(sessionId);
+        var responseTask = _coordinator.WaitForNextResponseAsync();
 
         // The work function rethrows this inside the driver's retry loop, so the driver itself
         // decides what happens next: a retryable stored error means another attempt (and another

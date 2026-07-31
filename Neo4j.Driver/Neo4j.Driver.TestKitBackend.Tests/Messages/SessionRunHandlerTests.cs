@@ -16,6 +16,7 @@
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
@@ -26,6 +27,13 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 public class SessionRunHandlerTests
 {
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<SessionRunHandler>();
+
+    public SessionRunHandlerTests()
+    {
+        // The handler runs detached and hands its response back through the coordinator's
+        // continuation - a mocked coordinator would never complete it.
+        _autoMocker.Use<IContinuationCoordinator>(new ContinuationCoordinator());
+    }
 
     [Fact]
     public async Task Runs_the_query_and_responds_with_the_cursor_id_and_keys()

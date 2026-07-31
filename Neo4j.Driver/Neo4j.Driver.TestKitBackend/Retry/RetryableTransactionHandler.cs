@@ -15,6 +15,7 @@
 
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
@@ -28,74 +29,40 @@ internal interface IRetryableTransactionRequest
 }
 
 // Shared flow for SessionReadTransaction/SessionWriteTransaction (spec §7); subclasses supply
-// which driver transaction-function API to run. The flow runs detached from the message loop:
-// ProcessAsync returns as soon as the first attempt has sent RetryableTry, and every later
-// pause/resume goes through IRetryCoordinator's continuations rather than loop re-entry.
-internal abstract class RetryableTransactionHandler<T> : MessageHandler<T>
+// which driver transaction-function API to run. Each attempt pauses after sending RetryableTry
+// and resumes when RetryablePositive/RetryableNegative resolves its outcome.
+internal abstract class RetryableTransactionHandler<T> : DetachedOperationHandler<T>
     where T : IProtocolMessage, IRetryableTransactionRequest
 {
     private readonly IRegistry _registry;
-    private readonly IRetryCoordinator _coordinator;
-    private readonly IResponseWriter _responseWriter;
-    private readonly IDriverErrorMapper _driverErrorMapper;
-    private readonly ILogger _logger;
+    private readonly IContinuationCoordinator _coordinator;
 
     protected RetryableTransactionHandler(
         IRegistry registry,
-        IRetryCoordinator coordinator,
+        IContinuationCoordinator coordinator,
         IResponseWriter responseWriter,
         IDriverErrorMapper driverErrorMapper,
         ILogger logger)
+        : base(coordinator, responseWriter, driverErrorMapper, logger)
     {
         _registry = registry;
         _coordinator = coordinator;
-        _responseWriter = responseWriter;
-        _driverErrorMapper = driverErrorMapper;
-        _logger = logger;
     }
 
     protected abstract Task ExecuteTransactionAsync(IAsyncSession session, Func<IAsyncQueryRunner, Task> work);
 
-    public override async Task ProcessAsync(T message)
+    protected override async Task<IProtocolMessage> ExecuteAsync(T message)
     {
         var sessionId = message.Session.Id;
-        var responseTask = _coordinator.WaitForNextResponseAsync(sessionId);
-        _ = RunFlowAsync(message.Session.Object, sessionId);
-        await _responseWriter.WriteAsync(await responseTask);
-    }
-
-    private async Task RunFlowAsync(IAsyncSession session, string sessionId)
-    {
-        try
-        {
-            await ExecuteTransactionAsync(session, runner => RunAttemptAsync(runner, sessionId));
-            _coordinator.CompleteNextResponse(sessionId, new RetryableDoneResponse());
-        }
-        catch (FrontendException exception)
-        {
-            _coordinator.CompleteNextResponse(sessionId, new FrontendErrorResponse { Msg = exception.Message });
-        }
-        catch (Neo4jException exception)
-        {
-            _logger.LogDebug(exception, "Retryable transaction for session '{SessionId}' failed", sessionId);
-            _coordinator.CompleteNextResponse(sessionId, _driverErrorMapper.Map(exception));
-        }
-        catch (Exception exception)
-        {
-            _logger.LogError(
-                exception,
-                "Unhandled error during retryable transaction for session '{SessionId}'",
-                sessionId);
-
-            _coordinator.CompleteNextResponse(sessionId, new BackendErrorResponse { Msg = exception.Message });
-        }
+        await ExecuteTransactionAsync(message.Session.Object, runner => RunAttemptAsync(runner, sessionId));
+        return new RetryableDoneResponse();
     }
 
     private async Task RunAttemptAsync(IAsyncQueryRunner runner, string sessionId)
     {
         var registered = _registry.Register((IAsyncTransaction)runner);
         var outcomeTask = _coordinator.WaitForOutcomeAsync(sessionId);
-        _coordinator.CompleteNextResponse(sessionId, new RetryableTryResponse(registered.Id));
+        _coordinator.CompleteNextResponse(new RetryableTryResponse(registered.Id));
         await outcomeTask;
     }
 }

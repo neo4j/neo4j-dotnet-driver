@@ -16,8 +16,10 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Types;
 
@@ -39,26 +41,29 @@ internal record SessionRunRequest : IProtocolMessage
 
 internal record ResultResponse(string Id, string[]? Keys) : IProtocolMessage;
 
-internal class SessionRunHandler : MessageHandler<SessionRunRequest>
+// Detached because running a query can acquire a connection, which may call back into testkit
+// mid-operation (auth manager / resolver callbacks, spec §6).
+internal class SessionRunHandler : DetachedOperationHandler<SessionRunRequest>
 {
     private readonly IRegistry _registry;
-    private readonly IResponseWriter _responseWriter;
     private readonly ICypherToNativeMapper _cypherToNativeMapper;
     private readonly ILogger _logger;
 
     public SessionRunHandler(
         IRegistry registry,
+        IContinuationCoordinator coordinator,
         IResponseWriter responseWriter,
         ICypherToNativeMapper cypherToNativeMapper,
+        IDriverErrorMapper driverErrorMapper,
         ILogger logger)
+        : base(coordinator, responseWriter, driverErrorMapper, logger)
     {
         _registry = registry;
-        _responseWriter = responseWriter;
         _cypherToNativeMapper = cypherToNativeMapper;
         _logger = logger;
     }
 
-    public override async Task ProcessAsync(SessionRunRequest message)
+    protected override async Task<IProtocolMessage> ExecuteAsync(SessionRunRequest message)
     {
         _logger.LogDebug(
             "Running query '{Cypher}' on session with id '{SessionId}'",
@@ -71,6 +76,6 @@ internal class SessionRunHandler : MessageHandler<SessionRunRequest>
         var registeredResult = _registry.Register(cursor);
         _logger.LogDebug("Query result id '{ResultId}' returned keys: {@keys}", registeredResult.Id, keys);
 
-        await _responseWriter.WriteAsync(new ResultResponse(registeredResult.Id, keys));
+        return new ResultResponse(registeredResult.Id, keys);
     }
 }

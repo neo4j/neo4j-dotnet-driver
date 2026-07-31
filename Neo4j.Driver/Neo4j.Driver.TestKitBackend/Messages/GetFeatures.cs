@@ -38,6 +38,7 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
         "Feature:API:Type.Temporal",
         "Feature:API:Type.UUID",
         "Feature:API:Type.Vector",
+        "Feature:Auth:Managed",
         "Feature:Bolt:3.0",
         "Feature:Bolt:4.1",
         "Feature:Bolt:4.2",

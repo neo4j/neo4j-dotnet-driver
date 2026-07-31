@@ -73,14 +73,18 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
 
     public override async Task ProcessAsync(NewDriverRequest message)
     {
-        var driver = GraphDatabase.Driver(
-            message.Uri,
-            message.AuthorizationToken?.Value.ToAuthToken(),
-            builder =>
-            {
-                _configMapper.Apply(message, builder);
-                builder.WithLogger(_neo4JLogger);
-            });
+        void Configure(ConfigBuilder builder)
+        {
+            _configMapper.Apply(message, builder);
+            builder.WithLogger(_neo4JLogger);
+        }
+
+        var driver = message.AuthTokenManagerId is not null
+            ? GraphDatabase.Driver(
+                message.Uri,
+                _registry.Get<IAuthTokenManager>(message.AuthTokenManagerId).Object,
+                Configure)
+            : GraphDatabase.Driver(message.Uri, message.AuthorizationToken?.Value.ToAuthToken(), Configure);
 
         var registryObject = _registry.Register(driver);
         _logger.LogDebug("Created driver with id '{Id}'", registryObject.Id);
