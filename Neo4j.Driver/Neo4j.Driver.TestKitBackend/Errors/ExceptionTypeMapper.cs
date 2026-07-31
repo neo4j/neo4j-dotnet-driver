@@ -28,7 +28,11 @@ internal class ExceptionTypeMapper : IExceptionTypeMapper
     {
         [typeof(Neo4jException)] = "Neo4jError",
         [typeof(ClientException)] = "ClientError",
-        [typeof(TransientException)] = "DriverError"
+        [typeof(TransientException)] = "DriverError",
+        [typeof(AuthorizationException)] = "AuthorizationExpired",
+        [typeof(TokenExpiredException)] = "ClientError",
+        [typeof(AuthenticationException)] = "AuthenticationError",
+        [typeof(UnknownSecurityException)] = "OtherSecurityException"
     };
 
     public string Map(Exception exception)
