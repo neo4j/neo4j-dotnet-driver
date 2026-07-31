@@ -68,6 +68,63 @@ public class RetryableTransactionFlowTests
         responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
     }
 
+    [Fact]
+    public async Task A_write_flow_where_the_driver_retries_round_trips_a_second_RetryableTry_before_RetryableDone()
+    {
+        var coordinator = new RetryCoordinator();
+        var registryMock = new Mock<IRegistry>();
+        var responseWriterMock = new Mock<IResponseWriter>();
+        var loggerMock = new Mock<ILogger>();
+
+        var firstTxMock = new Mock<IAsyncTransaction>();
+        var secondTxMock = new Mock<IAsyncTransaction>();
+        var sessionMock = new Mock<IAsyncSession>();
+
+        // The driver's retry logic re-invokes the work function after a failed commit; two
+        // sequential invocations are that behaviour distilled — each attempt gets its own tx.
+        sessionMock
+            .Setup(s => s.ExecuteWriteAsync(It.IsAny<Func<IAsyncQueryRunner, Task>>(), null))
+            .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
+                async (work, _) =>
+                {
+                    await work(firstTxMock.Object);
+                    await work(secondTxMock.Object);
+                });
+
+        registryMock
+            .Setup(r => r.Register(firstTxMock.Object))
+            .Returns(new RegistryObject<IAsyncTransaction>("tx-1", firstTxMock.Object));
+
+        registryMock
+            .Setup(r => r.Register(secondTxMock.Object))
+            .Returns(new RegistryObject<IAsyncTransaction>("tx-2", secondTxMock.Object));
+
+        var writeHandler = new SessionWriteTransactionHandler(
+            registryMock.Object,
+            coordinator,
+            responseWriterMock.Object,
+            loggerMock.Object);
+
+        var positiveHandler = new RetryablePositiveHandler(coordinator, responseWriterMock.Object);
+
+        var sessionHandle = new RegistryObject<IAsyncSession>("session-1", sessionMock.Object);
+
+        await WithTimeoutAsync(
+            writeHandler.ProcessAsync(new SessionWriteTransactionRequest { Session = sessionHandle }));
+
+        responseWriterMock.Verify(w => w.WriteAsync(new RetryableTryResponse("tx-1")), Times.Once);
+
+        await WithTimeoutAsync(
+            positiveHandler.ProcessAsync(new RetryablePositiveRequest { Session = sessionHandle }));
+
+        responseWriterMock.Verify(w => w.WriteAsync(new RetryableTryResponse("tx-2")), Times.Once);
+
+        await WithTimeoutAsync(
+            positiveHandler.ProcessAsync(new RetryablePositiveRequest { Session = sessionHandle }));
+
+        responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
+    }
+
     private static async Task WithTimeoutAsync(Task task)
     {
         var completed = await Task.WhenAny(

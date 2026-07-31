@@ -23,7 +23,7 @@ using Neo4j.Driver.TestKitBackend.Types;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record SessionReadTransactionRequest : IProtocolMessage, IRetryableTransactionRequest
+internal record SessionWriteTransactionRequest : IProtocolMessage, IRetryableTransactionRequest
 {
     public required RegistryObject<IAsyncSession> Session { get; init; }
 
@@ -34,13 +34,9 @@ internal record SessionReadTransactionRequest : IProtocolMessage, IRetryableTran
     public Optional<long?> Timeout { get; init; }
 }
 
-internal record RetryableTryResponse(string Id) : IProtocolMessage;
-
-internal record RetryableDoneResponse : IProtocolMessage;
-
-internal class SessionReadTransactionHandler : RetryableTransactionHandler<SessionReadTransactionRequest>
+internal class SessionWriteTransactionHandler : RetryableTransactionHandler<SessionWriteTransactionRequest>
 {
-    public SessionReadTransactionHandler(
+    public SessionWriteTransactionHandler(
         IRegistry registry,
         IRetryCoordinator coordinator,
         IResponseWriter responseWriter,
@@ -51,6 +47,6 @@ internal class SessionReadTransactionHandler : RetryableTransactionHandler<Sessi
 
     protected override Task ExecuteTransactionAsync(IAsyncSession session, Func<IAsyncQueryRunner, Task> work)
     {
-        return session.ExecuteReadAsync(work);
+        return session.ExecuteWriteAsync(work);
     }
 }
