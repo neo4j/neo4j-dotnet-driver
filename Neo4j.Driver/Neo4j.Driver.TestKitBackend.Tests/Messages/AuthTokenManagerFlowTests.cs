@@ -92,6 +92,73 @@ public class AuthTokenManagerFlowTests
         responseWriterMock.Verify(w => w.WriteAsync(new TerminalResponse("result")), Times.Once);
     }
 
+    [Fact]
+    public async Task The_registered_manager_round_trips_a_HandleSecurityException_callback()
+    {
+        var coordinator = new ContinuationCoordinator();
+        var responseWriterMock = new Mock<IResponseWriter>();
+
+        IAuthTokenManager? manager = null;
+        var registryMock = new Mock<IRegistry>();
+        registryMock
+            .Setup(r => r.Register(It.IsAny<IAuthTokenManager>()))
+            .Returns<IAuthTokenManager>(
+                m =>
+                {
+                    manager = m;
+                    return new RegistryObject<IAuthTokenManager>("manager-1", m);
+                });
+
+        var newManagerHandler = new NewAuthTokenManagerHandler(
+            registryMock.Object,
+            coordinator,
+            new AuthTokenManagerFactory(),
+            responseWriterMock.Object,
+            Mock.Of<ILogger>());
+
+        await newManagerHandler.ProcessAsync(new NewAuthTokenManagerRequest());
+        Assert.NotNull(manager);
+
+        // Play the detached operation whose response slot the callback borrows...
+        var openRequestTask = coordinator.WaitForNextResponseAsync();
+
+        // ...and the driver notifying the manager of a security exception mid-operation.
+        var token = AuthTokens.Custom("neo4j", "pass", null!, "basic");
+        var exception = new SecurityException("Neo.ClientError.Security.TokenExpired", "boom");
+        var handledTask = manager!.HandleSecurityExceptionAsync(
+            token,
+            exception,
+            TestContext.Current.CancellationToken);
+
+        var callbackRequest = Assert.IsType<AuthTokenManagerHandleSecurityExceptionRequest>(
+            await WithTimeoutAsync(openRequestTask));
+        Assert.Equal("manager-1", callbackRequest.AuthTokenManagerId);
+        Assert.Equal("Neo.ClientError.Security.TokenExpired", callbackRequest.ErrorCode);
+
+        // The relayed token reflects the driver token's content exactly — no realm was given,
+        // so none is sent.
+        Assert.Equal(new AuthorizationToken("basic", "neo4j", "pass"), callbackRequest.Auth);
+
+        var completedHandler = new AuthTokenManagerHandleSecurityExceptionCompletedHandler(
+            coordinator,
+            responseWriterMock.Object);
+        var completedTask = completedHandler.ProcessAsync(
+            new AuthTokenManagerHandleSecurityExceptionCompletedRequest
+            {
+                RequestId = callbackRequest.Id,
+                Handled = true
+            });
+
+        Assert.True(await WithTimeoutAsync(handledTask.AsTask()));
+
+        // The resumed operation eventually produces the terminal response; the completed handler
+        // is the one holding the response slot, so it writes it.
+        coordinator.CompleteNextResponse(new TerminalResponse("result"));
+        await WithTimeoutAsync(completedTask);
+
+        responseWriterMock.Verify(w => w.WriteAsync(new TerminalResponse("result")), Times.Once);
+    }
+
     private static async Task<T> WithTimeoutAsync<T>(Task<T> task)
     {
         var completed = await Task.WhenAny(

@@ -13,14 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Text.Json.Serialization;
 using Neo4j.Driver.TestKitBackend.Serialization;
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
+// Realm is omitted (not null) on the wire when unset: testkit compares tokens
+// attribute-by-attribute, so a field it never sent must stay absent.
 internal record AuthorizationToken(
     string Scheme,
     string Principal,
     string Credentials,
-    string? Realm = null) : IWireType<AuthorizationToken>
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Realm = null)
+    : IWireType<AuthorizationToken>
 {
     public IAuthToken ToAuthToken()
     {

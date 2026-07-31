@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
@@ -50,7 +51,9 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
         // The manager needs its own registry id for the callback requests, which only exists
         // once the manager is registered — hence the captured local.
         var managerId = "";
-        var manager = _managerFactory.Create(() => GetAuthAsync(managerId));
+        var manager = _managerFactory.Create(
+            () => GetAuthAsync(managerId),
+            (token, exception) => HandleSecurityExceptionAsync(managerId, token, exception));
 
         var registered = _registry.Register(manager);
         managerId = registered.Id;
@@ -69,18 +72,51 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
         var completion = (AuthTokenManagerGetAuthCompletedRequest)await pending.Completion;
         return completion.Auth.Value.ToAuthToken();
     }
+
+    private async ValueTask<bool> HandleSecurityExceptionAsync(
+        string managerId,
+        IAuthToken token,
+        SecurityException exception)
+    {
+        var pending = _coordinator.RegisterCallback();
+        _coordinator.CompleteNextResponse(
+            new AuthTokenManagerHandleSecurityExceptionRequest(
+                pending.Id,
+                managerId,
+                ToWireToken(token),
+                exception.Code));
+
+        var completion = (AuthTokenManagerHandleSecurityExceptionCompletedRequest)await pending.Completion;
+        return completion.Handled;
+    }
+
+    // The driver token's Content holds exactly the fields testkit's get_auth supplied (absent
+    // stays absent), so it round-trips faithfully.
+    private AuthorizationToken ToWireToken(IAuthToken token)
+    {
+        var content = ((AuthToken)token).Content;
+        return new AuthorizationToken(
+            (string)content["scheme"],
+            (string)content["principal"],
+            (string)content["credentials"],
+            content.TryGetValue("realm", out var realm) ? (string)realm : null);
+    }
 }
 
 internal interface IAuthTokenManagerFactory
 {
-    IAuthTokenManager Create(Func<ValueTask<IAuthToken>> getAuth);
+    IAuthTokenManager Create(
+        Func<ValueTask<IAuthToken>> getAuth,
+        Func<IAuthToken, SecurityException, ValueTask<bool>> handleSecurityException);
 }
 
 internal class AuthTokenManagerFactory : IAuthTokenManagerFactory
 {
-    public IAuthTokenManager Create(Func<ValueTask<IAuthToken>> getAuth)
+    public IAuthTokenManager Create(
+        Func<ValueTask<IAuthToken>> getAuth,
+        Func<IAuthToken, SecurityException, ValueTask<bool>> handleSecurityException)
     {
-        return new TestKitAuthTokenManager(getAuth);
+        return new TestKitAuthTokenManager(getAuth, handleSecurityException);
     }
 }
 
@@ -89,10 +125,14 @@ internal class AuthTokenManagerFactory : IAuthTokenManagerFactory
 internal class TestKitAuthTokenManager : IAuthTokenManager
 {
     private readonly Func<ValueTask<IAuthToken>> _getAuth;
+    private readonly Func<IAuthToken, SecurityException, ValueTask<bool>> _handleSecurityException;
 
-    public TestKitAuthTokenManager(Func<ValueTask<IAuthToken>> getAuth)
+    public TestKitAuthTokenManager(
+        Func<ValueTask<IAuthToken>> getAuth,
+        Func<IAuthToken, SecurityException, ValueTask<bool>> handleSecurityException)
     {
         _getAuth = getAuth;
+        _handleSecurityException = handleSecurityException;
     }
 
     public ValueTask<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default)
@@ -105,7 +145,6 @@ internal class TestKitAuthTokenManager : IAuthTokenManager
         SecurityException exception,
         CancellationToken cancellationToken = default)
     {
-        throw new NotSupportedException(
-            "The AuthTokenManagerHandleSecurityException callback is not implemented yet.");
+        return _handleSecurityException(token, exception);
     }
 }

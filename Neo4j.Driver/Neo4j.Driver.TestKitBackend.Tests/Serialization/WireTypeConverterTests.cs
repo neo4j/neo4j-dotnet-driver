@@ -102,6 +102,45 @@ public class WireTypeConverterTests
     }
 
     [Fact]
+    public void Writes_a_wire_type_as_a_named_envelope()
+    {
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            Converters = { _autoMocker.CreateInstance<WireTypeConverterFactory>() }
+        };
+
+        IWireType<AuthorizationToken> token = new AuthorizationToken("basic", "neo4j", "secret", "myrealm");
+        var json = JsonSerializer.Serialize(token, options);
+
+        using var document = JsonDocument.Parse(json);
+        document.RootElement.GetProperty("name").GetString().Should().Be("AuthorizationToken");
+        var data = document.RootElement.GetProperty("data");
+        data.GetProperty("scheme").GetString().Should().Be("basic");
+        data.GetProperty("principal").GetString().Should().Be("neo4j");
+        data.GetProperty("credentials").GetString().Should().Be("secret");
+        data.GetProperty("realm").GetString().Should().Be("myrealm");
+    }
+
+    [Fact]
+    public void Omits_a_null_realm_when_writing_an_authorization_token()
+    {
+        // Testkit compares the token attribute-by-attribute against what its get_auth returned,
+        // so a realm it never sent must stay absent, not become null.
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            Converters = { _autoMocker.CreateInstance<WireTypeConverterFactory>() }
+        };
+
+        IWireType<AuthorizationToken> token = new AuthorizationToken("basic", "neo4j", "secret");
+        var json = JsonSerializer.Serialize(token, options);
+
+        using var document = JsonDocument.Parse(json);
+        document.RootElement.GetProperty("data").TryGetProperty("realm", out _).Should().BeFalse();
+    }
+
+    [Fact]
     public void Rejects_a_wire_type_whose_name_does_not_match_the_declared_type()
     {
         var options = new JsonSerializerOptions

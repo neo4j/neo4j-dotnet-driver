@@ -88,6 +88,13 @@ internal class WireTypeConverter<T> : JsonConverter<IWireType<T>> where T : IWir
 
     public override void Write(Utf8JsonWriter writer, IWireType<T> value, JsonSerializerOptions options)
     {
-        throw new NotImplementedException();
+        writer.WriteStartObject();
+        writer.WriteString("name", _expectedName);
+        writer.WritePropertyName("data");
+
+        // Serializing as the concrete T (the converter claims only the interface) writes the
+        // data without re-entering this converter.
+        JsonSerializer.Serialize(writer, (T)value, options);
+        writer.WriteEndObject();
     }
 }
