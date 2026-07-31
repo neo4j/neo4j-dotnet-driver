@@ -186,6 +186,7 @@ internal interface ISessionConfigBuilder
     ISessionConfigBuilder WithNotificationsDisabled();
     ISessionConfigBuilder WithNotifications(Severity? minimumSeverity, Category[] disabledCategories);
     ISessionConfigBuilder WithDisableAutoCommitRetries(bool disable);
+    ISessionConfigBuilder WithBookmarkManager(IBookmarkManager bookmarkManager);
 }
 
 /// <summary>The builder to build a <see cref="SessionConfig"/>.</summary>
@@ -438,4 +439,7 @@ public sealed class SessionConfigBuilder : ISessionConfigBuilder
 
     ISessionConfigBuilder ISessionConfigBuilder.WithDisableAutoCommitRetries(bool disable) =>
         WithDisableAutoCommitRetries(disable);
+
+    ISessionConfigBuilder ISessionConfigBuilder.WithBookmarkManager(IBookmarkManager bookmarkManager) =>
+        WithBookmarkManager(bookmarkManager);
 }

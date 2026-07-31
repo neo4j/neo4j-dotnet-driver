@@ -74,6 +74,19 @@ public class NewSessionConfigMapperTests
     }
 
     [Fact]
+    public void Resolves_and_applies_the_bookmark_manager_by_id()
+    {
+        var manager = Mock.Of<IBookmarkManager>();
+        _autoMocker.GetMock<IRegistry>()
+            .Setup(r => r.Get<IBookmarkManager>("bm-1"))
+            .Returns(new RegistryObject<IBookmarkManager>("bm-1", manager));
+
+        Apply(MinimalRequest() with { BookmarkManagerId = "bm-1" });
+
+        _builder.Verify(b => b.WithBookmarkManager(manager), Times.Once);
+    }
+
+    [Fact]
     public void Maps_bookmarks_to_a_bookmarks_instance()
     {
         Apply(MinimalRequest() with { Bookmarks = ["bm:1", "bm:2"] });
@@ -121,14 +134,6 @@ public class NewSessionConfigMapperTests
         Apply(MinimalRequest() with { DisableAutoCommitRetries = true });
 
         _builder.Verify(b => b.WithDisableAutoCommitRetries(true), Times.Once);
-    }
-
-    [Fact]
-    public void Does_not_map_bookmarkManagerId_since_no_matching_method_exists_yet()
-    {
-        Apply(MinimalRequest() with { BookmarkManagerId = "bm-manager-1" });
-
-        _builder.Invocations.Should().HaveCount(1); // just the access mode
     }
 
     [Fact]

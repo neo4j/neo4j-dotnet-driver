@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal interface INewSessionConfigMapper
@@ -30,8 +32,16 @@ internal class NewSessionConfigMapper : INewSessionConfigMapper
         nameof(NewSessionRequest.Bookmarks),
         nameof(NewSessionRequest.AuthorizationToken),
         nameof(NewSessionRequest.NotificationsMinSeverity),
-        nameof(NewSessionRequest.NotificationsDisabledCategories)
+        nameof(NewSessionRequest.NotificationsDisabledCategories),
+        nameof(NewSessionRequest.BookmarkManagerId)
     ];
+
+    private readonly IRegistry _registry;
+
+    public NewSessionConfigMapper(IRegistry registry)
+    {
+        _registry = registry;
+    }
 
     public void Apply(NewSessionRequest request, ISessionConfigBuilder builder)
     {
@@ -39,7 +49,16 @@ internal class NewSessionConfigMapper : INewSessionConfigMapper
         ApplyBookmarks(request, builder);
         ApplyAuthorizationToken(request, builder);
         ApplyNotifications(request, builder);
+        ApplyBookmarkManager(request, builder);
         ApplyRemainingProperties(request, builder);
+    }
+
+    private void ApplyBookmarkManager(NewSessionRequest request, ISessionConfigBuilder builder)
+    {
+        if (request.BookmarkManagerId is { } bookmarkManagerId)
+        {
+            builder.WithBookmarkManager(_registry.Get<IBookmarkManager>(bookmarkManagerId).Object);
+        }
     }
 
     private static void ApplyAccessMode(NewSessionRequest request, ISessionConfigBuilder builder)

@@ -32,6 +32,7 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
     // an unknown string makes testkit raise. Keep sorted alphabetically.
     private static readonly string[] SupportedFeatures =
     [
+        "Feature:API:BookmarkManager",
         "Feature:API:Driver.VerifyConnectivity",
         "Feature:API:Driver:GetServerInfo",
         "Feature:API:RetryableExceptions",
