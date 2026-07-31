@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.TestKitBackend.Certificates;
+
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal interface INewDriverConfigMapper
@@ -32,8 +34,16 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
         nameof(NewDriverRequest.TelemetryDisabled),
         nameof(NewDriverRequest.TrustedCertificates),
         nameof(NewDriverRequest.NotificationsMinSeverity),
-        nameof(NewDriverRequest.NotificationsDisabledCategories)
+        nameof(NewDriverRequest.NotificationsDisabledCategories),
+        nameof(NewDriverRequest.ClientCertificate)
     ];
+
+    private readonly ICertificateLoader _certificateLoader;
+
+    public NewDriverConfigMapper(ICertificateLoader certificateLoader)
+    {
+        _certificateLoader = certificateLoader;
+    }
 
     public void Apply(NewDriverRequest request, IConfigBuilder builder)
     {
@@ -43,7 +53,18 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
         ApplyTelemetry(request, builder);
         ApplyTrustedCertificates(request, builder);
         ApplyNotifications(request, builder);
+        ApplyClientCertificate(request, builder);
         ApplyRemainingProperties(request, builder);
+    }
+
+    private void ApplyClientCertificate(NewDriverRequest request, IConfigBuilder builder)
+    {
+        if (request.ClientCertificate is { Value: var certificate })
+        {
+            builder.WithClientCertificateProvider(
+                ClientCertificateProviders.Static(
+                    _certificateLoader.Load(certificate.Certfile, certificate.Keyfile, certificate.Password)));
+        }
     }
 
     private static void ApplyMaxTransactionRetryTime(NewDriverRequest request, IConfigBuilder builder)

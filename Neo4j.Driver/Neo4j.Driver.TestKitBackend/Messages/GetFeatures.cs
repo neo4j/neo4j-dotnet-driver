@@ -36,6 +36,7 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
         "Feature:API:Driver.VerifyConnectivity",
         "Feature:API:Driver:GetServerInfo",
         "Feature:API:RetryableExceptions",
+        "Feature:API:SSLClientCertificate",
         "Feature:API:SSLSchemes",
         "Feature:API:Type.Temporal",
         "Feature:API:Type.UUID",

@@ -13,9 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.TestKitBackend.Certificates;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.Types;
 using Xunit;
@@ -261,5 +264,30 @@ public class NewDriverConfigMapperTests
         _builder.Verify(
             b => b.WithNotifications(It.IsAny<Severity?>(), It.IsAny<Category[]>()),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task Maps_the_client_certificate_to_a_static_provider_of_the_loaded_certificate()
+    {
+        using var key = RSA.Create();
+        var request = new CertificateRequest("CN=mapper-test", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        using var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(1));
+
+        _autoMocker.GetMock<ICertificateLoader>()
+            .Setup(l => l.Load("cert.pem", "key.pem", "secret"))
+            .Returns(certificate);
+
+        IClientCertificateProvider? provider = null;
+        _builder
+            .Setup(b => b.WithClientCertificateProvider(It.IsAny<IClientCertificateProvider>()))
+            .Callback<IClientCertificateProvider>(p => provider = p);
+
+        Apply(MinimalRequest() with
+        {
+            ClientCertificate = new ClientCertificate("cert.pem", "key.pem", "secret")
+        });
+
+        Assert.NotNull(provider);
+        (await provider!.GetCertificateAsync()).Should().BeSameAs(certificate);
     }
 }

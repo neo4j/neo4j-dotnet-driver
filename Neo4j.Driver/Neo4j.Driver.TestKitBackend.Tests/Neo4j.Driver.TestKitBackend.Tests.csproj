@@ -31,4 +31,7 @@
     <ItemGroup>
         <ProjectReference Include="..\Neo4j.Driver.TestKitBackend\Neo4j.Driver.TestKitBackend.csproj" />
     </ItemGroup>
+    <ItemGroup>
+        <None Include="TestData\**" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
 </Project>
