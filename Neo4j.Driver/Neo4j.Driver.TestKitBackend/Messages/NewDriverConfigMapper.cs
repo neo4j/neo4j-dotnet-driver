@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Neo4j.Driver.TestKitBackend.Certificates;
+using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
@@ -35,14 +36,17 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
         nameof(NewDriverRequest.TrustedCertificates),
         nameof(NewDriverRequest.NotificationsMinSeverity),
         nameof(NewDriverRequest.NotificationsDisabledCategories),
-        nameof(NewDriverRequest.ClientCertificate)
+        nameof(NewDriverRequest.ClientCertificate),
+        nameof(NewDriverRequest.ClientCertificateProviderId)
     ];
 
     private readonly ICertificateLoader _certificateLoader;
+    private readonly IRegistry _registry;
 
-    public NewDriverConfigMapper(ICertificateLoader certificateLoader)
+    public NewDriverConfigMapper(ICertificateLoader certificateLoader, IRegistry registry)
     {
         _certificateLoader = certificateLoader;
+        _registry = registry;
     }
 
     public void Apply(NewDriverRequest request, IConfigBuilder builder)
@@ -64,6 +68,11 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
             builder.WithClientCertificateProvider(
                 ClientCertificateProviders.Static(
                     _certificateLoader.Load(certificate.Certfile, certificate.Keyfile, certificate.Password)));
+        }
+
+        if (request.ClientCertificateProviderId is { } providerId)
+        {
+            builder.WithClientCertificateProvider(_registry.Get<IClientCertificateProvider>(providerId).Object);
         }
     }
 

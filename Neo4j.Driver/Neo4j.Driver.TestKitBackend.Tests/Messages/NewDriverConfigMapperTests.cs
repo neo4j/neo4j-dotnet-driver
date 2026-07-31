@@ -20,6 +20,7 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Certificates;
 using Neo4j.Driver.TestKitBackend.Messages;
+using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Types;
 using Xunit;
 
@@ -289,5 +290,18 @@ public class NewDriverConfigMapperTests
 
         Assert.NotNull(provider);
         (await provider!.GetCertificateAsync()).Should().BeSameAs(certificate);
+    }
+
+    [Fact]
+    public void Maps_clientCertificateProviderId_to_the_registered_provider()
+    {
+        var provider = Mock.Of<IClientCertificateProvider>();
+        _autoMocker.GetMock<IRegistry>()
+            .Setup(r => r.Get<IClientCertificateProvider>("provider-1"))
+            .Returns(new RegistryObject<IClientCertificateProvider>("provider-1", provider));
+
+        Apply(MinimalRequest() with { ClientCertificateProviderId = "provider-1" });
+
+        _builder.Verify(b => b.WithClientCertificateProvider(provider), Times.Once);
     }
 }
