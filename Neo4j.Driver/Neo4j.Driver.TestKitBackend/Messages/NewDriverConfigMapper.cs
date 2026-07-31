@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Neo4j.Driver.TestKitBackend.Certificates;
+using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -37,20 +38,27 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
         nameof(NewDriverRequest.NotificationsMinSeverity),
         nameof(NewDriverRequest.NotificationsDisabledCategories),
         nameof(NewDriverRequest.ClientCertificate),
-        nameof(NewDriverRequest.ClientCertificateProviderId)
+        nameof(NewDriverRequest.ClientCertificateProviderId),
+        nameof(NewDriverRequest.ResolverRegistered)
     ];
 
     private readonly ICertificateLoader _certificateLoader;
     private readonly IRegistry _registry;
+    private readonly IContinuationCoordinator _coordinator;
 
-    public NewDriverConfigMapper(ICertificateLoader certificateLoader, IRegistry registry)
+    public NewDriverConfigMapper(
+        ICertificateLoader certificateLoader,
+        IRegistry registry,
+        IContinuationCoordinator coordinator)
     {
         _certificateLoader = certificateLoader;
         _registry = registry;
+        _coordinator = coordinator;
     }
 
     public void Apply(NewDriverRequest request, IConfigBuilder builder)
     {
+        ApplyResolver(request, builder);
         ApplyMaxTransactionRetryTime(request, builder);
         ApplyConnectionLivenessCheckTimeout(request, builder);
         ApplyEncryption(request, builder);
@@ -59,6 +67,14 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
         ApplyNotifications(request, builder);
         ApplyClientCertificate(request, builder);
         ApplyRemainingProperties(request, builder);
+    }
+
+    private void ApplyResolver(NewDriverRequest request, IConfigBuilder builder)
+    {
+        if (request.ResolverRegistered)
+        {
+            builder.WithResolver(new TestKitServerAddressResolver(_coordinator));
+        }
     }
 
     private void ApplyClientCertificate(NewDriverRequest request, IConfigBuilder builder)

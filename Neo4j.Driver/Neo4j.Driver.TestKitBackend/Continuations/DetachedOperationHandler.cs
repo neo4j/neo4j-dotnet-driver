@@ -52,7 +52,12 @@ internal abstract class DetachedOperationHandler<T> : MessageHandler<T> where T 
     public override async Task ProcessAsync(T message)
     {
         var responseTask = _coordinator.WaitForNextResponseAsync();
-        _ = RunDetachedAsync(message);
+
+        // Task.Run, not a bare call: the operation's synchronous prefix can block on a callback
+        // completion (a synchronous driver seam like IServerAddressResolver does), which would
+        // deadlock the loop before the callback request is ever written.
+        _ = Task.Run(() => RunDetachedAsync(message));
+
         await _responseWriter.WriteAsync(await responseTask);
     }
 

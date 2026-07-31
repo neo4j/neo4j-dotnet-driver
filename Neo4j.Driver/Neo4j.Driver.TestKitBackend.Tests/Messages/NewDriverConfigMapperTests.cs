@@ -51,9 +51,8 @@ public class NewDriverConfigMapperTests
     [Fact]
     public void Calls_nothing_when_no_recognised_field_is_set()
     {
-        // resolverRegistered/domainNameResolverRegistered are non-nullable bools with no
-        // matching With* method (routing-resolver wiring isn't built yet) - false should not
-        // be mistaken for "call the method with false".
+        // resolverRegistered/domainNameResolverRegistered are non-nullable bools: false must
+        // not configure a resolver (and the DNS resolver has no driver seam at all).
         var request = MinimalRequest() with
         {
             ResolverRegistered = false,
@@ -303,5 +302,18 @@ public class NewDriverConfigMapperTests
         Apply(MinimalRequest() with { ClientCertificateProviderId = "provider-1" });
 
         _builder.Verify(b => b.WithClientCertificateProvider(provider), Times.Once);
+    }
+
+    [Fact]
+    public void Maps_resolverRegistered_to_a_testkit_relaying_resolver()
+    {
+        IServerAddressResolver? resolver = null;
+        _builder
+            .Setup(b => b.WithResolver(It.IsAny<IServerAddressResolver>()))
+            .Callback<IServerAddressResolver>(r => resolver = r);
+
+        Apply(MinimalRequest() with { ResolverRegistered = true });
+
+        Assert.IsType<TestKitServerAddressResolver>(resolver);
     }
 }

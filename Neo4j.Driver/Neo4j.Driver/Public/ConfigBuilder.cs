@@ -48,6 +48,7 @@ internal interface IConfigBuilder
     IConfigBuilder WithNotificationsDisabled();
     IConfigBuilder WithNotifications(Severity? minimumSeverity, Category[] disabledCategories);
     IConfigBuilder WithClientCertificateProvider(IClientCertificateProvider clientCertificateProvider);
+    IConfigBuilder WithResolver(IServerAddressResolver resolver);
 }
 
 /// <summary>Provides a way to generate a <see cref="Config"/> instance fluently.</summary>
@@ -675,4 +676,6 @@ public sealed class ConfigBuilder : IConfigBuilder
 
     IConfigBuilder IConfigBuilder.WithClientCertificateProvider(IClientCertificateProvider clientCertificateProvider) =>
         WithClientCertificateProvider(clientCertificateProvider);
+
+    IConfigBuilder IConfigBuilder.WithResolver(IServerAddressResolver resolver) => WithResolver(resolver);
 }
