@@ -63,7 +63,7 @@ internal class MessageLoop : IMessageLoop
             {
                 _logger.LogDebug("Request: {Request}", json);
                 var message = _serializer.Deserialize(json);
-                await DispatchWithErrorHandling(message);
+                await DispatchWithErrorHandlingAsync(message);
             }
         }
         catch (Exception exception)
@@ -77,7 +77,7 @@ internal class MessageLoop : IMessageLoop
         }
     }
 
-    private async Task DispatchWithErrorHandling(IProtocolMessage message)
+    private async Task DispatchWithErrorHandlingAsync(IProtocolMessage message)
     {
         try
         {
