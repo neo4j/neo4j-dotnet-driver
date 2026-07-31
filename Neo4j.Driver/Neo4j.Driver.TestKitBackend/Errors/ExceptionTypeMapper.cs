@@ -32,7 +32,8 @@ internal class ExceptionTypeMapper : IExceptionTypeMapper
         [typeof(AuthorizationException)] = "AuthorizationExpired",
         [typeof(TokenExpiredException)] = "ClientError",
         [typeof(AuthenticationException)] = "AuthenticationError",
-        [typeof(UnknownSecurityException)] = "OtherSecurityException"
+        [typeof(UnknownSecurityException)] = "OtherSecurityException",
+        [typeof(ArgumentException)] = "ArgumentError"
     };
 
     public string Map(Exception exception)

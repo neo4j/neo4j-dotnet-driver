@@ -16,6 +16,7 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Certificates;
@@ -208,16 +209,37 @@ public class NewDriverConfigMapperTests
         _builder.Verify(b => b.WithCertificateTrustRule(CertificateTrustRule.TrustAny, null), Times.Once);
     }
 
+    // Testkit sends bare file names; the CI harness mounts the certificates and points
+    // TK_CUSTOM_CA_PATH at them, so the names only resolve with that prefix applied.
     [Fact]
-    public void Maps_trustedCertificates_paths_to_a_trust_list()
+    public void Maps_trustedCertificates_paths_to_a_trust_list_prefixed_with_the_configured_CA_path()
     {
-        Apply(MinimalRequest() with { TrustedCertificates = Optional<string[]?>.Specified(["customRoot.crt"]) });
+        _autoMocker.GetMock<IConfiguration>()
+            .Setup(c => c["TK_CUSTOM_CA_PATH"])
+            .Returns("/certs/");
+
+        Apply(MinimalRequest() with
+        {
+            TrustedCertificates = Optional<string[]?>.Specified(["customRoot.crt", "customRoot2.crt"])
+        });
 
         _builder.Verify(
             b => b.WithCertificateTrustRule(
                 CertificateTrustRule.TrustList,
-                It.Is<IReadOnlyList<string>>(paths => paths.SequenceEqual(new[] { "customRoot.crt" }))),
+                It.Is<IReadOnlyList<string>>(
+                    paths => paths.SequenceEqual(new[] { "/certs/customRoot.crt", "/certs/customRoot2.crt" }))),
             Times.Once);
+    }
+
+    [Fact]
+    public void Throws_when_a_trust_list_is_requested_but_no_CA_path_is_configured()
+    {
+        var act = () => Apply(MinimalRequest() with
+        {
+            TrustedCertificates = Optional<string[]?>.Specified(["customRoot.crt"])
+        });
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*TK_CUSTOM_CA_PATH*");
     }
 
     [Fact]

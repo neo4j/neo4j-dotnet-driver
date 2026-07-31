@@ -25,6 +25,8 @@ namespace Neo4j.Driver.TestKitBackend.Errors;
 internal interface IDriverErrorMapper
 {
     DriverErrorResponse Map(Neo4jException exception);
+
+    DriverErrorResponse Map(ArgumentException exception);
 }
 
 internal class DriverErrorMapper : IDriverErrorMapper
@@ -60,6 +62,21 @@ internal class DriverErrorMapper : IDriverErrorMapper
             DiagnosticRecord = exception.GqlDiagnosticRecord?
                 .ToDictionary(kv => kv.Key, kv => _cypherMapper.Map(kv.Value)),
             Cause = MapCause(exception.InnerException)
+        };
+    }
+
+    // Config-validation errors (e.g. a +s scheme combined with explicit encryption settings)
+    // surface from the driver as ArgumentException, not Neo4jException, but testkit still
+    // expects a DriverError for them.
+    public DriverErrorResponse Map(ArgumentException exception)
+    {
+        var registered = _registry.Register(exception);
+        return new DriverErrorResponse
+        {
+            Id = registered.Id,
+            ErrorType = _exceptionTypeMapper.Map(exception),
+            Msg = exception.Message,
+            Retryable = false
         };
     }
 

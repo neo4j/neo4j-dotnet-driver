@@ -70,4 +70,10 @@ public class ExceptionTypeMapperTests
     {
         _mapper.Map(new InvalidOperationException("boom")).Should().Be("InvalidOperationException");
     }
+
+    [Fact]
+    public void Maps_ArgumentException_to_ArgumentError()
+    {
+        _mapper.Map(new ArgumentException("boom")).Should().Be("ArgumentError");
+    }
 }

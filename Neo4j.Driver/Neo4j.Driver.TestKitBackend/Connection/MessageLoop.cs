@@ -80,5 +80,12 @@ internal class MessageLoop : IMessageLoop
             _logger.LogDebug(exception, "Driver error while handling request");
             await _responseWriter.WriteAsync(_driverErrorMapper.Map(exception));
         }
+        catch (ArgumentException exception)
+        {
+            // Driver config validation (e.g. a +s scheme combined with explicit encryption
+            // settings) throws ArgumentException; testkit expects a DriverError for it.
+            _logger.LogDebug(exception, "Driver configuration error while handling request");
+            await _responseWriter.WriteAsync(_driverErrorMapper.Map(exception));
+        }
     }
 }

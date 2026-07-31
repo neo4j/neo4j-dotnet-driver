@@ -16,6 +16,7 @@
 using System.Text.Json;
 using Autofac;
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -60,12 +61,13 @@ public class BackendModuleTests
 
         // The connection handler registers the transport-bound output into each connection
         // scope, and the host supplies ILoggerFactory (which LoggerMiddleware resolves to
-        // satisfy plain ILogger parameters); emulate both so the handlers' ResponseWriter
-        // dependency can resolve.
+        // satisfy plain ILogger parameters) and IConfiguration; emulate them so the handlers'
+        // dependencies can resolve.
         using var scope = container.BeginLifetimeScope(b =>
         {
             b.RegisterInstance(Mock.Of<IConnectionOutput>()).As<IConnectionOutput>();
             b.RegisterInstance(NullLoggerFactory.Instance).As<ILoggerFactory>();
+            b.RegisterInstance(new ConfigurationBuilder().Build()).As<IConfiguration>();
         });
 
         // Constructs all handlers and builds the type→handler map, so this throws if any
@@ -83,6 +85,7 @@ public class BackendModuleTests
         {
             b.RegisterInstance(Mock.Of<IConnectionOutput>()).As<IConnectionOutput>();
             b.RegisterInstance(NullLoggerFactory.Instance).As<ILoggerFactory>();
+            b.RegisterInstance(new ConfigurationBuilder().Build()).As<IConfiguration>();
         });
 
         var handlers = scope.Resolve<IMessageHandler[]>();
@@ -111,6 +114,7 @@ public class BackendModuleTests
         {
             b.RegisterInstance(Mock.Of<IConnectionOutput>()).As<IConnectionOutput>();
             b.RegisterInstance(factory.Object).As<ILoggerFactory>();
+            b.RegisterInstance(new ConfigurationBuilder().Build()).As<IConfiguration>();
         });
 
         scope.Resolve<IMessageDispatcher>();

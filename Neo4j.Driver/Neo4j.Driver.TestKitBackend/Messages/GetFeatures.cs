@@ -33,10 +33,12 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
     private static readonly string[] SupportedFeatures =
     [
         "Feature:API:BookmarkManager",
+        "Feature:API:Driver.IsEncrypted",
         "Feature:API:Driver.VerifyConnectivity",
         "Feature:API:Driver:GetServerInfo",
         "Feature:API:RetryableExceptions",
         "Feature:API:SSLClientCertificate",
+        "Feature:API:SSLConfig",
         "Feature:API:SSLSchemes",
         "Feature:API:Type.Temporal",
         "Feature:API:Type.UUID",

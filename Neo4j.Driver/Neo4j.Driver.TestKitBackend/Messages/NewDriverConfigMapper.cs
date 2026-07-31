@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Extensions.Configuration;
 using Neo4j.Driver.TestKitBackend.Certificates;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
@@ -45,15 +46,18 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
     private readonly ICertificateLoader _certificateLoader;
     private readonly IRegistry _registry;
     private readonly IContinuationCoordinator _coordinator;
+    private readonly IConfiguration _configuration;
 
     public NewDriverConfigMapper(
         ICertificateLoader certificateLoader,
         IRegistry registry,
-        IContinuationCoordinator coordinator)
+        IContinuationCoordinator coordinator,
+        IConfiguration configuration)
     {
         _certificateLoader = certificateLoader;
         _registry = registry;
         _coordinator = coordinator;
+        _configuration = configuration;
     }
 
     public void Apply(NewDriverRequest request, IConfigBuilder builder)
@@ -124,7 +128,7 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
         }
     }
 
-    private static void ApplyTrustedCertificates(NewDriverRequest request, IConfigBuilder builder)
+    private void ApplyTrustedCertificates(NewDriverRequest request, IConfigBuilder builder)
     {
         if (!request.TrustedCertificates.IsSpecified(out var certificates))
         {
@@ -138,7 +142,23 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
             _ => CertificateTrustRule.TrustList
         };
 
-        builder.WithCertificateTrustRule(rule, rule == CertificateTrustRule.TrustList ? certificates : null);
+        builder.WithCertificateTrustRule(
+            rule,
+            rule == CertificateTrustRule.TrustList 
+                ? certificates!.Select(PrefixCaPath).ToList() 
+                : null);
+    }
+
+    // Testkit sends bare file names; the CI harness mounts the certificates and points
+    // TK_CUSTOM_CA_PATH at them (trailing separator included), so the names only resolve with
+    // that prefix applied.
+    private string PrefixCaPath(string certificateFileName)
+    {
+        var caPath = _configuration["TK_CUSTOM_CA_PATH"] ??
+            throw new InvalidOperationException(
+                "trustedCertificates names a custom CA but TK_CUSTOM_CA_PATH is not configured.");
+
+        return $"{caPath}{certificateFileName}";
     }
 
     private static void ApplyNotifications(NewDriverRequest request, IConfigBuilder builder)
@@ -168,7 +188,7 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
     // The remaining fields are either a direct name match (With{PropertyName}) or follow the *Ms
     // convention (strip "Ms", convert to a TimeSpan, With{Stripped}). If IConfigBuilder has no
     // matching method, the field is silently skipped - it's either not driver config (e.g. Uri) or
-    // not wired up yet (e.g. resolverRegistered).
+    // deliberately unsupported (e.g. domainNameResolverRegistered - the driver has no DNS seam).
     private static void ApplyRemainingProperties(NewDriverRequest request, IConfigBuilder builder)
     {
         foreach (var property in typeof(NewDriverRequest).GetProperties())
