@@ -16,7 +16,9 @@
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Cypher;
+using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Xunit;
@@ -26,6 +28,13 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 public class TransactionRunHandlerTests
 {
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<TransactionRunHandler>();
+
+    public TransactionRunHandlerTests()
+    {
+        // The handler runs detached and hands its response back through the coordinator's
+        // continuation - a mocked coordinator would never complete it.
+        _autoMocker.Use<IContinuationCoordinator>(new ContinuationCoordinator());
+    }
 
     [Fact]
     public async Task Runs_the_query_and_responds_with_the_cursor_id_and_keys()
@@ -95,5 +104,34 @@ public class TransactionRunHandlerTests
             t => t.RunAsync("RETURN $p AS n", It.Is<IDictionary<string, object>>(
                 p => p.Count == 1 && Equals(p["p"], 1L))),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task Writes_the_mapped_driver_error_when_run_throws()
+    {
+        var exception = new ClientException("boom");
+
+        _autoMocker.GetMock<ICypherToNativeMapper>()
+            .Setup(m => m.Map((Dictionary<string, ICypherValue>?)null))
+            .Returns(new Dictionary<string, object>());
+
+        var txMock = _autoMocker.GetMock<IAsyncTransaction>();
+        txMock
+            .Setup(t => t.RunAsync("RETURN 1 AS n", It.IsAny<IDictionary<string, object>>()))
+            .ThrowsAsync(exception);
+
+        var errorResponse = new DriverErrorResponse { Id = "error-1", ErrorType = "ClientError" };
+        _autoMocker.GetMock<IDriverErrorMapper>().Setup(m => m.Map(exception)).Returns(errorResponse);
+
+        var handler = _autoMocker.CreateInstance<TransactionRunHandler>();
+        var request = new TransactionRunRequest
+        {
+            Tx = new RegistryObject<IAsyncTransaction>("tx-1", txMock.Object),
+            Cypher = "RETURN 1 AS n"
+        };
+
+        await handler.ProcessAsync(request);
+
+        _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(errorResponse), Times.Once);
     }
 }

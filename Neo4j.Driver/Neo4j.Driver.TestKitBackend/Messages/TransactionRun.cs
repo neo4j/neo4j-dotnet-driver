@@ -15,8 +15,10 @@
 
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -28,26 +30,29 @@ internal record TransactionRunRequest : IProtocolMessage
     public Dictionary<string, ICypherValue>? Params { get; init; }
 }
 
-internal class TransactionRunHandler : MessageHandler<TransactionRunRequest>
+// Detached because the driver invokes security callbacks from its receive path — a server
+// FAILURE arriving during the run must be able to call back into testkit (spec §6).
+internal class TransactionRunHandler : DetachedOperationHandler<TransactionRunRequest>
 {
     private readonly IRegistry _registry;
-    private readonly IResponseWriter _responseWriter;
     private readonly ICypherToNativeMapper _cypherToNativeMapper;
     private readonly ILogger _logger;
 
     public TransactionRunHandler(
         IRegistry registry,
+        IContinuationCoordinator coordinator,
         IResponseWriter responseWriter,
         ICypherToNativeMapper cypherToNativeMapper,
+        IDriverErrorMapper driverErrorMapper,
         ILogger logger)
+        : base(coordinator, responseWriter, driverErrorMapper, logger)
     {
         _registry = registry;
-        _responseWriter = responseWriter;
         _cypherToNativeMapper = cypherToNativeMapper;
         _logger = logger;
     }
 
-    public override async Task ProcessAsync(TransactionRunRequest message)
+    protected override async Task<IProtocolMessage> ExecuteAsync(TransactionRunRequest message)
     {
         _logger.LogDebug(
             "Running query '{Cypher}' on transaction with id '{TxId}'",
@@ -60,6 +65,6 @@ internal class TransactionRunHandler : MessageHandler<TransactionRunRequest>
         var registeredResult = _registry.Register(cursor);
         _logger.LogDebug("Query result id '{ResultId}' returned keys: {@keys}", registeredResult.Id, keys);
 
-        await _responseWriter.WriteAsync(new ResultResponse(registeredResult.Id, keys));
+        return new ResultResponse(registeredResult.Id, keys);
     }
 }

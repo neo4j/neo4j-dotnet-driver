@@ -15,7 +15,9 @@
 
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -25,21 +27,26 @@ internal record TransactionRollbackRequest : IProtocolMessage
     public required RegistryObject<IAsyncTransaction> Tx { get; init; }
 }
 
-internal class TransactionRollbackHandler : MessageHandler<TransactionRollbackRequest>
+// Detached because the driver invokes security callbacks from its receive path — a server
+// FAILURE arriving during the rollback must be able to call back into testkit (spec §6).
+internal class TransactionRollbackHandler : DetachedOperationHandler<TransactionRollbackRequest>
 {
-    private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
-    public TransactionRollbackHandler(IResponseWriter responseWriter, ILogger logger)
+    public TransactionRollbackHandler(
+        IContinuationCoordinator coordinator,
+        IResponseWriter responseWriter,
+        IDriverErrorMapper driverErrorMapper,
+        ILogger logger)
+        : base(coordinator, responseWriter, driverErrorMapper, logger)
     {
-        _responseWriter = responseWriter;
         _logger = logger;
     }
 
-    public override async Task ProcessAsync(TransactionRollbackRequest message)
+    protected override async Task<IProtocolMessage> ExecuteAsync(TransactionRollbackRequest message)
     {
         await message.Tx.Object.RollbackAsync();
         _logger.LogDebug("Rolled back transaction with id '{Id}'", message.Tx.Id);
-        await _responseWriter.WriteAsync(new TransactionResponse(message.Tx.Id));
+        return new TransactionResponse(message.Tx.Id);
     }
 }
