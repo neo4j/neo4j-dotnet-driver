@@ -13,11 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Cypher;
+using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Summary;
@@ -29,12 +30,22 @@ public class ResultConsumeHandlerTests
 {
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<ResultConsumeHandler>();
 
+    public ResultConsumeHandlerTests()
+    {
+        // The handler runs detached and hands its response back through the coordinator's
+        // continuation - a mocked coordinator would never complete it.
+        _autoMocker.Use<IContinuationCoordinator>(new ContinuationCoordinator());
+    }
+
     [Fact]
-    public async Task Lets_a_driver_exception_from_consume_propagate()
+    public async Task Writes_the_mapped_driver_error_when_consume_throws()
     {
         var cursorMock = _autoMocker.GetMock<IResultCursor>();
         var exception = new ClientException("boom");
         cursorMock.Setup(c => c.ConsumeAsync()).ThrowsAsync(exception);
+
+        var errorResponse = new DriverErrorResponse { Id = "error-1", ErrorType = "ClientError" };
+        _autoMocker.GetMock<IDriverErrorMapper>().Setup(m => m.Map(exception)).Returns(errorResponse);
 
         var handler = _autoMocker.CreateInstance<ResultConsumeHandler>();
         var request = new ResultConsumeRequest
@@ -42,9 +53,9 @@ public class ResultConsumeHandlerTests
             Result = new RegistryObject<IResultCursor>("result-1", cursorMock.Object)
         };
 
-        var act = () => handler.ProcessAsync(request);
+        await handler.ProcessAsync(request);
 
-        await act.Should().ThrowAsync<ClientException>();
+        _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(errorResponse), Times.Once);
     }
 
     [Fact]

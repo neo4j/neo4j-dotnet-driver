@@ -13,8 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Summary;
 
@@ -38,21 +41,26 @@ internal record SummaryResponse(
     long? ResultConsumedAfter,
     IReadOnlyList<SummaryGqlStatusObjectResponse> GqlStatusObjects) : IProtocolMessage;
 
-internal class ResultConsumeHandler : MessageHandler<ResultConsumeRequest>
+// Detached because consuming drains the result from the server, which may call back into
+// testkit mid-operation (auth manager token refresh, spec §6).
+internal class ResultConsumeHandler : DetachedOperationHandler<ResultConsumeRequest>
 {
     private readonly ISummaryMapper _summaryMapper;
-    private readonly IResponseWriter _responseWriter;
 
-    public ResultConsumeHandler(ISummaryMapper summaryMapper, IResponseWriter responseWriter)
+    public ResultConsumeHandler(
+        ISummaryMapper summaryMapper,
+        IContinuationCoordinator coordinator,
+        IResponseWriter responseWriter,
+        IDriverErrorMapper driverErrorMapper,
+        ILogger logger)
+        : base(coordinator, responseWriter, driverErrorMapper, logger)
     {
         _summaryMapper = summaryMapper;
-        _responseWriter = responseWriter;
     }
 
-    public override async Task ProcessAsync(ResultConsumeRequest message)
+    protected override async Task<IProtocolMessage> ExecuteAsync(ResultConsumeRequest message)
     {
-        // A driver exception during consume propagates past this point (handled by MessageLoop).
         var summary = await message.Result.Object.ConsumeAsync();
-        await _responseWriter.WriteAsync(_summaryMapper.Map(summary));
+        return _summaryMapper.Map(summary);
     }
 }

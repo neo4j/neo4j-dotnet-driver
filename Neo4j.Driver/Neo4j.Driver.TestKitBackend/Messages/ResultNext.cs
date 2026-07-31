@@ -13,9 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -29,28 +32,33 @@ internal record RecordResponse(IReadOnlyList<ICypherValue> Values) : IProtocolMe
 
 internal record NullRecordResponse : IProtocolMessage;
 
-internal class ResultNextHandler : MessageHandler<ResultNextRequest>
+// Detached because fetching can pull from the server, which may call back into testkit
+// mid-operation (auth manager token refresh, spec §6).
+internal class ResultNextHandler : DetachedOperationHandler<ResultNextRequest>
 {
     private readonly INativeToCypherMapper _mapper;
-    private readonly IResponseWriter _responseWriter;
 
-    public ResultNextHandler(INativeToCypherMapper mapper, IResponseWriter responseWriter)
+    public ResultNextHandler(
+        INativeToCypherMapper mapper,
+        IContinuationCoordinator coordinator,
+        IResponseWriter responseWriter,
+        IDriverErrorMapper driverErrorMapper,
+        ILogger logger)
+        : base(coordinator, responseWriter, driverErrorMapper, logger)
     {
         _mapper = mapper;
-        _responseWriter = responseWriter;
     }
 
-    public override async Task ProcessAsync(ResultNextRequest message)
+    protected override async Task<IProtocolMessage> ExecuteAsync(ResultNextRequest message)
     {
         var cursor = message.Result.Object;
         if (!await cursor.FetchAsync())
         {
-            await _responseWriter.WriteAsync(new NullRecordResponse());
-            return;
+            return new NullRecordResponse();
         }
 
         var record = cursor.Current;
         var values = record.Keys.Select(key => _mapper.Map(record[key])).ToList();
-        await _responseWriter.WriteAsync(new RecordResponse(values));
+        return new RecordResponse(values);
     }
 }
