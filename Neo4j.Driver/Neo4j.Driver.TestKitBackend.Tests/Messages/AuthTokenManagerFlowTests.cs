@@ -71,7 +71,9 @@ public class AuthTokenManagerFlowTests
         var callbackRequest = Assert.IsType<AuthTokenManagerGetAuthRequest>(await WithTimeoutAsync(openRequestTask));
         Assert.Equal("manager-1", callbackRequest.AuthTokenManagerId);
 
-        var completedHandler = new AuthTokenManagerGetAuthCompletedHandler(coordinator, responseWriterMock.Object);
+        var completedHandler = new CallbackCompletedHandler<AuthTokenManagerGetAuthCompletedRequest>(
+            coordinator,
+            responseWriterMock.Object);
         var completedTask = completedHandler.ProcessAsync(
             new AuthTokenManagerGetAuthCompletedRequest
             {
@@ -139,7 +141,7 @@ public class AuthTokenManagerFlowTests
         // so none is sent.
         Assert.Equal(new AuthorizationToken("basic", "neo4j", "pass"), callbackRequest.Auth);
 
-        var completedHandler = new AuthTokenManagerHandleSecurityExceptionCompletedHandler(
+        var completedHandler = new CallbackCompletedHandler<AuthTokenManagerHandleSecurityExceptionCompletedRequest>(
             coordinator,
             responseWriterMock.Object);
         var completedTask = completedHandler.ProcessAsync(

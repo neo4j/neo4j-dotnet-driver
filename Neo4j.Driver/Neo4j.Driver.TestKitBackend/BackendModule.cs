@@ -17,6 +17,7 @@ using System.Reflection;
 using Autofac;
 using Autofac.Core;
 using Autofac.Core.Registration;
+using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Infrastructure;
 using Module = Autofac.Module;
 
@@ -39,6 +40,15 @@ internal class BackendModule : Module
                 RegistrationLifetime.Singleton => registration.SingleInstance(),
                 _ => throw new ArgumentOutOfRangeException()
             };
+        }
+
+        // Callback completion messages share one generic handler; its closed versions have no
+        // concrete class for the scan above to find, so each completion type is wired here.
+        foreach (var completionType in RegisterableTypes(Assembly.GetExecutingAssembly())
+                     .Where(t => t.IsAssignableTo(typeof(ICallbackCompletion))))
+        {
+            builder.RegisterType(typeof(CallbackCompletedHandler<>).MakeGenericType(completionType))
+                .AsImplementedInterfaces();
         }
     }
 

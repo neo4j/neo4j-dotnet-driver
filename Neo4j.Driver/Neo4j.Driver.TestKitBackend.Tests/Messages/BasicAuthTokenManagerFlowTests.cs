@@ -70,7 +70,9 @@ public class BasicAuthTokenManagerFlowTests
         var callbackRequest = Assert.IsType<BasicAuthTokenProviderRequest>(await WithTimeoutAsync(openRequestTask));
         Assert.Equal("manager-1", callbackRequest.BasicAuthTokenManagerId);
 
-        var completedHandler = new BasicAuthTokenProviderCompletedHandler(coordinator, responseWriterMock.Object);
+        var completedHandler = new CallbackCompletedHandler<BasicAuthTokenProviderCompletedRequest>(
+            coordinator,
+            responseWriterMock.Object);
         var completedTask = completedHandler.ProcessAsync(
             new BasicAuthTokenProviderCompletedRequest
             {

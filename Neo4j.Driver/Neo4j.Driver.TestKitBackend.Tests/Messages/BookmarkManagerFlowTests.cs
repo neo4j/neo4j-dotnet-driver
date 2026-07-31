@@ -75,7 +75,9 @@ public class BookmarkManagerFlowTests
         var callbackRequest = Assert.IsType<BookmarksSupplierRequest>(await WithTimeoutAsync(openRequestTask));
         Assert.Equal("bm-1", callbackRequest.BookmarkManagerId);
 
-        var completedHandler = new BookmarksSupplierCompletedHandler(_coordinator, _responseWriterMock.Object);
+        var completedHandler = new CallbackCompletedHandler<BookmarksSupplierCompletedRequest>(
+            _coordinator,
+            _responseWriterMock.Object);
         var completedTask = completedHandler.ProcessAsync(
             new BookmarksSupplierCompletedRequest
             {
@@ -110,7 +112,9 @@ public class BookmarkManagerFlowTests
         Assert.Equal("bm-1", callbackRequest.BookmarkManagerId);
         callbackRequest.Bookmarks.Should().BeEquivalentTo("bm:new1", "bm:new2");
 
-        var completedHandler = new BookmarksConsumerCompletedHandler(_coordinator, _responseWriterMock.Object);
+        var completedHandler = new CallbackCompletedHandler<BookmarksConsumerCompletedRequest>(
+            _coordinator,
+            _responseWriterMock.Object);
         var completedTask = completedHandler.ProcessAsync(
             new BookmarksConsumerCompletedRequest { RequestId = callbackRequest.Id });
 

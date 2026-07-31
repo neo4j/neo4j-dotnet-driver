@@ -81,7 +81,9 @@ public class BearerAuthTokenManagerFlowTests
         var callbackRequest = Assert.IsType<BearerAuthTokenProviderRequest>(await WithTimeoutAsync(openRequestTask));
         Assert.Equal("manager-1", callbackRequest.BearerAuthTokenManagerId);
 
-        var completedHandler = new BearerAuthTokenProviderCompletedHandler(_coordinator, _responseWriterMock.Object);
+        var completedHandler = new CallbackCompletedHandler<BearerAuthTokenProviderCompletedRequest>(
+            _coordinator,
+            _responseWriterMock.Object);
         var completedTask = completedHandler.ProcessAsync(
             new BearerAuthTokenProviderCompletedRequest
             {
@@ -113,7 +115,9 @@ public class BearerAuthTokenManagerFlowTests
 
         var callbackRequest = Assert.IsType<BearerAuthTokenProviderRequest>(await WithTimeoutAsync(openRequestTask));
 
-        var completedHandler = new BearerAuthTokenProviderCompletedHandler(_coordinator, _responseWriterMock.Object);
+        var completedHandler = new CallbackCompletedHandler<BearerAuthTokenProviderCompletedRequest>(
+            _coordinator,
+            _responseWriterMock.Object);
         var completedTask = completedHandler.ProcessAsync(
             new BearerAuthTokenProviderCompletedRequest
             {

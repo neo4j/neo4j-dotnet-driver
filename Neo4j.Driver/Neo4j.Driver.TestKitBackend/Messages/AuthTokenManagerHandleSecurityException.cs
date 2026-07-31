@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Serialization;
@@ -29,32 +28,8 @@ internal record AuthTokenManagerHandleSecurityExceptionRequest(
     IWireType<AuthorizationToken> Auth,
     string ErrorCode) : IProtocolMessage;
 
-internal record AuthTokenManagerHandleSecurityExceptionCompletedRequest : IProtocolMessage
+internal record AuthTokenManagerHandleSecurityExceptionCompletedRequest : ICallbackCompletion
 {
     public required string RequestId { get; init; }
     public required bool Handled { get; init; }
-}
-
-// No direct response of its own — the reply is whatever the resumed driver operation produces
-// next (its terminal response or another callback request), per spec §6.
-internal class AuthTokenManagerHandleSecurityExceptionCompletedHandler
-    : MessageHandler<AuthTokenManagerHandleSecurityExceptionCompletedRequest>
-{
-    private readonly IContinuationCoordinator _coordinator;
-    private readonly IResponseWriter _responseWriter;
-
-    public AuthTokenManagerHandleSecurityExceptionCompletedHandler(
-        IContinuationCoordinator coordinator,
-        IResponseWriter responseWriter)
-    {
-        _coordinator = coordinator;
-        _responseWriter = responseWriter;
-    }
-
-    public override async Task ProcessAsync(AuthTokenManagerHandleSecurityExceptionCompletedRequest message)
-    {
-        var responseTask = _coordinator.WaitForNextResponseAsync();
-        _coordinator.CompleteCallback(message.RequestId, message);
-        await _responseWriter.WriteAsync(await responseTask);
-    }
 }

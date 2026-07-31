@@ -20,6 +20,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
@@ -72,6 +73,32 @@ public class BackendModuleTests
         var resolve = () => scope.Resolve<IMessageDispatcher>();
 
         resolve.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Every_callback_completion_message_dispatches_to_the_shared_completed_handler()
+    {
+        var container = BuildContainer();
+        using var scope = container.BeginLifetimeScope(b =>
+        {
+            b.RegisterInstance(Mock.Of<IConnectionOutput>()).As<IConnectionOutput>();
+            b.RegisterInstance(NullLoggerFactory.Instance).As<ILoggerFactory>();
+        });
+
+        var handlers = scope.Resolve<IMessageHandler[]>();
+
+        var completionTypes = typeof(BackendModule).Assembly.GetTypes()
+            .Where(t => t is { IsClass: true } && t.IsAssignableTo(typeof(ICallbackCompletion)))
+            .ToList();
+
+        // If this is empty the loop below proves nothing - the callback surface is real.
+        completionTypes.Should().NotBeEmpty();
+
+        foreach (var completionType in completionTypes)
+        {
+            var expectedHandlerType = typeof(CallbackCompletedHandler<>).MakeGenericType(completionType);
+            handlers.Should().ContainSingle(h => h.GetType() == expectedHandlerType);
+        }
     }
 
     [Fact]
