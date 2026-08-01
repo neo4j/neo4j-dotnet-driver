@@ -51,8 +51,6 @@ internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCer
 
     public override async Task ProcessAsync(NewClientCertificateProviderRequest message)
     {
-        // The provider needs its own registry id for the callback requests, which only exists
-        // once the provider is registered — hence the captured local.
         var providerId = "";
         IClientCertificateProvider provider =
             new TestKitClientCertificateProvider(() => ProvideCertificateAsync(providerId));
@@ -64,8 +62,6 @@ internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCer
         await _responseWriter.WriteAsync(new ClientCertificateProviderResponse(registered.Id));
     }
 
-    // Runs on a driver thread mid-operation: borrows the open request's response slot to send
-    // the callback request, then pauses until the ...Completed handler resolves it (spec §6).
     private async ValueTask<X509Certificate> ProvideCertificateAsync(string providerId)
     {
         var pending = _coordinator.RegisterCallback();
@@ -77,9 +73,6 @@ internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCer
     }
 }
 
-// The driver-facing face of a testkit-side client certificate provider: every ask is relayed to
-// testkit as a callback request, so a certificate rotated on the testkit side is picked up by
-// the next connection.
 internal class TestKitClientCertificateProvider : IClientCertificateProvider
 {
     private readonly Func<ValueTask<X509Certificate>> _getCertificate;

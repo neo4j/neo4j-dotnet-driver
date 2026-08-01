@@ -28,8 +28,6 @@ internal class ShortSourceContextEnricher : ILogEventEnricher
             return;
         }
 
-        // Brackets and leading space live here rather than in the template, so an absent
-        // SourceContext leaves no " []" gap; the template renders this after the message.
         var shortName = sourceContext[(sourceContext.LastIndexOf('.') + 1)..];
         logEvent.AddPropertyIfAbsent(new LogEventProperty("SourceContextShort", new ScalarValue($" [{shortName}]")));
     }

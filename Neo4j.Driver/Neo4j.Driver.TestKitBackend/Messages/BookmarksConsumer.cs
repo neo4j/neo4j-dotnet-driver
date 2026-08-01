@@ -18,9 +18,6 @@ using Neo4j.Driver.TestKitBackend.Dispatch;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-// Backend → testkit callback (spec §6): the bookmark manager is notifying testkit's consumer of
-// newly received bookmarks. Sent in place of the open request's response; Id is the correlation
-// token testkit echoes back.
 internal record BookmarksConsumerRequest(
     string Id,
     string BookmarkManagerId,

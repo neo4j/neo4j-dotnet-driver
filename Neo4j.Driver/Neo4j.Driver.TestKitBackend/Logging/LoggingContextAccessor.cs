@@ -15,7 +15,6 @@
 
 namespace Neo4j.Driver.TestKitBackend.Logging;
 
-// The process-wide Serilog enricher and the per-connection publishers must share one instance.
 [RegistrationLifetime(RegistrationLifetime.Singleton)]
 internal class LoggingContextAccessor : ILoggingContextAccessor
 {

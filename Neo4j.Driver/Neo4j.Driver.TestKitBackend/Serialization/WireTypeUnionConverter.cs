@@ -18,9 +18,6 @@ using System.Text.Json.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Serialization;
 
-// Shared envelope read/write for every open union (messages, cypher values, ...): the concrete
-// type isn't known at the declaration site, only from the envelope's "name" at parse time.
-// Subclasses stay concrete (not this class generic) so DI keeps a distinct resolver per union.
 internal abstract class WireTypeUnionConverter<TUnion> : JsonConverter<TUnion>, IProtocolJsonConverter
     where TUnion : IWireType
 {
@@ -41,7 +38,7 @@ internal abstract class WireTypeUnionConverter<TUnion> : JsonConverter<TUnion>, 
             throw new TestKitProtocolException("Wire type envelope is missing a string \"name\".");
         }
 
-        var name = nameElement.GetString()!; // we know nameElement.ValueKind == JsonValueKind.String
+        var name = nameElement.GetString()!;
         var concreteType = _resolver.GetTypeByName(name);
 
         var dataJson = root.TryGetProperty("data", out var dataElement)

@@ -59,10 +59,6 @@ public class BackendModuleTests
     {
         var container = BuildContainer();
 
-        // The connection handler registers the transport-bound output into each connection
-        // scope, and the host supplies ILoggerFactory (which LoggerMiddleware resolves to
-        // satisfy plain ILogger parameters) and IConfiguration; emulate them so the handlers'
-        // dependencies can resolve.
         using var scope = container.BeginLifetimeScope(b =>
         {
             b.RegisterInstance(Mock.Of<IConnectionOutput>()).As<IConnectionOutput>();
@@ -70,8 +66,6 @@ public class BackendModuleTests
             b.RegisterInstance(new ConfigurationBuilder().Build()).As<IConfiguration>();
         });
 
-        // Constructs all handlers and builds the type→handler map, so this throws if any
-        // handler has an unresolvable dependency or two handlers claim one message type.
         var resolve = () => scope.Resolve<IMessageDispatcher>();
 
         resolve.Should().NotThrow();
@@ -94,7 +88,6 @@ public class BackendModuleTests
             .Where(t => t is { IsClass: true } && t.IsAssignableTo(typeof(ICallbackCompletion)))
             .ToList();
 
-        // If this is empty the loop below proves nothing - the callback surface is real.
         completionTypes.Should().NotBeEmpty();
 
         foreach (var completionType in completionTypes)

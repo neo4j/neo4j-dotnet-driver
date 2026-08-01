@@ -15,9 +15,6 @@
 
 namespace Neo4j.Driver.TestKitBackend.Logging;
 
-// Bridges the per-connection ILoggingContext to the process-wide Serilog enricher: the connection
-// handler publishes its scope's context at the top of the connection's async flow, and anything
-// logging within that flow (and only that flow) sees it via GetCurrent.
 internal interface ILoggingContextAccessor
 {
     void Publish(ILoggingContext context);

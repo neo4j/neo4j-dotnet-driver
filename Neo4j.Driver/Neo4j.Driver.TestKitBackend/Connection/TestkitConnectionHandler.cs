@@ -51,8 +51,6 @@ internal class TestkitConnectionHandler : ConnectionHandler
         var connectionId = _connectionIdProvider.GetConnectionId();
         connection.ConnectionId = connectionId;
 
-        // leaveOpen: we own these reader/writer wrappers, but Kestrel owns the underlying transport
-        // pipe, so disposing them must not complete the pipe.
         var reader = new StreamReader(connection.Transport.Input.AsStream(leaveOpen: true), Encoding.UTF8);
         var writer = new StreamWriter(connection.Transport.Output.AsStream(leaveOpen: true), new UTF8Encoding(false))
         {
@@ -62,7 +60,6 @@ internal class TestkitConnectionHandler : ConnectionHandler
         var input = _inputFactory.Create(reader);
         var output = _outputFactory.Create(writer);
 
-        // DI scope per connection == per test; the transport-bound input/output live only here.
         await using var scope = _rootScope.BeginLifetimeScope(builder =>
         {
             builder.RegisterInstance(input).As<IConnectionInput>();

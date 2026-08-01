@@ -17,8 +17,6 @@ using Neo4j.Driver.TestKitBackend.Dispatch;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-// Error originating from test/client code rather than the driver (spec §8) — currently only
-// produced by the retryable flow when RetryableNegative carries an empty errorId.
 internal record FrontendErrorResponse : IProtocolMessage
 {
     public string Msg { get; init; } = "";

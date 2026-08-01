@@ -15,8 +15,6 @@
 
 namespace Neo4j.Driver.TestKitBackend.Connection;
 
-// The adapter that confines TextReader to the composition edge; it does not own the reader's
-// lifetime (the connection handler disposes the wrappers it creates).
 internal class LineReader : ILineReader
 {
     private readonly TextReader _reader;

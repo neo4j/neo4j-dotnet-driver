@@ -28,9 +28,6 @@ internal interface IRetryableTransactionRequest
     RegistryObject<IAsyncSession> Session { get; }
 }
 
-// Shared flow for SessionReadTransaction/SessionWriteTransaction (spec §7); subclasses supply
-// which driver transaction-function API to run. Each attempt pauses after sending RetryableTry
-// and resumes when RetryablePositive/RetryableNegative resolves its outcome.
 internal abstract class RetryableTransactionHandler<T> : DetachedOperationHandler<T>
     where T : IProtocolMessage, IRetryableTransactionRequest
 {

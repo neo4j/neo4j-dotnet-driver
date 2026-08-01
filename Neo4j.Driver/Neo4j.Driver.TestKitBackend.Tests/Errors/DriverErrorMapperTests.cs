@@ -83,9 +83,6 @@ public class DriverErrorMapperTests
         Assert.Null(cause.Cause);
     }
 
-    // Config-validation errors (e.g. a +s scheme combined with explicit encryption settings)
-    // surface from the driver as ArgumentException, not Neo4jException, but testkit still
-    // expects a DriverError (spec §8 table: ArgumentException → ArgumentError).
     [Fact]
     public void Maps_an_argument_exception_to_a_non_retryable_ArgumentError()
     {

@@ -27,8 +27,6 @@ internal record TransactionCommitRequest : IProtocolMessage
     public required RegistryObject<IAsyncTransaction> Tx { get; init; }
 }
 
-// Detached because the driver invokes security callbacks from its receive path — a server
-// FAILURE arriving during the commit must be able to call back into testkit (spec §6).
 internal class TransactionCommitHandler : DetachedOperationHandler<TransactionCommitRequest>
 {
     private readonly ILogger _logger;

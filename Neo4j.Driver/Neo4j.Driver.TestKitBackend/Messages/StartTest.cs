@@ -77,10 +77,8 @@ internal class StartTestHandler : MessageHandler<StartTestRequest>
             response = new RunTestResponse();
             await _responseWriter.WriteAsync(response);
 
-            // everything after this point is logging from the test execution
             _logger.LogDebug("START TEST {TestName}", message.TestName);
 
-            // automatically log the test end when the test lifetime ends
             var endTestMsg = $"END TEST {message.TestName}";
             var endTestLogger = _loggingDisposableFactory.GetLoggingDisposable("Test closedown", endTestMsg);
             _registry.Register(endTestLogger);

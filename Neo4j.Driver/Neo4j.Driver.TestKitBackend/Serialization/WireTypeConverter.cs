@@ -18,10 +18,6 @@ using System.Text.Json.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Serialization;
 
-// Statically-known wire values are declared as IWireType<T> and arrive wrapped in their own
-// {"name","data"} envelope, e.g. AuthorizationToken inside NewDriverRequest. The converter
-// claims the interface, never T itself, so binding data as T with the same options cannot
-// re-enter this converter — enveloped values nest to any depth with no options cloning.
 internal class WireTypeConverterFactory : JsonConverterFactory, IProtocolJsonConverter
 {
     private readonly IWireTypeNameProvider _wireTypeNameProvider;
@@ -66,7 +62,7 @@ internal class WireTypeConverter<T> : JsonConverter<IWireType<T>> where T : IWir
             throw new TestKitProtocolException("Wire type envelope is missing a string \"name\".");
         }
 
-        var name = nameElement.GetString()!; // we know nameElement.ValueKind == JsonValueKind.String
+        var name = nameElement.GetString()!;
         if (name != _expectedName)
         {
             throw new TestKitProtocolException($"Expected wire type \"{_expectedName}\", got \"{name}\".");
@@ -92,8 +88,6 @@ internal class WireTypeConverter<T> : JsonConverter<IWireType<T>> where T : IWir
         writer.WriteString("name", _expectedName);
         writer.WritePropertyName("data");
 
-        // Serializing as the concrete T (the converter claims only the interface) writes the
-        // data without re-entering this converter.
         JsonSerializer.Serialize(writer, (T)value, options);
         writer.WriteEndObject();
     }

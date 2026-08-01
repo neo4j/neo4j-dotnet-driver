@@ -21,11 +21,6 @@ using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
-// NewDriver arrives with every documented field on the wire (nullable ones are sent as
-// explicit nulls), and UnmappedMemberHandling.Disallow rejects anything the record doesn't
-// declare - so the record must declare the full protocol-spec §4.1 field list even before
-// the handler consumes it. Payloads here go through the real container so they exercise the
-// production serializer configuration.
 public class NewDriverRequestTests
 {
     private static IMessageSerializer Serializer()
@@ -38,7 +33,6 @@ public class NewDriverRequestTests
     [Fact]
     public void Deserializes_the_payload_testkit_sends_for_a_minimal_driver()
     {
-        // Captured verbatim from a stub.connectivity_check run.
         const string json =
             """
             {"name": "NewDriver", "data": {"uri": "bolt://127.0.0.1:9010", "authorizationToken":

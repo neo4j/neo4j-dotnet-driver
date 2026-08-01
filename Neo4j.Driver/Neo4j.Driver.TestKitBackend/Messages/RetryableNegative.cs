@@ -25,14 +25,9 @@ internal record RetryableNegativeRequest : IProtocolMessage
 {
     public required RegistryObject<IAsyncSession> Session { get; init; }
 
-    // Id of a stored driver error to re-raise in the work function, or "" when the failure
-    // originated in test/client code (spec §7) — plain string, not a registry-bound property,
-    // because "" is a valid value that must not be looked up.
     public required string ErrorId { get; init; }
 }
 
-// No direct response of its own — the reply is whatever the backgrounded retry flow produces
-// next (another RetryableTry if the driver retries, or a terminal error), per spec §7.
 internal class RetryableNegativeHandler : MessageHandler<RetryableNegativeRequest>
 {
     private readonly IRegistry _registry;
@@ -54,9 +49,6 @@ internal class RetryableNegativeHandler : MessageHandler<RetryableNegativeReques
         var sessionId = message.Session.Id;
         var responseTask = _coordinator.WaitForNextResponseAsync();
 
-        // The work function rethrows this inside the driver's retry loop, so the driver itself
-        // decides what happens next: a retryable stored error means another attempt (and another
-        // RetryableTry); anything else propagates as the flow's terminal error.
         var exception = message.ErrorId == ""
             ? new FrontendException("Error from client in retryable tx")
             : _registry.Get<Exception>(message.ErrorId).Object;

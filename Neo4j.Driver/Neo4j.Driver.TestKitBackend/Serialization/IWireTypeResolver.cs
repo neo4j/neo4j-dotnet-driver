@@ -15,8 +15,6 @@
 
 namespace Neo4j.Driver.TestKitBackend.Serialization;
 
-// The shape shared by every wire-name-to-type lookup (IMessageTypeMap, ICypherValueTypeMap, ...),
-// so one converter base can dispatch envelopes for any open union without knowing which union.
 internal interface IWireTypeResolver
 {
     Type GetTypeByName(string name);

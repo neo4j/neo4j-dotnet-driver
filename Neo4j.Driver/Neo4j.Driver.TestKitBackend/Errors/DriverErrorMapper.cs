@@ -19,9 +19,6 @@ using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Errors;
 
-// Builds the DriverError wire response for a driver exception (spec §8), registering the
-// exception so testkit can re-raise it later by id (RetryableNegative.errorId). Shared by the
-// message loop's catch-all and the retryable flow's terminal failure path.
 internal interface IDriverErrorMapper
 {
     DriverErrorResponse Map(Neo4jException exception);
@@ -65,9 +62,6 @@ internal class DriverErrorMapper : IDriverErrorMapper
         };
     }
 
-    // Config-validation errors (e.g. a +s scheme combined with explicit encryption settings)
-    // surface from the driver as ArgumentException, not Neo4jException, but testkit still
-    // expects a DriverError for them.
     public DriverErrorResponse Map(ArgumentException exception)
     {
         var registered = _registry.Register(exception);

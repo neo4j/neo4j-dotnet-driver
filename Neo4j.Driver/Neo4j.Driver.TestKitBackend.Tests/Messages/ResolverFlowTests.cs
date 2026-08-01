@@ -22,10 +22,6 @@ using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
-// The resolver and the completed handler only make sense as a pair — this pins the callback
-// handshake between them via a real IContinuationCoordinator, playing the roles of the driver
-// (resolving an address on a connection thread) and of the detached operation whose response
-// slot the callback borrows.
 public class ResolverFlowTests
 {
     private record TerminalResponse(string Tag) : IProtocolMessage;
@@ -40,8 +36,6 @@ public class ResolverFlowTests
 
         var openRequestTask = _coordinator.WaitForNextResponseAsync();
 
-        // The driver's resolver seam is synchronous, so Resolve blocks its calling thread —
-        // play the driver by resolving on a worker thread.
         var resolveTask = Task.Run(
             () => resolver.Resolve(ServerAddress.From("router1", 9001)),
             TestContext.Current.CancellationToken);
@@ -65,8 +59,6 @@ public class ResolverFlowTests
             new HashSet<ServerAddress> { ServerAddress.From("hosta", 9002), ServerAddress.From("hostb", 9003) },
             resolved);
 
-        // The resumed operation eventually produces the terminal response; the completed handler
-        // is the one holding the response slot, so it writes it.
         _coordinator.CompleteNextResponse(new TerminalResponse("result"));
         await WithTimeoutAsync(completedTask);
 

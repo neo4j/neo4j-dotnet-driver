@@ -41,8 +41,6 @@ internal record SummaryResponse(
     long? ResultConsumedAfter,
     IReadOnlyList<SummaryGqlStatusObjectResponse> GqlStatusObjects) : IProtocolMessage;
 
-// Detached because consuming drains the result from the server, which may call back into
-// testkit mid-operation (auth manager token refresh, spec §6).
 internal class ResultConsumeHandler : DetachedOperationHandler<ResultConsumeRequest>
 {
     private readonly ISummaryMapper _summaryMapper;

@@ -29,7 +29,7 @@ internal record SessionWriteTransactionRequest : IProtocolMessage, IRetryableTra
 {
     public required RegistryObject<IAsyncSession> Session { get; init; }
 
-    // Cypher-envelope dict on the wire; parsed but not yet converted to native values (M11).
+    // Cypher-envelope dict on the wire; parsed but not yet converted to native values.
     public Dictionary<string, JsonElement>? TxMeta { get; init; }
 
     // Absent = driver default, null = explicitly no timeout, number = timeout in ms.

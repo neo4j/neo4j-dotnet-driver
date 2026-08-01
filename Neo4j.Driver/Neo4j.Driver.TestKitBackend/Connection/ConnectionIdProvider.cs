@@ -15,7 +15,6 @@
 
 namespace Neo4j.Driver.TestKitBackend.Connection;
 
-// Process-wide counter: connection ids must stay unique across all connections.
 [RegistrationLifetime(RegistrationLifetime.Singleton)]
 internal class ConnectionIdProvider : IConnectionIdProvider
 {

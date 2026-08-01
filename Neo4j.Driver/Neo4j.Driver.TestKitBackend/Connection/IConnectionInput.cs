@@ -15,9 +15,6 @@
 
 namespace Neo4j.Driver.TestKitBackend.Connection;
 
-// The inbound request source for a single connection; the production implementation reads from the
-// connection's transport pipe. Returns the JSON body of the next request framed by
-// "#request begin"/"#request end", or null once the connection closes.
 internal interface IConnectionInput
 {
     Task<string?> ReadRequestAsync();

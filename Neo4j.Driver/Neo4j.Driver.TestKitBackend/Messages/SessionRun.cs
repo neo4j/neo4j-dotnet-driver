@@ -32,7 +32,7 @@ internal record SessionRunRequest : IProtocolMessage
 
     public Dictionary<string, ICypherValue>? Params { get; init; }
 
-    // Cypher-envelope dict on the wire; parsed but not yet converted to native values (M7).
+    // Cypher-envelope dict on the wire; parsed but not yet converted to native values.
     public Dictionary<string, JsonElement>? TxMeta { get; init; }
 
     // Absent = driver default, null = explicitly no timeout, number = timeout in ms.
@@ -41,8 +41,6 @@ internal record SessionRunRequest : IProtocolMessage
 
 internal record ResultResponse(string Id, string[]? Keys) : IProtocolMessage;
 
-// Detached because running a query can acquire a connection, which may call back into testkit
-// mid-operation (auth manager / resolver callbacks, spec §6).
 internal class SessionRunHandler : DetachedOperationHandler<SessionRunRequest>
 {
     private readonly IRegistry _registry;

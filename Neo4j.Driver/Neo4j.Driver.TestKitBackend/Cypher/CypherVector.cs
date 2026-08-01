@@ -18,8 +18,6 @@ using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.TestKitBackend.Cypher;
 
-// Not public: System.Text.Json requires exactly one public constructor to deserialize a type
-// without a JsonConstructor attribute, so a second public ctor would break inbound Params.
 internal record CypherVector(string Dtype, string Data) : ICypherValue
 {
     private static readonly Dictionary<string, Type> DtypeToType = new()

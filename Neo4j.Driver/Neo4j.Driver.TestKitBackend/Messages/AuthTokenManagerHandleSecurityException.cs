@@ -19,9 +19,6 @@ using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-// Backend → testkit callback (spec §6): the driver notified the custom manager of a security
-// exception. Sent in place of the open request's response; Id is the correlation token testkit
-// echoes back.
 internal record AuthTokenManagerHandleSecurityExceptionRequest(
     string Id,
     string AuthTokenManagerId,

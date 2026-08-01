@@ -24,8 +24,6 @@ internal interface INewSessionConfigMapper
 
 internal class NewSessionConfigMapper : INewSessionConfigMapper
 {
-    // Properties applied by the special cases below - excluded from the generic tier so they're
-    // never also (mis)matched by name against ISessionConfigBuilder there.
     private static readonly HashSet<string> HandledExplicitly =
     [
         nameof(NewSessionRequest.AccessMode),
@@ -106,9 +104,6 @@ internal class NewSessionConfigMapper : INewSessionConfigMapper
         builder.WithNotifications(severity, categories);
     }
 
-    // The remaining fields are a direct name match (With{PropertyName}). If ISessionConfigBuilder
-    // has no matching method, the field is silently skipped - it's either not session config
-    // (e.g. Driver) or not wired up yet (e.g. bookmarkManagerId).
     private static void ApplyRemainingProperties(NewSessionRequest request, ISessionConfigBuilder builder)
     {
         foreach (var property in typeof(NewSessionRequest).GetProperties())

@@ -19,8 +19,6 @@ using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-// Backend → testkit callback (spec §6): the driver needs a fresh basic auth token. Sent in place
-// of the open request's response; Id is the correlation token testkit echoes back.
 internal record BasicAuthTokenProviderRequest(string Id, string BasicAuthTokenManagerId) : IProtocolMessage;
 
 internal record BasicAuthTokenProviderCompletedRequest : ICallbackCompletion

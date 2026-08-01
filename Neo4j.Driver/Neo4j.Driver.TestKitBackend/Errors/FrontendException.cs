@@ -15,9 +15,6 @@
 
 namespace Neo4j.Driver.TestKitBackend.Errors;
 
-// Stands in for an error raised by test/client code (RetryableNegative with an empty errorId,
-// spec §7). Deliberately not a Neo4jException so the driver's retry logic never retries it; the
-// retryable flow's terminal catch maps it to FrontendError rather than DriverError.
 internal class FrontendException : Exception
 {
     public FrontendException(string message) : base(message)

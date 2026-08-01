@@ -21,10 +21,6 @@ using Org.BouncyCastle.Security;
 
 namespace Neo4j.Driver.TestKitBackend.Certificates;
 
-// Loads a client certificate from testkit's PEM file paths. Testkit's encrypted keys are
-// traditional OpenSSL DEK-Info PEMs, which System.Security.Cryptography cannot parse — hence
-// the BouncyCastle-based implementation (round-tripped through PKCS#12 so the private key is
-// usable by SslStream).
 internal interface ICertificateLoader
 {
     X509Certificate2 Load(string certfile, string keyfile, string? password);

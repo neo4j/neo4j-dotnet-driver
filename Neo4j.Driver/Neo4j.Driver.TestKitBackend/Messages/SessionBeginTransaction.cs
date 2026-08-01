@@ -36,8 +36,6 @@ internal record SessionBeginTransactionRequest : IProtocolMessage
 
 internal record TransactionResponse(string Id) : IProtocolMessage;
 
-// Detached because beginning a transaction can acquire a connection, which may call back into
-// testkit mid-operation (auth manager / resolver callbacks, spec §6).
 internal class SessionBeginTransactionHandler : DetachedOperationHandler<SessionBeginTransactionRequest>
 {
     private readonly IRegistry _registry;

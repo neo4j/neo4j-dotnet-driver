@@ -27,10 +27,6 @@ using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
-// The provider handler and the completed handler only make sense as a pair — this pins the
-// callback handshake between them via a real IContinuationCoordinator, playing the roles of the
-// driver (asking for the connection certificate) and of the detached operation whose response
-// slot the callback borrows.
 public class ClientCertificateProviderFlowTests
 {
     private record TerminalResponse(string Tag) : IProtocolMessage;
@@ -103,8 +99,6 @@ public class ClientCertificateProviderFlowTests
 
         var certificate = await WithTimeoutAsync(certificateTask.AsTask());
 
-        // The resumed operation eventually produces the terminal response; the completed handler
-        // is the one holding the response slot, so it writes it.
         _coordinator.CompleteNextResponse(new TerminalResponse("result"));
         await WithTimeoutAsync(completedTask);
 

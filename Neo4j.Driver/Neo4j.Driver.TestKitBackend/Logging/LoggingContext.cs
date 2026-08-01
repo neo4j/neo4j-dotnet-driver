@@ -17,12 +17,9 @@ using System.Collections.Immutable;
 
 namespace Neo4j.Driver.TestKitBackend.Logging;
 
-// One per connection scope: handlers mutate it, the connection handler publishes it to the
-// accessor so the process-wide enricher can find it.
 [RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
 internal class LoggingContext : ILoggingContext
 {
-    // Immutable snapshot swapped on write, so the enricher always reads a consistent dictionary.
     private ImmutableDictionary<string, object?> _entries = ImmutableDictionary<string, object?>.Empty;
 
     public void Set(string key, object? value)

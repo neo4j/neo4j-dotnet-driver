@@ -15,12 +15,6 @@
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-// Substring-matched, like the legacy backend's TestBlackList. Ported wholesale from
-// Neo4j.Driver.Tests.TestBackend.Legacy/TestBlackList.cs: parity work is the near-term goal, so
-// the rewrite should skip the same tests the legacy backend does for now. Several entries exist
-// only to paper over legacy-backend gaps (relationship/path serialization, missing resolver
-// support, ...) - auditing and trimming those is deferred until enough of the rewrite's surface
-// exists to tell which entries still apply.
 internal class SubstringSkipPolicy : ISkipPolicy
 {
     private static readonly (string Fragment, string Reason)[] Entries =

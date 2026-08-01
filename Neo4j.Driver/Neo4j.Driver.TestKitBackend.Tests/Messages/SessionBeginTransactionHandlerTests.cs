@@ -31,8 +31,6 @@ public class SessionBeginTransactionHandlerTests
 
     public SessionBeginTransactionHandlerTests()
     {
-        // The handler runs detached and hands its response back through the coordinator's
-        // continuation - a mocked coordinator would never complete it.
         _autoMocker.Use<IContinuationCoordinator>(new ContinuationCoordinator());
     }
 

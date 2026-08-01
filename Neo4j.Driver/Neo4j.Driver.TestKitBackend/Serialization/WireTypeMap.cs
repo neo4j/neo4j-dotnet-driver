@@ -15,9 +15,6 @@
 
 namespace Neo4j.Driver.TestKitBackend.Serialization;
 
-// Shared name->type dictionary building/lookup for every open-union resolver (messages, cypher
-// values, ...). Subclasses stay concrete (not this class generic) so DI keeps a distinct,
-// independently mockable interface and provider seam per union.
 internal abstract class WireTypeMap : IWireTypeResolver
 {
     private readonly IReadOnlyDictionary<string, Type> _byName;

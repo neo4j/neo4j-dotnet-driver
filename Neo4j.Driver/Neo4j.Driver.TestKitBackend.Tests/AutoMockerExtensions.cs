@@ -22,9 +22,6 @@ internal static class AutoMockerExtensions
 {
     extension(AutoMocker)
     {
-        // A fresh AutoMocker (and TestLogger) per call: AutoMocker caches mocks per type, so a
-        // shared instance would leak setups and invocations across tests and race under xunit's
-        // parallel execution.
         public static AutoMocker ForTesting<TSubject>()
         {
             var autoMocker = new AutoMocker();

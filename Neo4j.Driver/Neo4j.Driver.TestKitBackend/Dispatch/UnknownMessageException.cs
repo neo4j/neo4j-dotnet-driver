@@ -15,8 +15,6 @@
 
 namespace Neo4j.Driver.TestKitBackend.Dispatch;
 
-// Thrown when a deserialized message has no registered handler. Aborts the connection (test); the
-// connection handler logs it as the reason.
 internal class UnknownMessageException : Exception
 {
     public UnknownMessageException(Type messageType)

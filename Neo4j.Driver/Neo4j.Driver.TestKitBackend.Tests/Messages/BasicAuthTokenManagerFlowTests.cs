@@ -25,10 +25,6 @@ using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
-// The manager handler and the completed handler only make sense as a pair — this pins the
-// callback handshake between them via a real IContinuationCoordinator, playing the roles of the
-// driver (invoking the registered manager) and of the detached operation whose response slot the
-// callback borrows.
 public class BasicAuthTokenManagerFlowTests
 {
     private record TerminalResponse(string Tag) : IProtocolMessage;
@@ -61,10 +57,8 @@ public class BasicAuthTokenManagerFlowTests
         responseWriterMock.Verify(w => w.WriteAsync(new BasicAuthTokenManagerResponse("manager-1")), Times.Once);
         Assert.NotNull(manager);
 
-        // Play the detached operation whose response slot the callback borrows...
         var openRequestTask = coordinator.WaitForNextResponseAsync();
 
-        // ...and the driver asking the manager for a token mid-operation.
         var tokenTask = manager!.GetTokenAsync(TestContext.Current.CancellationToken);
 
         var callbackRequest = Assert.IsType<BasicAuthTokenProviderRequest>(await WithTimeoutAsync(openRequestTask));
@@ -85,8 +79,6 @@ public class BasicAuthTokenManagerFlowTests
         Assert.Equal("neo4j", token.Content["principal"]);
         Assert.Equal("pass", token.Content["credentials"]);
 
-        // The resumed operation eventually produces the terminal response; the completed handler
-        // is the one holding the response slot, so it writes it.
         coordinator.CompleteNextResponse(new TerminalResponse("result"));
         await WithTimeoutAsync(completedTask);
 

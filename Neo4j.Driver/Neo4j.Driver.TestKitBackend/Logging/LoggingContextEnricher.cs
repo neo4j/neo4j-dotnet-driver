@@ -36,8 +36,6 @@ internal class LoggingContextEnricher : ILogEventEnricher
             return;
         }
 
-        // Leading space instead of a template separator, so absent context leaves no gap; the
-        // template renders this after the message, at the end of the line.
         var json = JsonSerializer.Serialize(context.Current);
         logEvent.AddPropertyIfAbsent(new LogEventProperty("LoggingContext", new ScalarValue(" " + json)));
     }

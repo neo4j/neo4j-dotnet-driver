@@ -25,7 +25,6 @@ internal record AuthTokenManagerCloseRequest : IProtocolMessage
     public required string Id { get; init; }
 }
 
-// The reply is named AuthTokenManager even when closing basic/bearer managers (spec §4.2 trap).
 internal record AuthTokenManagerResponse(string Id) : IProtocolMessage;
 
 internal class AuthTokenManagerCloseHandler : MessageHandler<AuthTokenManagerCloseRequest>

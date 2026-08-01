@@ -30,8 +30,6 @@ internal record TransactionRunRequest : IProtocolMessage
     public Dictionary<string, ICypherValue>? Params { get; init; }
 }
 
-// Detached because the driver invokes security callbacks from its receive path — a server
-// FAILURE arriving during the run must be able to call back into testkit (spec §6).
 internal class TransactionRunHandler : DetachedOperationHandler<TransactionRunRequest>
 {
     private readonly IRegistry _registry;

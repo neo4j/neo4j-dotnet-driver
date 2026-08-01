@@ -19,9 +19,7 @@ namespace Neo4j.Driver.TestKitBackend.Serialization;
 
 internal class WireTypeNameProvider : IWireTypeNameProvider
 {
-    // Wire names are needed before any instance exists (building the inbound name→type map),
-    // but they are instance members so a type can override them. An uninitialized instance is
-    // safe because name implementations must never touch instance state.
+    // Deliberately uses an uninitialized instance; name implementations must never touch instance state.
     public string GetInboundTypeName(Type type)
     {
         return ((IWireType)RuntimeHelpers.GetUninitializedObject(type)).InboundTypeName;

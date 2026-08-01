@@ -19,9 +19,6 @@ using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Certificates;
 
-// The fixture PEMs are copies of testkit's tests/tls/certs/driver files: an RSA certificate,
-// its plain PKCS#1 key, and the same key as a traditional OpenSSL DEK-Info encrypted PEM
-// (password "thepassword1") - the formats the backend must actually handle.
 public class CertificateLoaderTests
 {
     private readonly CertificateLoader _loader = new();

@@ -19,13 +19,9 @@ using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-// Backend → testkit callback (spec §6): the driver needs a fresh bearer token. Sent in place
-// of the open request's response; Id is the correlation token testkit echoes back.
 internal record BearerAuthTokenProviderRequest(string Id, string BearerAuthTokenManagerId) : IProtocolMessage;
 
 // Testkit's token-plus-expiry payload; expiresInMs null/absent = the token never expires.
-// Shares its simple name with the driver's public type — the driver one is aliased where both
-// are needed.
 internal record AuthTokenAndExpiration(
     IWireType<AuthorizationToken> Auth,
     long? ExpiresInMs = null) : IWireType<AuthTokenAndExpiration>;

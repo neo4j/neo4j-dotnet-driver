@@ -19,8 +19,6 @@ using System.Text.Json.Serialization;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 namespace Neo4j.Driver.TestKitBackend.Serialization;
 
-// RegistryObject<T> is open-generic, so a factory closes RegistryObjectConverter<T> per stored
-// type. Carries the per-connection registry, so a handle ID can never resolve across tests.
 internal class RegistryObjectConverterFactory : JsonConverterFactory, IProtocolJsonConverter
 {
     private readonly IRegistry _registry;

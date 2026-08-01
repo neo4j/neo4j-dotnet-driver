@@ -32,8 +32,6 @@ internal record RecordResponse(IReadOnlyList<ICypherValue> Values) : IProtocolMe
 
 internal record NullRecordResponse : IProtocolMessage;
 
-// Detached because fetching can pull from the server, which may call back into testkit
-// mid-operation (auth manager token refresh, spec §6).
 internal class ResultNextHandler : DetachedOperationHandler<ResultNextRequest>
 {
     private readonly INativeToCypherMapper _mapper;

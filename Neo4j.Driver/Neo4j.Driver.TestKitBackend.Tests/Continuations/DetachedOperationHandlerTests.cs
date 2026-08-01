@@ -36,9 +36,6 @@ public class DetachedOperationHandlerTests
     private readonly ContinuationCoordinator _coordinator = new();
     private readonly Mock<IResponseWriter> _responseWriterMock = new();
 
-    // Plays a driver operation whose seam is synchronous end-to-end (e.g. IServerAddressResolver
-    // during routing discovery): it blocks its calling thread on a callback completion before
-    // ever yielding, so it runs entirely in the detached task's synchronous prefix.
     private class SynchronouslyBlockingHandler : DetachedOperationHandler<TestRequest>
     {
         private readonly IContinuationCoordinator _coordinator;
@@ -77,8 +74,6 @@ public class DetachedOperationHandlerTests
             Mock.Of<IDriverErrorMapper>(),
             Mock.Of<ILogger>());
 
-        // The message loop calls ProcessAsync inline; it must come back with the callback
-        // request written even though the operation is still blocked waiting for the completion.
         var processTask = Task.Run(
             () => handler.ProcessAsync(new TestRequest()),
             TestContext.Current.CancellationToken);
@@ -86,8 +81,6 @@ public class DetachedOperationHandlerTests
 
         Assert.NotNull(written);
 
-        // Play the completed handler: hold the response slot, then resolve the callback — the
-        // unblocked operation finishes and its terminal response lands in the held slot.
         var nextResponseTask = _coordinator.WaitForNextResponseAsync();
         _coordinator.CompleteCallback(written!.Id, new CallbackCompletion());
 

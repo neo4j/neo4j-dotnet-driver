@@ -24,7 +24,6 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Logging;
 
 public class TruncatingTextFormatterTests
 {
-    // Bare message so the rendered length is predictable and driven by the payload.
     private const string OutputTemplate = "{Message:l}";
 
     [Fact]

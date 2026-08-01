@@ -68,10 +68,8 @@ public class BearerAuthTokenManagerFlowTests
 
         _responseWriterMock.Verify(w => w.WriteAsync(new BearerAuthTokenManagerResponse("manager-1")), Times.Once);
 
-        // Play the detached operation whose response slot the callback borrows...
         var openRequestTask = _coordinator.WaitForNextResponseAsync();
 
-        // ...and the driver asking the manager for a token mid-operation.
         var tokenTask = manager.GetTokenAsync(TestContext.Current.CancellationToken);
 
         var callbackRequest = Assert.IsType<BearerAuthTokenProviderRequest>(await WithTimeoutAsync(openRequestTask));
@@ -93,8 +91,6 @@ public class BearerAuthTokenManagerFlowTests
         Assert.Equal("bearer", token.Content["scheme"]);
         Assert.Equal("a-token", token.Content["credentials"]);
 
-        // The resumed operation eventually produces the terminal response; the completed handler
-        // is the one holding the response slot, so it writes it.
         _coordinator.CompleteNextResponse(new TerminalResponse("result"));
         await WithTimeoutAsync(completedTask);
 
@@ -125,8 +121,6 @@ public class BearerAuthTokenManagerFlowTests
         _coordinator.CompleteNextResponse(new TerminalResponse("result"));
         await WithTimeoutAsync(completedTask);
 
-        // A second ask must be served from the cache — a provider call here would try to borrow
-        // a response slot that no longer exists.
         var secondToken = Assert.IsAssignableFrom<AuthToken>(
             await WithTimeoutAsync(manager.GetTokenAsync(TestContext.Current.CancellationToken).AsTask()));
 

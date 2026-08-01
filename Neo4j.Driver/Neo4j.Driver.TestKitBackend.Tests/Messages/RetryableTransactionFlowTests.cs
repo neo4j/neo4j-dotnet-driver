@@ -24,9 +24,6 @@ using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
-// The retryable-flow handlers only make sense as a set — these tests pin the handshakes between
-// them via a real IContinuationCoordinator (the collaboration is the point; mocking the coordinator
-// away would just re-assert the implementation).
 public class RetryableTransactionFlowTests
 {
     private readonly ContinuationCoordinator _coordinator = new();
@@ -67,8 +64,6 @@ public class RetryableTransactionFlowTests
         var firstTxMock = RegisterTx("tx-1");
         var secondTxMock = RegisterTx("tx-2");
 
-        // The driver's retry logic re-invokes the work function after a failed commit; two
-        // sequential invocations are that behaviour distilled — each attempt gets its own tx.
         _sessionMock
             .Setup(s => s.ExecuteWriteAsync(It.IsAny<Func<IAsyncQueryRunner, Task>>(), null))
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
@@ -132,8 +127,6 @@ public class RetryableTransactionFlowTests
         var firstTxMock = RegisterTx("tx-1");
         var secondTxMock = RegisterTx("tx-2");
 
-        // The driver retries when the work function throws a retryable error — the rethrown
-        // stored exception must reach the driver's retry logic, not get eaten by the backend.
         _sessionMock
             .Setup(s => s.ExecuteWriteAsync(It.IsAny<Func<IAsyncQueryRunner, Task>>(), null))
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(

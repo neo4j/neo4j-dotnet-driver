@@ -25,10 +25,6 @@ using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
-// The manager handler and the completed handler only make sense as a pair — this pins the
-// callback handshake between them via a real IContinuationCoordinator, playing the roles of the
-// driver (invoking the registered manager) and of the detached operation whose response slot the
-// callback borrows.
 public class AuthTokenManagerFlowTests
 {
     private record TerminalResponse(string Tag) : IProtocolMessage;
@@ -62,10 +58,8 @@ public class AuthTokenManagerFlowTests
         responseWriterMock.Verify(w => w.WriteAsync(new AuthTokenManagerResponse("manager-1")), Times.Once);
         Assert.NotNull(manager);
 
-        // Play the detached operation whose response slot the callback borrows...
         var openRequestTask = coordinator.WaitForNextResponseAsync();
 
-        // ...and the driver asking the manager for a token mid-operation.
         var tokenTask = manager!.GetTokenAsync(TestContext.Current.CancellationToken);
 
         var callbackRequest = Assert.IsType<AuthTokenManagerGetAuthRequest>(await WithTimeoutAsync(openRequestTask));
@@ -86,8 +80,6 @@ public class AuthTokenManagerFlowTests
         Assert.Equal("neo4j", token.Content["principal"]);
         Assert.Equal("pass", token.Content["credentials"]);
 
-        // The resumed operation eventually produces the terminal response; the completed handler
-        // is the one holding the response slot, so it writes it.
         coordinator.CompleteNextResponse(new TerminalResponse("result"));
         await WithTimeoutAsync(completedTask);
 
@@ -121,10 +113,8 @@ public class AuthTokenManagerFlowTests
         await newManagerHandler.ProcessAsync(new NewAuthTokenManagerRequest());
         Assert.NotNull(manager);
 
-        // Play the detached operation whose response slot the callback borrows...
         var openRequestTask = coordinator.WaitForNextResponseAsync();
 
-        // ...and the driver notifying the manager of a security exception mid-operation.
         var token = AuthTokens.Custom("neo4j", "pass", null!, "basic");
         var exception = new SecurityException("Neo.ClientError.Security.TokenExpired", "boom");
         var handledTask = manager!.HandleSecurityExceptionAsync(
@@ -137,8 +127,6 @@ public class AuthTokenManagerFlowTests
         Assert.Equal("manager-1", callbackRequest.AuthTokenManagerId);
         Assert.Equal("Neo.ClientError.Security.TokenExpired", callbackRequest.ErrorCode);
 
-        // The relayed token reflects the driver token's content exactly — no realm was given,
-        // so none is sent.
         Assert.Equal(new AuthorizationToken("basic", "neo4j", "pass"), callbackRequest.Auth);
 
         var completedHandler = new CallbackCompletedHandler<AuthTokenManagerHandleSecurityExceptionCompletedRequest>(
@@ -153,8 +141,6 @@ public class AuthTokenManagerFlowTests
 
         Assert.True(await WithTimeoutAsync(handledTask.AsTask()));
 
-        // The resumed operation eventually produces the terminal response; the completed handler
-        // is the one holding the response slot, so it writes it.
         coordinator.CompleteNextResponse(new TerminalResponse("result"));
         await WithTimeoutAsync(completedTask);
 

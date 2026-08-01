@@ -27,8 +27,6 @@ internal record TransactionRollbackRequest : IProtocolMessage
     public required RegistryObject<IAsyncTransaction> Tx { get; init; }
 }
 
-// Detached because the driver invokes security callbacks from its receive path — a server
-// FAILURE arriving during the rollback must be able to call back into testkit (spec §6).
 internal class TransactionRollbackHandler : DetachedOperationHandler<TransactionRollbackRequest>
 {
     private readonly ILogger _logger;

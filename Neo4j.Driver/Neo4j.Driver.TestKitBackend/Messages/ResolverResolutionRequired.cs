@@ -18,10 +18,6 @@ using Neo4j.Driver.TestKitBackend.Dispatch;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-// Backend → testkit callback (spec §6): the driver needs an address resolved. Sent in place of
-// the open request's response; Id is the correlation token testkit echoes back. Address is the
-// actual "host:port" the driver asked to resolve (the legacy backend sent the driver's original
-// URI instead — tests only passed because rediscovery re-resolves the initial router).
 internal record ResolverResolutionRequired(string Id, string Address) : IProtocolMessage;
 
 internal record ResolverResolutionCompletedRequest : ICallbackCompletion
@@ -30,9 +26,6 @@ internal record ResolverResolutionCompletedRequest : ICallbackCompletion
     public required string[] Addresses { get; init; }
 }
 
-// The driver-facing face of a testkit-side address resolver: every Resolve is relayed to
-// testkit as a callback request. The driver's resolver seam is synchronous, so the relay blocks
-// its driver thread until the completion arrives (the message loop runs on its own thread).
 internal class TestKitServerAddressResolver : IServerAddressResolver
 {
     private readonly IContinuationCoordinator _coordinator;

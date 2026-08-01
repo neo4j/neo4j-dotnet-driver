@@ -42,8 +42,6 @@ internal class BackendModule : Module
             };
         }
 
-        // Callback completion messages share one generic handler; its closed versions have no
-        // concrete class for the scan above to find, so each completion type is wired here.
         foreach (var completionType in RegisterableTypes(Assembly.GetExecutingAssembly())
                      .Where(t => t.IsAssignableTo(typeof(ICallbackCompletion))))
         {

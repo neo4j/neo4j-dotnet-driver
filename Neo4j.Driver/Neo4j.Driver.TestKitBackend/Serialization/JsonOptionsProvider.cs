@@ -41,8 +41,6 @@ internal class JsonOptionsProvider : IJsonOptionsProvider
 
     public JsonSerializerOptions GetOptions() => _options;
 
-    // A RegistryObject<T> property Foo binds to wire member fooId. A naming policy can't do
-    // this — it never sees the property type.
     private static void BindHandlesToIdMembers(JsonTypeInfo typeInfo)
     {
         foreach (var property in typeInfo.Properties)

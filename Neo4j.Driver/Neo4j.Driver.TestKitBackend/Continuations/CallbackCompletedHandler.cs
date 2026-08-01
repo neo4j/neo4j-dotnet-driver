@@ -18,18 +18,11 @@ using Neo4j.Driver.TestKitBackend.Dispatch;
 
 namespace Neo4j.Driver.TestKitBackend.Continuations;
 
-// A testkit reply to a backend → testkit callback request (spec §6), carrying back the
-// correlation id the callback request was sent with. Implementing this is all a completion
-// message needs — BackendModule wires each implementor to the shared CallbackCompletedHandler.
 internal interface ICallbackCompletion : IProtocolMessage
 {
     string RequestId { get; }
 }
 
-// Shared handler for every callback completion: resolves the paused driver-side callback with
-// the completion, then holds the response slot for whatever the resumed operation produces next
-// (its terminal response or another callback request), per spec §6. It has no direct response
-// of its own.
 internal class CallbackCompletedHandler<T> : MessageHandler<T> where T : ICallbackCompletion
 {
     private readonly IContinuationCoordinator _coordinator;

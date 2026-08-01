@@ -21,13 +21,6 @@ using Neo4j.Driver.TestKitBackend.Messages;
 
 namespace Neo4j.Driver.TestKitBackend.Continuations;
 
-// Base for handlers whose driver operation may need the message loop free while it runs — either
-// because the operation pauses for further requests (retryable tx, spec §7) or because it can
-// call back into testkit mid-operation (auth managers, resolvers, spec §6). The operation runs
-// detached; ProcessAsync returns (and the loop reads on) as soon as the operation produces its
-// first response, which need not be the terminal one. Errors can't propagate to the loop's catch
-// from a detached task, so the terminal catch chain lives here and must match what the loop
-// would have produced.
 internal abstract class DetachedOperationHandler<T> : MessageHandler<T> where T : IProtocolMessage
 {
     private readonly IContinuationCoordinator _coordinator;
@@ -53,9 +46,6 @@ internal abstract class DetachedOperationHandler<T> : MessageHandler<T> where T 
     {
         var responseTask = _coordinator.WaitForNextResponseAsync();
 
-        // Task.Run, not a bare call: the operation's synchronous prefix can block on a callback
-        // completion (a synchronous driver seam like IServerAddressResolver does), which would
-        // deadlock the loop before the callback request is ever written.
         _ = Task.Run(() => RunDetachedAsync(message));
 
         await _responseWriter.WriteAsync(await responseTask);

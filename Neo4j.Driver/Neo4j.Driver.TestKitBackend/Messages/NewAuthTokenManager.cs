@@ -48,8 +48,6 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
 
     public override async Task ProcessAsync(NewAuthTokenManagerRequest message)
     {
-        // The manager needs its own registry id for the callback requests, which only exists
-        // once the manager is registered — hence the captured local.
         var managerId = "";
         var manager = _managerFactory.Create(
             () => GetAuthAsync(managerId),
@@ -62,8 +60,6 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
         await _responseWriter.WriteAsync(new AuthTokenManagerResponse(registered.Id));
     }
 
-    // Runs on a driver thread mid-operation: borrows the open request's response slot to send
-    // the callback request, then pauses until the ...Completed handler resolves it (spec §6).
     private async ValueTask<IAuthToken> GetAuthAsync(string managerId)
     {
         var pending = _coordinator.RegisterCallback();
@@ -90,8 +86,6 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
         return completion.Handled;
     }
 
-    // The driver token's Content holds exactly the fields testkit's get_auth supplied (absent
-    // stays absent), so it round-trips faithfully.
     private AuthorizationToken ToWireToken(IAuthToken token)
     {
         var content = ((AuthToken)token).Content;
@@ -120,8 +114,6 @@ internal class AuthTokenManagerFactory : IAuthTokenManagerFactory
     }
 }
 
-// The driver-facing face of a testkit-side custom auth token manager: every interface call is
-// relayed to testkit as a callback request.
 internal class TestKitAuthTokenManager : IAuthTokenManager
 {
     private readonly Func<ValueTask<IAuthToken>> _getAuth;

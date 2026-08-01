@@ -25,10 +25,6 @@ using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
-// The manager handler and the completed handlers only make sense together — this pins the
-// callback handshakes between them via a real IContinuationCoordinator, playing the roles of
-// the driver (invoking the registered manager) and of the detached operation whose response
-// slot the callback borrows.
 public class BookmarkManagerFlowTests
 {
     private record TerminalResponse(string Tag) : IProtocolMessage;
@@ -66,10 +62,8 @@ public class BookmarkManagerFlowTests
     {
         var manager = RegisterManager(new NewBookmarkManagerRequest { BookmarksSupplierRegistered = true });
 
-        // Play the detached operation whose response slot the callback borrows...
         var openRequestTask = _coordinator.WaitForNextResponseAsync();
 
-        // ...and the driver asking the manager for bookmarks mid-operation.
         var bookmarksTask = manager.GetBookmarksAsync(TestContext.Current.CancellationToken);
 
         var callbackRequest = Assert.IsType<BookmarksSupplierRequest>(await WithTimeoutAsync(openRequestTask));
@@ -88,8 +82,6 @@ public class BookmarkManagerFlowTests
         var bookmarks = await WithTimeoutAsync(bookmarksTask);
         bookmarks.Should().BeEquivalentTo("bm:s1", "bm:s2");
 
-        // The resumed operation eventually produces the terminal response; the completed handler
-        // is the one holding the response slot, so it writes it.
         _coordinator.CompleteNextResponse(new TerminalResponse("result"));
         await WithTimeoutAsync(completedTask);
 

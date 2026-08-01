@@ -49,7 +49,6 @@ public class MessageLoopTests
 
         _autoMocker.GetMock<IMessageDispatcher>().Verify(d => d.DispatchAsync(message), Times.Once);
 
-        // The response writer is only used directly by the loop for BackendError.
         _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(It.IsAny<IProtocolMessage>()), Times.Never);
     }
 
@@ -82,8 +81,6 @@ public class MessageLoopTests
                 w => w.WriteAsync(It.Is<BackendErrorResponse>(e => e.Msg == "unknown message name 'Bogus'")),
                 Times.Once);
 
-        // The loop ends the test on error - a request after the failed one must never reach
-        // the dispatcher, and the good request must never even be read off the wire.
         _autoMocker.GetMock<IMessageDispatcher>().Verify(d => d.DispatchAsync(goodMessage), Times.Never);
         _autoMocker.GetMock<IConnectionInput>().Verify(i => i.ReadRequestAsync(), Times.Once);
     }
@@ -115,12 +112,9 @@ public class MessageLoopTests
 
         _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(errorResponse), Times.Once);
 
-        // The loop survives a driver error - the next request must still reach the dispatcher.
         _autoMocker.GetMock<IMessageDispatcher>().Verify(d => d.DispatchAsync(goodMessage), Times.Once);
     }
 
-    // Driver config validation throws ArgumentException (not Neo4jException) — e.g. a +s scheme
-    // combined with explicit encryption settings — and testkit expects a DriverError for it.
     [Fact]
     public async Task Reports_DriverError_for_an_argument_exception_and_continues_the_loop()
     {

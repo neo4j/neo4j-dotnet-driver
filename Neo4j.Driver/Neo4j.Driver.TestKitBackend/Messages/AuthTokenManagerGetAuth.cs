@@ -19,8 +19,6 @@ using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-// Backend → testkit callback (spec §6): the driver asked the custom manager for its token. Sent
-// in place of the open request's response; Id is the correlation token testkit echoes back.
 internal record AuthTokenManagerGetAuthRequest(string Id, string AuthTokenManagerId) : IProtocolMessage;
 
 internal record AuthTokenManagerGetAuthCompletedRequest : ICallbackCompletion

@@ -17,8 +17,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Neo4j.Driver.TestKitBackend.Logging;
 
-// Bridges the driver's own INeo4jLogger (passed via Config.WithLogger) into MEL, so driver-
-// internal log lines land in the same sinks as everything else, under a fixed "DRIVER" category.
 [RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
 internal class DriverLoggerAdapter : INeo4jLogger
 {

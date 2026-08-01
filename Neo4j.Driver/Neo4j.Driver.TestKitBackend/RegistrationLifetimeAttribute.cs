@@ -22,8 +22,6 @@ internal enum RegistrationLifetime
     Singleton
 }
 
-// BackendModule sweeps every concrete type into the container as its interfaces; this attribute
-// overrides the default InstancePerDependency lifetime.
 [AttributeUsage(AttributeTargets.Class)]
 internal sealed class RegistrationLifetimeAttribute : Attribute
 {

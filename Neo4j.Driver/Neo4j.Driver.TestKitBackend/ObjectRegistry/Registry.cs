@@ -16,7 +16,6 @@
 using Neo4j.Driver.TestKitBackend.Serialization;
 namespace Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
-// One per connection scope, disposed after each test
 [RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
 internal class Registry : IRegistry, IAsyncDisposable
 {
@@ -51,8 +50,6 @@ internal class Registry : IRegistry, IAsyncDisposable
         _objects.Remove(id);
     }
 
-    // Reverse registration order: the newest objects depend on the oldest (results on sessions,
-    // sessions on drivers), so tear down dependents first.
     public async ValueTask DisposeAsync()
     {
         for (var i = _objects.Count - 1; i >= 0; i--)

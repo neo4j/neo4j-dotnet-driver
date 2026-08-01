@@ -19,7 +19,6 @@ using Neo4j.Driver.TestKitBackend.Types;
 
 namespace Neo4j.Driver.TestKitBackend.Serialization;
 
-// Optional<T> is open-generic, so a factory closes OptionalConverter<T> per value type.
 internal class OptionalConverterFactory : JsonConverterFactory, IProtocolJsonConverter
 {
     public override bool CanConvert(Type typeToConvert)
@@ -37,9 +36,6 @@ internal class OptionalConverterFactory : JsonConverterFactory, IProtocolJsonCon
 
 internal class OptionalConverter<T> : JsonConverter<Optional<T>>
 {
-    // A present JSON null must become Specified(null), distinct from an absent key. Without this,
-    // STJ short-circuits null and never invokes Read. Absence is handled by the struct's default
-    // (Absent), reached only when the key is missing so the converter isn't invoked at all.
     public override bool HandleNull => true;
 
     public override Optional<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

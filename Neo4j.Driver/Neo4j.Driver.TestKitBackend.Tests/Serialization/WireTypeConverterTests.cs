@@ -125,8 +125,6 @@ public class WireTypeConverterTests
     [Fact]
     public void Omits_a_null_realm_when_writing_an_authorization_token()
     {
-        // Testkit compares the token attribute-by-attribute against what its get_auth returned,
-        // so a realm it never sent must stay absent, not become null.
         var options = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,

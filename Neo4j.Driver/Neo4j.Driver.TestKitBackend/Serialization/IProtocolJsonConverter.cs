@@ -15,7 +15,4 @@
 
 namespace Neo4j.Driver.TestKitBackend.Serialization;
 
-// Marker for JsonConverter implementations that participate in the protocol serializer options,
-// so the DI container can collect them all (as IEnumerable<IProtocolJsonConverter>) for
-// IJsonOptionsProvider. Implementors must also subclass JsonConverter.
 internal interface IProtocolJsonConverter;

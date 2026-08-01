@@ -19,13 +19,8 @@ using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-// Backend → testkit callback (spec §6): the driver needs the current client certificate for a
-// new connection. Sent in place of the open request's response; Id is the correlation token
-// testkit echoes back.
 internal record ClientCertificateProviderRequest(string Id, string ClientCertificateProviderId) : IProtocolMessage;
 
-// HasUpdate says whether the certificate changed since the last ask; the payload always carries
-// the full certificate, so the backend reloads it either way (as the legacy backend did).
 internal record ClientCertificateProviderCompletedRequest : ICallbackCompletion
 {
     public required string RequestId { get; init; }

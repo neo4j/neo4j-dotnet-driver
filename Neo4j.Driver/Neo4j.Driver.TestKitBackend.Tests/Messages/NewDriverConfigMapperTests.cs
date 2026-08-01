@@ -52,8 +52,6 @@ public class NewDriverConfigMapperTests
     [Fact]
     public void Calls_nothing_when_no_recognised_field_is_set()
     {
-        // resolverRegistered/domainNameResolverRegistered are non-nullable bools: false must
-        // not configure a resolver (and the DNS resolver has no driver seam at all).
         var request = MinimalRequest() with
         {
             ResolverRegistered = false,
@@ -124,8 +122,6 @@ public class NewDriverConfigMapperTests
     [Fact]
     public void Maps_maxTxRetryTimeMs_to_WithMaxTransactionRetryTime()
     {
-        // Name mismatch with the *Ms convention ("MaxTxRetryTime" vs "MaxTransactionRetryTime") -
-        // must be an explicit special case, not the generic tier.
         Apply(MinimalRequest() with { MaxTxRetryTimeMs = 30000 });
 
         _builder.Verify(b => b.WithMaxTransactionRetryTime(TimeSpan.FromMilliseconds(30000)), Times.Once);
@@ -134,8 +130,6 @@ public class NewDriverConfigMapperTests
     [Fact]
     public void Maps_livenessCheckTimeoutMs_to_WithConnectionLivenessCheckTimeout()
     {
-        // Name mismatch with the *Ms convention ("LivenessCheckTimeout" vs
-        // "ConnectionLivenessCheckTimeout") - must be an explicit special case.
         Apply(MinimalRequest() with { LivenessCheckTimeoutMs = 15000 });
 
         _builder.Verify(b => b.WithConnectionLivenessCheckTimeout(TimeSpan.FromMilliseconds(15000)), Times.Once);
@@ -168,8 +162,6 @@ public class NewDriverConfigMapperTests
     [Fact]
     public void Disables_telemetry_when_telemetryDisabled_is_true()
     {
-        // WithTelemetryDisabled() takes no argument, so this can't be the fallback tier's
-        // With{PropertyName}(value) shape - it's a special case gated on the flag being true.
         Apply(MinimalRequest() with { TelemetryDisabled = true });
 
         _builder.Verify(b => b.WithTelemetryDisabled(), Times.Once);
@@ -209,8 +201,6 @@ public class NewDriverConfigMapperTests
         _builder.Verify(b => b.WithCertificateTrustRule(CertificateTrustRule.TrustAny, null), Times.Once);
     }
 
-    // Testkit sends bare file names; the CI harness mounts the certificates and points
-    // TK_CUSTOM_CA_PATH at them, so the names only resolve with that prefix applied.
     [Fact]
     public void Maps_trustedCertificates_paths_to_a_trust_list_prefixed_with_the_configured_CA_path()
     {

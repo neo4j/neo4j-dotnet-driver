@@ -25,8 +25,6 @@ internal record RetryablePositiveRequest : IProtocolMessage
     public required RegistryObject<IAsyncSession> Session { get; init; }
 }
 
-// No direct response of its own — the reply is whatever the backgrounded retry flow produces
-// next (another RetryableTry, RetryableDone, or an error), per spec §7.
 internal class RetryablePositiveHandler : MessageHandler<RetryablePositiveRequest>
 {
     private readonly IContinuationCoordinator _coordinator;

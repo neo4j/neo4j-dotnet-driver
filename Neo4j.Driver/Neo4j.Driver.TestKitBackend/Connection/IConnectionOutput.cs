@@ -15,8 +15,6 @@
 
 namespace Neo4j.Driver.TestKitBackend.Connection;
 
-// The outbound text sink for a single connection; the production implementation writes to the
-// connection's transport pipe.
 internal interface IConnectionOutput
 {
     Task WriteAsync(string text);

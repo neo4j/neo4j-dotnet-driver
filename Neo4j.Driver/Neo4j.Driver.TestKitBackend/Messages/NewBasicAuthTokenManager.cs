@@ -46,8 +46,6 @@ internal class NewBasicAuthTokenManagerHandler : MessageHandler<NewBasicAuthToke
 
     public override async Task ProcessAsync(NewBasicAuthTokenManagerRequest message)
     {
-        // The provider needs the manager's own registry id for the callback request, which only
-        // exists once the manager is registered — hence the captured local.
         var managerId = "";
         var manager = AuthTokenManagers.Basic(() => ProvideTokenAsync(managerId));
 
@@ -58,8 +56,6 @@ internal class NewBasicAuthTokenManagerHandler : MessageHandler<NewBasicAuthToke
         await _responseWriter.WriteAsync(new BasicAuthTokenManagerResponse(registered.Id));
     }
 
-    // Runs on a driver thread mid-operation: borrows the open request's response slot to send
-    // the callback request, then pauses until the ...Completed handler resolves it (spec §6).
     private async ValueTask<IAuthToken> ProvideTokenAsync(string managerId)
     {
         var pending = _coordinator.RegisterCallback();

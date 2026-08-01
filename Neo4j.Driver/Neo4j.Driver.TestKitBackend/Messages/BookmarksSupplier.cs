@@ -18,9 +18,6 @@ using Neo4j.Driver.TestKitBackend.Dispatch;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-// Backend → testkit callback (spec §6): the bookmark manager is asking testkit's supplier for
-// extra bookmarks. Sent in place of the open request's response; Id is the correlation token
-// testkit echoes back.
 internal record BookmarksSupplierRequest(string Id, string BookmarkManagerId) : IProtocolMessage;
 
 internal record BookmarksSupplierCompletedRequest : ICallbackCompletion

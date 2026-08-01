@@ -27,8 +27,6 @@ internal interface INewDriverConfigMapper
 
 internal class NewDriverConfigMapper : INewDriverConfigMapper
 {
-    // Properties applied by the special cases below - excluded from the generic tiers so they're
-    // never also (mis)matched by name against IConfigBuilder there.
     private static readonly HashSet<string> HandledExplicitly =
     [
         nameof(NewDriverRequest.MaxTxRetryTimeMs),
@@ -149,9 +147,6 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
                 : null);
     }
 
-    // Testkit sends bare file names; the CI harness mounts the certificates and points
-    // TK_CUSTOM_CA_PATH at them (trailing separator included), so the names only resolve with
-    // that prefix applied.
     private string PrefixCaPath(string certificateFileName)
     {
         var caPath = _configuration["TK_CUSTOM_CA_PATH"] ??
@@ -185,10 +180,6 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
         builder.WithNotifications(severity, categories);
     }
 
-    // The remaining fields are either a direct name match (With{PropertyName}) or follow the *Ms
-    // convention (strip "Ms", convert to a TimeSpan, With{Stripped}). If IConfigBuilder has no
-    // matching method, the field is silently skipped - it's either not driver config (e.g. Uri) or
-    // deliberately unsupported (e.g. domainNameResolverRegistered - the driver has no DNS seam).
     private static void ApplyRemainingProperties(NewDriverRequest request, IConfigBuilder builder)
     {
         foreach (var property in typeof(NewDriverRequest).GetProperties())

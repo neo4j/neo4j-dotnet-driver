@@ -17,8 +17,6 @@ using System.Text.Json.Serialization;
 using Neo4j.Driver.TestKitBackend.Serialization;
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-// Realm is omitted (not null) on the wire when unset: testkit compares tokens
-// attribute-by-attribute, so a field it never sent must stay absent.
 internal record AuthorizationToken(
     string Scheme,
     string Principal,

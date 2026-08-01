@@ -15,13 +15,6 @@
 
 namespace Neo4j.Driver.TestKitBackend.Types;
 
-// A three-state wire value for the handful of fields where absent, present-null and present-value
-// are all distinct (e.g. timeout, trustedCertificates) — the case Nullable<T> can't express
-// because T? can't be nested. It's a struct so its default is "absent": a message record property
-// needs no initializer, and an omitted key simply leaves it absent. Everywhere else, plain T? is
-// enough (absent collapses to null) and Optional is not used.
-//
-// Read with the one-shot: `if (opt.IsSpecified(out var value)) ...; else /* absent */`.
 internal readonly struct Optional<T>
 {
     private readonly bool _isSpecified;

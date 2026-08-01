@@ -50,9 +50,9 @@ internal class ConnectionInput : IConnectionInput
                 body.Append(line);
             }
 
-            return null; // stream ended before "#request end"
+            return null;
         }
 
-        return null; // end of stream
+        return null;
     }
 }

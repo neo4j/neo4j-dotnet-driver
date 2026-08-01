@@ -51,8 +51,6 @@ internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequ
 
     public override async Task ProcessAsync(NewBookmarkManagerRequest message)
     {
-        // The callbacks need the manager's own registry id for their requests, which only
-        // exists once the manager is registered — hence the captured local.
         var managerId = "";
 
         Func<CancellationToken, Task<string[]>>? supplier = message.BookmarksSupplierRegistered
@@ -73,9 +71,6 @@ internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequ
         await _responseWriter.WriteAsync(new BookmarkManagerResponse(registered.Id));
     }
 
-    // These run on a driver thread mid-operation: they borrow the open request's response slot
-    // to send the callback request, then pause until the ...Completed handler resolves it
-    // (spec §6).
     private async Task<string[]> SupplyBookmarksAsync(string managerId)
     {
         var pending = _coordinator.RegisterCallback();

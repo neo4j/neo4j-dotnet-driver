@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma warning disable CS0618 // Notifications is obsolete but still part of the wire contract.
+#pragma warning disable CS0618
 
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.TestKitBackend.Cypher;
@@ -48,7 +48,6 @@ internal class SummaryMapper : ISummaryMapper
             MapCounters(summary.Counters),
             MapMilliseconds(summary.ResultAvailableAfter),
             MapMilliseconds(summary.ResultConsumedAfter),
-            // IGqlStatusObject doesn't expose IsNotification - only the internal concrete type does.
             summary.GqlStatusObjects?.OfType<GqlStatusObject>().Select(MapGqlStatusObject).ToList() ?? []);
     }
 
