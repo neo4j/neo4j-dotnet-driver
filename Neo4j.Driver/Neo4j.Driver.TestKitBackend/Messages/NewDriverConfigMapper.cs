@@ -15,7 +15,6 @@
 
 using Microsoft.Extensions.Configuration;
 using Neo4j.Driver.TestKitBackend.Certificates;
-using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -43,18 +42,18 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
 
     private readonly ICertificateLoader _certificateLoader;
     private readonly IRegistry _registry;
-    private readonly IContinuationCoordinator _coordinator;
+    private readonly IServerAddressResolver _resolver;
     private readonly IConfiguration _configuration;
 
     public NewDriverConfigMapper(
         ICertificateLoader certificateLoader,
         IRegistry registry,
-        IContinuationCoordinator coordinator,
+        IServerAddressResolver resolver,
         IConfiguration configuration)
     {
         _certificateLoader = certificateLoader;
         _registry = registry;
-        _coordinator = coordinator;
+        _resolver = resolver;
         _configuration = configuration;
     }
 
@@ -75,7 +74,7 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
     {
         if (request.ResolverRegistered)
         {
-            builder.WithResolver(new TestKitServerAddressResolver(_coordinator));
+            builder.WithResolver(_resolver);
         }
     }
 

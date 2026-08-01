@@ -24,23 +24,23 @@ namespace Neo4j.Driver.TestKitBackend.Connection;
 internal class TestkitConnectionHandler : ConnectionHandler
 {
     private readonly ILifetimeScope _rootScope;
-    private readonly IConnectionInputFactory _inputFactory;
-    private readonly IConnectionOutputFactory _outputFactory;
+    private readonly Func<TextReader, IConnectionInput> _createInput;
+    private readonly Func<TextWriter, IConnectionOutput> _createOutput;
     private readonly IConnectionIdProvider _connectionIdProvider;
     private readonly ILoggingContextAccessor _loggingContextAccessor;
     private readonly ILogger _logger;
 
     public TestkitConnectionHandler(
         ILifetimeScope rootScope,
-        IConnectionInputFactory inputFactory,
-        IConnectionOutputFactory outputFactory,
+        Func<TextReader, IConnectionInput> createInput,
+        Func<TextWriter, IConnectionOutput> createOutput,
         IConnectionIdProvider connectionIdProvider,
         ILoggingContextAccessor loggingContextAccessor,
         ILogger logger)
     {
         _rootScope = rootScope;
-        _inputFactory = inputFactory;
-        _outputFactory = outputFactory;
+        _createInput = createInput;
+        _createOutput = createOutput;
         _connectionIdProvider = connectionIdProvider;
         _loggingContextAccessor = loggingContextAccessor;
         _logger = logger;
@@ -57,8 +57,8 @@ internal class TestkitConnectionHandler : ConnectionHandler
             NewLine = "\n"
         };
 
-        var input = _inputFactory.Create(reader);
-        var output = _outputFactory.Create(writer);
+        var input = _createInput(reader);
+        var output = _createOutput(writer);
 
         await using var scope = _rootScope.BeginLifetimeScope(builder =>
         {

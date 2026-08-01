@@ -17,6 +17,7 @@ using System.Reflection;
 using Autofac;
 using Autofac.Core;
 using Autofac.Core.Registration;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Infrastructure;
 using Module = Autofac.Module;
@@ -48,6 +49,10 @@ internal class BackendModule : Module
             builder.RegisterType(typeof(CallbackCompletedHandler<>).MakeGenericType(completionType))
                 .AsImplementedInterfaces();
         }
+
+        builder
+            .Register((_, parameters) => new ConnectionInput(new LineReader(parameters.TypedAs<TextReader>())))
+            .As<IConnectionInput>();
     }
 
     protected override void AttachToComponentRegistration(
@@ -61,7 +66,8 @@ internal class BackendModule : Module
     {
         return assembly.GetTypes()
             .Where(t =>
-                t is { IsClass: true, IsAbstract: false, IsGenericTypeDefinition: false });
+                t is { IsClass: true, IsAbstract: false, IsGenericTypeDefinition: false } &&
+                !t.IsAssignableTo(typeof(Delegate)));
     }
 
     private static RegistrationLifetime LifetimeOf(Type type)

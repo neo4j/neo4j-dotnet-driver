@@ -17,25 +17,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Neo4j.Driver.TestKitBackend.Logging;
 
-internal interface ILoggingDisposableFactory
-{
-    ILoggingDisposable GetLoggingDisposable(string category, string logMsg);
-}
-
-internal class LoggingDisposableFactory : ILoggingDisposableFactory
-{
-    private readonly ILoggerFactory _loggerFactory;
-
-    public LoggingDisposableFactory(ILoggerFactory loggerFactory)
-    {
-        _loggerFactory = loggerFactory;
-    }
-
-    public ILoggingDisposable GetLoggingDisposable(string category, string logMsg)
-    {
-        return new LoggingDisposable(_loggerFactory, category, logMsg);
-    }
-}
+internal delegate ILoggingDisposable LoggingDisposableCreator(string category, string logMsg);
 
 internal interface ILoggingDisposable : IDisposable;
 

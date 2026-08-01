@@ -39,7 +39,7 @@ internal class StartTestHandler : MessageHandler<StartTestRequest>
 {
     private readonly ILoggingContext _loggingContext;
     private readonly ISkipPolicy _skipPolicy;
-    private readonly ILoggingDisposableFactory _loggingDisposableFactory;
+    private readonly LoggingDisposableCreator _createLoggingDisposable;
     private readonly IResponseWriter _responseWriter;
     private readonly IRegistry _registry;
     private readonly ILogger _logger;
@@ -47,14 +47,14 @@ internal class StartTestHandler : MessageHandler<StartTestRequest>
     public StartTestHandler(
         ILoggingContext loggingContext,
         ISkipPolicy skipPolicy,
-        ILoggingDisposableFactory loggingDisposableFactory,
+        LoggingDisposableCreator createLoggingDisposable,
         IResponseWriter responseWriter,
         IRegistry registry,
         ILogger logger)
     {
         _loggingContext = loggingContext;
         _skipPolicy = skipPolicy;
-        _loggingDisposableFactory = loggingDisposableFactory;
+        _createLoggingDisposable = createLoggingDisposable;
         _responseWriter = responseWriter;
         _registry = registry;
         _logger = logger;
@@ -80,7 +80,7 @@ internal class StartTestHandler : MessageHandler<StartTestRequest>
             _logger.LogDebug("START TEST {TestName}", message.TestName);
 
             var endTestMsg = $"END TEST {message.TestName}";
-            var endTestLogger = _loggingDisposableFactory.GetLoggingDisposable("Test closedown", endTestMsg);
+            var endTestLogger = _createLoggingDisposable("Test closedown", endTestMsg);
             _registry.Register(endTestLogger);
         }
     }

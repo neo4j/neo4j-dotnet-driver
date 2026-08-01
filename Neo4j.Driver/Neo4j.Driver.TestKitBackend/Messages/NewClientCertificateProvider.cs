@@ -32,6 +32,7 @@ internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCer
     private readonly IRegistry _registry;
     private readonly IContinuationCoordinator _coordinator;
     private readonly ICertificateLoader _certificateLoader;
+    private readonly Func<Func<ValueTask<X509Certificate>>, IClientCertificateProvider> _createProvider;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
@@ -39,12 +40,14 @@ internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCer
         IRegistry registry,
         IContinuationCoordinator coordinator,
         ICertificateLoader certificateLoader,
+        Func<Func<ValueTask<X509Certificate>>, IClientCertificateProvider> createProvider,
         IResponseWriter responseWriter,
         ILogger logger)
     {
         _registry = registry;
         _coordinator = coordinator;
         _certificateLoader = certificateLoader;
+        _createProvider = createProvider;
         _responseWriter = responseWriter;
         _logger = logger;
     }
@@ -52,8 +55,7 @@ internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCer
     public override async Task ProcessAsync(NewClientCertificateProviderRequest message)
     {
         var providerId = "";
-        IClientCertificateProvider provider =
-            new TestKitClientCertificateProvider(() => ProvideCertificateAsync(providerId));
+        var provider = _createProvider(() => ProvideCertificateAsync(providerId));
 
         var registered = _registry.Register(provider);
         providerId = registered.Id;

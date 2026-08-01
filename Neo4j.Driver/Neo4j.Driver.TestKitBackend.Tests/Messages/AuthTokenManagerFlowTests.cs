@@ -49,7 +49,7 @@ public class AuthTokenManagerFlowTests
         var newManagerHandler = new NewAuthTokenManagerHandler(
             registryMock.Object,
             coordinator,
-            new AuthTokenManagerFactory(),
+            (getAuth, handle) => new TestKitAuthTokenManager(getAuth, handle),
             responseWriterMock.Object,
             Mock.Of<ILogger>());
 
@@ -106,7 +106,7 @@ public class AuthTokenManagerFlowTests
         var newManagerHandler = new NewAuthTokenManagerHandler(
             registryMock.Object,
             coordinator,
-            new AuthTokenManagerFactory(),
+            (getAuth, handle) => new TestKitAuthTokenManager(getAuth, handle),
             responseWriterMock.Object,
             Mock.Of<ILogger>());
 

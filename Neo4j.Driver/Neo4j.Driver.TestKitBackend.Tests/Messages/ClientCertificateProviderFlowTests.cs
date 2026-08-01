@@ -52,6 +52,7 @@ public class ClientCertificateProviderFlowTests
             registryMock.Object,
             _coordinator,
             _certificateLoaderMock.Object,
+            provideCertificate => new TestKitClientCertificateProvider(provideCertificate),
             _responseWriterMock.Object,
             Mock.Of<ILogger>());
 

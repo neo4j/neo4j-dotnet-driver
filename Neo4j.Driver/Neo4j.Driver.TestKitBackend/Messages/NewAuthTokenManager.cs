@@ -28,20 +28,23 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
 {
     private readonly IRegistry _registry;
     private readonly IContinuationCoordinator _coordinator;
-    private readonly IAuthTokenManagerFactory _managerFactory;
+    private readonly Func<Func<ValueTask<IAuthToken>>, Func<IAuthToken, SecurityException, ValueTask<bool>>,
+        IAuthTokenManager> _createManager;
+
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewAuthTokenManagerHandler(
         IRegistry registry,
         IContinuationCoordinator coordinator,
-        IAuthTokenManagerFactory managerFactory,
+        Func<Func<ValueTask<IAuthToken>>, Func<IAuthToken, SecurityException, ValueTask<bool>>, IAuthTokenManager>
+            createManager,
         IResponseWriter responseWriter,
         ILogger logger)
     {
         _registry = registry;
         _coordinator = coordinator;
-        _managerFactory = managerFactory;
+        _createManager = createManager;
         _responseWriter = responseWriter;
         _logger = logger;
     }
@@ -49,7 +52,7 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
     public override async Task ProcessAsync(NewAuthTokenManagerRequest message)
     {
         var managerId = "";
-        var manager = _managerFactory.Create(
+        var manager = _createManager(
             () => GetAuthAsync(managerId),
             (token, exception) => HandleSecurityExceptionAsync(managerId, token, exception));
 
@@ -94,23 +97,6 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
             (string)content["principal"],
             (string)content["credentials"],
             content.TryGetValue("realm", out var realm) ? (string)realm : null);
-    }
-}
-
-internal interface IAuthTokenManagerFactory
-{
-    IAuthTokenManager Create(
-        Func<ValueTask<IAuthToken>> getAuth,
-        Func<IAuthToken, SecurityException, ValueTask<bool>> handleSecurityException);
-}
-
-internal class AuthTokenManagerFactory : IAuthTokenManagerFactory
-{
-    public IAuthTokenManager Create(
-        Func<ValueTask<IAuthToken>> getAuth,
-        Func<IAuthToken, SecurityException, ValueTask<bool>> handleSecurityException)
-    {
-        return new TestKitAuthTokenManager(getAuth, handleSecurityException);
     }
 }
 

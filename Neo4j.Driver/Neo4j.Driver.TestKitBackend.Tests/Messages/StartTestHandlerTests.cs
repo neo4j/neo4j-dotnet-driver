@@ -30,6 +30,7 @@ public class StartTestHandlerTests
     public StartTestHandlerTests()
     {
         _autoMocker.Use<ILoggingContext>(new LoggingContext());
+        _autoMocker.Use<LoggingDisposableCreator>((_, _) => Mock.Of<ILoggingDisposable>());
     }
 
     [Fact]

@@ -36,13 +36,8 @@ public class TestkitConnectionHandlerTests
             .Setup(p => p.GetConnectionId())
             .Returns("testkit-1");
 
-        _autoMocker.GetMock<IConnectionInputFactory>()
-            .Setup(f => f.Create(It.IsAny<TextReader>()))
-            .Returns(_autoMocker.Get<IConnectionInput>());
-
-        _autoMocker.GetMock<IConnectionOutputFactory>()
-            .Setup(f => f.Create(It.IsAny<TextWriter>()))
-            .Returns(_autoMocker.Get<IConnectionOutput>());
+        _autoMocker.Use<Func<TextReader, IConnectionInput>>(_ => _autoMocker.Get<IConnectionInput>());
+        _autoMocker.Use<Func<TextWriter, IConnectionOutput>>(_ => _autoMocker.Get<IConnectionOutput>());
 
         _autoMocker.Use(BuildRootScope());
 

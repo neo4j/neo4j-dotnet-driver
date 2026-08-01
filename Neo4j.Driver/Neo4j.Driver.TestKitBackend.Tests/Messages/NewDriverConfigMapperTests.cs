@@ -317,15 +317,10 @@ public class NewDriverConfigMapperTests
     }
 
     [Fact]
-    public void Maps_resolverRegistered_to_a_testkit_relaying_resolver()
+    public void Maps_resolverRegistered_to_the_injected_resolver()
     {
-        IServerAddressResolver? resolver = null;
-        _builder
-            .Setup(b => b.WithResolver(It.IsAny<IServerAddressResolver>()))
-            .Callback<IServerAddressResolver>(r => resolver = r);
-
         Apply(MinimalRequest() with { ResolverRegistered = true });
 
-        Assert.IsType<TestKitServerAddressResolver>(resolver);
+        _builder.Verify(b => b.WithResolver(_autoMocker.Get<IServerAddressResolver>()), Times.Once);
     }
 }
