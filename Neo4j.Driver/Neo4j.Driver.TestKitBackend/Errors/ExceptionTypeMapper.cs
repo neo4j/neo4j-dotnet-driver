@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.Internal.Connector;
+
 namespace Neo4j.Driver.TestKitBackend.Errors;
 
 internal interface IExceptionTypeMapper
@@ -22,8 +24,7 @@ internal interface IExceptionTypeMapper
 
 internal class ExceptionTypeMapper : IExceptionTypeMapper
 {
-    // Exact-type match, not inheritance-aware - a subclass not listed here falls through to the
-    // exact-type-name default rather than inheriting its base class's entry.
+    // Exact-type match, not inheritance-aware
     private static readonly Dictionary<Type, string> ErrorTypes = new()
     {
         [typeof(Neo4jException)] = "Neo4jError",
@@ -33,7 +34,8 @@ internal class ExceptionTypeMapper : IExceptionTypeMapper
         [typeof(TokenExpiredException)] = "ClientError",
         [typeof(AuthenticationException)] = "AuthenticationError",
         [typeof(UnknownSecurityException)] = "OtherSecurityException",
-        [typeof(ArgumentException)] = "ArgumentError"
+        [typeof(ArgumentException)] = "ArgumentError",
+        [typeof(ReauthException)] = "UnsupportedFeatureException"
     };
 
     public string Map(Exception exception)

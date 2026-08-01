@@ -28,14 +28,17 @@ internal record FeatureListResponse : IProtocolMessage
 
 internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
 {
-    // Strings must come from testkit's Feature enum (nutkit/protocol/feature.py);
-    // an unknown string makes testkit raise. Keep sorted alphabetically.
+    // Strings must come from testkit's Feature enum (nutkit/protocol/feature.py)
+    // Keep sorted alphabetically.
     private static readonly string[] SupportedFeatures =
     [
+        "Backend:MockTime",
         "Feature:API:BookmarkManager",
         "Feature:API:Driver.IsEncrypted",
+        "Feature:API:Driver.VerifyAuthentication",
         "Feature:API:Driver.VerifyConnectivity",
         "Feature:API:Driver:GetServerInfo",
+        "Feature:API:Liveness.Check",
         "Feature:API:RetryableExceptions",
         "Feature:API:SSLClientCertificate",
         "Feature:API:SSLConfig",

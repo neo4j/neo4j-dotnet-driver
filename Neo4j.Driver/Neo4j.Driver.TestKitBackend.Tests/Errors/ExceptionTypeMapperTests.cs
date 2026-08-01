@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using FluentAssertions;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Xunit;
 
@@ -75,5 +76,11 @@ public class ExceptionTypeMapperTests
     public void Maps_ArgumentException_to_ArgumentError()
     {
         _mapper.Map(new ArgumentException("boom")).Should().Be("ArgumentError");
+    }
+
+    [Fact]
+    public void Maps_ReauthException_to_UnsupportedFeatureException()
+    {
+        _mapper.Map(new ReauthException(false)).Should().Be("UnsupportedFeatureException");
     }
 }

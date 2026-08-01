@@ -16,23 +16,19 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.Internal.Auth;
+using Neo4j.Driver.Internal.Services;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.Time;
 using Xunit;
 
-// The bare name resolves to the driver's public AuthTokenAndExpiration here (enclosing
-// namespace Neo4j.Driver wins over usings); alias the wire record explicitly.
 using WireAuthTokenAndExpiration = Neo4j.Driver.TestKitBackend.Messages.AuthTokenAndExpiration;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
-// The manager handler and the completed handler only make sense as a pair — this pins the
-// callback handshake between them via a real IContinuationCoordinator, playing the roles of the
-// driver (invoking the registered manager) and of the detached operation whose response slot the
-// callback borrows.
 public class BearerAuthTokenManagerFlowTests
 {
     private record TerminalResponse(string Tag) : IProtocolMessage;
@@ -135,6 +131,57 @@ public class BearerAuthTokenManagerFlowTests
             await WithTimeoutAsync(manager.GetTokenAsync(TestContext.Current.CancellationToken).AsTask()));
 
         Assert.Equal("a-token", secondToken.Content["credentials"]);
+    }
+
+    [Fact]
+    public async Task An_expired_token_is_refreshed_when_fake_time_was_installed_after_the_manager()
+    {
+        var original = DateTimeProvider.StaticInstance;
+        try
+        {
+            var manager = RegisterManager();
+
+            var fakeTime = new FakeTimeService();
+            fakeTime.Install();
+
+            await RoundTripTokenAsync(manager, "first-token", expiresInMs: 10_000);
+
+            fakeTime.Tick(10_001);
+
+            var refreshed = await RoundTripTokenAsync(manager, "second-token", expiresInMs: 10_000);
+            Assert.Equal("second-token", refreshed.Content["credentials"]);
+        }
+        finally
+        {
+            DateTimeProvider.StaticInstance = original;
+        }
+    }
+
+    private async Task<AuthToken> RoundTripTokenAsync(IAuthTokenManager manager, string credentials, long expiresInMs)
+    {
+        var openRequestTask = _coordinator.WaitForNextResponseAsync();
+        var tokenTask = manager.GetTokenAsync(TestContext.Current.CancellationToken);
+
+        var callbackRequest = Assert.IsType<BearerAuthTokenProviderRequest>(await WithTimeoutAsync(openRequestTask));
+
+        var completedHandler = new CallbackCompletedHandler<BearerAuthTokenProviderCompletedRequest>(
+            _coordinator,
+            _responseWriterMock.Object);
+        var completedTask = completedHandler.ProcessAsync(
+            new BearerAuthTokenProviderCompletedRequest
+            {
+                RequestId = callbackRequest.Id,
+                Auth = new WireAuthTokenAndExpiration(
+                    new AuthorizationToken("bearer", "", credentials),
+                    expiresInMs)
+            });
+
+        var token = Assert.IsAssignableFrom<AuthToken>(await WithTimeoutAsync(tokenTask.AsTask()));
+
+        _coordinator.CompleteNextResponse(new TerminalResponse("result"));
+        await WithTimeoutAsync(completedTask);
+
+        return token;
     }
 
     private static async Task<T> WithTimeoutAsync<T>(Task<T> task)
