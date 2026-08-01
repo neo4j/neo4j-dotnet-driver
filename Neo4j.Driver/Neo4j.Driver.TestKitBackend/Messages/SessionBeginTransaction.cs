@@ -36,7 +36,7 @@ internal record SessionBeginTransactionRequest : IProtocolMessage
 
 internal record TransactionResponse(string Id) : IProtocolMessage;
 
-internal class SessionBeginTransactionHandler : DetachedOperationHandler<SessionBeginTransactionRequest>
+internal class SessionBeginTransactionHandler : BackgroundOperationHandler<SessionBeginTransactionRequest>
 {
     private readonly IRegistry _registry;
     private readonly ICypherToNativeMapper _cypherToNativeMapper;

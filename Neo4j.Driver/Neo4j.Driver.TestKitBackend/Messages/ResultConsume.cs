@@ -41,7 +41,7 @@ internal record SummaryResponse(
     long? ResultConsumedAfter,
     IReadOnlyList<SummaryGqlStatusObjectResponse> GqlStatusObjects) : IProtocolMessage;
 
-internal class ResultConsumeHandler : DetachedOperationHandler<ResultConsumeRequest>
+internal class ResultConsumeHandler : BackgroundOperationHandler<ResultConsumeRequest>
 {
     private readonly ISummaryMapper _summaryMapper;
 

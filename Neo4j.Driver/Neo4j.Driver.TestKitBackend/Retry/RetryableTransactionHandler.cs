@@ -28,7 +28,7 @@ internal interface IRetryableTransactionRequest
     RegistryObject<IAsyncSession> Session { get; }
 }
 
-internal abstract class RetryableTransactionHandler<T> : DetachedOperationHandler<T>
+internal abstract class RetryableTransactionHandler<T> : BackgroundOperationHandler<T>
     where T : IProtocolMessage, IRetryableTransactionRequest
 {
     private readonly IRegistry _registry;

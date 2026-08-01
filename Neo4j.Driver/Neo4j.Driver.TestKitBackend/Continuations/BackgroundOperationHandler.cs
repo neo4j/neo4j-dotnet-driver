@@ -21,14 +21,14 @@ using Neo4j.Driver.TestKitBackend.Messages;
 
 namespace Neo4j.Driver.TestKitBackend.Continuations;
 
-internal abstract class DetachedOperationHandler<T> : MessageHandler<T> where T : IProtocolMessage
+internal abstract class BackgroundOperationHandler<T> : MessageHandler<T> where T : IProtocolMessage
 {
     private readonly IContinuationCoordinator _coordinator;
     private readonly IResponseWriter _responseWriter;
     private readonly IDriverErrorMapper _driverErrorMapper;
     private readonly ILogger _logger;
 
-    protected DetachedOperationHandler(
+    protected BackgroundOperationHandler(
         IContinuationCoordinator coordinator,
         IResponseWriter responseWriter,
         IDriverErrorMapper driverErrorMapper,
@@ -46,12 +46,12 @@ internal abstract class DetachedOperationHandler<T> : MessageHandler<T> where T 
     {
         var responseTask = _coordinator.WaitForNextResponseAsync();
 
-        _ = Task.Run(() => RunDetachedAsync(message));
+        _ = Task.Run(() => RunInBackgroundAsync(message));
 
         await _responseWriter.WriteAsync(await responseTask);
     }
 
-    private async Task RunDetachedAsync(T message)
+    private async Task RunInBackgroundAsync(T message)
     {
         try
         {
@@ -63,12 +63,12 @@ internal abstract class DetachedOperationHandler<T> : MessageHandler<T> where T 
         }
         catch (Neo4jException exception)
         {
-            _logger.LogDebug(exception, "Driver error during detached operation");
+            _logger.LogDebug(exception, "Driver error during background operation");
             _coordinator.CompleteNextResponse(_driverErrorMapper.Map(exception));
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "Unhandled error during detached operation");
+            _logger.LogError(exception, "Unhandled error during background operation");
             _coordinator.CompleteNextResponse(new BackendErrorResponse { Msg = exception.Message });
         }
     }

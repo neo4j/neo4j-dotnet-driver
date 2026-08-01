@@ -23,7 +23,7 @@ using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Continuations;
 
-public class DetachedOperationHandlerTests
+public class BackgroundOperationHandlerTests
 {
     private record TestRequest : IProtocolMessage;
 
@@ -36,7 +36,7 @@ public class DetachedOperationHandlerTests
     private readonly ContinuationCoordinator _coordinator = new();
     private readonly Mock<IResponseWriter> _responseWriterMock = new();
 
-    private class SynchronouslyBlockingHandler : DetachedOperationHandler<TestRequest>
+    private class SynchronouslyBlockingHandler : BackgroundOperationHandler<TestRequest>
     {
         private readonly IContinuationCoordinator _coordinator;
 

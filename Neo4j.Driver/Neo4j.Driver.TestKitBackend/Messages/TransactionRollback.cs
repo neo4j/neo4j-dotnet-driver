@@ -27,7 +27,7 @@ internal record TransactionRollbackRequest : IProtocolMessage
     public required RegistryObject<IAsyncTransaction> Tx { get; init; }
 }
 
-internal class TransactionRollbackHandler : DetachedOperationHandler<TransactionRollbackRequest>
+internal class TransactionRollbackHandler : BackgroundOperationHandler<TransactionRollbackRequest>
 {
     private readonly ILogger _logger;
 

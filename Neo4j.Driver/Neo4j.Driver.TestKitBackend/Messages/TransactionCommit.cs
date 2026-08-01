@@ -27,7 +27,7 @@ internal record TransactionCommitRequest : IProtocolMessage
     public required RegistryObject<IAsyncTransaction> Tx { get; init; }
 }
 
-internal class TransactionCommitHandler : DetachedOperationHandler<TransactionCommitRequest>
+internal class TransactionCommitHandler : BackgroundOperationHandler<TransactionCommitRequest>
 {
     private readonly ILogger _logger;
 

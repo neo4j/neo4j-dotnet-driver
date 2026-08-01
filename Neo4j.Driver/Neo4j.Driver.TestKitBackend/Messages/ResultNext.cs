@@ -32,7 +32,7 @@ internal record RecordResponse(IReadOnlyList<ICypherValue> Values) : IProtocolMe
 
 internal record NullRecordResponse : IProtocolMessage;
 
-internal class ResultNextHandler : DetachedOperationHandler<ResultNextRequest>
+internal class ResultNextHandler : BackgroundOperationHandler<ResultNextRequest>
 {
     private readonly INativeToCypherMapper _mapper;
 

@@ -41,7 +41,7 @@ internal record SessionRunRequest : IProtocolMessage
 
 internal record ResultResponse(string Id, string[]? Keys) : IProtocolMessage;
 
-internal class SessionRunHandler : DetachedOperationHandler<SessionRunRequest>
+internal class SessionRunHandler : BackgroundOperationHandler<SessionRunRequest>
 {
     private readonly IRegistry _registry;
     private readonly ICypherToNativeMapper _cypherToNativeMapper;

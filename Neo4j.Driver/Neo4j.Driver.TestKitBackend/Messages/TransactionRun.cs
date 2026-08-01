@@ -30,7 +30,7 @@ internal record TransactionRunRequest : IProtocolMessage
     public Dictionary<string, ICypherValue>? Params { get; init; }
 }
 
-internal class TransactionRunHandler : DetachedOperationHandler<TransactionRunRequest>
+internal class TransactionRunHandler : BackgroundOperationHandler<TransactionRunRequest>
 {
     private readonly IRegistry _registry;
     private readonly ICypherToNativeMapper _cypherToNativeMapper;
