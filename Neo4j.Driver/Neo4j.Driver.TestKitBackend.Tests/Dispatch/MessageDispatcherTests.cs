@@ -24,9 +24,9 @@ public class MessageDispatcherTests
 {
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<MessageDispatcher>();
 
-    private MessageDispatcher Subject(params IMessageHandler[] handlers)
+    private MessageDispatcher Subject(params Func<IMessageHandler>[] handlerFactories)
     {
-        _autoMocker.Use(handlers);
+        _autoMocker.Use(handlerFactories);
         return _autoMocker.CreateInstance<MessageDispatcher>();
     }
 
@@ -35,7 +35,7 @@ public class MessageDispatcherTests
     {
         var sampleHandler = new SampleHandler();
         var otherHandler = new OtherHandler();
-        var dispatcher = Subject(otherHandler, sampleHandler);
+        var dispatcher = Subject(() => otherHandler, () => sampleHandler);
 
         await dispatcher.DispatchAsync(new SampleRequest());
 
@@ -46,11 +46,28 @@ public class MessageDispatcherTests
     [Fact]
     public async Task Throws_when_no_handler_exists_for_the_message_type()
     {
-        var dispatcher = Subject(new OtherHandler());
+        var dispatcher = Subject(() => new OtherHandler());
 
         var dispatch = async () => await dispatcher.DispatchAsync(new SampleRequest());
 
         await dispatch.Should().ThrowAsync<UnknownMessageException>();
+    }
+
+    [Fact]
+    public async Task Constructs_a_fresh_handler_instance_for_every_dispatch()
+    {
+        var constructed = new List<SampleHandler>();
+        var dispatcher = Subject(() =>
+        {
+            var handler = new SampleHandler();
+            constructed.Add(handler);
+            return handler;
+        });
+
+        await dispatcher.DispatchAsync(new SampleRequest());
+        await dispatcher.DispatchAsync(new SampleRequest());
+
+        constructed.Count(h => h.WasCalled).Should().Be(2);
     }
 
     private record SampleRequest : IProtocolMessage;

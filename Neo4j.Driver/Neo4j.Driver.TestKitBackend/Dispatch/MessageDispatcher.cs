@@ -17,20 +17,21 @@ namespace Neo4j.Driver.TestKitBackend.Dispatch;
 
 internal class MessageDispatcher : IMessageDispatcher
 {
-    private readonly IReadOnlyDictionary<Type, IMessageHandler> _handlers;
+    private readonly IReadOnlyDictionary<Type, Func<IMessageHandler>> _handlerFactories;
 
-    public MessageDispatcher(IMessageHandler[] handlers)
+    public MessageDispatcher(Func<IMessageHandler>[] handlerFactories)
     {
-        _handlers = handlers.ToDictionary(h => MessageHandlingHelper.MessageTypeFor(h.GetType()));
+        _handlerFactories = handlerFactories
+            .ToDictionary(f => MessageHandlingHelper.MessageTypeFor(f().GetType()));
     }
 
     public Task DispatchAsync(IProtocolMessage message)
     {
-        if (!_handlers.TryGetValue(message.GetType(), out var handler))
+        if (!_handlerFactories.TryGetValue(message.GetType(), out var factory))
         {
             throw new UnknownMessageException(message.GetType());
         }
 
-        return handler.ProcessAsync(message);
+        return factory().ProcessAsync(message);
     }
 }
