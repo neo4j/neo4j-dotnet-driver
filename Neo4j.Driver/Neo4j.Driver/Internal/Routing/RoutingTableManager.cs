@@ -114,7 +114,7 @@ internal class RoutingTableManager : IRoutingTableManager
     {
         database ??= string.Empty;
         _routingTables.TryRemove(database, out _);
-        return EnsureRoutingTableForModeAsync(AccessMode.Write, database, false, sessionConfig, bookmarks);
+        return EnsureRoutingTableForModeAsync(AccessMode.Read, database, false, sessionConfig, bookmarks);
     }
 
     public async Task<IServerInfo> GetServerInfoAsync(Uri uri, string database)

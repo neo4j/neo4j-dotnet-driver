@@ -1127,6 +1127,47 @@ public static class RoutingTableManagerTests
             result.Should().Be(refreshedRoutingTable);
             manager.RoutingTableFor("foo").Should().Be(refreshedRoutingTable);
         }
+
+        [Fact]
+        public async Task ShouldAcceptRoutingTableWithoutWriters()
+        {
+            // A forced update (testkit's ForcedRoutingTableUpdate / driver.update_routing_table())
+            // has no write intent of its own - a router response with readers but no writers
+            // should still be accepted, not treated as stale.
+            var router = new Uri("bolt://server-01");
+            var reader = new Uri("bolt://server-02");
+
+            var refreshedRoutingTable =
+                new RoutingTable("foo", new[] { router }, new[] { reader }, Enumerable.Empty<Uri>(), 1000);
+
+            var discovery = new Mock<IDiscovery>();
+            discovery.Setup(
+                    x => x.DiscoverAsync(
+                        It.IsAny<IConnection>(),
+                        "foo",
+                        null,
+                        Bookmarks.Empty,
+                        It.IsAny<IHomeDbCache>()))
+                .ReturnsAsync(refreshedRoutingTable);
+
+            var poolManager = new Mock<IClusterConnectionPoolManager>();
+            poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), It.IsAny<SessionConfig>()))
+                .ReturnsAsync(Mock.Of<IConnection>);
+
+            var initialAddressProvider = new Mock<IInitialServerAddressProvider>();
+            initialAddressProvider.Setup(x => x.Get()).Returns(new HashSet<Uri> { router });
+
+            var manager = new RoutingTableManager(
+                initialAddressProvider.Object,
+                discovery.Object,
+                poolManager.Object,
+                Mock.Of<INeo4jLogger>(),
+                TimeSpan.MaxValue);
+
+            var result = await manager.ForceUpdateAsync("foo", null, Bookmarks.Empty);
+
+            result.Should().Be(refreshedRoutingTable);
+        }
     }
 
     public class RoutingErrorPropagation
