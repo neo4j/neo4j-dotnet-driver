@@ -13,16 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.DependencyInjection;
-
+#nullable enable
 namespace Neo4j.Driver.Internal;
 
-internal sealed class LoggingModule : IRegistrationModule
-{
-    public void Register(IServiceRegistry serviceRegistry)
-    {
-        serviceRegistry.RegisterType<ILoggingContextTracker, LoggingContextTracker>(singleton: true);
-        serviceRegistry.RegisterType<ILoggerFactory, LoggerFactory>(singleton: true);
-        serviceRegistry.RegisterInterceptor(new LoggingInterceptor());
-    }
-}
+// Stands in for the requesting type when ILogger is resolved directly rather than injected,
+// so log lines are attributed to "[UnknownLoggingSource]" instead of throwing on a null type.
+internal class UnknownLoggingSource;

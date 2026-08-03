@@ -13,18 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#nullable enable
+using Neo4j.Driver.Internal.DependencyInjection;
 
-using System;
-using System.Diagnostics.CodeAnalysis;
+namespace Neo4j.Driver.Internal;
 
-namespace Neo4j.Driver.Internal.DependencyInjection;
-
-internal interface IResolutionInterceptor
+internal sealed class LoggingModule : IRegistrationModule
 {
-    bool TryResolve(
-        Type serviceType,
-        Type? requestingType,
-        IServiceResolver resolver,
-        [NotNullWhen(true)] out object? service);
+    public void Register(IServiceRegistry serviceRegistry)
+    {
+        serviceRegistry.RegisterType<ILoggingContextTracker, LoggingContextTracker>(singleton: true);
+        serviceRegistry.RegisterType<ILoggerFactory, LoggerFactory>(singleton: true);
+        var loggerFactory = ((IResolutionScope)serviceRegistry).Resolve<ILoggerFactory>();
+        serviceRegistry.RegisterInterceptor(new LoggingInterceptor(loggerFactory));
+    }
 }

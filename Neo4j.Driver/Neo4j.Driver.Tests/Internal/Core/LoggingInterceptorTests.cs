@@ -27,11 +27,11 @@ public class LoggingInterceptorTests
 {
     private readonly Mock<ILoggerFactory> _loggerFactory = new();
     private readonly Mock<IServiceResolver> _resolver = new();
-    private readonly LoggingInterceptor _subject = new();
+    private readonly LoggingInterceptor _subject;
 
     public LoggingInterceptorTests()
     {
-        _resolver.Setup(r => r.Resolve<ILoggerFactory>()).Returns(_loggerFactory.Object);
+        _subject = new LoggingInterceptor(_loggerFactory.Object);
     }
 
     [Fact]
@@ -41,6 +41,22 @@ public class LoggingInterceptorTests
 
         result.Should().BeFalse();
         service.Should().BeNull();
+    }
+
+    [Fact]
+    public void TryResolve_ForLoggerTypeWithNullRequestingType_UsesUnknownLoggingSource()
+    {
+        var tracker = Mock.Of<ILoggingContextTracker>();
+        var logger = Mock.Of<ILogger>();
+        _resolver.Setup(r => r.Resolve<ILoggingContextTracker>()).Returns(tracker);
+        _loggerFactory
+            .Setup(f => f.GetLoggerForType(typeof(UnknownLoggingSource), tracker))
+            .Returns(logger);
+
+        var result = _subject.TryResolve(typeof(ILogger), null, _resolver.Object, out var service);
+
+        result.Should().BeTrue();
+        service.Should().BeSameAs(logger);
     }
 
     [Fact]
