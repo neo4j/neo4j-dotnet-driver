@@ -17,6 +17,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Encryption;
+using Neo4j.Driver.Internal.Services;
 using Neo4j.Driver.Preview.Encryption;
 using Xunit;
 
@@ -75,6 +76,14 @@ public class RootContainerFactoryTests
 
         userLogger.Verify(
             x => x.Debug("[RootContainerFactoryTests] value is {0}", It.Is<object[]>(a => a[0].Equals(42))));
+    }
+
+    [Fact]
+    public void Build_RegistersDateTimeProviderInstance()
+    {
+        var scope = RootContainerFactory.Build(Context());
+
+        scope.Resolve<IDateTimeProvider>().Should().BeSameAs(DateTimeProvider.Instance);
     }
 
     [Fact]

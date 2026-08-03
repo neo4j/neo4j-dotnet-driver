@@ -15,6 +15,7 @@
 
 using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.Encryption;
+using Neo4j.Driver.Internal.Services;
 
 namespace Neo4j.Driver.Internal;
 
@@ -26,6 +27,7 @@ internal static class RootContainerFactory
         container.AutoRegister<DriverAutoRegisterAttribute>();
         container.RegisterInstance(context);
         container.RegisterInstance(context.Neo4JLogger);
+        container.RegisterInstance(DateTimeProvider.Instance);
         container.RegisterModule<LoggingModule>();
 
         foreach (var profile in context.Config.Preview_PropertyEncryptionProfiles)

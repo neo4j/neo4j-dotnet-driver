@@ -1,12 +1,12 @@
 // Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,58 +24,47 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.Encryption;
 
-public class EncryptionKeyCacheTests
+public class AliasToKeyIdCacheTests
 {
-    private readonly EncryptionKeyCache _subject;
+    private readonly AliasToKeyIdCache _subject;
 
-    public EncryptionKeyCacheTests()
+    public AliasToKeyIdCacheTests()
     {
         var clock = new Mock<IDateTimeProvider>();
         clock.Setup(c => c.Now()).Returns(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
-        _subject = new EncryptionKeyCache(clock.Object);
+        _subject = new AliasToKeyIdCache(clock.Object);
     }
 
     [Fact]
-    public void TryGet_AfterSet_ReturnsCachedKey()
+    public void TryGet_AfterSet_ReturnsCachedKeyId()
     {
-        _subject.Set("profile", "key-1", [1, 2, 3]);
+        _subject.Set("profile", "main", "key-1");
 
-        var found = _subject.TryGet("profile", "key-1", out var key);
+        var found = _subject.TryGet("profile", "main", out var keyId);
 
         found.Should().BeTrue();
-        key.Should().Equal(1, 2, 3);
+        keyId.Should().Be("key-1");
     }
 
     [Fact]
     public void TryGet_Miss_ReturnsFalse()
     {
-        var found = _subject.TryGet("profile", "absent", out var key);
+        var found = _subject.TryGet("profile", "absent", out var keyId);
 
         found.Should().BeFalse();
-        key.Should().BeNull();
+        keyId.Should().BeNull();
     }
 
     [Fact]
-    public void Set_OverwritesExistingKey()
+    public void TryGet_SameAliasDifferentProfiles_AreIsolated()
     {
-        _subject.Set("profile", "key-1", [1, 2, 3]);
-        _subject.Set("profile", "key-1", [9, 9]);
+        _subject.Set("profile-a", "main", "key-a");
+        _subject.Set("profile-b", "main", "key-b");
 
-        _subject.TryGet("profile", "key-1", out var key);
+        _subject.TryGet("profile-a", "main", out var a);
+        _subject.TryGet("profile-b", "main", out var b);
 
-        key.Should().Equal(9, 9);
-    }
-
-    [Fact]
-    public void TryGet_SameKeyIdDifferentProfiles_AreIsolated()
-    {
-        _subject.Set("profile-a", "key-1", [1]);
-        _subject.Set("profile-b", "key-1", [2]);
-
-        _subject.TryGet("profile-a", "key-1", out var a);
-        _subject.TryGet("profile-b", "key-1", out var b);
-
-        a.Should().Equal(1);
-        b.Should().Equal(2);
+        a.Should().Be("key-a");
+        b.Should().Be("key-b");
     }
 }
