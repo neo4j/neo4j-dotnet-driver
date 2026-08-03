@@ -118,7 +118,7 @@ public class NativeToCypherMapperTests
     {
         var guid = Guid.Parse("550e8400-e29b-41d4-a716-446655440000");
 
-        _mapper.Map(guid).Should().Be(new CypherUuid(guid));
+        _mapper.Map(guid).Should().Be(new CypherUUID(guid));
     }
 
     [Fact]
@@ -159,6 +159,22 @@ public class NativeToCypherMapperTests
         var vector = Vector.Create<sbyte>([]);
 
         _mapper.Map(vector).Should().Be(new CypherVector("i8", ""));
+    }
+
+    [Fact]
+    public void Maps_an_unsupported_type_to_cypher_unsupported_type()
+    {
+        var unsupported = new UnsupportedType("encrypted_value", 6, 10, "test message");
+
+        _mapper.Map(unsupported).Should().Be(new CypherUnsupportedType("encrypted_value", "6.10", "test message"));
+    }
+
+    [Fact]
+    public void Maps_an_unsupported_type_with_no_message_to_cypher_unsupported_type()
+    {
+        var unsupported = new UnsupportedType("encrypted_value", 6, 10, null);
+
+        _mapper.Map(unsupported).Should().Be(new CypherUnsupportedType("encrypted_value", "6.10", null));
     }
 
     [Fact]

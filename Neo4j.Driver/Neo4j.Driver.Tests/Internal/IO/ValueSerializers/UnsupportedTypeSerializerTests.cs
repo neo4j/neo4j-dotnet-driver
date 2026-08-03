@@ -52,6 +52,26 @@ public class UnsupportedTypeSerializerTests : PackStreamSerializerTests
     }
 
     [Fact]
+    public void ShouldDeserializeWithNullMessageWhenNoneProvided()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
+
+        writer.WriteStructHeader(4, (byte)'?'); // '?' is the signature for UnsupportedType
+        writer.WriteString("the_type");
+        writer.WriteByte(42); // Major version
+        writer.WriteByte(69); // Minor version
+        writer.WriteMapHeader(0); // No extra fields, so no message
+
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+        var value = reader.Read();
+
+        var unsupported = (UnsupportedType)value;
+        unsupported.Message.Should().BeNull();
+    }
+
+    [Fact]
     public void ShouldThrowOnWrongSignature()
     {
         var writerMachine = CreateWriterMachine();

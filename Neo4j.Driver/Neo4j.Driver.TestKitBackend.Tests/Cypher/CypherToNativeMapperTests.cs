@@ -92,7 +92,7 @@ public class CypherToNativeMapperTests
     {
         var guid = Guid.Parse("550e8400-e29b-41d4-a716-446655440000");
 
-        _mapper.Map(new CypherUuid(guid)).Should().Be(guid);
+        _mapper.Map(new CypherUUID(guid)).Should().Be(guid);
     }
 
     [Fact]

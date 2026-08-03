@@ -34,7 +34,7 @@ internal class CypherToNativeMapper : ICypherToNativeMapper
             CypherFloat f => f.Value,
             CypherString s => s.Value,
             CypherMap m => m.Value.ToDictionary(kv => kv.Key, kv => Map(kv.Value)!),
-            CypherUuid u => u.Value,
+            CypherUUID u => u.Value,
             CypherDateTime { TimezoneId: null, UtcOffsetS: not null } dt => dt.ToZonedDateTime(dt.UtcOffsetS.Value),
             CypherDateTime { TimezoneId: { } timezoneId } dt => dt.ToZonedDateTime(timezoneId),
             CypherVector v => v.ToVector(),

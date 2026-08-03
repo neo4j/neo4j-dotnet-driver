@@ -48,6 +48,7 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
         "Feature:API:SSLConfig",
         "Feature:API:SSLSchemes",
         "Feature:API:Type.Temporal",
+        "Feature:API:Type.UnsupportedType",
         "Feature:API:Type.UUID",
         "Feature:API:Type.Vector",
         "Feature:Auth:Managed",

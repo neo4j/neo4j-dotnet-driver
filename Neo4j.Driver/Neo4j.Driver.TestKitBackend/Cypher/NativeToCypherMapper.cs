@@ -33,10 +33,14 @@ internal class NativeToCypherMapper : INativeToCypherMapper
             string s => new CypherString(s),
             List<object> list => new CypherList([..list.Select(Map)]),
             Dictionary<string, object> map => new CypherMap(map.ToDictionary(kv => kv.Key, kv => Map(kv.Value))),
-            Guid guid => new CypherUuid(guid),
+            Guid guid => new CypherUUID(guid),
             ZonedDateTime { Zone: ZoneOffset offset } zdt => new CypherDateTime(zdt, offset.OffsetSeconds),
             ZonedDateTime { Zone: ZoneId zoneId } zdt => new CypherDateTime(zdt, zdt.OffsetSeconds, zoneId.Id),
             IVector vector => new CypherVector(vector),
+            UnsupportedType unsupported => new CypherUnsupportedType(
+                unsupported.Name,
+                unsupported.MinimumProtocolVersion,
+                unsupported.Message),
             _ => throw new NotSupportedException($"No cypher mapping for native type {value.GetType().Name}")
         };
     }
