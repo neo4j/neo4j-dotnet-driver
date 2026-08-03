@@ -103,7 +103,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             .Setup(b => b.Build(IsExpectedMetadata("key-1", expectedAad)))
             .Returns(builtMetadata);
 
-        Freeze<IEncryptedStructureCodec>()
+        Freeze<IEncryptedValueBytesCodec>()
             .Setup(c => c.Encode(It.Is<EncryptedStructure>(s => IsExpectedStructure(s, cipher.Combined, builtMetadata))))
             .Returns(encoded);
 
@@ -149,7 +149,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
 
         var key = new EncapsulatedKey("key-1", "main", encapsulation, keyMetadata);
 
-        Freeze<IEncryptedStructureCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
+        Freeze<IEncryptedValueBytesCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
         Freeze<IEnvelopeMetadataExtractor>().Setup(e => e.Extract(structureMetadata)).Returns(envelopeMetadata);
 
         _repository.Setup(r => r.FindAsync(
@@ -208,7 +208,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             typeProtocolMinor,
             new Dictionary<string, object>());
 
-        Freeze<IEncryptedStructureCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
+        Freeze<IEncryptedValueBytesCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
 
         var subject = CreateSubject<EnvelopeEncryptionEngine>();
         var started = subject.TryStartDecrypt(
@@ -251,7 +251,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
 
         var key = new EncapsulatedKey("key-1", "main", encapsulation, keyMetadata);
 
-        Freeze<IEncryptedStructureCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
+        Freeze<IEncryptedValueBytesCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
         Freeze<IEnvelopeMetadataExtractor>().Setup(e => e.Extract(structureMetadata)).Returns(envelopeMetadata);
 
         _repository.Setup(r => r.FindAsync(
@@ -305,7 +305,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             AadProtocolMinor: 0,
             new Dictionary<string, object>());
 
-        Freeze<IEncryptedStructureCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
+        Freeze<IEncryptedValueBytesCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
         Freeze<IEnvelopeMetadataExtractor>().Setup(e => e.Extract(structureMetadata)).Returns(envelopeMetadata);
 
         var subject = CreateSubject<EnvelopeEncryptionEngine>();

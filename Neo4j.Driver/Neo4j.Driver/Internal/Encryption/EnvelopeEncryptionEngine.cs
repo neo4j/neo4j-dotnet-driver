@@ -38,7 +38,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
     private readonly IPropertyTypeInspector _propertyTypeInspector;
     private readonly IKeyDerivation _keyDerivation;
     private readonly IAeadCipher _aeadCipher;
-    private readonly IEncryptedStructureCodec _encryptedStructureCodec;
+    private readonly IEncryptedValueBytesCodec _encryptedValueBytesCodec;
     private readonly IEncryptionKeyCache _encryptionKeyCache;
     private readonly ICryptoRandomProvider _randomProvider;
     private readonly IEnvelopeMetadataExtractor _envelopeMetadataExtractor;
@@ -49,7 +49,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         IPropertyTypeInspector propertyTypeInspector,
         IKeyDerivation keyDerivation,
         IAeadCipher aeadCipher,
-        IEncryptedStructureCodec encryptedStructureCodec,
+        IEncryptedValueBytesCodec encryptedValueBytesCodec,
         IEncryptionKeyCache encryptionKeyCache,
         ICryptoRandomProvider randomProvider,
         IEnvelopeMetadataExtractor envelopeMetadataExtractor,
@@ -59,7 +59,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         _propertyTypeInspector = propertyTypeInspector;
         _keyDerivation = keyDerivation;
         _aeadCipher = aeadCipher;
-        _encryptedStructureCodec = encryptedStructureCodec;
+        _encryptedValueBytesCodec = encryptedValueBytesCodec;
         _encryptionKeyCache = encryptionKeyCache;
         _randomProvider = randomProvider;
         _envelopeMetadataExtractor = envelopeMetadataExtractor;
@@ -139,7 +139,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
             typeInfo.Baseline.MinorVersion,
             metadata);
 
-        return _encryptedStructureCodec.Encode(structure);
+        return _encryptedValueBytesCodec.Encode(structure);
     }
 
     private async Task<object> DecryptAsync(
@@ -148,7 +148,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         byte[]? aad,
         CancellationToken cancellationToken)
     {
-        var structure = _encryptedStructureCodec.Decode(encrypted);
+        var structure = _encryptedValueBytesCodec.Decode(encrypted);
 
         if (IsUnsupportedBaselineType(structure, out var unsupported))
         {
