@@ -136,11 +136,40 @@ public class CypherToNativeMapperTests
     }
 
     [Fact]
+    public void Maps_an_empty_cypher_list_to_an_empty_list()
+    {
+        _mapper.Map(new CypherList([]))
+            .Should().BeOfType<List<object>>()
+            .Which.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Maps_a_cypher_list_of_scalars_to_a_list()
+    {
+        var value = new List<ICypherValue> { new CypherInt(1), new CypherString("two") };
+
+        _mapper.Map(new CypherList(value))
+            .Should().BeOfType<List<object>>()
+            .Which.Should().Equal(1L, "two");
+    }
+
+    [Fact]
+    public void Maps_a_nested_cypher_list_recursively()
+    {
+        var outer = new CypherList([new CypherList([new CypherBool(true)])]);
+
+        var mapped = _mapper.Map(outer).Should().BeOfType<List<object>>().Subject;
+
+        var inner = mapped.Single().Should().BeOfType<List<object>>().Subject;
+        inner.Should().Equal(true);
+    }
+
+    [Fact]
     public void Throws_for_an_unmapped_cypher_type_naming_the_type()
     {
-        var act = () => _mapper.Map(new CypherList([]));
+        var act = () => _mapper.Map(new CypherUnsupportedType("x", "1.0", null));
 
-        act.Should().Throw<NotSupportedException>().WithMessage("*CypherList*");
+        act.Should().Throw<NotSupportedException>().WithMessage("*CypherUnsupportedType*");
     }
 
     [Fact]

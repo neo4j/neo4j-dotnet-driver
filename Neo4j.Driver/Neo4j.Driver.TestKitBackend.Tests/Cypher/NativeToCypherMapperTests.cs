@@ -13,7 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#pragma warning disable CS0618 // Id/StartNodeId/EndNodeId are obsolete but still part of the wire contract.
+
 using FluentAssertions;
+using FluentAssertions.Equivalency;
+using Moq;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Xunit;
 
@@ -175,6 +179,104 @@ public class NativeToCypherMapperTests
         var unsupported = new UnsupportedType("encrypted_value", 6, 10, null);
 
         _mapper.Map(unsupported).Should().Be(new CypherUnsupportedType("encrypted_value", "6.10", null));
+    }
+
+    [Fact]
+    public void Maps_a_node_to_cypher_node()
+    {
+        var node = new Mock<INode>();
+        node.SetupGet(n => n.Id).Returns(1L);
+        node.SetupGet(n => n.Labels).Returns(new List<string> { "Thing" });
+        node.SetupGet(n => n.Properties).Returns(new Dictionary<string, object> { ["uid"] = "abc" });
+        node.SetupGet(n => n.ElementId).Returns("element-id-1");
+
+        _mapper.Map(node.Object).Should().BeEquivalentTo(
+            new CypherNode(
+                1L,
+                new CypherList([new CypherString("Thing")]),
+                new CypherMap(new Dictionary<string, ICypherValue> { ["uid"] = new CypherString("abc") }),
+                "element-id-1"),
+            ComparingCypherRecordsByMembers);
+    }
+
+    [Fact]
+    public void Maps_a_relationship_to_cypher_relationship()
+    {
+        var relationship = new Mock<IRelationship>();
+        relationship.SetupGet(r => r.Id).Returns(1L);
+        relationship.SetupGet(r => r.StartNodeId).Returns(2L);
+        relationship.SetupGet(r => r.EndNodeId).Returns(3L);
+        relationship.SetupGet(r => r.Type).Returns("KNOWS");
+        relationship.SetupGet(r => r.Properties).Returns(new Dictionary<string, object> { ["since"] = 2020L });
+        relationship.SetupGet(r => r.ElementId).Returns("rel-1");
+        relationship.SetupGet(r => r.StartNodeElementId).Returns("node-2");
+        relationship.SetupGet(r => r.EndNodeElementId).Returns("node-3");
+
+        _mapper.Map(relationship.Object).Should().BeEquivalentTo(
+            new CypherRelationship(
+                1L,
+                2L,
+                3L,
+                "KNOWS",
+                new CypherMap(new Dictionary<string, ICypherValue> { ["since"] = new CypherInt(2020) }),
+                "rel-1",
+                "node-2",
+                "node-3"),
+            ComparingCypherRecordsByMembers);
+    }
+
+    [Fact]
+    public void Maps_a_path_to_cypher_path()
+    {
+        var node = new Mock<INode>();
+        node.SetupGet(n => n.Id).Returns(1L);
+        node.SetupGet(n => n.Labels).Returns(new List<string>());
+        node.SetupGet(n => n.Properties).Returns(new Dictionary<string, object>());
+        node.SetupGet(n => n.ElementId).Returns("node-1");
+
+        var relationship = new Mock<IRelationship>();
+        relationship.SetupGet(r => r.Id).Returns(2L);
+        relationship.SetupGet(r => r.StartNodeId).Returns(1L);
+        relationship.SetupGet(r => r.EndNodeId).Returns(1L);
+        relationship.SetupGet(r => r.Type).Returns("SELF");
+        relationship.SetupGet(r => r.Properties).Returns(new Dictionary<string, object>());
+        relationship.SetupGet(r => r.ElementId).Returns("rel-2");
+        relationship.SetupGet(r => r.StartNodeElementId).Returns("node-1");
+        relationship.SetupGet(r => r.EndNodeElementId).Returns("node-1");
+
+        var path = new Mock<IPath>();
+        path.SetupGet(p => p.Nodes).Returns(new List<INode> { node.Object });
+        path.SetupGet(p => p.Relationships).Returns(new List<IRelationship> { relationship.Object });
+
+        var expectedNode = new CypherNode(
+            1L,
+            new CypherList([]),
+            new CypherMap(new Dictionary<string, ICypherValue>()),
+            "node-1");
+
+        var expectedRelationship = new CypherRelationship(
+            2L,
+            1L,
+            1L,
+            "SELF",
+            new CypherMap(new Dictionary<string, ICypherValue>()),
+            "rel-2",
+            "node-1",
+            "node-1");
+
+        _mapper.Map(path.Object).Should().BeEquivalentTo(
+            new CypherPath(new CypherList([expectedNode]), new CypherList([expectedRelationship])),
+            ComparingCypherRecordsByMembers);
+    }
+
+    private static EquivalencyAssertionOptions<T> ComparingCypherRecordsByMembers<T>(EquivalencyAssertionOptions<T> options)
+    {
+        return options
+            .ComparingByMembers<CypherNode>()
+            .ComparingByMembers<CypherRelationship>()
+            .ComparingByMembers<CypherPath>()
+            .ComparingByMembers<CypherMap>()
+            .ComparingByMembers<CypherList>();
     }
 
     [Fact]

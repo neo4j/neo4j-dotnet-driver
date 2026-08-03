@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#pragma warning disable CS0618 // Id/StartNodeId/EndNodeId are obsolete but still part of the wire contract.
+
 namespace Neo4j.Driver.TestKitBackend.Cypher;
 
 internal interface INativeToCypherMapper
@@ -37,10 +39,32 @@ internal class NativeToCypherMapper : INativeToCypherMapper
             ZonedDateTime { Zone: ZoneOffset offset } zdt => new CypherDateTime(zdt, offset.OffsetSeconds),
             ZonedDateTime { Zone: ZoneId zoneId } zdt => new CypherDateTime(zdt, zdt.OffsetSeconds, zoneId.Id),
             IVector vector => new CypherVector(vector),
+
             UnsupportedType unsupported => new CypherUnsupportedType(
                 unsupported.Name,
                 unsupported.MinimumProtocolVersion,
                 unsupported.Message),
+
+            INode node => new CypherNode(
+                node.Id,
+                new CypherList([.. node.Labels.Select(l => Map(l))]),
+                new CypherMap(node.Properties.ToDictionary(kv => kv.Key, kv => Map(kv.Value))),
+                node.ElementId),
+
+            IRelationship relationship => new CypherRelationship(
+                relationship.Id,
+                relationship.StartNodeId,
+                relationship.EndNodeId,
+                relationship.Type,
+                new CypherMap(relationship.Properties.ToDictionary(kv => kv.Key, kv => Map(kv.Value))),
+                relationship.ElementId,
+                relationship.StartNodeElementId,
+                relationship.EndNodeElementId),
+
+            IPath path => new CypherPath(
+                new CypherList([.. path.Nodes.Select(n => Map(n))]),
+                new CypherList([.. path.Relationships.Select(r => Map(r))])),
+
             _ => throw new NotSupportedException($"No cypher mapping for native type {value.GetType().Name}")
         };
     }
