@@ -51,24 +51,24 @@ internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequ
 
     public override async Task ProcessAsync(NewBookmarkManagerRequest message)
     {
-        var managerId = "";
-
-        Func<CancellationToken, Task<string[]>>? supplier = message.BookmarksSupplierRegistered
-            ? _ => SupplyBookmarksAsync(managerId)
-            : null;
-
-        Func<string[], CancellationToken, Task>? consumer = message.BookmarksConsumerRegistered
-            ? (bookmarks, _) => ConsumeBookmarksAsync(managerId, bookmarks)
-            : null;
-
-        var manager = GraphDatabase.BookmarkManagerFactory.NewBookmarkManager(
-            new BookmarkManagerConfig(message.InitialBookmarks, supplier, consumer));
-
-        var registered = _registry.Register(manager);
-        managerId = registered.Id;
-
+        var registered = _registry.Register(id => CreateRegisteredManager(message, id));
         _logger.LogDebug("Created bookmark manager with id '{Id}'", registered.Id);
         await _responseWriter.WriteAsync(new BookmarkManagerResponse(registered.Id));
+    }
+
+    private IBookmarkManager CreateRegisteredManager(NewBookmarkManagerRequest message, string managerId)
+    {
+        Task<string[]> SupplyFromManager(CancellationToken _) => SupplyBookmarksAsync(managerId);
+        Task ConsumeFromManager(string[] bookmarks, CancellationToken _) => ConsumeBookmarksAsync(managerId, bookmarks);
+
+        Func<CancellationToken, Task<string[]>>? supplier =
+            message.BookmarksSupplierRegistered ? SupplyFromManager : null;
+
+        Func<string[], CancellationToken, Task>? consumer =
+            message.BookmarksConsumerRegistered ? ConsumeFromManager : null;
+
+        return GraphDatabase.BookmarkManagerFactory.NewBookmarkManager(
+            new BookmarkManagerConfig(message.InitialBookmarks, supplier, consumer));
     }
 
     private async Task<string[]> SupplyBookmarksAsync(string managerId)

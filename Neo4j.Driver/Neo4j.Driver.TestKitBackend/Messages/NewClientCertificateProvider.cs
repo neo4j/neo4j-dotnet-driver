@@ -32,7 +32,6 @@ internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCer
     private readonly IRegistry _registry;
     private readonly ICallbackExchanger _callbackExchanger;
     private readonly ICertificateLoader _certificateLoader;
-    private readonly Func<Func<ValueTask<X509Certificate>>, IClientCertificateProvider> _createProvider;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
@@ -40,28 +39,27 @@ internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCer
         IRegistry registry,
         ICallbackExchanger callbackExchanger,
         ICertificateLoader certificateLoader,
-        Func<Func<ValueTask<X509Certificate>>, IClientCertificateProvider> createProvider,
         IResponseWriter responseWriter,
         ILogger logger)
     {
         _registry = registry;
         _callbackExchanger = callbackExchanger;
         _certificateLoader = certificateLoader;
-        _createProvider = createProvider;
         _responseWriter = responseWriter;
         _logger = logger;
     }
 
     public override async Task ProcessAsync(NewClientCertificateProviderRequest message)
     {
-        var providerId = "";
-        var provider = _createProvider(() => ProvideCertificateAsync(providerId));
-
-        var registered = _registry.Register(provider);
-        providerId = registered.Id;
-
+        var registered = _registry.Register(CreateRegisteredProvider);
         _logger.LogDebug("Created client certificate provider with id '{Id}'", registered.Id);
         await _responseWriter.WriteAsync(new ClientCertificateProviderResponse(registered.Id));
+    }
+
+    private IClientCertificateProvider CreateRegisteredProvider(string providerId)
+    {
+        ValueTask<X509Certificate> ProvideFromProvider() => ProvideCertificateAsync(providerId);
+        return new TestKitClientCertificateProvider(ProvideFromProvider);
     }
 
     private async ValueTask<X509Certificate> ProvideCertificateAsync(string providerId)

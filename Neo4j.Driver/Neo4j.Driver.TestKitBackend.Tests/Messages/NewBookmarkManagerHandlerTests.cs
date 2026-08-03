@@ -32,12 +32,12 @@ public class NewBookmarkManagerHandlerTests
     {
         IBookmarkManager? manager = null;
         _autoMocker.GetMock<IRegistry>()
-            .Setup(r => r.Register(It.IsAny<IBookmarkManager>()))
-            .Returns<IBookmarkManager>(
-                m =>
+            .Setup(r => r.Register(It.IsAny<Func<string, IBookmarkManager>>()))
+            .Returns<Func<string, IBookmarkManager>>(
+                create =>
                 {
-                    manager = m;
-                    return new RegistryObject<IBookmarkManager>("bm-1", m);
+                    manager = create("bm-1");
+                    return new RegistryObject<IBookmarkManager>("bm-1", manager);
                 });
 
         var handler = _autoMocker.CreateInstance<NewBookmarkManagerHandler>();

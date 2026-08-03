@@ -24,7 +24,13 @@ internal class Registry : IRegistry, IAsyncDisposable
 
     public RegistryObject<T> Register<T>(T obj) where T : notnull
     {
+        return Register(_ => obj);
+    }
+
+    public RegistryObject<T> Register<T>(Func<string, T> create) where T : notnull
+    {
         var id = (_nextId++).ToString();
+        var obj = create(id);
         _objects[id] = obj;
         return new RegistryObject<T>(id, obj);
     }

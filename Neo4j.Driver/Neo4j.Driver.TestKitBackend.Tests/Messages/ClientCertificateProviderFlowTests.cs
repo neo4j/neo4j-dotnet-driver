@@ -37,19 +37,18 @@ public class ClientCertificateProviderFlowTests
         IClientCertificateProvider? provider = null;
         var registryMock = new Mock<IRegistry>();
         registryMock
-            .Setup(r => r.Register(It.IsAny<IClientCertificateProvider>()))
-            .Returns<IClientCertificateProvider>(
-                p =>
+            .Setup(r => r.Register(It.IsAny<Func<string, IClientCertificateProvider>>()))
+            .Returns<Func<string, IClientCertificateProvider>>(
+                create =>
                 {
-                    provider = p;
-                    return new RegistryObject<IClientCertificateProvider>("provider-1", p);
+                    provider = create("provider-1");
+                    return new RegistryObject<IClientCertificateProvider>("provider-1", provider);
                 });
 
         var newProviderHandler = new NewClientCertificateProviderHandler(
             registryMock.Object,
             _callbacksMock.Object,
             _certificateLoaderMock.Object,
-            provideCertificate => new TestKitClientCertificateProvider(provideCertificate),
             _responseWriterMock.Object,
             Mock.Of<ILogger>());
 

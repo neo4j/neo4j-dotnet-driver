@@ -15,6 +15,7 @@
 
 using System.Text.Json;
 using Autofac;
+using Autofac.Features.Indexed;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -54,7 +55,7 @@ public class BackendModuleTests
     }
 
     [Fact]
-    public void The_message_dispatcher_resolves_with_every_handler_constructed()
+    public void Every_message_handler_resolves_keyed_by_its_message_type()
     {
         var container = BuildContainer();
 
@@ -66,9 +67,28 @@ public class BackendModuleTests
             b.RegisterInstance(new ConfigurationBuilder().Build()).As<IConfiguration>();
         });
 
-        var resolve = () => scope.Resolve<IMessageDispatcher>();
+        var handlerTypes = typeof(BackendModule).Assembly.GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false } && t.IsAssignableTo(typeof(IMessageHandler)))
+            .ToArray();
+        handlerTypes.Should().NotBeEmpty();
 
-        resolve.Should().NotThrow();
+        var handlers = scope.Resolve<IIndex<Type, IMessageHandler>>();
+
+        foreach (var handlerType in handlerTypes)
+        {
+            var messageType = MessageHandlingHelper.MessageTypeFor(handlerType);
+            handlers.TryGetValue(messageType, out var handler)
+                .Should().BeTrue($"{handlerType.Name} should be resolvable for {messageType.Name}");
+            handler.Should().BeOfType(handlerType);
+        }
+    }
+
+    [Fact]
+    public void Protocol_messages_are_not_registered_as_services()
+    {
+        var container = BuildContainer();
+
+        container.IsRegistered<IProtocolMessage>().Should().BeFalse();
     }
 
     [Fact]
@@ -85,7 +105,7 @@ public class BackendModuleTests
             b.RegisterInstance(new ConfigurationBuilder().Build()).As<IConfiguration>();
         });
 
-        scope.Resolve<IMessageDispatcher>();
+        scope.Resolve<IIndex<Type, IMessageHandler>>().TryGetValue(typeof(NewDriverRequest), out _);
 
         factory.Verify(f => f.CreateLogger(typeof(NewDriverHandler).FullName!));
         factory.Verify(f => f.CreateLogger(typeof(ResponseWriter).FullName!));

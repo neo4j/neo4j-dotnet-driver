@@ -45,6 +45,24 @@ public class RegistryTests
     }
 
     [Fact]
+    public void Register_with_a_factory_passes_the_id_the_object_will_be_stored_under()
+    {
+        string? idGivenToFactory = null;
+        Stored? created = null;
+
+        var registered = _registry.Register(id =>
+        {
+            idGivenToFactory = id;
+            created = new Stored();
+            return created;
+        });
+
+        idGivenToFactory.Should().Be(registered.Id);
+        registered.Object.Should().BeSameAs(created);
+        _registry.Get<Stored>(registered.Id).Object.Should().BeSameAs(created);
+    }
+
+    [Fact]
     public void Get_returns_the_registered_object_under_its_id()
     {
         var stored = new Stored();

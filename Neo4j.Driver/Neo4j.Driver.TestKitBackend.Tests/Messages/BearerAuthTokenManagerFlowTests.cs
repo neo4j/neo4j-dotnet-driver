@@ -38,17 +38,18 @@ public class BearerAuthTokenManagerFlowTests
         IAuthTokenManager? manager = null;
         var registryMock = new Mock<IRegistry>();
         registryMock
-            .Setup(r => r.Register(It.IsAny<IAuthTokenManager>()))
-            .Returns<IAuthTokenManager>(
-                m =>
+            .Setup(r => r.Register(It.IsAny<Func<string, IAuthTokenManager>>()))
+            .Returns<Func<string, IAuthTokenManager>>(
+                create =>
                 {
-                    manager = m;
-                    return new RegistryObject<IAuthTokenManager>("manager-1", m);
+                    manager = create("manager-1");
+                    return new RegistryObject<IAuthTokenManager>("manager-1", manager);
                 });
 
         var newManagerHandler = new NewBearerAuthTokenManagerHandler(
             registryMock.Object,
             _callbacksMock.Object,
+            new CurrentDateTimeProvider(),
             _responseWriterMock.Object,
             Mock.Of<ILogger>());
 

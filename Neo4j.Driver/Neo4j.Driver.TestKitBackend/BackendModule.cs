@@ -18,6 +18,7 @@ using Autofac;
 using Autofac.Core;
 using Autofac.Core.Registration;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Infrastructure;
 using Module = Autofac.Module;
 
@@ -32,6 +33,11 @@ internal class BackendModule : Module
         foreach (var type in RegisterableTypes(Assembly.GetExecutingAssembly()))
         {
             var registration = builder.RegisterType(type).AsImplementedInterfaces();
+
+            if (type.IsAssignableTo(typeof(IMessageHandler)))
+            {
+                registration.Keyed<IMessageHandler>(MessageHandlingHelper.MessageTypeFor(type));
+            }
 
             _ = LifetimeOf(type) switch
             {
@@ -59,7 +65,8 @@ internal class BackendModule : Module
         return assembly.GetTypes()
             .Where(t =>
                 t is { IsClass: true, IsAbstract: false, IsGenericTypeDefinition: false } &&
-                !t.IsAssignableTo(typeof(Delegate)));
+                !t.IsAssignableTo(typeof(Delegate)) &&
+                !t.IsAssignableTo(typeof(IProtocolMessage)));
     }
 
     private static RegistrationLifetime LifetimeOf(Type type)

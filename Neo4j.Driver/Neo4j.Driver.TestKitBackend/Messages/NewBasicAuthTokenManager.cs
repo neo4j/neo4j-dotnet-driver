@@ -46,14 +46,15 @@ internal class NewBasicAuthTokenManagerHandler : MessageHandler<NewBasicAuthToke
 
     public override async Task ProcessAsync(NewBasicAuthTokenManagerRequest message)
     {
-        var managerId = "";
-        var manager = AuthTokenManagers.Basic(() => ProvideTokenAsync(managerId));
-
-        var registered = _registry.Register(manager);
-        managerId = registered.Id;
-
+        var registered = _registry.Register(CreateRegisteredManager);
         _logger.LogDebug("Created basic auth token manager with id '{Id}'", registered.Id);
         await _responseWriter.WriteAsync(new BasicAuthTokenManagerResponse(registered.Id));
+    }
+
+    private IAuthTokenManager CreateRegisteredManager(string managerId)
+    {
+        ValueTask<IAuthToken> ProvideFromManager() => ProvideTokenAsync(managerId);
+        return AuthTokenManagers.Basic(ProvideFromManager);
     }
 
     private async ValueTask<IAuthToken> ProvideTokenAsync(string managerId)

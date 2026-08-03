@@ -34,12 +34,12 @@ public class BookmarkManagerFlowTests
         IBookmarkManager? manager = null;
         var registryMock = new Mock<IRegistry>();
         registryMock
-            .Setup(r => r.Register(It.IsAny<IBookmarkManager>()))
-            .Returns<IBookmarkManager>(
-                m =>
+            .Setup(r => r.Register(It.IsAny<Func<string, IBookmarkManager>>()))
+            .Returns<Func<string, IBookmarkManager>>(
+                create =>
                 {
-                    manager = m;
-                    return new RegistryObject<IBookmarkManager>("bm-1", m);
+                    manager = create("bm-1");
+                    return new RegistryObject<IBookmarkManager>("bm-1", manager);
                 });
 
         var handler = new NewBookmarkManagerHandler(

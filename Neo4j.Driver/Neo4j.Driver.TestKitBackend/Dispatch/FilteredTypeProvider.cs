@@ -22,10 +22,9 @@ internal abstract class FilteredTypeProvider
     protected Type[] FindClasses(Func<Type, bool> filter)
     {
         return Assembly
-                .GetExecutingAssembly()
-                .GetTypes()
-                .Where(t => t is { IsClass: true, IsAbstract: false } && filter(t))
-                .ToArray() ??
-            [];
+            .GetExecutingAssembly()
+            .GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false } && filter(t))
+            .ToArray();
     }
 }

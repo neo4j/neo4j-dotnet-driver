@@ -13,25 +13,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Autofac.Features.Indexed;
+
 namespace Neo4j.Driver.TestKitBackend.Dispatch;
 
 internal class MessageDispatcher : IMessageDispatcher
 {
-    private readonly IReadOnlyDictionary<Type, Func<IMessageHandler>> _handlerFactories;
+    private readonly IIndex<Type, IMessageHandler> _handlers;
 
-    public MessageDispatcher(Func<IMessageHandler>[] handlerFactories)
+    public MessageDispatcher(IIndex<Type, IMessageHandler> handlers)
     {
-        _handlerFactories = handlerFactories
-            .ToDictionary(f => MessageHandlingHelper.MessageTypeFor(f().GetType()));
+        _handlers = handlers;
     }
 
     public Task DispatchAsync(IProtocolMessage message)
     {
-        if (!_handlerFactories.TryGetValue(message.GetType(), out var factory))
+        if (!_handlers.TryGetValue(message.GetType(), out var handler))
         {
             throw new UnknownMessageException(message.GetType());
         }
 
-        return factory().ProcessAsync(message);
+        return handler.ProcessAsync(message);
     }
 }

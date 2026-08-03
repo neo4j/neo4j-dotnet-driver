@@ -28,39 +28,36 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
 {
     private readonly IRegistry _registry;
     private readonly ICallbackExchanger _callbackExchanger;
-    private readonly Func<Func<ValueTask<IAuthToken>>, Func<IAuthToken, SecurityException, ValueTask<bool>>,
-        IAuthTokenManager> _createManager;
-
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewAuthTokenManagerHandler(
         IRegistry registry,
         ICallbackExchanger callbackExchanger,
-        Func<Func<ValueTask<IAuthToken>>, Func<IAuthToken, SecurityException, ValueTask<bool>>, IAuthTokenManager>
-            createManager,
         IResponseWriter responseWriter,
         ILogger logger)
     {
         _registry = registry;
         _callbackExchanger = callbackExchanger;
-        _createManager = createManager;
         _responseWriter = responseWriter;
         _logger = logger;
     }
 
     public override async Task ProcessAsync(NewAuthTokenManagerRequest message)
     {
-        var managerId = "";
-        var manager = _createManager(
-            () => GetAuthAsync(managerId),
-            (token, exception) => HandleSecurityExceptionAsync(managerId, token, exception));
-
-        var registered = _registry.Register(manager);
-        managerId = registered.Id;
-
+        var registered = _registry.Register(CreateRegisteredManager);
         _logger.LogDebug("Created auth token manager with id '{Id}'", registered.Id);
         await _responseWriter.WriteAsync(new AuthTokenManagerResponse(registered.Id));
+    }
+
+    private IAuthTokenManager CreateRegisteredManager(string managerId)
+    {
+        ValueTask<IAuthToken> GetFromManager() => GetAuthAsync(managerId);
+
+        ValueTask<bool> HandleFromManager(IAuthToken token, SecurityException exception) =>
+            HandleSecurityExceptionAsync(managerId, token, exception);
+
+        return new TestKitAuthTokenManager(GetFromManager, HandleFromManager);
     }
 
     private async ValueTask<IAuthToken> GetAuthAsync(string managerId)

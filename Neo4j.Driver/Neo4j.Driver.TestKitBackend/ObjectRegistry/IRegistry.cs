@@ -19,6 +19,8 @@ internal interface IRegistry
 {
     RegistryObject<T> Register<T>(T obj) where T : notnull;
 
+    RegistryObject<T> Register<T>(Func<string, T> create) where T : notnull;
+
     RegistryObject<T> Get<T>(string id) where T : notnull;
 
     void Remove(string id);
