@@ -26,7 +26,7 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
 public class BookmarkManagerFlowTests
 {
-    private readonly Mock<ICallbackExchange> _callbacksMock = new();
+    private readonly Mock<ICallbackExchanger> _callbacksMock = new();
     private readonly Mock<IResponseWriter> _responseWriterMock = new();
 
     private IBookmarkManager RegisterManager(NewBookmarkManagerRequest request)

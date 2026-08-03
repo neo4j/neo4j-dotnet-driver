@@ -28,7 +28,7 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
 public class ClientCertificateProviderFlowTests
 {
-    private readonly Mock<ICallbackExchange> _callbacksMock = new();
+    private readonly Mock<ICallbackExchanger> _callbacksMock = new();
     private readonly Mock<IResponseWriter> _responseWriterMock = new();
     private readonly Mock<ICertificateLoader> _certificateLoaderMock = new();
 

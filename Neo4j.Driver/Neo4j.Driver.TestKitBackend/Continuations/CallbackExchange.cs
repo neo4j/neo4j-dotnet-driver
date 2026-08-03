@@ -21,55 +21,55 @@ namespace Neo4j.Driver.TestKitBackend.Continuations;
 
 internal interface ICallbackRequest : IProtocolMessage;
 
-internal interface ICallbackCompletion : IProtocolMessage
+internal interface ICallbackResponse : IProtocolMessage
 {
     string RequestId { get; }
 }
 
-internal interface ICallbackExchange
+internal interface ICallbackExchanger
 {
-    Task<TCompletion> SendAsync<TCompletion>(Func<string, ICallbackRequest> createRequest)
-        where TCompletion : ICallbackCompletion;
+    Task<TResponse> SendAsync<TResponse>(Func<string, ICallbackRequest> createRequest)
+        where TResponse : ICallbackResponse;
 }
 
-internal class CallbackExchange : ICallbackExchange
+internal class CallbackExchanger : ICallbackExchanger
 {
     private readonly IResponseWriter _responseWriter;
     private readonly IConnectionInput _input;
     private readonly IMessageSerializer _serializer;
 
-    public CallbackExchange(IResponseWriter responseWriter, IConnectionInput input, IMessageSerializer serializer)
+    public CallbackExchanger(IResponseWriter responseWriter, IConnectionInput input, IMessageSerializer serializer)
     {
         _responseWriter = responseWriter;
         _input = input;
         _serializer = serializer;
     }
 
-    public async Task<TCompletion> SendAsync<TCompletion>(Func<string, ICallbackRequest> createRequest)
-        where TCompletion : ICallbackCompletion
+    public async Task<TResponse> SendAsync<TResponse>(Func<string, ICallbackRequest> createRequest)
+        where TResponse : ICallbackResponse
     {
         var requestId = Guid.NewGuid().ToString();
         await _responseWriter.WriteAsync(createRequest(requestId));
 
         var json = await _input.ReadRequestAsync() ??
             throw new InvalidOperationException(
-                $"Connection closed while awaiting a {typeof(TCompletion).Name} callback completion.");
+                $"Connection closed while awaiting a {typeof(TResponse).Name} callback completion.");
 
         var message = _serializer.Deserialize(json);
-        if (message is not TCompletion completion)
+        if (message is not TResponse response)
         {
             throw new InvalidOperationException(
-                $"Expected a {typeof(TCompletion).Name} callback completion but received " +
+                $"Expected a {typeof(TResponse).Name} callback completion but received " +
                 $"{message.GetType().Name}.");
         }
 
-        if (completion.RequestId != requestId)
+        if (response.RequestId != requestId)
         {
             throw new InvalidOperationException(
-                $"Callback completion request id '{completion.RequestId}' did not match the expected id " +
+                $"Callback completion request id '{response.RequestId}' did not match the expected id " +
                 $"'{requestId}'.");
         }
 
-        return completion;
+        return response;
     }
 }

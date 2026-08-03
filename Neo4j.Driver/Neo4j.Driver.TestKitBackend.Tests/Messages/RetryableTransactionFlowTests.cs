@@ -194,7 +194,7 @@ public class RetryableTransactionFlowTests
                     Auth = new AuthorizationToken("basic", "neo4j", "pass")
                 });
 
-        var callbacks = new CallbackExchange(
+        var callbackExchanger = new CallbackExchanger(
             _responseWriterMock.Object,
             _connectionInputMock.Object,
             _serializerMock.Object);
@@ -207,12 +207,12 @@ public class RetryableTransactionFlowTests
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 async (work, _) =>
                 {
-                    await callbacks.SendAsync<AuthTokenManagerGetAuthCompletedRequest>(
+                    await callbackExchanger.SendAsync<AuthTokenManagerGetAuthCompletedRequest>(
                         id => new AuthTokenManagerGetAuthRequest(id, "manager-1"));
 
                     await work(firstTxMock.Object);
 
-                    await callbacks.SendAsync<AuthTokenManagerGetAuthCompletedRequest>(
+                    await callbackExchanger.SendAsync<AuthTokenManagerGetAuthCompletedRequest>(
                         id => new AuthTokenManagerGetAuthRequest(id, "manager-1"));
 
                     await work(secondTxMock.Object);

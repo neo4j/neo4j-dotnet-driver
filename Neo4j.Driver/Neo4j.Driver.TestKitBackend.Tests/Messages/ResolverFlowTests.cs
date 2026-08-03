@@ -26,7 +26,7 @@ public class ResolverFlowTests
     public void Resolve_requests_a_callback_with_the_asked_address_and_parses_the_reply()
     {
         Func<string, ICallbackRequest>? capturedRequest = null;
-        var callbacksMock = new Mock<ICallbackExchange>();
+        var callbacksMock = new Mock<ICallbackExchanger>();
         callbacksMock
             .Setup(c => c.SendAsync<ResolverResolutionCompletedRequest>(It.IsAny<Func<string, ICallbackRequest>>()))
             .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)

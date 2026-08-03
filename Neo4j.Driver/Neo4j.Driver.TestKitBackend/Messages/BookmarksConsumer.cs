@@ -22,7 +22,7 @@ internal record BookmarksConsumerRequest(
     string BookmarkManagerId,
     string[] Bookmarks) : ICallbackRequest;
 
-internal record BookmarksConsumerCompletedRequest : ICallbackCompletion
+internal record BookmarksConsumerCompletedRequest : ICallbackResponse
 {
     public required string RequestId { get; init; }
 }

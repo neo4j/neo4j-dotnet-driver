@@ -27,7 +27,7 @@ internal record NewAuthTokenManagerRequest : IProtocolMessage;
 internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRequest>
 {
     private readonly IRegistry _registry;
-    private readonly ICallbackExchange _callbacks;
+    private readonly ICallbackExchanger _callbackExchanger;
     private readonly Func<Func<ValueTask<IAuthToken>>, Func<IAuthToken, SecurityException, ValueTask<bool>>,
         IAuthTokenManager> _createManager;
 
@@ -36,14 +36,14 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
 
     public NewAuthTokenManagerHandler(
         IRegistry registry,
-        ICallbackExchange callbacks,
+        ICallbackExchanger callbackExchanger,
         Func<Func<ValueTask<IAuthToken>>, Func<IAuthToken, SecurityException, ValueTask<bool>>, IAuthTokenManager>
             createManager,
         IResponseWriter responseWriter,
         ILogger logger)
     {
         _registry = registry;
-        _callbacks = callbacks;
+        _callbackExchanger = callbackExchanger;
         _createManager = createManager;
         _responseWriter = responseWriter;
         _logger = logger;
@@ -65,7 +65,7 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
 
     private async ValueTask<IAuthToken> GetAuthAsync(string managerId)
     {
-        var completion = await _callbacks.SendAsync<AuthTokenManagerGetAuthCompletedRequest>(
+        var completion = await _callbackExchanger.SendAsync<AuthTokenManagerGetAuthCompletedRequest>(
             id => new AuthTokenManagerGetAuthRequest(id, managerId));
 
         return completion.Auth.Value.ToAuthToken();
@@ -76,7 +76,7 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
         IAuthToken token,
         SecurityException exception)
     {
-        var completion = await _callbacks.SendAsync<AuthTokenManagerHandleSecurityExceptionCompletedRequest>(
+        var completion = await _callbackExchanger.SendAsync<AuthTokenManagerHandleSecurityExceptionCompletedRequest>(
             id => new AuthTokenManagerHandleSecurityExceptionRequest(id, managerId, ToWireToken(token), exception.Code));
 
         return completion.Handled;

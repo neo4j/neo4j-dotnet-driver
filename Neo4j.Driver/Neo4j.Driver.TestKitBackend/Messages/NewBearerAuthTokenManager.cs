@@ -30,19 +30,19 @@ internal record BearerAuthTokenManagerResponse(string Id) : IProtocolMessage;
 internal class NewBearerAuthTokenManagerHandler : MessageHandler<NewBearerAuthTokenManagerRequest>
 {
     private readonly IRegistry _registry;
-    private readonly ICallbackExchange _callbacks;
+    private readonly ICallbackExchanger _callbackExchanger;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
     private string _managerId;
 
     public NewBearerAuthTokenManagerHandler(
         IRegistry registry,
-        ICallbackExchange callbacks,
+        ICallbackExchanger callbackExchanger,
         IResponseWriter responseWriter,
         ILogger logger)
     {
         _registry = registry;
-        _callbacks = callbacks;
+        _callbackExchanger = callbackExchanger;
         _responseWriter = responseWriter;
         _logger = logger;
         _managerId = "";
@@ -61,7 +61,7 @@ internal class NewBearerAuthTokenManagerHandler : MessageHandler<NewBearerAuthTo
 
     private async ValueTask<DriverAuthTokenAndExpiration> ProvideTokenAsync()
     {
-        var completion = await _callbacks.SendAsync<BearerAuthTokenProviderCompletedRequest>(
+        var completion = await _callbackExchanger.SendAsync<BearerAuthTokenProviderCompletedRequest>(
             id => new BearerAuthTokenProviderRequest(id, _managerId));
 
         var payload = completion.Auth.Value;

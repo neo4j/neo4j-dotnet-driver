@@ -23,22 +23,22 @@ using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Continuations;
 
-public class CallbackExchangeTests
+public class CallbackExchangerTests
 {
     private record FakeRequest(string Id) : ICallbackRequest;
 
-    private record FakeCompletedRequest : ICallbackCompletion
+    private record FakeCompletedRequest : ICallbackResponse
     {
         public required string RequestId { get; init; }
         public string Tag { get; init; } = "";
     }
 
-    private record OtherCompletedRequest : ICallbackCompletion
+    private record OtherCompletedRequest : ICallbackResponse
     {
         public required string RequestId { get; init; }
     }
 
-    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<CallbackExchange>();
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<CallbackExchanger>();
 
     [Fact]
     public async Task Writes_the_request_then_returns_the_matching_completion()
@@ -55,7 +55,7 @@ public class CallbackExchangeTests
             .Setup(s => s.Deserialize("completion-json"))
             .Returns(() => new FakeCompletedRequest { RequestId = written!.Id, Tag = "hello" });
 
-        var exchange = _autoMocker.CreateInstance<CallbackExchange>();
+        var exchange = _autoMocker.CreateInstance<CallbackExchanger>();
 
         var response = await exchange.SendAsync<FakeCompletedRequest>(id => new FakeRequest(id));
 
@@ -77,7 +77,7 @@ public class CallbackExchangeTests
             .Setup(s => s.Deserialize("completion-json"))
             .Returns<string>(_ => new OtherCompletedRequest { RequestId = "whatever" });
 
-        var exchange = _autoMocker.CreateInstance<CallbackExchange>();
+        var exchange = _autoMocker.CreateInstance<CallbackExchanger>();
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => exchange.SendAsync<FakeCompletedRequest>(id => new FakeRequest(id)));
@@ -96,7 +96,7 @@ public class CallbackExchangeTests
             .Setup(s => s.Deserialize("completion-json"))
             .Returns<string>(_ => new FakeCompletedRequest { RequestId = "not-the-right-id" });
 
-        var exchange = _autoMocker.CreateInstance<CallbackExchange>();
+        var exchange = _autoMocker.CreateInstance<CallbackExchanger>();
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => exchange.SendAsync<FakeCompletedRequest>(id => new FakeRequest(id)));
@@ -111,7 +111,7 @@ public class CallbackExchangeTests
 
         _autoMocker.GetMock<IConnectionInput>().Setup(i => i.ReadRequestAsync()).ReturnsAsync((string?)null);
 
-        var exchange = _autoMocker.CreateInstance<CallbackExchange>();
+        var exchange = _autoMocker.CreateInstance<CallbackExchanger>();
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => exchange.SendAsync<FakeCompletedRequest>(id => new FakeRequest(id)));

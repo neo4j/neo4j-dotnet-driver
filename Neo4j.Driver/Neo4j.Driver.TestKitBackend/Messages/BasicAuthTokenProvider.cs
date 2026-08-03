@@ -20,7 +20,7 @@ namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record BasicAuthTokenProviderRequest(string Id, string BasicAuthTokenManagerId) : ICallbackRequest;
 
-internal record BasicAuthTokenProviderCompletedRequest : ICallbackCompletion
+internal record BasicAuthTokenProviderCompletedRequest : ICallbackResponse
 {
     public required string RequestId { get; init; }
     public required IWireType<AuthorizationToken> Auth { get; init; }

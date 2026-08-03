@@ -19,7 +19,7 @@ namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record BookmarksSupplierRequest(string Id, string BookmarkManagerId) : ICallbackRequest;
 
-internal record BookmarksSupplierCompletedRequest : ICallbackCompletion
+internal record BookmarksSupplierCompletedRequest : ICallbackResponse
 {
     public required string RequestId { get; init; }
     public required string[] Bookmarks { get; init; }

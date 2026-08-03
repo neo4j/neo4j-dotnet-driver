@@ -41,7 +41,7 @@ public class AuthTokenManagerFlowTests
                 });
 
         Func<string, ICallbackRequest>? capturedRequest = null;
-        var callbacksMock = new Mock<ICallbackExchange>();
+        var callbacksMock = new Mock<ICallbackExchanger>();
         callbacksMock
             .Setup(c => c.SendAsync<AuthTokenManagerGetAuthCompletedRequest>(It.IsAny<Func<string, ICallbackRequest>>()))
             .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
@@ -89,7 +89,7 @@ public class AuthTokenManagerFlowTests
                 });
 
         Func<string, ICallbackRequest>? capturedRequest = null;
-        var callbacksMock = new Mock<ICallbackExchange>();
+        var callbacksMock = new Mock<ICallbackExchanger>();
         callbacksMock
             .Setup(
                 c => c.SendAsync<AuthTokenManagerHandleSecurityExceptionCompletedRequest>(

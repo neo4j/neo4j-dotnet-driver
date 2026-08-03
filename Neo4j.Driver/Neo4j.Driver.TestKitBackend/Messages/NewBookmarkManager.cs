@@ -33,18 +33,18 @@ internal record BookmarkManagerResponse(string Id) : IProtocolMessage;
 internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequest>
 {
     private readonly IRegistry _registry;
-    private readonly ICallbackExchange _callbacks;
+    private readonly ICallbackExchanger _callbackExchanger;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewBookmarkManagerHandler(
         IRegistry registry,
-        ICallbackExchange callbacks,
+        ICallbackExchanger callbackExchanger,
         IResponseWriter responseWriter,
         ILogger logger)
     {
         _registry = registry;
-        _callbacks = callbacks;
+        _callbackExchanger = callbackExchanger;
         _responseWriter = responseWriter;
         _logger = logger;
     }
@@ -73,7 +73,7 @@ internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequ
 
     private async Task<string[]> SupplyBookmarksAsync(string managerId)
     {
-        var completion = await _callbacks.SendAsync<BookmarksSupplierCompletedRequest>(
+        var completion = await _callbackExchanger.SendAsync<BookmarksSupplierCompletedRequest>(
             id => new BookmarksSupplierRequest(id, managerId));
 
         return completion.Bookmarks;
@@ -81,7 +81,7 @@ internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequ
 
     private async Task ConsumeBookmarksAsync(string managerId, string[] bookmarks)
     {
-        await _callbacks.SendAsync<BookmarksConsumerCompletedRequest>(
+        await _callbackExchanger.SendAsync<BookmarksConsumerCompletedRequest>(
             id => new BookmarksConsumerRequest(id, managerId, bookmarks));
     }
 }

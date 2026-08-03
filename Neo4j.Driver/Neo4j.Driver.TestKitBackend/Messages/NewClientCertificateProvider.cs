@@ -30,7 +30,7 @@ internal record ClientCertificateProviderResponse(string Id) : IProtocolMessage;
 internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCertificateProviderRequest>
 {
     private readonly IRegistry _registry;
-    private readonly ICallbackExchange _callbacks;
+    private readonly ICallbackExchanger _callbackExchanger;
     private readonly ICertificateLoader _certificateLoader;
     private readonly Func<Func<ValueTask<X509Certificate>>, IClientCertificateProvider> _createProvider;
     private readonly IResponseWriter _responseWriter;
@@ -38,14 +38,14 @@ internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCer
 
     public NewClientCertificateProviderHandler(
         IRegistry registry,
-        ICallbackExchange callbacks,
+        ICallbackExchanger callbackExchanger,
         ICertificateLoader certificateLoader,
         Func<Func<ValueTask<X509Certificate>>, IClientCertificateProvider> createProvider,
         IResponseWriter responseWriter,
         ILogger logger)
     {
         _registry = registry;
-        _callbacks = callbacks;
+        _callbackExchanger = callbackExchanger;
         _certificateLoader = certificateLoader;
         _createProvider = createProvider;
         _responseWriter = responseWriter;
@@ -66,7 +66,7 @@ internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCer
 
     private async ValueTask<X509Certificate> ProvideCertificateAsync(string providerId)
     {
-        var completion = await _callbacks.SendAsync<ClientCertificateProviderCompletedRequest>(
+        var completion = await _callbackExchanger.SendAsync<ClientCertificateProviderCompletedRequest>(
             id => new ClientCertificateProviderRequest(id, providerId));
 
         var certificate = completion.ClientCertificate.Value;

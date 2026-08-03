@@ -20,7 +20,7 @@ namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record ClientCertificateProviderRequest(string Id, string ClientCertificateProviderId) : ICallbackRequest;
 
-internal record ClientCertificateProviderCompletedRequest : ICallbackCompletion
+internal record ClientCertificateProviderCompletedRequest : ICallbackResponse
 {
     public required string RequestId { get; init; }
     public required bool HasUpdate { get; init; }

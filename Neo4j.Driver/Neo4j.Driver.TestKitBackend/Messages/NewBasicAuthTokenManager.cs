@@ -28,18 +28,18 @@ internal record BasicAuthTokenManagerResponse(string Id) : IProtocolMessage;
 internal class NewBasicAuthTokenManagerHandler : MessageHandler<NewBasicAuthTokenManagerRequest>
 {
     private readonly IRegistry _registry;
-    private readonly ICallbackExchange _callbacks;
+    private readonly ICallbackExchanger _callbackExchanger;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewBasicAuthTokenManagerHandler(
         IRegistry registry,
-        ICallbackExchange callbacks,
+        ICallbackExchanger callbackExchanger,
         IResponseWriter responseWriter,
         ILogger logger)
     {
         _registry = registry;
-        _callbacks = callbacks;
+        _callbackExchanger = callbackExchanger;
         _responseWriter = responseWriter;
         _logger = logger;
     }
@@ -58,7 +58,7 @@ internal class NewBasicAuthTokenManagerHandler : MessageHandler<NewBasicAuthToke
 
     private async ValueTask<IAuthToken> ProvideTokenAsync(string managerId)
     {
-        var completion = await _callbacks.SendAsync<BasicAuthTokenProviderCompletedRequest>(
+        var completion = await _callbackExchanger.SendAsync<BasicAuthTokenProviderCompletedRequest>(
             id => new BasicAuthTokenProviderRequest(id, managerId));
 
         return completion.Auth.Value.ToAuthToken();
