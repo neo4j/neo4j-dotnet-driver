@@ -16,6 +16,7 @@
 #nullable enable
 
 using System.Diagnostics.CodeAnalysis;
+using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
@@ -55,7 +56,7 @@ internal class BaselineCompatibilityGuard : IBaselineCompatibilityGuard
         var aadBaseline = new BoltValueSerializationSchemeVersion(metadata.AadProtocolMajor, metadata.AadProtocolMinor);
         if (aadBaseline > BoltValueSerializationSchemeVersion.Latest)
         {
-            throw new ClientException(
+            throw new PropertyEncryptionException(
                 $"Cannot reproduce AAD bytes: recorded AAD protocol version {aadBaseline} is newer than " +
                 $"the maximum supported version {BoltValueSerializationSchemeVersion.Latest}.");
         }

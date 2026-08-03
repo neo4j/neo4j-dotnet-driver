@@ -15,6 +15,7 @@
 
 #nullable enable
 
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,15 +40,28 @@ internal class EncryptionEngineDispatcher : IEncryptionEngineDispatcher
         byte[]? aad,
         CancellationToken cancellationToken)
     {
-        foreach (var engine in _engines)
+        try
         {
-            if (engine.TryStartEncrypt(profile, value, keyRef, aad, cancellationToken, out var task))
+            foreach (var engine in _engines)
             {
-                return await task.ConfigureAwait(false);
+                if (engine.TryStartEncrypt(profile, value, keyRef, aad, cancellationToken, out var task))
+                {
+                    return await task.ConfigureAwait(false);
+                }
             }
-        }
 
-        throw new EncryptionEngineNotFoundException(profile.Name);
+            throw new EncryptionEngineNotFoundException(profile.Name);
+        }
+        catch (Neo4jException)
+        {
+            // ADR 037: driver-defined errors propagate unchanged, judged by type not origin -
+            // e.g. so a KeyEncapsulationService can signal retryability to the managed API.
+            throw;
+        }
+        catch (Exception e)
+        {
+            throw new PropertyEncryptionException($"Property encryption failed: {e.Message}", e);
+        }
     }
 
     public async Task<object> DispatchDecryptAsync(
@@ -56,14 +70,25 @@ internal class EncryptionEngineDispatcher : IEncryptionEngineDispatcher
         byte[]? aad,
         CancellationToken cancellationToken)
     {
-        foreach (var engine in _engines)
+        try
         {
-            if (engine.TryStartDecrypt(profile, encrypted, aad, cancellationToken, out var task))
+            foreach (var engine in _engines)
             {
-                return await task.ConfigureAwait(false);
+                if (engine.TryStartDecrypt(profile, encrypted, aad, cancellationToken, out var task))
+                {
+                    return await task.ConfigureAwait(false);
+                }
             }
-        }
 
-        throw new EncryptionEngineNotFoundException(profile.Name);
+            throw new EncryptionEngineNotFoundException(profile.Name);
+        }
+        catch (Neo4jException)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            throw new PropertyEncryptionException($"Property decryption failed: {e.Message}", e);
+        }
     }
 }

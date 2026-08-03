@@ -19,6 +19,7 @@ using System;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Encryption;
+using Neo4j.Driver.Preview.Encryption;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.Encryption;

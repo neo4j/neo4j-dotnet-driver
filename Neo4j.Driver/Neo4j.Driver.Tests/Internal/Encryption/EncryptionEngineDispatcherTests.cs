@@ -15,6 +15,7 @@
 
 #nullable enable
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -153,5 +154,101 @@ public class EncryptionEngineDispatcherTests
         var act = () => dispatcher.DispatchDecryptAsync(Profile, encrypted, null, CancellationToken.None);
 
         await act.Should().ThrowAsync<EncryptionEngineNotFoundException>();
+    }
+
+    [Fact]
+    public async Task DispatchEncryptAsync_WrapsNonDriverErrorsInPropertyEncryptionExceptionWithCause()
+    {
+        var cause = new InvalidOperationException("kes blew up");
+        Task<byte[]>? failingTask = Task.FromException<byte[]>(cause);
+
+        var engine = new Mock<IEncryptionEngine>();
+        engine.Setup(e => e.TryStartEncrypt(
+                Profile,
+                "value",
+                KeyRef,
+                null,
+                It.IsAny<CancellationToken>(),
+                out failingTask))
+            .Returns(true);
+
+        var dispatcher = new EncryptionEngineDispatcher([engine.Object]);
+
+        var act = () => dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, CancellationToken.None);
+
+        var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
+        thrown.Which.InnerException.Should().BeSameAs(cause);
+    }
+
+    [Fact]
+    public async Task DispatchEncryptAsync_PropagatesDriverErrorsUnchanged()
+    {
+        var driverError = new TransientException("Neo.TransientError.General.X", "retry me");
+        Task<byte[]>? failingTask = Task.FromException<byte[]>(driverError);
+
+        var engine = new Mock<IEncryptionEngine>();
+        engine.Setup(e => e.TryStartEncrypt(
+                Profile,
+                "value",
+                KeyRef,
+                null,
+                It.IsAny<CancellationToken>(),
+                out failingTask))
+            .Returns(true);
+
+        var dispatcher = new EncryptionEngineDispatcher([engine.Object]);
+
+        var act = () => dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, CancellationToken.None);
+
+        var thrown = await act.Should().ThrowAsync<TransientException>();
+        thrown.Which.Should().BeSameAs(driverError);
+    }
+
+    [Fact]
+    public async Task DispatchDecryptAsync_WrapsNonDriverErrorsInPropertyEncryptionExceptionWithCause()
+    {
+        var encrypted = new byte[] { 4, 5, 6 };
+        var cause = new InvalidOperationException("kes blew up");
+        Task<object>? failingTask = Task.FromException<object>(cause);
+
+        var engine = new Mock<IEncryptionEngine>();
+        engine.Setup(e => e.TryStartDecrypt(
+                Profile,
+                encrypted,
+                null,
+                It.IsAny<CancellationToken>(),
+                out failingTask))
+            .Returns(true);
+
+        var dispatcher = new EncryptionEngineDispatcher([engine.Object]);
+
+        var act = () => dispatcher.DispatchDecryptAsync(Profile, encrypted, null, CancellationToken.None);
+
+        var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
+        thrown.Which.InnerException.Should().BeSameAs(cause);
+    }
+
+    [Fact]
+    public async Task DispatchDecryptAsync_PropagatesDriverErrorsUnchanged()
+    {
+        var encrypted = new byte[] { 4, 5, 6 };
+        var driverError = new TransientException("Neo.TransientError.General.X", "retry me");
+        Task<object>? failingTask = Task.FromException<object>(driverError);
+
+        var engine = new Mock<IEncryptionEngine>();
+        engine.Setup(e => e.TryStartDecrypt(
+                Profile,
+                encrypted,
+                null,
+                It.IsAny<CancellationToken>(),
+                out failingTask))
+            .Returns(true);
+
+        var dispatcher = new EncryptionEngineDispatcher([engine.Object]);
+
+        var act = () => dispatcher.DispatchDecryptAsync(Profile, encrypted, null, CancellationToken.None);
+
+        var thrown = await act.Should().ThrowAsync<TransientException>();
+        thrown.Which.Should().BeSameAs(driverError);
     }
 }

@@ -18,6 +18,7 @@
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Encryption;
+using Neo4j.Driver.Preview.Encryption;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.Encryption;
@@ -85,7 +86,7 @@ public class BaselineCompatibilityGuardTests
     {
         var act = () => _subject.EnsureAadProtocolCompatibility([0x99], Metadata(7, 0));
 
-        act.Should().Throw<ClientException>();
+        act.Should().Throw<PropertyEncryptionException>();
     }
 
     [Fact]
