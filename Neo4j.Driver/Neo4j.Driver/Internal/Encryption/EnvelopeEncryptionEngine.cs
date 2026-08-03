@@ -135,8 +135,8 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
             profile.Name,
             cipherResult.Combined,
             typeInfo.Name,
-            typeInfo.Baseline.MajorVersion,
-            typeInfo.Baseline.MinorVersion,
+            typeInfo.Baseline.Major,
+            typeInfo.Baseline.Minor,
             metadata);
 
         return _encryptedValueBytesCodec.Encode(structure);

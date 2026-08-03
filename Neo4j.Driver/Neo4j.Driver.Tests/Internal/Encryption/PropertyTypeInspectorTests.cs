@@ -19,14 +19,13 @@ using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Encryption;
-using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.Encryption;
 
 public class PropertyTypeInspectorTests
 {
-    private static readonly BoltProtocolVersion Baseline1_0 = new(1, 0);
+    private static readonly BoltValueSerializationSchemeVersion Baseline1_0 = new(1, 0);
 
     private readonly PropertyTypeInspector _subject = new();
 

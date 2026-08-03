@@ -15,8 +15,6 @@
 
 #nullable enable
 
-using Neo4j.Driver.Internal.Protocol;
-
 namespace Neo4j.Driver.Internal.Encryption;
 
-internal record PropertyTypeInfo(string Name, BoltProtocolVersion Baseline);
+internal record PropertyTypeInfo(string Name, BoltValueSerializationSchemeVersion Baseline);

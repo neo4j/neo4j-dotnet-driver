@@ -49,7 +49,7 @@ public class EnvelopeMetadataExtractorTests
     }
 
     [Fact]
-    public void Extract_MissingAadProtocolVersion_DefaultsToSixOne()
+    public void Extract_MissingAadProtocolVersion_DefaultsToLatestBaseline()
     {
         var metadata = ValidMetadata();
         metadata.Remove("aad_protocol_major");
@@ -57,8 +57,8 @@ public class EnvelopeMetadataExtractorTests
 
         var result = _subject.Extract(metadata);
 
-        result.AadProtocolMajor.Should().Be(6);
-        result.AadProtocolMinor.Should().Be(1);
+        result.AadProtocolMajor.Should().Be(1);
+        result.AadProtocolMinor.Should().Be(0);
     }
 
     [Fact]

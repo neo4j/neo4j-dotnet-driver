@@ -17,14 +17,13 @@
 
 using System;
 using System.Collections;
-using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
 [DriverAutoRegister(singleton: true)]
 internal class PropertyTypeInspector : IPropertyTypeInspector
 {
-    private static readonly BoltProtocolVersion Baseline1_0 = new(1, 0);
+    private static readonly BoltValueSerializationSchemeVersion Baseline1_0 = new(1, 0);
 
     public PropertyTypeInfo GetPropertyTypeInfo(object value)
     {

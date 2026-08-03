@@ -25,7 +25,6 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Encryption;
-using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Preview.Encryption;
 using Xunit;
 using static Neo4j.Driver.Tests.Internal.Encryption.EncryptionTestHelpers;
@@ -77,7 +76,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         Freeze<IPlaintextCodec>().Setup(s => s.Serialize(value)).Returns(plaintext);
         Freeze<IPropertyTypeInspector>()
             .Setup(n => n.GetPropertyTypeInfo(value))
-            .Returns(new PropertyTypeInfo("INTEGER", new BoltProtocolVersion(1, 0)));
+            .Returns(new PropertyTypeInfo("INTEGER", new BoltValueSerializationSchemeVersion(1, 0)));
         _repository.Setup(r => r.FindAsync(
                 new KeyReference("main", KeyReferenceType.Alias),
                 It.IsAny<CancellationToken>()))
@@ -131,12 +130,12 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         var cipherOutput = new byte[] { 0xC0, 0xD0 };
         var persistedAad = new byte[] { 0xAA };
         var structureMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
-        var structure = new EncryptedStructure(ProfileName, cipherOutput, "INTEGER", 6, 0, structureMetadata);
+        var structure = new EncryptedStructure(ProfileName, cipherOutput, "INTEGER", 1, 0, structureMetadata);
         var envelopeMetadata = new EnvelopeMetadata(
             "key-1",
             Iv,
             persistedAad,
-            6,
+            1,
             0,
             new Dictionary<string, object>());
 
@@ -374,7 +373,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             m.KeyId == keyId &&
             m.Iv.SequenceEqual(Iv) &&
             m.Aad.SequenceEqual(expectedAad) &&
-            m.AadProtocolMajor == 6 &&
-            m.AadProtocolMinor == 1);
+            m.AadProtocolMajor == 1 &&
+            m.AadProtocolMinor == 0);
     }
 }
