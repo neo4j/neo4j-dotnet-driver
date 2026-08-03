@@ -34,6 +34,8 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
     [
         "Backend:MockTime",
         "Feature:API:BookmarkManager",
+        "Feature:API:Driver.ExecuteQuery",
+        "Feature:API:Driver.ExecuteQuery:WithAuth",
         "Feature:API:Driver.IsEncrypted",
         "Feature:API:Driver.VerifyAuthentication",
         "Feature:API:Driver.VerifyConnectivity",
