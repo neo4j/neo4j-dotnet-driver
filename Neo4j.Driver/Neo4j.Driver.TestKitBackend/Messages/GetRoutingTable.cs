@@ -1,0 +1,67 @@
+// Copyright (c) "Neo4j"
+// Neo4j Sweden AB [https://neo4j.com]
+//
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using Microsoft.Extensions.Logging;
+using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+
+namespace Neo4j.Driver.TestKitBackend.Messages;
+
+internal record GetRoutingTableRequest : IProtocolMessage
+{
+    public required RegistryObject<IDriver> Driver { get; init; }
+    public string? Database { get; init; }
+}
+
+internal record RoutingTableResponse(
+    string? Database,
+    long Ttl,
+    IEnumerable<string> Routers,
+    IEnumerable<string> Readers,
+    IEnumerable<string> Writers) : IProtocolMessage;
+
+internal class GetRoutingTableHandler : MessageHandler<GetRoutingTableRequest>
+{
+    private readonly IResponseWriter _responseWriter;
+    private readonly ILogger _logger;
+
+    public GetRoutingTableHandler(IResponseWriter responseWriter, ILogger logger)
+    {
+        _responseWriter = responseWriter;
+        _logger = logger;
+    }
+
+    public override async Task ProcessAsync(GetRoutingTableRequest message)
+    {
+        var routingTable = ((Internal.Driver)message.Driver.Object).GetRoutingTable(message.Database);
+        _logger.LogDebug(
+            "Fetched routing table for driver with id '{Id}', database '{Database}'",
+            message.Driver.Id,
+            message.Database);
+
+        // No cached table (e.g. every router failed on the last refresh) - respond with an empty
+        // table rather than failing the request; testkit expects an empty RoutingTable, not an error.
+        await _responseWriter.WriteAsync(
+            routingTable is null
+                ? new RoutingTableResponse(message.Database, 0, [], [], [])
+                : new RoutingTableResponse(
+                    routingTable.Database,
+                    routingTable.ExpireAfterSeconds,
+                    routingTable.Routers.Select(x => x.Authority),
+                    routingTable.Readers.Select(x => x.Authority),
+                    routingTable.Writers.Select(x => x.Authority)));
+    }
+}

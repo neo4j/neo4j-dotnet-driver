@@ -110,6 +110,13 @@ internal class RoutingTableManager : IRoutingTableManager
         }
     }
 
+    public Task<IRoutingTable> ForceUpdateAsync(string database, SessionConfig sessionConfig, Bookmarks bookmarks)
+    {
+        database ??= string.Empty;
+        _routingTables.TryRemove(database, out _);
+        return EnsureRoutingTableForModeAsync(AccessMode.Write, database, false, sessionConfig, bookmarks);
+    }
+
     public async Task<IServerInfo> GetServerInfoAsync(Uri uri, string database)
     {
         var bufferedExceptions = new List<Exception>();

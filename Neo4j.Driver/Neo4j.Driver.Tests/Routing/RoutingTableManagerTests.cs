@@ -1083,6 +1083,52 @@ public static class RoutingTableManagerTests
         }
     }
 
+    public class ForceUpdateAsyncMethod
+    {
+        [Fact]
+        public async Task ShouldReplaceCachedTableEvenWhenNotStale()
+        {
+            var cachedRoutingTable =
+                new RoutingTable("foo", new[] { server04 }, new[] { server05 }, new[] { server06 }, 1000);
+
+            var refreshedRoutingTable =
+                new RoutingTable("foo", new[] { server07 }, new[] { server08 }, new[] { server09 }, 1000);
+
+            var discovery = new Mock<IDiscovery>();
+            discovery.Setup(
+                    x => x.DiscoverAsync(
+                        It.IsAny<IConnection>(),
+                        "foo",
+                        null,
+                        Bookmarks.Empty,
+                        It.IsAny<IHomeDbCache>()))
+                .ReturnsAsync(refreshedRoutingTable);
+
+            var poolManager = new Mock<IClusterConnectionPoolManager>();
+            poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), It.IsAny<SessionConfig>()))
+                .ReturnsAsync(Mock.Of<IConnection>);
+
+            var initialAddressProvider = new Mock<IInitialServerAddressProvider>();
+            initialAddressProvider.Setup(x => x.Get()).Returns(new HashSet<Uri> { server04 });
+
+            var manager = new RoutingTableManager(
+                initialAddressProvider.Object,
+                discovery.Object,
+                poolManager.Object,
+                Mock.Of<INeo4jLogger>(),
+                TimeSpan.MaxValue,
+                cachedRoutingTable);
+
+            // the cached table is not stale, so a plain EnsureRoutingTableForModeAsync would return it as-is
+            manager.RoutingTableFor("foo").Should().Be(cachedRoutingTable);
+
+            var result = await manager.ForceUpdateAsync("foo", null, Bookmarks.Empty);
+
+            result.Should().Be(refreshedRoutingTable);
+            manager.RoutingTableFor("foo").Should().Be(refreshedRoutingTable);
+        }
+    }
+
     public class RoutingErrorPropagation
     {
         // We pass an empty address provider so the routing manager doesn't fall back to

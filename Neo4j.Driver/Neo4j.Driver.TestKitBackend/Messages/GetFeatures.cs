@@ -33,6 +33,8 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
     private static readonly string[] SupportedFeatures =
     [
         "Backend:MockTime",
+        "Backend:RTFetch",
+        "Backend:RTForceUpdate",
         "Feature:API:BookmarkManager",
         "Feature:API:Driver.ExecuteQuery",
         "Feature:API:Driver.ExecuteQuery:WithAuth",
