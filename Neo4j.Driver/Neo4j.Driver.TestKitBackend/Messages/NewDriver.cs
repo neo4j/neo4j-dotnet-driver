@@ -77,6 +77,7 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
         {
             _configMapper.Apply(message, builder);
             builder.WithLogger(_neo4JLogger);
+            builder.WithMetricsEnabled(true);
         }
 
         var driver = message.AuthTokenManagerId is not null

@@ -85,4 +85,20 @@ public class NewDriverHandlerTests
 
         created!.Config.Neo4JLogger.Should().BeSameAs(neo4JLogger);
     }
+
+    [Fact]
+    public async Task Enables_metrics_so_GetConnectionPoolMetrics_can_report_on_the_driver()
+    {
+        IDriver? created = null;
+        _autoMocker.GetMock<IRegistry>()
+            .Setup(r => r.Register(It.IsAny<IDriver>()))
+            .Callback((IDriver driver) => created = driver)
+            .Returns((IDriver driver) => new RegistryObject<IDriver>("driver-1", driver));
+
+        var handler = _autoMocker.CreateInstance<NewDriverHandler>();
+
+        await handler.ProcessAsync(MinimalRequest());
+
+        created!.Config.MetricsEnabled.Should().BeTrue();
+    }
 }
