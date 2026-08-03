@@ -17,11 +17,13 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
+using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Serialization;
+using Neo4j.Driver.TestKitBackend.Types;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -30,6 +32,7 @@ public class RetryableTransactionFlowTests
 {
     private readonly ContinuationCoordinator _coordinator = new();
     private readonly Mock<IRegistry> _registryMock = new();
+    private readonly Mock<ITransactionConfigMapper> _transactionConfigMapperMock = new();
     private readonly Mock<IResponseWriter> _responseWriterMock = new();
     private readonly Mock<IConnectionInput> _connectionInputMock = new();
     private readonly Mock<IMessageSerializer> _serializerMock = new();
@@ -40,6 +43,9 @@ public class RetryableTransactionFlowTests
     public RetryableTransactionFlowTests()
     {
         _sessionHandle = new RegistryObject<IAsyncSession>("session-1", _sessionMock.Object);
+        _transactionConfigMapperMock
+            .Setup(m => m.Map(It.IsAny<Dictionary<string, ICypherValue>?>(), It.IsAny<Optional<long?>>()))
+            .Returns((Action<TransactionConfigBuilder>)(_ => { }));
     }
 
     [Fact]
@@ -47,7 +53,10 @@ public class RetryableTransactionFlowTests
     {
         var txMock = RegisterTx("tx-1");
         _sessionMock
-            .Setup(s => s.ExecuteReadAsync(It.IsAny<Func<IAsyncQueryRunner, Task>>(), null))
+            .Setup(
+                s => s.ExecuteReadAsync(
+                    It.IsAny<Func<IAsyncQueryRunner, Task>>(),
+                    It.IsAny<Action<TransactionConfigBuilder>>()))
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 (work, _) => work(txMock.Object));
 
@@ -63,13 +72,39 @@ public class RetryableTransactionFlowTests
     }
 
     [Fact]
+    public async Task The_mapped_tx_meta_and_timeout_reach_ExecuteReadAsync()
+    {
+        var txMeta = new Dictionary<string, ICypherValue> { ["k"] = new CypherString("v") };
+        var timeout = Optional<long?>.Specified(17);
+        Action<TransactionConfigBuilder> configure = _ => { };
+        _transactionConfigMapperMock.Setup(m => m.Map(txMeta, timeout)).Returns(configure);
+
+        var txMock = RegisterTx("tx-1");
+        _sessionMock
+            .Setup(s => s.ExecuteReadAsync(It.IsAny<Func<IAsyncQueryRunner, Task>>(), configure))
+            .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
+                (work, _) => work(txMock.Object));
+
+        await WithTimeoutAsync(
+            ReadHandler().ProcessAsync(
+                new SessionReadTransactionRequest { Session = _sessionHandle, TxMeta = txMeta, Timeout = timeout }));
+
+        _sessionMock.Verify(
+            s => s.ExecuteReadAsync(It.IsAny<Func<IAsyncQueryRunner, Task>>(), configure),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task A_write_flow_where_the_driver_retries_round_trips_a_second_RetryableTry_before_RetryableDone()
     {
         var firstTxMock = RegisterTx("tx-1");
         var secondTxMock = RegisterTx("tx-2");
 
         _sessionMock
-            .Setup(s => s.ExecuteWriteAsync(It.IsAny<Func<IAsyncQueryRunner, Task>>(), null))
+            .Setup(
+                s => s.ExecuteWriteAsync(
+                    It.IsAny<Func<IAsyncQueryRunner, Task>>(),
+                    It.IsAny<Action<TransactionConfigBuilder>>()))
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 async (work, _) =>
                 {
@@ -94,6 +129,29 @@ public class RetryableTransactionFlowTests
     }
 
     [Fact]
+    public async Task The_mapped_tx_meta_and_timeout_reach_ExecuteWriteAsync()
+    {
+        var txMeta = new Dictionary<string, ICypherValue> { ["k"] = new CypherString("v") };
+        var timeout = Optional<long?>.Specified(17);
+        Action<TransactionConfigBuilder> configure = _ => { };
+        _transactionConfigMapperMock.Setup(m => m.Map(txMeta, timeout)).Returns(configure);
+
+        var txMock = RegisterTx("tx-1");
+        _sessionMock
+            .Setup(s => s.ExecuteWriteAsync(It.IsAny<Func<IAsyncQueryRunner, Task>>(), configure))
+            .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
+                (work, _) => work(txMock.Object));
+
+        await WithTimeoutAsync(
+            WriteHandler().ProcessAsync(
+                new SessionWriteTransactionRequest { Session = _sessionHandle, TxMeta = txMeta, Timeout = timeout }));
+
+        _sessionMock.Verify(
+            s => s.ExecuteWriteAsync(It.IsAny<Func<IAsyncQueryRunner, Task>>(), configure),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task Negative_with_a_stored_error_the_driver_does_not_retry_terminates_with_DriverError()
     {
         var storedException = new ClientException("Neo.ClientError.Statement.SyntaxError", "bad cypher");
@@ -106,7 +164,10 @@ public class RetryableTransactionFlowTests
 
         var txMock = RegisterTx("tx-1");
         _sessionMock
-            .Setup(s => s.ExecuteReadAsync(It.IsAny<Func<IAsyncQueryRunner, Task>>(), null))
+            .Setup(
+                s => s.ExecuteReadAsync(
+                    It.IsAny<Func<IAsyncQueryRunner, Task>>(),
+                    It.IsAny<Action<TransactionConfigBuilder>>()))
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 (work, _) => work(txMock.Object));
 
@@ -132,7 +193,10 @@ public class RetryableTransactionFlowTests
         var secondTxMock = RegisterTx("tx-2");
 
         _sessionMock
-            .Setup(s => s.ExecuteWriteAsync(It.IsAny<Func<IAsyncQueryRunner, Task>>(), null))
+            .Setup(
+                s => s.ExecuteWriteAsync(
+                    It.IsAny<Func<IAsyncQueryRunner, Task>>(),
+                    It.IsAny<Action<TransactionConfigBuilder>>()))
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 async (work, _) =>
                 {
@@ -203,7 +267,10 @@ public class RetryableTransactionFlowTests
         var secondTxMock = RegisterTx("tx-2");
 
         _sessionMock
-            .Setup(s => s.ExecuteWriteAsync(It.IsAny<Func<IAsyncQueryRunner, Task>>(), null))
+            .Setup(
+                s => s.ExecuteWriteAsync(
+                    It.IsAny<Func<IAsyncQueryRunner, Task>>(),
+                    It.IsAny<Action<TransactionConfigBuilder>>()))
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 async (work, _) =>
                 {
@@ -250,7 +317,10 @@ public class RetryableTransactionFlowTests
     {
         var txMock = RegisterTx("tx-1");
         _sessionMock
-            .Setup(s => s.ExecuteReadAsync(It.IsAny<Func<IAsyncQueryRunner, Task>>(), null))
+            .Setup(
+                s => s.ExecuteReadAsync(
+                    It.IsAny<Func<IAsyncQueryRunner, Task>>(),
+                    It.IsAny<Action<TransactionConfigBuilder>>()))
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 (work, _) => work(txMock.Object));
 
@@ -280,6 +350,7 @@ public class RetryableTransactionFlowTests
         return new SessionReadTransactionHandler(
             _registryMock.Object,
             _coordinator,
+            _transactionConfigMapperMock.Object,
             _responseWriterMock.Object,
             _driverErrorMapperMock.Object,
             Mock.Of<ILogger>());
@@ -290,6 +361,7 @@ public class RetryableTransactionFlowTests
         return new SessionWriteTransactionHandler(
             _registryMock.Object,
             _coordinator,
+            _transactionConfigMapperMock.Object,
             _responseWriterMock.Object,
             _driverErrorMapperMock.Object,
             Mock.Of<ILogger>());

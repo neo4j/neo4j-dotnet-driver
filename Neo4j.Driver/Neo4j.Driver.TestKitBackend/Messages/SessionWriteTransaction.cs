@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
+using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
@@ -29,8 +29,7 @@ internal record SessionWriteTransactionRequest : IProtocolMessage, IRetryableTra
 {
     public required RegistryObject<IAsyncSession> Session { get; init; }
 
-    // Cypher-envelope dict on the wire; parsed but not yet converted to native values.
-    public Dictionary<string, JsonElement>? TxMeta { get; init; }
+    public Dictionary<string, ICypherValue>? TxMeta { get; init; }
 
     // Absent = driver default, null = explicitly no timeout, number = timeout in ms.
     public Optional<long?> Timeout { get; init; }
@@ -41,15 +40,19 @@ internal class SessionWriteTransactionHandler : RetryableTransactionHandler<Sess
     public SessionWriteTransactionHandler(
         IRegistry registry,
         IContinuationCoordinator coordinator,
+        ITransactionConfigMapper transactionConfigMapper,
         IResponseWriter responseWriter,
         IDriverErrorMapper driverErrorMapper,
         ILogger logger)
-        : base(registry, coordinator, responseWriter, driverErrorMapper, logger)
+        : base(registry, coordinator, transactionConfigMapper, responseWriter, driverErrorMapper, logger)
     {
     }
 
-    protected override Task ExecuteTransactionAsync(IAsyncSession session, Func<IAsyncQueryRunner, Task> work)
+    protected override Task ExecuteTransactionAsync(
+        IAsyncSession session,
+        Func<IAsyncQueryRunner, Task> work,
+        Action<TransactionConfigBuilder> configure)
     {
-        return session.ExecuteWriteAsync(work);
+        return session.ExecuteWriteAsync(work, configure);
     }
 }

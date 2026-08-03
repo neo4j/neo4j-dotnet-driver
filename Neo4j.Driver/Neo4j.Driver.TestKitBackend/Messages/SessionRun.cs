@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
@@ -30,8 +29,7 @@ internal record SessionRunRequest : IProtocolMessage
 
     public Dictionary<string, ICypherValue>? Params { get; init; }
 
-    // Cypher-envelope dict on the wire; parsed but not yet converted to native values.
-    public Dictionary<string, JsonElement>? TxMeta { get; init; }
+    public Dictionary<string, ICypherValue>? TxMeta { get; init; }
 
     // Absent = driver default, null = explicitly no timeout, number = timeout in ms.
     public Optional<long?> Timeout { get; init; }
@@ -43,6 +41,7 @@ internal class SessionRunHandler : MessageHandler<SessionRunRequest>
 {
     private readonly IRegistry _registry;
     private readonly ICypherToNativeMapper _cypherToNativeMapper;
+    private readonly ITransactionConfigMapper _transactionConfigMapper;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
@@ -50,11 +49,13 @@ internal class SessionRunHandler : MessageHandler<SessionRunRequest>
         IRegistry registry,
         IResponseWriter responseWriter,
         ICypherToNativeMapper cypherToNativeMapper,
+        ITransactionConfigMapper transactionConfigMapper,
         ILogger logger)
     {
         _registry = registry;
         _responseWriter = responseWriter;
         _cypherToNativeMapper = cypherToNativeMapper;
+        _transactionConfigMapper = transactionConfigMapper;
         _logger = logger;
     }
 
@@ -65,7 +66,10 @@ internal class SessionRunHandler : MessageHandler<SessionRunRequest>
             message.Cypher,
             message.Session.Id);
 
-        var cursor = await message.Session.Object.RunAsync(message.Cypher, _cypherToNativeMapper.Map(message.Params));
+        var cursor = await message.Session.Object.RunAsync(
+            message.Cypher,
+            _cypherToNativeMapper.Map(message.Params),
+            _transactionConfigMapper.Map(message.TxMeta, message.Timeout));
 
         var keys = await cursor.KeysAsync();
         var registeredResult = _registry.Register(cursor);

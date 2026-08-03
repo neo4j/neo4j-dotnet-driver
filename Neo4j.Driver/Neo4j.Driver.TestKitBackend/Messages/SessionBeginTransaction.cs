@@ -37,26 +37,26 @@ internal record TransactionResponse(string Id) : IProtocolMessage;
 internal class SessionBeginTransactionHandler : MessageHandler<SessionBeginTransactionRequest>
 {
     private readonly IRegistry _registry;
-    private readonly ICypherToNativeMapper _cypherToNativeMapper;
+    private readonly ITransactionConfigMapper _transactionConfigMapper;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public SessionBeginTransactionHandler(
         IRegistry registry,
         IResponseWriter responseWriter,
-        ICypherToNativeMapper cypherToNativeMapper,
+        ITransactionConfigMapper transactionConfigMapper,
         ILogger logger)
     {
         _registry = registry;
         _responseWriter = responseWriter;
-        _cypherToNativeMapper = cypherToNativeMapper;
+        _transactionConfigMapper = transactionConfigMapper;
         _logger = logger;
     }
 
     public override async Task ProcessAsync(SessionBeginTransactionRequest message)
     {
         var transaction = await message.Session.Object.BeginTransactionAsync(
-            builder => Configure(builder, message));
+            _transactionConfigMapper.Map(message.TxMeta, message.Timeout));
 
         var registered = _registry.Register(transaction);
         _logger.LogDebug(
@@ -65,13 +65,5 @@ internal class SessionBeginTransactionHandler : MessageHandler<SessionBeginTrans
             message.Session.Id);
 
         await _responseWriter.WriteAsync(new TransactionResponse(registered.Id));
-    }
-
-    private void Configure(TransactionConfigBuilder builder, SessionBeginTransactionRequest message)
-    {
-        if (message.TxMeta is { } txMeta)
-        {
-            builder.WithMetadata(_cypherToNativeMapper.Map(txMeta));
-        }
     }
 }

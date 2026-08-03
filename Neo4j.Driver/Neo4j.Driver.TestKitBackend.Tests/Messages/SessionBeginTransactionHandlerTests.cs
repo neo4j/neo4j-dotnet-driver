@@ -19,6 +19,7 @@ using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.Types;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -53,19 +54,19 @@ public class SessionBeginTransactionHandlerTests
     }
 
     [Fact]
-    public async Task Begins_the_transaction_with_the_mapped_tx_metadata()
+    public async Task Applies_the_mapped_transaction_config_to_BeginTransactionAsync()
     {
         var txMeta = new Dictionary<string, ICypherValue> { ["return_bookmark"] = new CypherString("bm1") };
-        var mapped = new Dictionary<string, object> { ["return_bookmark"] = "bm1" };
-        _autoMocker.GetMock<ICypherToNativeMapper>().Setup(m => m.Map(txMeta)).Returns(mapped);
+        var timeout = Optional<long?>.Specified(17);
+        Action<TransactionConfigBuilder> configure = _ => { };
+        _autoMocker.GetMock<ITransactionConfigMapper>()
+            .Setup(m => m.Map(txMeta, timeout))
+            .Returns(configure);
 
         var transactionMock = _autoMocker.GetMock<IAsyncTransaction>();
-
-        Action<TransactionConfigBuilder>? configure = null;
         var sessionMock = _autoMocker.GetMock<IAsyncSession>();
         sessionMock
-            .Setup(s => s.BeginTransactionAsync(It.IsAny<Action<TransactionConfigBuilder>>()))
-            .Callback<Action<TransactionConfigBuilder>>(action => configure = action)
+            .Setup(s => s.BeginTransactionAsync(configure))
             .ReturnsAsync(transactionMock.Object);
 
         var registeredTransaction = new RegistryObject<IAsyncTransaction>("tx-1", transactionMock.Object);
@@ -75,14 +76,12 @@ public class SessionBeginTransactionHandlerTests
         var request = new SessionBeginTransactionRequest
         {
             Session = new RegistryObject<IAsyncSession>("session-1", sessionMock.Object),
-            TxMeta = txMeta
+            TxMeta = txMeta,
+            Timeout = timeout
         };
 
         await handler.ProcessAsync(request);
 
-        Assert.NotNull(configure);
-        var config = new TransactionConfig();
-        configure!(new TransactionConfigBuilder(Mock.Of<INeo4jLogger>(), config));
-        Assert.Equal(mapped, config.Metadata);
+        sessionMock.Verify(s => s.BeginTransactionAsync(configure), Times.Once);
     }
 }

@@ -16,16 +16,22 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
+using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.Types;
 
 namespace Neo4j.Driver.TestKitBackend.Retry;
 
 internal interface IRetryableTransactionRequest
 {
     RegistryObject<IAsyncSession> Session { get; }
+
+    Dictionary<string, ICypherValue>? TxMeta { get; }
+
+    Optional<long?> Timeout { get; }
 }
 
 internal abstract class RetryableTransactionHandler<T> : BackgroundOperationHandler<T>
@@ -33,10 +39,12 @@ internal abstract class RetryableTransactionHandler<T> : BackgroundOperationHand
 {
     private readonly IRegistry _registry;
     private readonly IContinuationCoordinator _coordinator;
+    private readonly ITransactionConfigMapper _transactionConfigMapper;
 
     protected RetryableTransactionHandler(
         IRegistry registry,
         IContinuationCoordinator coordinator,
+        ITransactionConfigMapper transactionConfigMapper,
         IResponseWriter responseWriter,
         IDriverErrorMapper driverErrorMapper,
         ILogger logger)
@@ -44,14 +52,23 @@ internal abstract class RetryableTransactionHandler<T> : BackgroundOperationHand
     {
         _registry = registry;
         _coordinator = coordinator;
+        _transactionConfigMapper = transactionConfigMapper;
     }
 
-    protected abstract Task ExecuteTransactionAsync(IAsyncSession session, Func<IAsyncQueryRunner, Task> work);
+    protected abstract Task ExecuteTransactionAsync(
+        IAsyncSession session,
+        Func<IAsyncQueryRunner, Task> work,
+        Action<TransactionConfigBuilder> configure);
 
     protected override async Task<IProtocolMessage> ExecuteAsync(T message)
     {
         var sessionId = message.Session.Id;
-        await ExecuteTransactionAsync(message.Session.Object, runner => RunAttemptAsync(runner, sessionId));
+
+        await ExecuteTransactionAsync(
+            message.Session.Object,
+            runner => RunAttemptAsync(runner, sessionId),
+            _transactionConfigMapper.Map(message.TxMeta, message.Timeout));
+
         return new RetryableDoneResponse();
     }
 
