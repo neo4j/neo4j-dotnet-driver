@@ -39,6 +39,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
     private readonly IKeyDerivation _keyDerivation;
     private readonly IAeadCipher _aeadCipher;
     private readonly IEncryptedValueBytesCodec _encryptedValueBytesCodec;
+    private readonly IAliasToKeyIdCache _aliasToKeyIdCache;
     private readonly IEncryptionKeyCache _encryptionKeyCache;
     private readonly ICryptoRandomProvider _randomProvider;
     private readonly IEnvelopeMetadataExtractor _envelopeMetadataExtractor;
@@ -50,6 +51,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         IKeyDerivation keyDerivation,
         IAeadCipher aeadCipher,
         IEncryptedValueBytesCodec encryptedValueBytesCodec,
+        IAliasToKeyIdCache aliasToKeyIdCache,
         IEncryptionKeyCache encryptionKeyCache,
         ICryptoRandomProvider randomProvider,
         IEnvelopeMetadataExtractor envelopeMetadataExtractor,
@@ -60,6 +62,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         _keyDerivation = keyDerivation;
         _aeadCipher = aeadCipher;
         _encryptedValueBytesCodec = encryptedValueBytesCodec;
+        _aliasToKeyIdCache = aliasToKeyIdCache;
         _encryptionKeyCache = encryptionKeyCache;
         _randomProvider = randomProvider;
         _envelopeMetadataExtractor = envelopeMetadataExtractor;
@@ -111,9 +114,9 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         var typeInfo = _propertyTypeInspector.GetPropertyTypeInfo(value);
         var plaintext = _plaintextCodec.Serialize(value);
 
-        var key = await profile.KeyRepository.FindAsync(keyRef, cancellationToken).ConfigureAwait(false);
-
-        var dek = await ResolveDataEncryptionKeyAsync(profile, key, cancellationToken).ConfigureAwait(false);
+        var (keyId, prefetchedKey) = await ResolveKeyIdAsync(profile, keyRef, cancellationToken).ConfigureAwait(false);
+        var dek = await ResolveDataEncryptionKeyAsync(profile, keyId, prefetchedKey, cancellationToken)
+            .ConfigureAwait(false);
         var dataKey = _keyDerivation.Derive(dek, DataKeyLength);
 
         var iv = new byte[IvLength];
@@ -123,7 +126,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         var cipherResult = _aeadCipher.Encrypt(dataKey, iv, plaintext, aad);
 
         var envelopeMetadata = new EnvelopeMetadata(
-            key.Id,
+            keyId,
             iv,
             aad,
             AadProtocolMajor,
@@ -157,11 +160,9 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
 
         var metadata = _envelopeMetadataExtractor.Extract(structure.Metadata);
         EnsureAadProtocolCompatibility(aad, metadata);
-        var key = await profile.KeyRepository
-            .FindAsync(new KeyReference(metadata.KeyId, KeyReferenceType.Id), cancellationToken)
-            .ConfigureAwait(false);
 
-        var dek = await ResolveDataEncryptionKeyAsync(profile, key, cancellationToken).ConfigureAwait(false);
+        var dek = await ResolveDataEncryptionKeyAsync(profile, metadata.KeyId, prefetchedKey: null, cancellationToken)
+            .ConfigureAwait(false);
         var dataKey = _keyDerivation.Derive(dek, DataKeyLength);
         var aadToUse = aad ?? metadata.Aad;
         var plaintext = _aeadCipher.Decrypt(dataKey, metadata.Iv, structure.CipherOutput, aadToUse);
@@ -207,21 +208,49 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         }
     }
 
+    // Id-typed refs resolve immediately; alias-typed refs check the alias cache first,
+    // falling back to a repository lookup that primes the cache and hands back the
+    // fetched row so the caller doesn't need a second round-trip to resolve the DEK.
+    private async Task<(string KeyId, EncapsulatedKey? PrefetchedKey)> ResolveKeyIdAsync(
+        IEnvelopeEncryptionProfile profile,
+        KeyReference keyRef,
+        CancellationToken cancellationToken)
+    {
+        if (keyRef.Type == KeyReferenceType.Id)
+        {
+            return (keyRef.Reference, null);
+        }
+
+        if (_aliasToKeyIdCache.TryGet(profile.Name, keyRef.Reference, out var cachedKeyId))
+        {
+            return (cachedKeyId, null);
+        }
+
+        var key = await profile.KeyRepository.FindAsync(keyRef, cancellationToken).ConfigureAwait(false);
+        _aliasToKeyIdCache.Set(profile.Name, keyRef.Reference, key.Id);
+        return (key.Id, key);
+    }
+
     private async Task<byte[]> ResolveDataEncryptionKeyAsync(
         IEnvelopeEncryptionProfile profile,
-        EncapsulatedKey key,
-        CancellationToken cancellationToken = default)
+        string keyId,
+        EncapsulatedKey? prefetchedKey,
+        CancellationToken cancellationToken)
     {
-        if (_encryptionKeyCache.TryGet(profile.Name, key.Id, out var cached))
+        if (_encryptionKeyCache.TryGet(profile.Name, keyId, out var cached))
         {
             return cached;
         }
+
+        var key = prefetchedKey ?? await profile.KeyRepository
+            .FindAsync(new KeyReference(keyId, KeyReferenceType.Id), cancellationToken)
+            .ConfigureAwait(false);
 
         var dek = await profile.KeyEncapsulationService
             .DecapsulateAsync(key.Encapsulation, key.Metadata, cancellationToken)
             .ConfigureAwait(false);
 
-        _encryptionKeyCache.Set(profile.Name, key.Id, dek);
+        _encryptionKeyCache.Set(profile.Name, keyId, dek);
         return dek;
     }
 }

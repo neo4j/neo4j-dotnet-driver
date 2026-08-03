@@ -121,6 +121,210 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         result.Should().Equal(encoded);
     }
 
+    [Fact]
+    public async Task TryStartEncrypt_AliasCacheHit_SkipsAliasRepositoryLookup()
+    {
+        const long value = 5L;
+        var plaintext = new byte[] { 0x10, 0x11 };
+        var encapsulation = new byte[] { 0xBB };
+        var options = new Dictionary<string, string> { ["iv"] = "wrap-iv" };
+        var dek = Sequence(32, seed: 0x30);
+        var dataKey = Sequence(32, seed: 0x40);
+        var cipher = new CipherResult(new byte[] { 0xC0 }, new byte[] { 0xD0 });
+        var encoded = new byte[] { 0xEE };
+        var builtMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
+        byte[] expectedAad = [];
+
+        var key = new EncapsulatedKey("key-1", "main", encapsulation, options);
+
+        Freeze<IPlaintextCodec>().Setup(s => s.Serialize(value)).Returns(plaintext);
+        Freeze<IPropertyTypeInspector>()
+            .Setup(n => n.GetPropertyTypeInfo(value))
+            .Returns(new PropertyTypeInfo("INTEGER", new BoltValueSerializationSchemeVersion(1, 0)));
+
+        string? cachedKeyId = "key-1";
+        Freeze<IAliasToKeyIdCache>()
+            .Setup(c => c.TryGet(ProfileName, "main", out cachedKeyId))
+            .Returns(true);
+
+        // deliberately not stubbing repository.FindAsync(alias) - if it's called, the
+        // unconfigured mock returns null and the test fails downstream, proving the
+        // alias cache hit was used instead of a repository round-trip.
+        _repository.Setup(r => r.FindAsync(
+                new KeyReference("key-1", KeyReferenceType.Id),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(key);
+
+        byte[]? cacheMiss = null;
+        Freeze<IEncryptionKeyCache>()
+            .Setup(c => c.TryGet(ProfileName, "key-1", out cacheMiss))
+            .Returns(false);
+
+        _kes.Setup(k => k.DecapsulateAsync(
+                Matches(encapsulation),
+                It.IsAny<IReadOnlyDictionary<string, string>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(dek);
+
+        Freeze<IKeyDerivation>().Setup(d => d.Derive(Matches(dek), 32)).Returns(dataKey);
+        Freeze<IAeadCipher>()
+            .Setup(c => c.Encrypt(Matches(dataKey), Matches(Iv), Matches(plaintext), Matches(expectedAad)))
+            .Returns(cipher);
+
+        Freeze<IEnvelopeMetadataBuilder>()
+            .Setup(b => b.Build(IsExpectedMetadata("key-1", expectedAad)))
+            .Returns(builtMetadata);
+
+        Freeze<IEncryptedValueBytesCodec>()
+            .Setup(c => c.Encode(It.Is<EncryptedStructure>(s => IsExpectedStructure(s, cipher.Combined, builtMetadata))))
+            .Returns(encoded);
+
+        var subject = CreateSubject<EnvelopeEncryptionEngine>();
+        var started = subject.TryStartEncrypt(
+            Profile(),
+            value,
+            new KeyReference("main", KeyReferenceType.Alias),
+            aad: null,
+            TestContext.Current.CancellationToken,
+            out var encryptedTask);
+
+        started.Should().BeTrue();
+        var result = await encryptedTask!;
+
+        result.Should().Equal(encoded);
+    }
+
+    [Fact]
+    public async Task TryStartEncrypt_AliasAndDekCacheHit_NeverTouchesRepositoryOrKes()
+    {
+        const long value = 5L;
+        var plaintext = new byte[] { 0x10, 0x11 };
+        var dek = Sequence(32, seed: 0x30);
+        var dataKey = Sequence(32, seed: 0x40);
+        var cipher = new CipherResult(new byte[] { 0xC0 }, new byte[] { 0xD0 });
+        var encoded = new byte[] { 0xEE };
+        var builtMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
+        byte[] expectedAad = [];
+
+        Freeze<IPlaintextCodec>().Setup(s => s.Serialize(value)).Returns(plaintext);
+        Freeze<IPropertyTypeInspector>()
+            .Setup(n => n.GetPropertyTypeInfo(value))
+            .Returns(new PropertyTypeInfo("INTEGER", new BoltValueSerializationSchemeVersion(1, 0)));
+
+        string? cachedKeyId = "key-1";
+        Freeze<IAliasToKeyIdCache>()
+            .Setup(c => c.TryGet(ProfileName, "main", out cachedKeyId))
+            .Returns(true);
+
+        byte[]? cachedDek = dek;
+        Freeze<IEncryptionKeyCache>()
+            .Setup(c => c.TryGet(ProfileName, "key-1", out cachedDek))
+            .Returns(true);
+
+        // deliberately not stubbing the repository or KES at all - either being called
+        // returns an unconfigured default and fails the test downstream, proving the
+        // double cache hit skipped both.
+
+        Freeze<IKeyDerivation>().Setup(d => d.Derive(Matches(dek), 32)).Returns(dataKey);
+        Freeze<IAeadCipher>()
+            .Setup(c => c.Encrypt(Matches(dataKey), Matches(Iv), Matches(plaintext), Matches(expectedAad)))
+            .Returns(cipher);
+
+        Freeze<IEnvelopeMetadataBuilder>()
+            .Setup(b => b.Build(IsExpectedMetadata("key-1", expectedAad)))
+            .Returns(builtMetadata);
+
+        Freeze<IEncryptedValueBytesCodec>()
+            .Setup(c => c.Encode(It.Is<EncryptedStructure>(s => IsExpectedStructure(s, cipher.Combined, builtMetadata))))
+            .Returns(encoded);
+
+        var subject = CreateSubject<EnvelopeEncryptionEngine>();
+        var started = subject.TryStartEncrypt(
+            Profile(),
+            value,
+            new KeyReference("main", KeyReferenceType.Alias),
+            aad: null,
+            TestContext.Current.CancellationToken,
+            out var encryptedTask);
+
+        started.Should().BeTrue();
+        var result = await encryptedTask!;
+
+        result.Should().Equal(encoded);
+    }
+
+    [Fact]
+    public async Task TryStartEncrypt_ByKeyId_IgnoresAliasCacheEvenIfPoisoned()
+    {
+        const long value = 5L;
+        var plaintext = new byte[] { 0x10, 0x11 };
+        var encapsulation = new byte[] { 0xBB };
+        var options = new Dictionary<string, string> { ["iv"] = "wrap-iv" };
+        var dek = Sequence(32, seed: 0x30);
+        var dataKey = Sequence(32, seed: 0x40);
+        var cipher = new CipherResult(new byte[] { 0xC0 }, new byte[] { 0xD0 });
+        var encoded = new byte[] { 0xEE };
+        var builtMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
+        byte[] expectedAad = [];
+
+        var key = new EncapsulatedKey("key-1", "main", encapsulation, options);
+
+        Freeze<IPlaintextCodec>().Setup(s => s.Serialize(value)).Returns(plaintext);
+        Freeze<IPropertyTypeInspector>()
+            .Setup(n => n.GetPropertyTypeInfo(value))
+            .Returns(new PropertyTypeInfo("INTEGER", new BoltValueSerializationSchemeVersion(1, 0)));
+
+        // poisoned: if the id-typed path ever consulted the alias cache, it would get
+        // this wrong id back and the test would fail downstream.
+        string? poisonedKeyId = "wrong-id";
+        Freeze<IAliasToKeyIdCache>()
+            .Setup(c => c.TryGet(ProfileName, It.IsAny<string>(), out poisonedKeyId))
+            .Returns(true);
+
+        _repository.Setup(r => r.FindAsync(
+                new KeyReference("key-1", KeyReferenceType.Id),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(key);
+
+        byte[]? cacheMiss = null;
+        Freeze<IEncryptionKeyCache>()
+            .Setup(c => c.TryGet(ProfileName, "key-1", out cacheMiss))
+            .Returns(false);
+
+        _kes.Setup(k => k.DecapsulateAsync(
+                Matches(encapsulation),
+                It.IsAny<IReadOnlyDictionary<string, string>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(dek);
+
+        Freeze<IKeyDerivation>().Setup(d => d.Derive(Matches(dek), 32)).Returns(dataKey);
+        Freeze<IAeadCipher>()
+            .Setup(c => c.Encrypt(Matches(dataKey), Matches(Iv), Matches(plaintext), Matches(expectedAad)))
+            .Returns(cipher);
+
+        Freeze<IEnvelopeMetadataBuilder>()
+            .Setup(b => b.Build(IsExpectedMetadata("key-1", expectedAad)))
+            .Returns(builtMetadata);
+
+        Freeze<IEncryptedValueBytesCodec>()
+            .Setup(c => c.Encode(It.Is<EncryptedStructure>(s => IsExpectedStructure(s, cipher.Combined, builtMetadata))))
+            .Returns(encoded);
+
+        var subject = CreateSubject<EnvelopeEncryptionEngine>();
+        var started = subject.TryStartEncrypt(
+            Profile(),
+            value,
+            new KeyReference("key-1", KeyReferenceType.Id),
+            aad: null,
+            TestContext.Current.CancellationToken,
+            out var encryptedTask);
+
+        started.Should().BeTrue();
+        var result = await encryptedTask!;
+
+        result.Should().Equal(encoded);
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData(new byte[] { 0x99 })]
@@ -181,6 +385,52 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             Profile(),
             encrypted,
             suppliedAad,
+            TestContext.Current.CancellationToken,
+            out var decryptedTask);
+
+        started.Should().BeTrue();
+        var result = await decryptedTask!;
+
+        result.Should().Be(value);
+    }
+
+    [Fact]
+    public async Task TryStartDecrypt_DekCacheHit_NeverTouchesRepositoryOrKes()
+    {
+        var encrypted = new byte[] { 0xEE };
+        var cipherOutput = new byte[] { 0xC0, 0xD0 };
+        var persistedAad = Array.Empty<byte>();
+        var structureMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
+        var structure = new EncryptedStructure(ProfileName, cipherOutput, "INTEGER", 1, 0, structureMetadata);
+        var envelopeMetadata = new EnvelopeMetadata("key-1", Iv, persistedAad, 1, 0, new Dictionary<string, object>());
+        var dek = Sequence(32, seed: 0x30);
+        var dataKey = Sequence(32, seed: 0x40);
+        var plaintext = new byte[] { 0x10, 0x11 };
+        const long value = 5L;
+
+        Freeze<IEncryptedValueBytesCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
+        Freeze<IEnvelopeMetadataExtractor>().Setup(e => e.Extract(structureMetadata)).Returns(envelopeMetadata);
+
+        byte[]? cachedDek = dek;
+        Freeze<IEncryptionKeyCache>()
+            .Setup(c => c.TryGet(ProfileName, "key-1", out cachedDek))
+            .Returns(true);
+
+        // deliberately not stubbing the repository or KES - either being called fails
+        // the test downstream, proving the DEK cache hit skipped both.
+
+        Freeze<IKeyDerivation>().Setup(d => d.Derive(Matches(dek), 32)).Returns(dataKey);
+        Freeze<IAeadCipher>()
+            .Setup(c => c.Decrypt(Matches(dataKey), Matches(Iv), Matches(cipherOutput), Matches(persistedAad)))
+            .Returns(plaintext);
+
+        Freeze<IPlaintextCodec>().Setup(d => d.Deserialize(Matches(plaintext))).Returns(value);
+
+        var subject = CreateSubject<EnvelopeEncryptionEngine>();
+        var started = subject.TryStartDecrypt(
+            Profile(),
+            encrypted,
+            aad: null,
             TestContext.Current.CancellationToken,
             out var decryptedTask);
 
