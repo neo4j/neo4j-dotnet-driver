@@ -112,6 +112,56 @@ public class CypherToNativeMapperTests
     }
 
     [Fact]
+    public void Maps_cypher_date_time_without_offset_or_timezone_to_local_date_time()
+    {
+        var expected = new LocalDateTime(2022, 6, 7, 11, 52, 5, 0);
+
+        _mapper.Map(new CypherDateTime(2022, 6, 7, 11, 52, 5, 0)).Should().Be(expected);
+    }
+
+    [Fact]
+    public void Maps_cypher_date_to_local_date()
+    {
+        _mapper.Map(new CypherDate(2022, 6, 7)).Should().Be(new LocalDate(2022, 6, 7));
+    }
+
+    [Fact]
+    public void Maps_cypher_time_without_offset_to_local_time()
+    {
+        _mapper.Map(new CypherTime(11, 52, 5, 0)).Should().Be(new LocalTime(11, 52, 5, 0));
+    }
+
+    [Fact]
+    public void Maps_cypher_time_with_offset_to_offset_time()
+    {
+        _mapper.Map(new CypherTime(11, 52, 5, 0, 7200)).Should().Be(new OffsetTime(11, 52, 5, 0, 7200));
+    }
+
+    [Fact]
+    public void Maps_cypher_duration_to_duration()
+    {
+        _mapper.Map(new CypherDuration(1, 2, 3, 4)).Should().Be(new Duration(1, 2, 3, 4));
+    }
+
+    [Fact]
+    public void Maps_cypher_bytes_to_a_byte_array()
+    {
+        _mapper.Map(new CypherBytes("01 ff")).Should().BeOfType<byte[]>().Which.Should().Equal(0x01, 0xff);
+    }
+
+    [Fact]
+    public void Maps_cypher_point_to_a_2d_cartesian_point()
+    {
+        _mapper.Map(new CypherPoint("cartesian", 1.0, 2.0, null)).Should().Be(new Point(7203, 1.0, 2.0));
+    }
+
+    [Fact]
+    public void Maps_cypher_point_to_a_3d_wgs84_point()
+    {
+        _mapper.Map(new CypherPoint("wgs84", 1.0, 2.0, 3.0)).Should().Be(new Point(4979, 1.0, 2.0, 3.0));
+    }
+
+    [Fact]
     public void Maps_cypher_vector_to_an_integer_vector()
     {
         var mapped = _mapper.Map(new CypherVector("i8", "01 ff"));

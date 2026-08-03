@@ -33,6 +33,16 @@ internal record CypherDateTime(
     {
     }
 
+    internal CypherDateTime(LocalDateTime ldt)
+        : this(ldt.Year, ldt.Month, ldt.Day, ldt.Hour, ldt.Minute, ldt.Second, ldt.Nanosecond)
+    {
+    }
+
+    internal LocalDateTime ToLocalDateTime()
+    {
+        return new LocalDateTime(Year, Month, Day, Hour, Minute, Second, Nanosecond);
+    }
+
     internal ZonedDateTime ToZonedDateTime(int offset)
     {
         return ToZonedDateTime(Zone.Of(offset));

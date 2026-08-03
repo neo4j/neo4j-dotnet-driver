@@ -38,6 +38,13 @@ internal class NativeToCypherMapper : INativeToCypherMapper
             Guid guid => new CypherUUID(guid),
             ZonedDateTime { Zone: ZoneOffset offset } zdt => new CypherDateTime(zdt, offset.OffsetSeconds),
             ZonedDateTime { Zone: ZoneId zoneId } zdt => new CypherDateTime(zdt, zdt.OffsetSeconds, zoneId.Id),
+            LocalDateTime localDateTime => new CypherDateTime(localDateTime),
+            LocalDate date => new CypherDate(date),
+            OffsetTime offsetTime => new CypherTime(offsetTime),
+            LocalTime time => new CypherTime(time),
+            Duration duration => new CypherDuration(duration),
+            byte[] bytes => new CypherBytes(bytes),
+            Point point => new CypherPoint(point),
             IVector vector => new CypherVector(vector),
 
             UnsupportedType unsupported => new CypherUnsupportedType(

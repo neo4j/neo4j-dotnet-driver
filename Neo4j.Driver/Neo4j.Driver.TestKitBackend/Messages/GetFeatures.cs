@@ -47,6 +47,7 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
         "Feature:API:SSLClientCertificate",
         "Feature:API:SSLConfig",
         "Feature:API:SSLSchemes",
+        "Feature:API:Type.Spatial",
         "Feature:API:Type.Temporal",
         "Feature:API:Type.UnsupportedType",
         "Feature:API:Type.UUID",
