@@ -24,4 +24,11 @@ namespace Neo4j.Driver.Preview.Encryption;
 /// </summary>
 public interface IPropertyEncryption
 {
+    /// <summary>Begins building a request to encrypt a value.</summary>
+    /// <returns>The first stage of the request.</returns>
+    IEncryptRequestValueStep EncryptRequest();
+
+    /// <summary>Begins building a request to decrypt a value.</summary>
+    /// <returns>The first stage of the request.</returns>
+    IDecryptRequestValueStep DecryptRequest();
 }

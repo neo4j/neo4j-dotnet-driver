@@ -1,12 +1,12 @@
 // Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,27 +15,24 @@
 
 #nullable enable
 
-using Neo4j.Driver.Preview.Encryption;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
+// Step B: resolve profile via IEncryptionProfileRegistry, serialize AAD, dispatch through
+// IEncryptionEngineDispatcher. Deferred; Step A only needs this to compile and resolve from DI.
 [DriverAutoRegister(singleton: true)]
-internal class PropertyEncryption : IPropertyEncryption
+internal class EncryptionRequestRunner : IEncryptionRequestRunner
 {
-    private readonly IEncryptionRequestRunner _runner;
-
-    public PropertyEncryption(IEncryptionRequestRunner runner)
+    public Task<byte[]> EncryptToBytesAsync(EncryptRequest request, CancellationToken cancellationToken)
     {
-        _runner = runner;
+        throw new NotImplementedException();
     }
 
-    public IEncryptRequestValueStep EncryptRequest()
+    public Task<object> DecryptAsync(DecryptRequest request, CancellationToken cancellationToken)
     {
-        return new EncryptRequestBuilder(_runner);
-    }
-
-    public IDecryptRequestValueStep DecryptRequest()
-    {
-        return new DecryptRequestBuilder(_runner);
+        throw new NotImplementedException();
     }
 }

@@ -1,12 +1,12 @@
 // Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,27 +15,13 @@
 
 #nullable enable
 
-using Neo4j.Driver.Preview.Encryption;
+namespace Neo4j.Driver.Preview.Encryption;
 
-namespace Neo4j.Driver.Internal.Encryption;
-
-[DriverAutoRegister(singleton: true)]
-internal class PropertyEncryption : IPropertyEncryption
+/// <summary>The first stage of building a request to encrypt a value.</summary>
+public interface IEncryptRequestValueStep
 {
-    private readonly IEncryptionRequestRunner _runner;
-
-    public PropertyEncryption(IEncryptionRequestRunner runner)
-    {
-        _runner = runner;
-    }
-
-    public IEncryptRequestValueStep EncryptRequest()
-    {
-        return new EncryptRequestBuilder(_runner);
-    }
-
-    public IDecryptRequestValueStep DecryptRequest()
-    {
-        return new DecryptRequestBuilder(_runner);
-    }
+    /// <summary>Sets the value to encrypt.</summary>
+    /// <param name="value">The property value to encrypt.</param>
+    /// <returns>The next stage of the request.</returns>
+    IEncryptRequestKeyStep FromValue(object value);
 }
