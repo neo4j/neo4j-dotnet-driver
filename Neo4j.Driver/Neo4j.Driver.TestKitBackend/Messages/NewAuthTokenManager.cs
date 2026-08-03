@@ -27,7 +27,7 @@ internal record NewAuthTokenManagerRequest : IProtocolMessage;
 internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRequest>
 {
     private readonly IRegistry _registry;
-    private readonly IContinuationCoordinator _coordinator;
+    private readonly ICallbackExchange _callbacks;
     private readonly Func<Func<ValueTask<IAuthToken>>, Func<IAuthToken, SecurityException, ValueTask<bool>>,
         IAuthTokenManager> _createManager;
 
@@ -36,14 +36,14 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
 
     public NewAuthTokenManagerHandler(
         IRegistry registry,
-        IContinuationCoordinator coordinator,
+        ICallbackExchange callbacks,
         Func<Func<ValueTask<IAuthToken>>, Func<IAuthToken, SecurityException, ValueTask<bool>>, IAuthTokenManager>
             createManager,
         IResponseWriter responseWriter,
         ILogger logger)
     {
         _registry = registry;
-        _coordinator = coordinator;
+        _callbacks = callbacks;
         _createManager = createManager;
         _responseWriter = responseWriter;
         _logger = logger;
@@ -65,10 +65,9 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
 
     private async ValueTask<IAuthToken> GetAuthAsync(string managerId)
     {
-        var pending = _coordinator.RegisterCallback();
-        _coordinator.CompleteNextResponse(new AuthTokenManagerGetAuthRequest(pending.Id, managerId));
+        var completion = await _callbacks.SendAsync<AuthTokenManagerGetAuthCompletedRequest>(
+            id => new AuthTokenManagerGetAuthRequest(id, managerId));
 
-        var completion = (AuthTokenManagerGetAuthCompletedRequest)await pending.Completion;
         return completion.Auth.Value.ToAuthToken();
     }
 
@@ -77,15 +76,9 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
         IAuthToken token,
         SecurityException exception)
     {
-        var pending = _coordinator.RegisterCallback();
-        _coordinator.CompleteNextResponse(
-            new AuthTokenManagerHandleSecurityExceptionRequest(
-                pending.Id,
-                managerId,
-                ToWireToken(token),
-                exception.Code));
+        var completion = await _callbacks.SendAsync<AuthTokenManagerHandleSecurityExceptionCompletedRequest>(
+            id => new AuthTokenManagerHandleSecurityExceptionRequest(id, managerId, ToWireToken(token), exception.Code));
 
-        var completion = (AuthTokenManagerHandleSecurityExceptionCompletedRequest)await pending.Completion;
         return completion.Handled;
     }
 

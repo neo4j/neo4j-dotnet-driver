@@ -16,9 +16,7 @@
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Cypher;
-using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Xunit;
@@ -28,11 +26,6 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 public class ResultNextHandlerTests
 {
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<ResultNextHandler>();
-
-    public ResultNextHandlerTests()
-    {
-        _autoMocker.Use<IContinuationCoordinator>(new ContinuationCoordinator());
-    }
 
     private ResultNextRequest RequestFor(IResultCursor cursor)
     {
@@ -78,22 +71,5 @@ public class ResultNextHandlerTests
 
         _autoMocker.GetMock<IResponseWriter>()
             .Verify(w => w.WriteAsync(new NullRecordResponse()), Times.Once);
-    }
-
-    [Fact]
-    public async Task Writes_the_mapped_driver_error_when_fetch_throws()
-    {
-        var exception = new ClientException("boom");
-        var cursorMock = _autoMocker.GetMock<IResultCursor>();
-        cursorMock.Setup(c => c.FetchAsync()).ThrowsAsync(exception);
-
-        var errorResponse = new DriverErrorResponse { Id = "error-1", ErrorType = "ClientError" };
-        _autoMocker.GetMock<IDriverErrorMapper>().Setup(m => m.Map(exception)).Returns(errorResponse);
-
-        var handler = _autoMocker.CreateInstance<ResultNextHandler>();
-
-        await handler.ProcessAsync(RequestFor(cursorMock.Object));
-
-        _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(errorResponse), Times.Once);
     }
 }

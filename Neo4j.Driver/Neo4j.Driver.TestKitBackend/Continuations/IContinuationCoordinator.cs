@@ -17,8 +17,6 @@ using Neo4j.Driver.TestKitBackend.Dispatch;
 
 namespace Neo4j.Driver.TestKitBackend.Continuations;
 
-internal readonly record struct PendingCallback(string Id, Task<IProtocolMessage> Completion);
-
 internal interface IContinuationCoordinator
 {
     Task<IProtocolMessage> WaitForNextResponseAsync();
@@ -30,8 +28,4 @@ internal interface IContinuationCoordinator
     void CompleteOutcome(string sessionId);
 
     void FailOutcome(string sessionId, Exception exception);
-
-    PendingCallback RegisterCallback();
-
-    void CompleteCallback(string requestId, IProtocolMessage completion);
 }

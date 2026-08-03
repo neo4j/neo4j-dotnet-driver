@@ -14,9 +14,7 @@
 // limitations under the License.
 
 using Moq;
-using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
-using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Xunit;
 
@@ -24,64 +22,31 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
 public class ResolverFlowTests
 {
-    private record TerminalResponse(string Tag) : IProtocolMessage;
-
-    private readonly ContinuationCoordinator _coordinator = new();
-    private readonly Mock<IResponseWriter> _responseWriterMock = new();
-
     [Fact]
-    public async Task Resolve_round_trips_a_callback_with_the_asked_address_and_parses_the_reply()
+    public void Resolve_requests_a_callback_with_the_asked_address_and_parses_the_reply()
     {
-        var resolver = new TestKitServerAddressResolver(_coordinator);
+        Func<string, ICallbackRequest>? capturedRequest = null;
+        var callbacksMock = new Mock<ICallbackExchange>();
+        callbacksMock
+            .Setup(c => c.SendAsync<ResolverResolutionCompletedRequest>(It.IsAny<Func<string, ICallbackRequest>>()))
+            .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
+            .ReturnsAsync(
+                new ResolverResolutionCompletedRequest
+                {
+                    RequestId = "callback-1",
+                    Addresses = ["hosta:9002", "hostb:9003"]
+                });
 
-        var openRequestTask = _coordinator.WaitForNextResponseAsync();
+        var resolver = new TestKitServerAddressResolver(callbacksMock.Object);
 
-        var resolveTask = Task.Run(
-            () => resolver.Resolve(ServerAddress.From("router1", 9001)),
-            TestContext.Current.CancellationToken);
+        var resolved = resolver.Resolve(ServerAddress.From("router1", 9001));
 
-        var callbackRequest = Assert.IsType<ResolverResolutionRequired>(await WithTimeoutAsync(openRequestTask));
-        Assert.Equal("router1:9001", callbackRequest.Address);
+        Assert.NotNull(capturedRequest);
+        var request = Assert.IsType<ResolverResolutionRequired>(capturedRequest!("callback-1"));
+        Assert.Equal("router1:9001", request.Address);
 
-        var completedHandler = new CallbackCompletedHandler<ResolverResolutionCompletedRequest>(
-            _coordinator,
-            _responseWriterMock.Object);
-
-        var completedTask = completedHandler.ProcessAsync(
-            new ResolverResolutionCompletedRequest
-            {
-                RequestId = callbackRequest.Id,
-                Addresses = ["hosta:9002", "hostb:9003"]
-            });
-
-        var resolved = await WithTimeoutAsync(resolveTask);
         Assert.Equal(
             new HashSet<ServerAddress> { ServerAddress.From("hosta", 9002), ServerAddress.From("hostb", 9003) },
             resolved);
-
-        _coordinator.CompleteNextResponse(new TerminalResponse("result"));
-        await WithTimeoutAsync(completedTask);
-
-        _responseWriterMock.Verify(w => w.WriteAsync(new TerminalResponse("result")), Times.Once);
-    }
-
-    private static async Task<T> WithTimeoutAsync<T>(Task<T> task)
-    {
-        var completed = await Task.WhenAny(
-            task,
-            Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
-
-        Assert.Same(task, completed);
-        return await task;
-    }
-
-    private static async Task WithTimeoutAsync(Task task)
-    {
-        var completed = await Task.WhenAny(
-            task,
-            Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
-
-        Assert.Same(task, completed);
-        await task;
     }
 }

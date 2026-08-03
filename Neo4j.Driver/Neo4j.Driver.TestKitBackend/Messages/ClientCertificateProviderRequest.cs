@@ -14,12 +14,11 @@
 // limitations under the License.
 
 using Neo4j.Driver.TestKitBackend.Continuations;
-using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record ClientCertificateProviderRequest(string Id, string ClientCertificateProviderId) : IProtocolMessage;
+internal record ClientCertificateProviderRequest(string Id, string ClientCertificateProviderId) : ICallbackRequest;
 
 internal record ClientCertificateProviderCompletedRequest : ICallbackCompletion
 {

@@ -15,10 +15,8 @@
 
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Types;
 
@@ -36,27 +34,26 @@ internal record SessionBeginTransactionRequest : IProtocolMessage
 
 internal record TransactionResponse(string Id) : IProtocolMessage;
 
-internal class SessionBeginTransactionHandler : BackgroundOperationHandler<SessionBeginTransactionRequest>
+internal class SessionBeginTransactionHandler : MessageHandler<SessionBeginTransactionRequest>
 {
     private readonly IRegistry _registry;
     private readonly ICypherToNativeMapper _cypherToNativeMapper;
+    private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public SessionBeginTransactionHandler(
         IRegistry registry,
-        IContinuationCoordinator coordinator,
         IResponseWriter responseWriter,
         ICypherToNativeMapper cypherToNativeMapper,
-        IDriverErrorMapper driverErrorMapper,
         ILogger logger)
-        : base(coordinator, responseWriter, driverErrorMapper, logger)
     {
         _registry = registry;
+        _responseWriter = responseWriter;
         _cypherToNativeMapper = cypherToNativeMapper;
         _logger = logger;
     }
 
-    protected override async Task<IProtocolMessage> ExecuteAsync(SessionBeginTransactionRequest message)
+    public override async Task ProcessAsync(SessionBeginTransactionRequest message)
     {
         var transaction = await message.Session.Object.BeginTransactionAsync(
             builder => Configure(builder, message));
@@ -67,7 +64,7 @@ internal class SessionBeginTransactionHandler : BackgroundOperationHandler<Sessi
             registered.Id,
             message.Session.Id);
 
-        return new TransactionResponse(registered.Id);
+        await _responseWriter.WriteAsync(new TransactionResponse(registered.Id));
     }
 
     private void Configure(TransactionConfigBuilder builder, SessionBeginTransactionRequest message)

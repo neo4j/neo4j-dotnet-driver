@@ -13,11 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Summary;
 
@@ -41,24 +38,20 @@ internal record SummaryResponse(
     long? ResultConsumedAfter,
     IReadOnlyList<SummaryGqlStatusObjectResponse> GqlStatusObjects) : IProtocolMessage;
 
-internal class ResultConsumeHandler : BackgroundOperationHandler<ResultConsumeRequest>
+internal class ResultConsumeHandler : MessageHandler<ResultConsumeRequest>
 {
     private readonly ISummaryMapper _summaryMapper;
+    private readonly IResponseWriter _responseWriter;
 
-    public ResultConsumeHandler(
-        ISummaryMapper summaryMapper,
-        IContinuationCoordinator coordinator,
-        IResponseWriter responseWriter,
-        IDriverErrorMapper driverErrorMapper,
-        ILogger logger)
-        : base(coordinator, responseWriter, driverErrorMapper, logger)
+    public ResultConsumeHandler(ISummaryMapper summaryMapper, IResponseWriter responseWriter)
     {
         _summaryMapper = summaryMapper;
+        _responseWriter = responseWriter;
     }
 
-    protected override async Task<IProtocolMessage> ExecuteAsync(ResultConsumeRequest message)
+    public override async Task ProcessAsync(ResultConsumeRequest message)
     {
         var summary = await message.Result.Object.ConsumeAsync();
-        return _summaryMapper.Map(summary);
+        await _responseWriter.WriteAsync(_summaryMapper.Map(summary));
     }
 }

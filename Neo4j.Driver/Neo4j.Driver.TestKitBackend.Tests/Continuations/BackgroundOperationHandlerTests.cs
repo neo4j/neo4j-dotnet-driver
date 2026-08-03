@@ -27,64 +27,60 @@ public class BackgroundOperationHandlerTests
 {
     private record TestRequest : IProtocolMessage;
 
-    private record CallbackMessage(string Id) : IProtocolMessage;
+    private record NestedResponse : IProtocolMessage;
 
-    private record CallbackCompletion : IProtocolMessage;
-
-    private record TerminalMessage : IProtocolMessage;
+    private record TerminalResponse : IProtocolMessage;
 
     private readonly ContinuationCoordinator _coordinator = new();
     private readonly Mock<IResponseWriter> _responseWriterMock = new();
 
-    private class SynchronouslyBlockingHandler : BackgroundOperationHandler<TestRequest>
+    private class BlockingHandler : BackgroundOperationHandler<TestRequest>
     {
-        private readonly IContinuationCoordinator _coordinator;
+        private readonly TaskCompletionSource _gate;
 
-        public SynchronouslyBlockingHandler(
+        public BlockingHandler(
+            TaskCompletionSource gate,
             IContinuationCoordinator coordinator,
             IResponseWriter responseWriter,
             IDriverErrorMapper driverErrorMapper,
             ILogger logger)
             : base(coordinator, responseWriter, driverErrorMapper, logger)
         {
-            _coordinator = coordinator;
+            _gate = gate;
         }
 
-        protected override Task<IProtocolMessage> ExecuteAsync(TestRequest message)
+        protected override async Task<IProtocolMessage> ExecuteAsync(TestRequest message)
         {
-            var pending = _coordinator.RegisterCallback();
-            _coordinator.CompleteNextResponse(new CallbackMessage(pending.Id));
-            pending.Completion.GetAwaiter().GetResult();
-            return Task.FromResult<IProtocolMessage>(new TerminalMessage());
+            await _gate.Task;
+            return new TerminalResponse();
         }
     }
 
     [Fact]
-    public async Task An_operation_blocking_synchronously_on_a_callback_does_not_deadlock_the_loop()
+    public async Task A_nested_response_can_complete_the_slot_before_the_background_operation_itself_finishes()
     {
-        CallbackMessage? written = null;
-        _responseWriterMock
-            .Setup(w => w.WriteAsync(It.IsAny<CallbackMessage>()))
-            .Callback<IProtocolMessage>(m => written = (CallbackMessage)m)
-            .Returns(Task.CompletedTask);
-
-        var handler = new SynchronouslyBlockingHandler(
+        // Mirrors the retry flow: RetryableTransactionHandler's ExecuteAsync can still be
+        // suspended (awaiting RetryablePositive/RetryableNegative) when a nested top-level
+        // request (e.g. TransactionRun) needs to complete the response slot in its place.
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handler = new BlockingHandler(
+            gate,
             _coordinator,
             _responseWriterMock.Object,
             Mock.Of<IDriverErrorMapper>(),
             Mock.Of<ILogger>());
 
-        var processTask = Task.Run(
-            () => handler.ProcessAsync(new TestRequest()),
-            TestContext.Current.CancellationToken);
+        var processTask = handler.ProcessAsync(new TestRequest());
+
+        _coordinator.CompleteNextResponse(new NestedResponse());
         await WithTimeoutAsync(processTask);
 
-        Assert.NotNull(written);
+        _responseWriterMock.Verify(w => w.WriteAsync(new NestedResponse()), Times.Once);
 
         var nextResponseTask = _coordinator.WaitForNextResponseAsync();
-        _coordinator.CompleteCallback(written!.Id, new CallbackCompletion());
+        gate.SetResult();
 
-        Assert.IsType<TerminalMessage>(await WithTimeoutAsync(nextResponseTask));
+        Assert.IsType<TerminalResponse>(await WithTimeoutAsync(nextResponseTask));
     }
 
     private static async Task<T> WithTimeoutAsync<T>(Task<T> task)

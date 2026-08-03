@@ -18,7 +18,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
-using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Xunit;
@@ -27,9 +26,7 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
 public class BookmarkManagerFlowTests
 {
-    private record TerminalResponse(string Tag) : IProtocolMessage;
-
-    private readonly ContinuationCoordinator _coordinator = new();
+    private readonly Mock<ICallbackExchange> _callbacksMock = new();
     private readonly Mock<IResponseWriter> _responseWriterMock = new();
 
     private IBookmarkManager RegisterManager(NewBookmarkManagerRequest request)
@@ -47,7 +44,7 @@ public class BookmarkManagerFlowTests
 
         var handler = new NewBookmarkManagerHandler(
             registryMock.Object,
-            _coordinator,
+            _callbacksMock.Object,
             _responseWriterMock.Object,
             Mock.Of<ILogger>());
 
@@ -58,83 +55,41 @@ public class BookmarkManagerFlowTests
     }
 
     [Fact]
-    public async Task The_registered_manager_round_trips_a_supplier_callback_for_extra_bookmarks()
+    public async Task The_registered_manager_requests_a_supplier_callback_for_extra_bookmarks()
     {
         var manager = RegisterManager(new NewBookmarkManagerRequest { BookmarksSupplierRegistered = true });
 
-        var openRequestTask = _coordinator.WaitForNextResponseAsync();
+        Func<string, ICallbackRequest>? capturedRequest = null;
+        _callbacksMock
+            .Setup(c => c.SendAsync<BookmarksSupplierCompletedRequest>(It.IsAny<Func<string, ICallbackRequest>>()))
+            .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
+            .ReturnsAsync(
+                new BookmarksSupplierCompletedRequest { RequestId = "callback-1", Bookmarks = ["bm:s1", "bm:s2"] });
 
-        var bookmarksTask = manager.GetBookmarksAsync(TestContext.Current.CancellationToken);
+        var bookmarks = await manager.GetBookmarksAsync(TestContext.Current.CancellationToken);
 
-        var callbackRequest = Assert.IsType<BookmarksSupplierRequest>(await WithTimeoutAsync(openRequestTask));
-        Assert.Equal("bm-1", callbackRequest.BookmarkManagerId);
-
-        var completedHandler = new CallbackCompletedHandler<BookmarksSupplierCompletedRequest>(
-            _coordinator,
-            _responseWriterMock.Object);
-        var completedTask = completedHandler.ProcessAsync(
-            new BookmarksSupplierCompletedRequest
-            {
-                RequestId = callbackRequest.Id,
-                Bookmarks = ["bm:s1", "bm:s2"]
-            });
-
-        var bookmarks = await WithTimeoutAsync(bookmarksTask);
+        Assert.NotNull(capturedRequest);
+        var request = Assert.IsType<BookmarksSupplierRequest>(capturedRequest!("callback-1"));
+        Assert.Equal("bm-1", request.BookmarkManagerId);
         bookmarks.Should().BeEquivalentTo("bm:s1", "bm:s2");
-
-        _coordinator.CompleteNextResponse(new TerminalResponse("result"));
-        await WithTimeoutAsync(completedTask);
-
-        _responseWriterMock.Verify(w => w.WriteAsync(new TerminalResponse("result")), Times.Once);
     }
 
     [Fact]
-    public async Task The_registered_manager_round_trips_a_consumer_callback_with_the_new_bookmarks()
+    public async Task The_registered_manager_requests_a_consumer_callback_with_the_new_bookmarks()
     {
         var manager = RegisterManager(new NewBookmarkManagerRequest { BookmarksConsumerRegistered = true });
 
-        var openRequestTask = _coordinator.WaitForNextResponseAsync();
+        Func<string, ICallbackRequest>? capturedRequest = null;
+        _callbacksMock
+            .Setup(c => c.SendAsync<BookmarksConsumerCompletedRequest>(It.IsAny<Func<string, ICallbackRequest>>()))
+            .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
+            .ReturnsAsync(new BookmarksConsumerCompletedRequest { RequestId = "callback-1" });
 
-        var updateTask = manager.UpdateBookmarksAsync(
-            [],
-            ["bm:new1", "bm:new2"],
-            TestContext.Current.CancellationToken);
+        await manager.UpdateBookmarksAsync([], ["bm:new1", "bm:new2"], TestContext.Current.CancellationToken);
 
-        var callbackRequest = Assert.IsType<BookmarksConsumerRequest>(await WithTimeoutAsync(openRequestTask));
-        Assert.Equal("bm-1", callbackRequest.BookmarkManagerId);
-        callbackRequest.Bookmarks.Should().BeEquivalentTo("bm:new1", "bm:new2");
-
-        var completedHandler = new CallbackCompletedHandler<BookmarksConsumerCompletedRequest>(
-            _coordinator,
-            _responseWriterMock.Object);
-        var completedTask = completedHandler.ProcessAsync(
-            new BookmarksConsumerCompletedRequest { RequestId = callbackRequest.Id });
-
-        await WithTimeoutAsync(updateTask);
-
-        _coordinator.CompleteNextResponse(new TerminalResponse("result"));
-        await WithTimeoutAsync(completedTask);
-
-        _responseWriterMock.Verify(w => w.WriteAsync(new TerminalResponse("result")), Times.Once);
-    }
-
-    private static async Task<T> WithTimeoutAsync<T>(Task<T> task)
-    {
-        var completed = await Task.WhenAny(
-            task,
-            Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
-
-        Assert.Same(task, completed);
-        return await task;
-    }
-
-    private static async Task WithTimeoutAsync(Task task)
-    {
-        var completed = await Task.WhenAny(
-            task,
-            Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
-
-        Assert.Same(task, completed);
-        await task;
+        Assert.NotNull(capturedRequest);
+        var request = Assert.IsType<BookmarksConsumerRequest>(capturedRequest!("callback-1"));
+        Assert.Equal("bm-1", request.BookmarkManagerId);
+        request.Bookmarks.Should().BeEquivalentTo("bm:new1", "bm:new2");
     }
 }

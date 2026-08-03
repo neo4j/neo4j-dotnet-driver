@@ -20,7 +20,6 @@ using Moq;
 using Neo4j.Driver.TestKitBackend.Certificates;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
-using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Xunit;
@@ -29,9 +28,7 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
 public class ClientCertificateProviderFlowTests
 {
-    private record TerminalResponse(string Tag) : IProtocolMessage;
-
-    private readonly ContinuationCoordinator _coordinator = new();
+    private readonly Mock<ICallbackExchange> _callbacksMock = new();
     private readonly Mock<IResponseWriter> _responseWriterMock = new();
     private readonly Mock<ICertificateLoader> _certificateLoaderMock = new();
 
@@ -50,7 +47,7 @@ public class ClientCertificateProviderFlowTests
 
         var newProviderHandler = new NewClientCertificateProviderHandler(
             registryMock.Object,
-            _coordinator,
+            _callbacksMock.Object,
             _certificateLoaderMock.Object,
             provideCertificate => new TestKitClientCertificateProvider(provideCertificate),
             _responseWriterMock.Object,
@@ -74,40 +71,31 @@ public class ClientCertificateProviderFlowTests
         return request.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(1));
     }
 
-    private async Task<X509Certificate> RoundTripCertificateAsync(
+    private async Task<(X509Certificate Certificate, ClientCertificateProviderRequest Request)> RoundTripCertificateAsync(
         IClientCertificateProvider provider,
         ClientCertificate wireCertificate)
     {
-        var openRequestTask = _coordinator.WaitForNextResponseAsync();
-        var certificateTask = provider.GetCertificateAsync();
+        ClientCertificateProviderRequest? request = null;
+        _callbacksMock
+            .Setup(
+                c => c.SendAsync<ClientCertificateProviderCompletedRequest>(It.IsAny<Func<string, ICallbackRequest>>()))
+            .Callback<Func<string, ICallbackRequest>>(f => request = (ClientCertificateProviderRequest)f("callback-1"))
+            .ReturnsAsync(
+                new ClientCertificateProviderCompletedRequest
+                {
+                    RequestId = "callback-1",
+                    HasUpdate = false,
+                    ClientCertificate = wireCertificate
+                });
 
-        var callbackRequest = Assert.IsType<ClientCertificateProviderRequest>(
-            await WithTimeoutAsync(openRequestTask));
+        var certificate = await provider.GetCertificateAsync();
 
-        Assert.Equal("provider-1", callbackRequest.ClientCertificateProviderId);
-
-        var completedHandler = new CallbackCompletedHandler<ClientCertificateProviderCompletedRequest>(
-            _coordinator,
-            _responseWriterMock.Object);
-
-        var completedTask = completedHandler.ProcessAsync(
-            new ClientCertificateProviderCompletedRequest
-            {
-                RequestId = callbackRequest.Id,
-                HasUpdate = false,
-                ClientCertificate = wireCertificate
-            });
-
-        var certificate = await WithTimeoutAsync(certificateTask.AsTask());
-
-        _coordinator.CompleteNextResponse(new TerminalResponse("result"));
-        await WithTimeoutAsync(completedTask);
-
-        return certificate;
+        Assert.NotNull(request);
+        return (certificate, request!);
     }
 
     [Fact]
-    public async Task The_registered_provider_round_trips_a_callback_for_its_certificate()
+    public async Task The_registered_provider_requests_a_callback_for_its_certificate()
     {
         using var certificate = CreateCertificate();
         _certificateLoaderMock
@@ -120,12 +108,12 @@ public class ClientCertificateProviderFlowTests
             w => w.WriteAsync(new ClientCertificateProviderResponse("provider-1")),
             Times.Once);
 
-        var roundTripped = await RoundTripCertificateAsync(
+        var (roundTripped, request) = await RoundTripCertificateAsync(
             provider,
             new ClientCertificate("cert.pem", "key.pem", "secret"));
 
+        Assert.Equal("provider-1", request.ClientCertificateProviderId);
         Assert.Same(certificate, roundTripped);
-        _responseWriterMock.Verify(w => w.WriteAsync(new TerminalResponse("result")), Times.Once);
     }
 
     [Fact]
@@ -142,30 +130,10 @@ public class ClientCertificateProviderFlowTests
 
         var provider = RegisterProvider();
 
-        var first = await RoundTripCertificateAsync(provider, new ClientCertificate("cert1.pem", "key1.pem"));
-        var second = await RoundTripCertificateAsync(provider, new ClientCertificate("cert2.pem", "key2.pem"));
+        var (first, _) = await RoundTripCertificateAsync(provider, new ClientCertificate("cert1.pem", "key1.pem"));
+        var (second, _) = await RoundTripCertificateAsync(provider, new ClientCertificate("cert2.pem", "key2.pem"));
 
         Assert.Same(firstCertificate, first);
         Assert.Same(secondCertificate, second);
-    }
-
-    private static async Task<T> WithTimeoutAsync<T>(Task<T> task)
-    {
-        var completed = await Task.WhenAny(
-            task,
-            Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
-
-        Assert.Same(task, completed);
-        return await task;
-    }
-
-    private static async Task WithTimeoutAsync(Task task)
-    {
-        var completed = await Task.WhenAny(
-            task,
-            Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
-
-        Assert.Same(task, completed);
-        await task;
     }
 }

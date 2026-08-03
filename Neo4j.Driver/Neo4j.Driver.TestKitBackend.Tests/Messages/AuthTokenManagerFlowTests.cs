@@ -18,7 +18,6 @@ using Moq;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
-using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Xunit;
@@ -27,14 +26,9 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
 public class AuthTokenManagerFlowTests
 {
-    private record TerminalResponse(string Tag) : IProtocolMessage;
-
     [Fact]
-    public async Task The_registered_manager_round_trips_a_GetAuth_callback_for_its_token()
+    public async Task The_registered_manager_requests_a_GetAuth_callback_for_its_token()
     {
-        var coordinator = new ContinuationCoordinator();
-        var responseWriterMock = new Mock<IResponseWriter>();
-
         IAuthTokenManager? manager = null;
         var registryMock = new Mock<IRegistry>();
         registryMock
@@ -46,52 +40,43 @@ public class AuthTokenManagerFlowTests
                     return new RegistryObject<IAuthTokenManager>("manager-1", m);
                 });
 
+        Func<string, ICallbackRequest>? capturedRequest = null;
+        var callbacksMock = new Mock<ICallbackExchange>();
+        callbacksMock
+            .Setup(c => c.SendAsync<AuthTokenManagerGetAuthCompletedRequest>(It.IsAny<Func<string, ICallbackRequest>>()))
+            .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
+            .ReturnsAsync(
+                new AuthTokenManagerGetAuthCompletedRequest
+                {
+                    RequestId = "callback-1",
+                    Auth = new AuthorizationToken("basic", "neo4j", "pass")
+                });
+
         var newManagerHandler = new NewAuthTokenManagerHandler(
             registryMock.Object,
-            coordinator,
+            callbacksMock.Object,
             (getAuth, handle) => new TestKitAuthTokenManager(getAuth, handle),
-            responseWriterMock.Object,
+            Mock.Of<IResponseWriter>(),
             Mock.Of<ILogger>());
 
         await newManagerHandler.ProcessAsync(new NewAuthTokenManagerRequest());
-
-        responseWriterMock.Verify(w => w.WriteAsync(new AuthTokenManagerResponse("manager-1")), Times.Once);
         Assert.NotNull(manager);
 
-        var openRequestTask = coordinator.WaitForNextResponseAsync();
+        var token = Assert.IsAssignableFrom<AuthToken>(
+            await manager!.GetTokenAsync(TestContext.Current.CancellationToken));
 
-        var tokenTask = manager!.GetTokenAsync(TestContext.Current.CancellationToken);
+        Assert.NotNull(capturedRequest);
+        var request = Assert.IsType<AuthTokenManagerGetAuthRequest>(capturedRequest!("callback-1"));
+        Assert.Equal("manager-1", request.AuthTokenManagerId);
 
-        var callbackRequest = Assert.IsType<AuthTokenManagerGetAuthRequest>(await WithTimeoutAsync(openRequestTask));
-        Assert.Equal("manager-1", callbackRequest.AuthTokenManagerId);
-
-        var completedHandler = new CallbackCompletedHandler<AuthTokenManagerGetAuthCompletedRequest>(
-            coordinator,
-            responseWriterMock.Object);
-        var completedTask = completedHandler.ProcessAsync(
-            new AuthTokenManagerGetAuthCompletedRequest
-            {
-                RequestId = callbackRequest.Id,
-                Auth = new AuthorizationToken("basic", "neo4j", "pass")
-            });
-
-        var token = Assert.IsAssignableFrom<AuthToken>(await WithTimeoutAsync(tokenTask.AsTask()));
         Assert.Equal("basic", token.Content["scheme"]);
         Assert.Equal("neo4j", token.Content["principal"]);
         Assert.Equal("pass", token.Content["credentials"]);
-
-        coordinator.CompleteNextResponse(new TerminalResponse("result"));
-        await WithTimeoutAsync(completedTask);
-
-        responseWriterMock.Verify(w => w.WriteAsync(new TerminalResponse("result")), Times.Once);
     }
 
     [Fact]
-    public async Task The_registered_manager_round_trips_a_HandleSecurityException_callback()
+    public async Task The_registered_manager_requests_a_HandleSecurityException_callback()
     {
-        var coordinator = new ContinuationCoordinator();
-        var responseWriterMock = new Mock<IResponseWriter>();
-
         IAuthTokenManager? manager = null;
         var registryMock = new Mock<IRegistry>();
         registryMock
@@ -103,67 +88,44 @@ public class AuthTokenManagerFlowTests
                     return new RegistryObject<IAuthTokenManager>("manager-1", m);
                 });
 
+        Func<string, ICallbackRequest>? capturedRequest = null;
+        var callbacksMock = new Mock<ICallbackExchange>();
+        callbacksMock
+            .Setup(
+                c => c.SendAsync<AuthTokenManagerHandleSecurityExceptionCompletedRequest>(
+                    It.IsAny<Func<string, ICallbackRequest>>()))
+            .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
+            .ReturnsAsync(
+                new AuthTokenManagerHandleSecurityExceptionCompletedRequest
+                {
+                    RequestId = "callback-1",
+                    Handled = true
+                });
+
         var newManagerHandler = new NewAuthTokenManagerHandler(
             registryMock.Object,
-            coordinator,
+            callbacksMock.Object,
             (getAuth, handle) => new TestKitAuthTokenManager(getAuth, handle),
-            responseWriterMock.Object,
+            Mock.Of<IResponseWriter>(),
             Mock.Of<ILogger>());
 
         await newManagerHandler.ProcessAsync(new NewAuthTokenManagerRequest());
         Assert.NotNull(manager);
 
-        var openRequestTask = coordinator.WaitForNextResponseAsync();
-
         var token = AuthTokens.Custom("neo4j", "pass", null!, "basic");
         var exception = new SecurityException("Neo.ClientError.Security.TokenExpired", "boom");
-        var handledTask = manager!.HandleSecurityExceptionAsync(
+
+        var handled = await manager!.HandleSecurityExceptionAsync(
             token,
             exception,
             TestContext.Current.CancellationToken);
 
-        var callbackRequest = Assert.IsType<AuthTokenManagerHandleSecurityExceptionRequest>(
-            await WithTimeoutAsync(openRequestTask));
-        Assert.Equal("manager-1", callbackRequest.AuthTokenManagerId);
-        Assert.Equal("Neo.ClientError.Security.TokenExpired", callbackRequest.ErrorCode);
+        Assert.True(handled);
 
-        Assert.Equal(new AuthorizationToken("basic", "neo4j", "pass"), callbackRequest.Auth);
-
-        var completedHandler = new CallbackCompletedHandler<AuthTokenManagerHandleSecurityExceptionCompletedRequest>(
-            coordinator,
-            responseWriterMock.Object);
-        var completedTask = completedHandler.ProcessAsync(
-            new AuthTokenManagerHandleSecurityExceptionCompletedRequest
-            {
-                RequestId = callbackRequest.Id,
-                Handled = true
-            });
-
-        Assert.True(await WithTimeoutAsync(handledTask.AsTask()));
-
-        coordinator.CompleteNextResponse(new TerminalResponse("result"));
-        await WithTimeoutAsync(completedTask);
-
-        responseWriterMock.Verify(w => w.WriteAsync(new TerminalResponse("result")), Times.Once);
-    }
-
-    private static async Task<T> WithTimeoutAsync<T>(Task<T> task)
-    {
-        var completed = await Task.WhenAny(
-            task,
-            Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
-
-        Assert.Same(task, completed);
-        return await task;
-    }
-
-    private static async Task WithTimeoutAsync(Task task)
-    {
-        var completed = await Task.WhenAny(
-            task,
-            Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
-
-        Assert.Same(task, completed);
-        await task;
+        Assert.NotNull(capturedRequest);
+        var request = Assert.IsType<AuthTokenManagerHandleSecurityExceptionRequest>(capturedRequest!("callback-1"));
+        Assert.Equal("manager-1", request.AuthTokenManagerId);
+        Assert.Equal("Neo.ClientError.Security.TokenExpired", request.ErrorCode);
+        Assert.Equal(new AuthorizationToken("basic", "neo4j", "pass"), request.Auth);
     }
 }

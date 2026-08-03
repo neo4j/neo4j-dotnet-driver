@@ -18,7 +18,6 @@ using Autofac;
 using Autofac.Core;
 using Autofac.Core.Registration;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Infrastructure;
 using Module = Autofac.Module;
 
@@ -41,13 +40,6 @@ internal class BackendModule : Module
                 RegistrationLifetime.Singleton => registration.SingleInstance(),
                 _ => throw new ArgumentOutOfRangeException()
             };
-        }
-
-        foreach (var completionType in RegisterableTypes(Assembly.GetExecutingAssembly())
-                     .Where(t => t.IsAssignableTo(typeof(ICallbackCompletion))))
-        {
-            builder.RegisterType(typeof(CallbackCompletedHandler<>).MakeGenericType(completionType))
-                .AsImplementedInterfaces();
         }
 
         builder

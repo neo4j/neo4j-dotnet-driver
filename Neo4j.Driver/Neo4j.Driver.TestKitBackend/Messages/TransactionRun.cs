@@ -15,10 +15,8 @@
 
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -30,27 +28,26 @@ internal record TransactionRunRequest : IProtocolMessage
     public Dictionary<string, ICypherValue>? Params { get; init; }
 }
 
-internal class TransactionRunHandler : BackgroundOperationHandler<TransactionRunRequest>
+internal class TransactionRunHandler : MessageHandler<TransactionRunRequest>
 {
     private readonly IRegistry _registry;
     private readonly ICypherToNativeMapper _cypherToNativeMapper;
+    private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public TransactionRunHandler(
         IRegistry registry,
-        IContinuationCoordinator coordinator,
         IResponseWriter responseWriter,
         ICypherToNativeMapper cypherToNativeMapper,
-        IDriverErrorMapper driverErrorMapper,
         ILogger logger)
-        : base(coordinator, responseWriter, driverErrorMapper, logger)
     {
         _registry = registry;
+        _responseWriter = responseWriter;
         _cypherToNativeMapper = cypherToNativeMapper;
         _logger = logger;
     }
 
-    protected override async Task<IProtocolMessage> ExecuteAsync(TransactionRunRequest message)
+    public override async Task ProcessAsync(TransactionRunRequest message)
     {
         _logger.LogDebug(
             "Running query '{Cypher}' on transaction with id '{TxId}'",
@@ -63,6 +60,6 @@ internal class TransactionRunHandler : BackgroundOperationHandler<TransactionRun
         var registeredResult = _registry.Register(cursor);
         _logger.LogDebug("Query result id '{ResultId}' returned keys: {@keys}", registeredResult.Id, keys);
 
-        return new ResultResponse(registeredResult.Id, keys);
+        await _responseWriter.WriteAsync(new ResultResponse(registeredResult.Id, keys));
     }
 }

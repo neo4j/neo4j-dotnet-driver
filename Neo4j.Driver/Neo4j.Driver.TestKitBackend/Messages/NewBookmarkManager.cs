@@ -33,18 +33,18 @@ internal record BookmarkManagerResponse(string Id) : IProtocolMessage;
 internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequest>
 {
     private readonly IRegistry _registry;
-    private readonly IContinuationCoordinator _coordinator;
+    private readonly ICallbackExchange _callbacks;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewBookmarkManagerHandler(
         IRegistry registry,
-        IContinuationCoordinator coordinator,
+        ICallbackExchange callbacks,
         IResponseWriter responseWriter,
         ILogger logger)
     {
         _registry = registry;
-        _coordinator = coordinator;
+        _callbacks = callbacks;
         _responseWriter = responseWriter;
         _logger = logger;
     }
@@ -73,18 +73,15 @@ internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequ
 
     private async Task<string[]> SupplyBookmarksAsync(string managerId)
     {
-        var pending = _coordinator.RegisterCallback();
-        _coordinator.CompleteNextResponse(new BookmarksSupplierRequest(pending.Id, managerId));
+        var completion = await _callbacks.SendAsync<BookmarksSupplierCompletedRequest>(
+            id => new BookmarksSupplierRequest(id, managerId));
 
-        var completion = (BookmarksSupplierCompletedRequest)await pending.Completion;
         return completion.Bookmarks;
     }
 
     private async Task ConsumeBookmarksAsync(string managerId, string[] bookmarks)
     {
-        var pending = _coordinator.RegisterCallback();
-        _coordinator.CompleteNextResponse(new BookmarksConsumerRequest(pending.Id, managerId, bookmarks));
-
-        await pending.Completion;
+        await _callbacks.SendAsync<BookmarksConsumerCompletedRequest>(
+            id => new BookmarksConsumerRequest(id, managerId, bookmarks));
     }
 }

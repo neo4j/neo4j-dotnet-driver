@@ -19,7 +19,6 @@ using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Services;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
-using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Time;
@@ -31,9 +30,7 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
 public class BearerAuthTokenManagerFlowTests
 {
-    private record TerminalResponse(string Tag) : IProtocolMessage;
-
-    private readonly ContinuationCoordinator _coordinator = new();
+    private readonly Mock<ICallbackExchange> _callbacksMock = new();
     private readonly Mock<IResponseWriter> _responseWriterMock = new();
 
     private IAuthTokenManager RegisterManager()
@@ -51,7 +48,7 @@ public class BearerAuthTokenManagerFlowTests
 
         var newManagerHandler = new NewBearerAuthTokenManagerHandler(
             registryMock.Object,
-            _coordinator,
+            _callbacksMock.Object,
             _responseWriterMock.Object,
             Mock.Of<ILogger>());
 
@@ -61,70 +58,51 @@ public class BearerAuthTokenManagerFlowTests
         return manager!;
     }
 
+    private void SetupNextToken(string credentials, long? expiresInMs)
+    {
+        _callbacksMock
+            .Setup(
+                c => c.SendAsync<BearerAuthTokenProviderCompletedRequest>(It.IsAny<Func<string, ICallbackRequest>>()))
+            .ReturnsAsync(
+                new BearerAuthTokenProviderCompletedRequest
+                {
+                    RequestId = "callback",
+                    Auth = new WireAuthTokenAndExpiration(new AuthorizationToken("bearer", "", credentials), expiresInMs)
+                });
+    }
+
     [Fact]
-    public async Task The_registered_manager_round_trips_a_provider_callback_for_its_token()
+    public async Task The_registered_manager_requests_a_provider_callback_for_its_token()
     {
         var manager = RegisterManager();
 
         _responseWriterMock.Verify(w => w.WriteAsync(new BearerAuthTokenManagerResponse("manager-1")), Times.Once);
 
-        var openRequestTask = _coordinator.WaitForNextResponseAsync();
+        SetupNextToken("a-token", 60_000);
 
-        var tokenTask = manager.GetTokenAsync(TestContext.Current.CancellationToken);
+        var token = Assert.IsAssignableFrom<AuthToken>(
+            await manager.GetTokenAsync(TestContext.Current.CancellationToken));
 
-        var callbackRequest = Assert.IsType<BearerAuthTokenProviderRequest>(await WithTimeoutAsync(openRequestTask));
-        Assert.Equal("manager-1", callbackRequest.BearerAuthTokenManagerId);
-
-        var completedHandler = new CallbackCompletedHandler<BearerAuthTokenProviderCompletedRequest>(
-            _coordinator,
-            _responseWriterMock.Object);
-        var completedTask = completedHandler.ProcessAsync(
-            new BearerAuthTokenProviderCompletedRequest
-            {
-                RequestId = callbackRequest.Id,
-                Auth = new WireAuthTokenAndExpiration(
-                    new AuthorizationToken("bearer", "", "a-token"),
-                    ExpiresInMs: 60_000)
-            });
-
-        var token = Assert.IsAssignableFrom<AuthToken>(await WithTimeoutAsync(tokenTask.AsTask()));
         Assert.Equal("bearer", token.Content["scheme"]);
         Assert.Equal("a-token", token.Content["credentials"]);
-
-        _coordinator.CompleteNextResponse(new TerminalResponse("result"));
-        await WithTimeoutAsync(completedTask);
-
-        _responseWriterMock.Verify(w => w.WriteAsync(new TerminalResponse("result")), Times.Once);
     }
 
     [Fact]
     public async Task A_token_without_expiry_never_expires_so_the_provider_is_not_called_again()
     {
         var manager = RegisterManager();
+        SetupNextToken("a-token", expiresInMs: null);
 
-        var openRequestTask = _coordinator.WaitForNextResponseAsync();
-        var tokenTask = manager.GetTokenAsync(TestContext.Current.CancellationToken);
-
-        var callbackRequest = Assert.IsType<BearerAuthTokenProviderRequest>(await WithTimeoutAsync(openRequestTask));
-
-        var completedHandler = new CallbackCompletedHandler<BearerAuthTokenProviderCompletedRequest>(
-            _coordinator,
-            _responseWriterMock.Object);
-        var completedTask = completedHandler.ProcessAsync(
-            new BearerAuthTokenProviderCompletedRequest
-            {
-                RequestId = callbackRequest.Id,
-                Auth = new WireAuthTokenAndExpiration(new AuthorizationToken("bearer", "", "a-token"))
-            });
-
-        await WithTimeoutAsync(tokenTask.AsTask());
-        _coordinator.CompleteNextResponse(new TerminalResponse("result"));
-        await WithTimeoutAsync(completedTask);
+        await manager.GetTokenAsync(TestContext.Current.CancellationToken);
+        _callbacksMock.Invocations.Clear();
 
         var secondToken = Assert.IsAssignableFrom<AuthToken>(
-            await WithTimeoutAsync(manager.GetTokenAsync(TestContext.Current.CancellationToken).AsTask()));
+            await manager.GetTokenAsync(TestContext.Current.CancellationToken));
 
         Assert.Equal("a-token", secondToken.Content["credentials"]);
+        _callbacksMock.Verify(
+            c => c.SendAsync<BearerAuthTokenProviderCompletedRequest>(It.IsAny<Func<string, ICallbackRequest>>()),
+            Times.Never);
     }
 
     [Fact]
@@ -138,63 +116,20 @@ public class BearerAuthTokenManagerFlowTests
             var fakeTime = new FakeTimeService();
             fakeTime.Install();
 
-            await RoundTripTokenAsync(manager, "first-token", expiresInMs: 10_000);
+            SetupNextToken("first-token", expiresInMs: 10_000);
+            await manager.GetTokenAsync(TestContext.Current.CancellationToken);
 
             fakeTime.Tick(10_001);
 
-            var refreshed = await RoundTripTokenAsync(manager, "second-token", expiresInMs: 10_000);
+            SetupNextToken("second-token", expiresInMs: 10_000);
+            var refreshed = Assert.IsAssignableFrom<AuthToken>(
+                await manager.GetTokenAsync(TestContext.Current.CancellationToken));
+
             Assert.Equal("second-token", refreshed.Content["credentials"]);
         }
         finally
         {
             DateTimeProvider.StaticInstance = original;
         }
-    }
-
-    private async Task<AuthToken> RoundTripTokenAsync(IAuthTokenManager manager, string credentials, long expiresInMs)
-    {
-        var openRequestTask = _coordinator.WaitForNextResponseAsync();
-        var tokenTask = manager.GetTokenAsync(TestContext.Current.CancellationToken);
-
-        var callbackRequest = Assert.IsType<BearerAuthTokenProviderRequest>(await WithTimeoutAsync(openRequestTask));
-
-        var completedHandler = new CallbackCompletedHandler<BearerAuthTokenProviderCompletedRequest>(
-            _coordinator,
-            _responseWriterMock.Object);
-        var completedTask = completedHandler.ProcessAsync(
-            new BearerAuthTokenProviderCompletedRequest
-            {
-                RequestId = callbackRequest.Id,
-                Auth = new WireAuthTokenAndExpiration(
-                    new AuthorizationToken("bearer", "", credentials),
-                    expiresInMs)
-            });
-
-        var token = Assert.IsAssignableFrom<AuthToken>(await WithTimeoutAsync(tokenTask.AsTask()));
-
-        _coordinator.CompleteNextResponse(new TerminalResponse("result"));
-        await WithTimeoutAsync(completedTask);
-
-        return token;
-    }
-
-    private static async Task<T> WithTimeoutAsync<T>(Task<T> task)
-    {
-        var completed = await Task.WhenAny(
-            task,
-            Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
-
-        Assert.Same(task, completed);
-        return await task;
-    }
-
-    private static async Task WithTimeoutAsync(Task task)
-    {
-        var completed = await Task.WhenAny(
-            task,
-            Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
-
-        Assert.Same(task, completed);
-        await task;
     }
 }

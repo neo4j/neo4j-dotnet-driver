@@ -14,11 +14,10 @@
 // limitations under the License.
 
 using Neo4j.Driver.TestKitBackend.Continuations;
-using Neo4j.Driver.TestKitBackend.Dispatch;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record ResolverResolutionRequired(string Id, string Address) : IProtocolMessage;
+internal record ResolverResolutionRequired(string Id, string Address) : ICallbackRequest;
 
 internal record ResolverResolutionCompletedRequest : ICallbackCompletion
 {
@@ -28,20 +27,21 @@ internal record ResolverResolutionCompletedRequest : ICallbackCompletion
 
 internal class TestKitServerAddressResolver : IServerAddressResolver
 {
-    private readonly IContinuationCoordinator _coordinator;
+    private readonly ICallbackExchange _callbacks;
 
-    public TestKitServerAddressResolver(IContinuationCoordinator coordinator)
+    public TestKitServerAddressResolver(ICallbackExchange callbacks)
     {
-        _coordinator = coordinator;
+        _callbacks = callbacks;
     }
 
     public ISet<ServerAddress> Resolve(ServerAddress address)
     {
-        var pending = _coordinator.RegisterCallback();
-        _coordinator.CompleteNextResponse(
-            new ResolverResolutionRequired(pending.Id, $"{address.Host}:{address.Port}"));
+        var completion = _callbacks
+            .SendAsync<ResolverResolutionCompletedRequest>(
+                id => new ResolverResolutionRequired(id, $"{address.Host}:{address.Port}"))
+            .GetAwaiter()
+            .GetResult();
 
-        var completion = (ResolverResolutionCompletedRequest)pending.Completion.GetAwaiter().GetResult();
         return completion.Addresses.Select(ParseAddress).ToHashSet();
     }
 

@@ -30,7 +30,7 @@ internal record ClientCertificateProviderResponse(string Id) : IProtocolMessage;
 internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCertificateProviderRequest>
 {
     private readonly IRegistry _registry;
-    private readonly IContinuationCoordinator _coordinator;
+    private readonly ICallbackExchange _callbacks;
     private readonly ICertificateLoader _certificateLoader;
     private readonly Func<Func<ValueTask<X509Certificate>>, IClientCertificateProvider> _createProvider;
     private readonly IResponseWriter _responseWriter;
@@ -38,14 +38,14 @@ internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCer
 
     public NewClientCertificateProviderHandler(
         IRegistry registry,
-        IContinuationCoordinator coordinator,
+        ICallbackExchange callbacks,
         ICertificateLoader certificateLoader,
         Func<Func<ValueTask<X509Certificate>>, IClientCertificateProvider> createProvider,
         IResponseWriter responseWriter,
         ILogger logger)
     {
         _registry = registry;
-        _coordinator = coordinator;
+        _callbacks = callbacks;
         _certificateLoader = certificateLoader;
         _createProvider = createProvider;
         _responseWriter = responseWriter;
@@ -66,10 +66,9 @@ internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCer
 
     private async ValueTask<X509Certificate> ProvideCertificateAsync(string providerId)
     {
-        var pending = _coordinator.RegisterCallback();
-        _coordinator.CompleteNextResponse(new ClientCertificateProviderRequest(pending.Id, providerId));
+        var completion = await _callbacks.SendAsync<ClientCertificateProviderCompletedRequest>(
+            id => new ClientCertificateProviderRequest(id, providerId));
 
-        var completion = (ClientCertificateProviderCompletedRequest)await pending.Completion;
         var certificate = completion.ClientCertificate.Value;
         return _certificateLoader.Load(certificate.Certfile, certificate.Keyfile, certificate.Password);
     }

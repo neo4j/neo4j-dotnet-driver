@@ -14,11 +14,10 @@
 // limitations under the License.
 
 using Neo4j.Driver.TestKitBackend.Continuations;
-using Neo4j.Driver.TestKitBackend.Dispatch;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record BookmarksSupplierRequest(string Id, string BookmarkManagerId) : IProtocolMessage;
+internal record BookmarksSupplierRequest(string Id, string BookmarkManagerId) : ICallbackRequest;
 
 internal record BookmarksSupplierCompletedRequest : ICallbackCompletion
 {

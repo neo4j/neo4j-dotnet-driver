@@ -14,7 +14,6 @@
 // limitations under the License.
 
 using Neo4j.Driver.TestKitBackend.Continuations;
-using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -23,7 +22,7 @@ internal record AuthTokenManagerHandleSecurityExceptionRequest(
     string Id,
     string AuthTokenManagerId,
     IWireType<AuthorizationToken> Auth,
-    string ErrorCode) : IProtocolMessage;
+    string ErrorCode) : ICallbackRequest;
 
 internal record AuthTokenManagerHandleSecurityExceptionCompletedRequest : ICallbackCompletion
 {

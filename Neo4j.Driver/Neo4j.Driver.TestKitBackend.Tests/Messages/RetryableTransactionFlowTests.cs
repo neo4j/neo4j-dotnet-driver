@@ -17,9 +17,11 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
+using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -29,6 +31,8 @@ public class RetryableTransactionFlowTests
     private readonly ContinuationCoordinator _coordinator = new();
     private readonly Mock<IRegistry> _registryMock = new();
     private readonly Mock<IResponseWriter> _responseWriterMock = new();
+    private readonly Mock<IConnectionInput> _connectionInputMock = new();
+    private readonly Mock<IMessageSerializer> _serializerMock = new();
     private readonly Mock<IDriverErrorMapper> _driverErrorMapperMock = new();
     private readonly Mock<IAsyncSession> _sessionMock = new();
     private readonly RegistryObject<IAsyncSession> _sessionHandle;
@@ -157,6 +161,88 @@ public class RetryableTransactionFlowTests
             PositiveHandler().ProcessAsync(new RetryablePositiveRequest { Session = _sessionHandle }));
 
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
+    }
+
+    [Fact]
+    public async Task A_one_shot_callback_fired_during_a_retryable_attempt_does_not_corrupt_the_retry_slot()
+    {
+        // Regression test for the composition of ICallbackExchange's direct write/read with the
+        // retry flow's coordinator slot: a callback exchanged both before the first attempt and
+        // between attempts must not disturb RetryableTry/RetryableDone ordering.
+        var writtenMessages = new List<IProtocolMessage>();
+        string? lastRequestId = null;
+        _responseWriterMock
+            .Setup(w => w.WriteAsync(It.IsAny<IProtocolMessage>()))
+            .Callback<IProtocolMessage>(
+                m =>
+                {
+                    writtenMessages.Add(m);
+                    if (m is AuthTokenManagerGetAuthRequest request)
+                    {
+                        lastRequestId = request.Id;
+                    }
+                })
+            .Returns(Task.CompletedTask);
+
+        _connectionInputMock.Setup(i => i.ReadRequestAsync()).ReturnsAsync("completion");
+        _serializerMock
+            .Setup(s => s.Deserialize("completion"))
+            .Returns(
+                () => new AuthTokenManagerGetAuthCompletedRequest
+                {
+                    RequestId = lastRequestId!,
+                    Auth = new AuthorizationToken("basic", "neo4j", "pass")
+                });
+
+        var callbacks = new CallbackExchange(
+            _responseWriterMock.Object,
+            _connectionInputMock.Object,
+            _serializerMock.Object);
+
+        var firstTxMock = RegisterTx("tx-1");
+        var secondTxMock = RegisterTx("tx-2");
+
+        _sessionMock
+            .Setup(s => s.ExecuteWriteAsync(It.IsAny<Func<IAsyncQueryRunner, Task>>(), null))
+            .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
+                async (work, _) =>
+                {
+                    await callbacks.SendAsync<AuthTokenManagerGetAuthCompletedRequest>(
+                        id => new AuthTokenManagerGetAuthRequest(id, "manager-1"));
+
+                    await work(firstTxMock.Object);
+
+                    await callbacks.SendAsync<AuthTokenManagerGetAuthCompletedRequest>(
+                        id => new AuthTokenManagerGetAuthRequest(id, "manager-1"));
+
+                    await work(secondTxMock.Object);
+                });
+
+        await WithTimeoutAsync(
+            WriteHandler().ProcessAsync(new SessionWriteTransactionRequest { Session = _sessionHandle }));
+
+        _responseWriterMock.Verify(w => w.WriteAsync(new RetryableTryResponse("tx-1")), Times.Once);
+
+        await WithTimeoutAsync(
+            PositiveHandler().ProcessAsync(new RetryablePositiveRequest { Session = _sessionHandle }));
+
+        _responseWriterMock.Verify(w => w.WriteAsync(new RetryableTryResponse("tx-2")), Times.Once);
+
+        await WithTimeoutAsync(
+            PositiveHandler().ProcessAsync(new RetryablePositiveRequest { Session = _sessionHandle }));
+
+        _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
+
+        Assert.Equal(2, writtenMessages.OfType<AuthTokenManagerGetAuthRequest>().Count());
+        Assert.Equal(
+            [
+                typeof(AuthTokenManagerGetAuthRequest),
+                typeof(RetryableTryResponse),
+                typeof(AuthTokenManagerGetAuthRequest),
+                typeof(RetryableTryResponse),
+                typeof(RetryableDoneResponse)
+            ],
+            writtenMessages.Select(m => m.GetType()));
     }
 
     [Fact]

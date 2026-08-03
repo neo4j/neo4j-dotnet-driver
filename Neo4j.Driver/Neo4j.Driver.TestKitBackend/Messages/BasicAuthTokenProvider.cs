@@ -14,12 +14,11 @@
 // limitations under the License.
 
 using Neo4j.Driver.TestKitBackend.Continuations;
-using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record BasicAuthTokenProviderRequest(string Id, string BasicAuthTokenManagerId) : IProtocolMessage;
+internal record BasicAuthTokenProviderRequest(string Id, string BasicAuthTokenManagerId) : ICallbackRequest;
 
 internal record BasicAuthTokenProviderCompletedRequest : ICallbackCompletion
 {

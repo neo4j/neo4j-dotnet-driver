@@ -100,29 +100,6 @@ public class ContinuationCoordinatorTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => _coordinator.WaitForOutcomeAsync("session-1"));
     }
 
-    [Fact]
-    public async Task Registered_callbacks_get_unique_ids_and_complete_independently()
-    {
-        var first = _coordinator.RegisterCallback();
-        var second = _coordinator.RegisterCallback();
-
-        Assert.NotEqual(first.Id, second.Id);
-
-        _coordinator.CompleteCallback(second.Id, new FakeResponse("second"));
-        Assert.False(first.Completion.IsCompleted);
-        Assert.Equal(new FakeResponse("second"), await WithTimeoutAsync(second.Completion));
-
-        _coordinator.CompleteCallback(first.Id, new FakeResponse("first"));
-        Assert.Equal(new FakeResponse("first"), await WithTimeoutAsync(first.Completion));
-    }
-
-    [Fact]
-    public void Completing_an_unknown_callback_fails_loudly()
-    {
-        Assert.Throws<InvalidOperationException>(
-            () => _coordinator.CompleteCallback("no-such-id", new FakeResponse("orphan")));
-    }
-
     private static async Task<T> WithTimeoutAsync<T>(Task<T> task)
     {
         var completed = await Task.WhenAny(

@@ -21,9 +21,7 @@ namespace Neo4j.Driver.TestKitBackend.Continuations;
 internal class ContinuationCoordinator : IContinuationCoordinator
 {
     private readonly Dictionary<string, TaskCompletionSource> _pendingOutcomes = new();
-    private readonly Dictionary<string, TaskCompletionSource<IProtocolMessage>> _pendingCallbacks = new();
     private TaskCompletionSource<IProtocolMessage>? _pendingResponse;
-    private int _nextCallbackId;
 
     public Task<IProtocolMessage> WaitForNextResponseAsync()
     {
@@ -81,23 +79,5 @@ internal class ContinuationCoordinator : IContinuationCoordinator
         }
 
         tcs.SetException(exception);
-    }
-
-    public PendingCallback RegisterCallback()
-    {
-        var id = $"callback-{_nextCallbackId++}";
-        var tcs = new TaskCompletionSource<IProtocolMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
-        _pendingCallbacks[id] = tcs;
-        return new PendingCallback(id, tcs.Task);
-    }
-
-    public void CompleteCallback(string requestId, IProtocolMessage completion)
-    {
-        if (!_pendingCallbacks.Remove(requestId, out var tcs))
-        {
-            throw new InvalidOperationException($"No pending callback is registered with id '{requestId}'.");
-        }
-
-        tcs.SetResult(completion);
     }
 }

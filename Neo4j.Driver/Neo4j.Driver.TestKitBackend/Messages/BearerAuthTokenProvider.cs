@@ -14,12 +14,11 @@
 // limitations under the License.
 
 using Neo4j.Driver.TestKitBackend.Continuations;
-using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record BearerAuthTokenProviderRequest(string Id, string BearerAuthTokenManagerId) : IProtocolMessage;
+internal record BearerAuthTokenProviderRequest(string Id, string BearerAuthTokenManagerId) : ICallbackRequest;
 
 // Testkit's token-plus-expiry payload; expiresInMs null/absent = the token never expires.
 internal record AuthTokenAndExpiration(
