@@ -362,8 +362,8 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
     {
         return s.ProfileName == ProfileName &&
             s.TypeName == "INTEGER" &&
-            s.TypeProtocolMajor == 1 &&
-            s.TypeProtocolMinor == 0 &&
+            s.TypeSerializationSchemeMajor == 1 &&
+            s.TypeSerializationSchemeMinor == 0 &&
             s.CipherOutput.SequenceEqual(expectedCipherOutput) &&
             ReferenceEquals(s.Metadata, expectedMetadata);
     }

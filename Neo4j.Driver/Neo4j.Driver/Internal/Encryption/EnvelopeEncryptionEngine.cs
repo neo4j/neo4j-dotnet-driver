@@ -19,7 +19,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
@@ -32,8 +31,8 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
 
     // AAD is opaque bytes at this layer (no typed value to inspect) - fixed at the latest
     // baseline until the future API layer serializes typed AAD content itself.
-    private static readonly int AadProtocolMajor = BoltProtocolVersion.V6_1.MajorVersion;
-    private static readonly int AadProtocolMinor = BoltProtocolVersion.V6_1.MinorVersion;
+    private static readonly int AadProtocolMajor = BoltValueSerializationSchemeVersion.Latest.Major;
+    private static readonly int AadProtocolMinor = BoltValueSerializationSchemeVersion.Latest.Minor;
 
     private readonly IPlaintextCodec _plaintextCodec;
     private readonly IPropertyTypeInspector _propertyTypeInspector;
@@ -173,13 +172,16 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         EncryptedStructure structure,
         [NotNullWhen(true)] out UnsupportedType? unsupported)
     {
-        var typeBaseline = new BoltProtocolVersion(structure.TypeProtocolMajor, structure.TypeProtocolMinor);
-        if (typeBaseline > BoltProtocolVersion.LatestVersion)
+        var typeBaseline = new BoltValueSerializationSchemeVersion(
+            structure.TypeSerializationSchemeMajor,
+            structure.TypeSerializationSchemeMinor);
+
+        if (typeBaseline > BoltValueSerializationSchemeVersion.Latest)
         {
             unsupported = new UnsupportedType(
                 structure.TypeName,
-                structure.TypeProtocolMajor,
-                structure.TypeProtocolMinor,
+                structure.TypeSerializationSchemeMajor,
+                structure.TypeSerializationSchemeMinor,
                 null);
 
             return true;
@@ -196,12 +198,12 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
             return;
         }
 
-        var aadBaseline = new BoltProtocolVersion(metadata.AadProtocolMajor, metadata.AadProtocolMinor);
-        if (aadBaseline > BoltProtocolVersion.LatestVersion)
+        var aadBaseline = new BoltValueSerializationSchemeVersion(metadata.AadProtocolMajor, metadata.AadProtocolMinor);
+        if (aadBaseline > BoltValueSerializationSchemeVersion.Latest)
         {
             throw new ClientException(
                 $"Cannot reproduce AAD bytes: recorded AAD protocol version {aadBaseline} is newer than " +
-                $"the maximum supported version {BoltProtocolVersion.LatestVersion}.");
+                $"the maximum supported version {BoltValueSerializationSchemeVersion.Latest}.");
         }
     }
 

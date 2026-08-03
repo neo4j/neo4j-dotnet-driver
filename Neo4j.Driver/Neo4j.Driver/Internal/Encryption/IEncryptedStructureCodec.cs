@@ -29,6 +29,6 @@ internal record EncryptedStructure(
     string ProfileName,
     byte[] CipherOutput,
     string TypeName,
-    int TypeProtocolMajor,
-    int TypeProtocolMinor,
+    int TypeSerializationSchemeMajor,
+    int TypeSerializationSchemeMinor,
     IDictionary<string, object> Metadata);

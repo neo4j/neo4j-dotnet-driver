@@ -37,19 +37,18 @@ public class EncryptedStructureConformanceTests
         ProfileName: "env",
         CipherOutput: [0xFF],
         TypeName: "Int",
-        TypeProtocolMajor: 6,
-        TypeProtocolMinor: 0,
+        TypeSerializationSchemeMajor: 6,
+        TypeSerializationSchemeMinor: 0,
         Metadata: new Dictionary<string, object>());
 
     private static readonly byte[] KnownAnswerBytes =
     [
-        0xB7, 0x65, // struct header: TinyStruct[7], Encrypted signature
-        0x01, // version = 1
+        0xB6, 0x65, // struct header: TinyStruct[6], Encrypted signature
         0x83, 0x65, 0x6E, 0x76, // profileName = "env" (TinyString[3])
         0xCC, 0x01, 0xFF, // cipherOutput = [0xFF] (Bytes8[1])
         0x83, 0x49, 0x6E, 0x74, // typeName = "Int" (TinyString[3])
-        0x06, // typeProtocolMajor = 6
-        0x00, // typeProtocolMinor = 0
+        0x06, // typeSerializationSchemeMajor = 6
+        0x00, // typeSerializationSchemeMinor = 0
         0xA0 // metadata = {} (TinyMap[0])
     ];
 

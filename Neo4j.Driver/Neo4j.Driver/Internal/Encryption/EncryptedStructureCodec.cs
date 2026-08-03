@@ -27,8 +27,7 @@ internal class EncryptedStructureCodec : IEncryptedStructureCodec
     // the types we encode even though it's within this dialect, until UUID support is confirmed
     private static readonly BoltProtocolVersion StructureVersion = BoltProtocolVersion.V6_1;
     private const byte EncryptedSignature = 0x65;
-    private const int FieldCount = 7;
-    private const int StructureFormatVersion = 1;
+    private const int FieldCount = 6;
 
     private readonly IPackStreamSerializationHelper _packStreamHelper;
     private readonly MessageFormat _format;
@@ -48,12 +47,11 @@ internal class EncryptedStructureCodec : IEncryptedStructureCodec
             writer =>
             {
                 writer.WriteStructHeader(FieldCount, EncryptedSignature);
-                writer.Write(StructureFormatVersion);
                 writer.Write(structure.ProfileName);
                 writer.Write(structure.CipherOutput);
                 writer.Write(structure.TypeName);
-                writer.Write(structure.TypeProtocolMajor);
-                writer.Write(structure.TypeProtocolMinor);
+                writer.Write(structure.TypeSerializationSchemeMajor);
+                writer.Write(structure.TypeSerializationSchemeMinor);
                 writer.Write(structure.Metadata);
             });
     }
@@ -73,19 +71,12 @@ internal class EncryptedStructureCodec : IEncryptedStructureCodec
                 $"Expected an Encrypted structure (0x{EncryptedSignature:X2}), but got: 0x{signature:X2}");
         }
 
-        var version = reader.ReadInteger();
-        if (version != StructureFormatVersion)
-        {
-            throw new ProtocolException(
-                $"Unsupported Encrypted structure version {version}; expected {StructureFormatVersion}.");
-        }
-
         return new EncryptedStructure(
             ProfileName: reader.ReadString(),
             CipherOutput: reader.ReadBytes(),
             TypeName: reader.ReadString(),
-            TypeProtocolMajor: reader.ReadInteger(),
-            TypeProtocolMinor: reader.ReadInteger(),
+            TypeSerializationSchemeMajor: reader.ReadInteger(),
+            TypeSerializationSchemeMinor: reader.ReadInteger(),
             Metadata: reader.ReadMap());
     }
 }

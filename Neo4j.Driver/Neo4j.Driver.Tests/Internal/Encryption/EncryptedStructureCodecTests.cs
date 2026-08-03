@@ -42,8 +42,8 @@ public class EncryptedStructureCodecTests
         ProfileName: "Envelope",
         CipherOutput: new byte[] { 0xDE, 0xAD, 0xBE, 0xEF },
         TypeName: "Integer",
-        TypeProtocolMajor: 6,
-        TypeProtocolMinor: 0,
+        TypeSerializationSchemeMajor: 6,
+        TypeSerializationSchemeMinor: 0,
         Metadata: new Dictionary<string, object>
         {
             ["keyId"] = "key-1",
@@ -89,19 +89,6 @@ public class EncryptedStructureCodecTests
     {
         var reader = new Mock<IPackStreamReader>();
         reader.Setup(r => r.ReadStructSignature()).Returns((byte)0x99);
-        StubHelperRead(reader.Object);
-
-        var act = () => CreateSubject().Decode([]);
-
-        act.Should().Throw<ProtocolException>();
-    }
-
-    [Fact]
-    public void Decode_WrongVersion_ThrowsProtocolException()
-    {
-        var reader = new Mock<IPackStreamReader>();
-        reader.Setup(r => r.ReadStructSignature()).Returns((byte)0x65);
-        reader.Setup(r => r.ReadInteger()).Returns(2);
         StubHelperRead(reader.Object);
 
         var act = () => CreateSubject().Decode([]);
