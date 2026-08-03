@@ -1,12 +1,12 @@
 // Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,7 +15,6 @@
 
 #nullable enable
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -35,9 +34,6 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
 {
     private const string ProfileName = "profile-a";
 
-    private readonly Mock<IKeyEncapsulationService> _kes = new();
-    private readonly Mock<IEncapsulatedKeyRepository> _repository = new();
-
     // SequentialRandom fills each buffer with 0,1,2,... so the generated IV is known.
     private static readonly byte[] Iv = Sequence(12);
 
@@ -46,13 +42,9 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         Fixture.Inject<ICryptoRandomProvider>(new SequentialRandom());
     }
 
-    private IEnvelopeEncryptionProfile Profile()
+    private static IEnvelopeEncryptionProfile Profile()
     {
-        var profile = new Mock<IEnvelopeEncryptionProfile>();
-        profile.SetupGet(p => p.Name).Returns(ProfileName);
-        profile.SetupGet(p => p.KeyEncapsulationService).Returns(_kes.Object);
-        profile.SetupGet(p => p.KeyRepository).Returns(_repository.Object);
-        return profile.Object;
+        return Mock.Of<IEnvelopeEncryptionProfile>(p => p.Name == ProfileName);
     }
 
     [Theory]
@@ -62,38 +54,25 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
     {
         const long value = 5L;
         var plaintext = new byte[] { 0x10, 0x11 };
-        var encapsulation = new byte[] { 0xBB };
-        var options = new Dictionary<string, string> { ["iv"] = "wrap-iv" };
-        var dek = Sequence(32, seed: 0x30);
         var dataKey = Sequence(32, seed: 0x40);
         var cipher = new CipherResult(new byte[] { 0xC0 }, new byte[] { 0xD0 });
         var encoded = new byte[] { 0xEE };
         var builtMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
         byte[] expectedAad = suppliedAad ?? [];
-
-        var key = new EncapsulatedKey("key-1", "main", encapsulation, options);
+        var profile = Profile();
 
         Freeze<IPlaintextCodec>().Setup(s => s.Serialize(value)).Returns(plaintext);
         Freeze<IPropertyTypeInspector>()
             .Setup(n => n.GetPropertyTypeInfo(value))
             .Returns(new PropertyTypeInfo("INTEGER", new BoltValueSerializationSchemeVersion(1, 0)));
-        _repository.Setup(r => r.FindAsync(
+
+        Freeze<IEnvelopeDataKeyProvider>()
+            .Setup(p => p.GetDataKeyAsync(
+                profile,
                 new KeyReference("main", KeyReferenceType.Alias),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(key);
+            .ReturnsAsync(new DataKeyResult("key-1", dataKey));
 
-        byte[]? cacheMiss = null;
-        Freeze<IEncryptionKeyCache>()
-            .Setup(c => c.TryGet(ProfileName, "key-1", out cacheMiss))
-            .Returns(false);
-
-        _kes.Setup(k => k.DecapsulateAsync(
-                Matches(encapsulation),
-                It.IsAny<IReadOnlyDictionary<string, string>>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(dek);
-
-        Freeze<IKeyDerivation>().Setup(d => d.Derive(Matches(dek), 32)).Returns(dataKey);
         Freeze<IAeadCipher>()
             .Setup(c => c.Encrypt(Matches(dataKey), Matches(Iv), Matches(plaintext), Matches(expectedAad)))
             .Returns(cipher);
@@ -108,214 +87,10 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
 
         var subject = CreateSubject<EnvelopeEncryptionEngine>();
         var started = subject.TryStartEncrypt(
-            Profile(),
+            profile,
             value,
             new KeyReference("main", KeyReferenceType.Alias),
             suppliedAad,
-            TestContext.Current.CancellationToken,
-            out var encryptedTask);
-
-        started.Should().BeTrue();
-        var result = await encryptedTask!;
-
-        result.Should().Equal(encoded);
-    }
-
-    [Fact]
-    public async Task TryStartEncrypt_AliasCacheHit_SkipsAliasRepositoryLookup()
-    {
-        const long value = 5L;
-        var plaintext = new byte[] { 0x10, 0x11 };
-        var encapsulation = new byte[] { 0xBB };
-        var options = new Dictionary<string, string> { ["iv"] = "wrap-iv" };
-        var dek = Sequence(32, seed: 0x30);
-        var dataKey = Sequence(32, seed: 0x40);
-        var cipher = new CipherResult(new byte[] { 0xC0 }, new byte[] { 0xD0 });
-        var encoded = new byte[] { 0xEE };
-        var builtMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
-        byte[] expectedAad = [];
-
-        var key = new EncapsulatedKey("key-1", "main", encapsulation, options);
-
-        Freeze<IPlaintextCodec>().Setup(s => s.Serialize(value)).Returns(plaintext);
-        Freeze<IPropertyTypeInspector>()
-            .Setup(n => n.GetPropertyTypeInfo(value))
-            .Returns(new PropertyTypeInfo("INTEGER", new BoltValueSerializationSchemeVersion(1, 0)));
-
-        string? cachedKeyId = "key-1";
-        Freeze<IAliasToKeyIdCache>()
-            .Setup(c => c.TryGet(ProfileName, "main", out cachedKeyId))
-            .Returns(true);
-
-        // deliberately not stubbing repository.FindAsync(alias) - if it's called, the
-        // unconfigured mock returns null and the test fails downstream, proving the
-        // alias cache hit was used instead of a repository round-trip.
-        _repository.Setup(r => r.FindAsync(
-                new KeyReference("key-1", KeyReferenceType.Id),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(key);
-
-        byte[]? cacheMiss = null;
-        Freeze<IEncryptionKeyCache>()
-            .Setup(c => c.TryGet(ProfileName, "key-1", out cacheMiss))
-            .Returns(false);
-
-        _kes.Setup(k => k.DecapsulateAsync(
-                Matches(encapsulation),
-                It.IsAny<IReadOnlyDictionary<string, string>>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(dek);
-
-        Freeze<IKeyDerivation>().Setup(d => d.Derive(Matches(dek), 32)).Returns(dataKey);
-        Freeze<IAeadCipher>()
-            .Setup(c => c.Encrypt(Matches(dataKey), Matches(Iv), Matches(plaintext), Matches(expectedAad)))
-            .Returns(cipher);
-
-        Freeze<IEnvelopeMetadataBuilder>()
-            .Setup(b => b.Build(IsExpectedMetadata("key-1", expectedAad)))
-            .Returns(builtMetadata);
-
-        Freeze<IEncryptedValueBytesCodec>()
-            .Setup(c => c.Encode(It.Is<EncryptedStructure>(s => IsExpectedStructure(s, cipher.Combined, builtMetadata))))
-            .Returns(encoded);
-
-        var subject = CreateSubject<EnvelopeEncryptionEngine>();
-        var started = subject.TryStartEncrypt(
-            Profile(),
-            value,
-            new KeyReference("main", KeyReferenceType.Alias),
-            aad: null,
-            TestContext.Current.CancellationToken,
-            out var encryptedTask);
-
-        started.Should().BeTrue();
-        var result = await encryptedTask!;
-
-        result.Should().Equal(encoded);
-    }
-
-    [Fact]
-    public async Task TryStartEncrypt_AliasAndDekCacheHit_NeverTouchesRepositoryOrKes()
-    {
-        const long value = 5L;
-        var plaintext = new byte[] { 0x10, 0x11 };
-        var dek = Sequence(32, seed: 0x30);
-        var dataKey = Sequence(32, seed: 0x40);
-        var cipher = new CipherResult(new byte[] { 0xC0 }, new byte[] { 0xD0 });
-        var encoded = new byte[] { 0xEE };
-        var builtMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
-        byte[] expectedAad = [];
-
-        Freeze<IPlaintextCodec>().Setup(s => s.Serialize(value)).Returns(plaintext);
-        Freeze<IPropertyTypeInspector>()
-            .Setup(n => n.GetPropertyTypeInfo(value))
-            .Returns(new PropertyTypeInfo("INTEGER", new BoltValueSerializationSchemeVersion(1, 0)));
-
-        string? cachedKeyId = "key-1";
-        Freeze<IAliasToKeyIdCache>()
-            .Setup(c => c.TryGet(ProfileName, "main", out cachedKeyId))
-            .Returns(true);
-
-        byte[]? cachedDek = dek;
-        Freeze<IEncryptionKeyCache>()
-            .Setup(c => c.TryGet(ProfileName, "key-1", out cachedDek))
-            .Returns(true);
-
-        // deliberately not stubbing the repository or KES at all - either being called
-        // returns an unconfigured default and fails the test downstream, proving the
-        // double cache hit skipped both.
-
-        Freeze<IKeyDerivation>().Setup(d => d.Derive(Matches(dek), 32)).Returns(dataKey);
-        Freeze<IAeadCipher>()
-            .Setup(c => c.Encrypt(Matches(dataKey), Matches(Iv), Matches(plaintext), Matches(expectedAad)))
-            .Returns(cipher);
-
-        Freeze<IEnvelopeMetadataBuilder>()
-            .Setup(b => b.Build(IsExpectedMetadata("key-1", expectedAad)))
-            .Returns(builtMetadata);
-
-        Freeze<IEncryptedValueBytesCodec>()
-            .Setup(c => c.Encode(It.Is<EncryptedStructure>(s => IsExpectedStructure(s, cipher.Combined, builtMetadata))))
-            .Returns(encoded);
-
-        var subject = CreateSubject<EnvelopeEncryptionEngine>();
-        var started = subject.TryStartEncrypt(
-            Profile(),
-            value,
-            new KeyReference("main", KeyReferenceType.Alias),
-            aad: null,
-            TestContext.Current.CancellationToken,
-            out var encryptedTask);
-
-        started.Should().BeTrue();
-        var result = await encryptedTask!;
-
-        result.Should().Equal(encoded);
-    }
-
-    [Fact]
-    public async Task TryStartEncrypt_ByKeyId_IgnoresAliasCacheEvenIfPoisoned()
-    {
-        const long value = 5L;
-        var plaintext = new byte[] { 0x10, 0x11 };
-        var encapsulation = new byte[] { 0xBB };
-        var options = new Dictionary<string, string> { ["iv"] = "wrap-iv" };
-        var dek = Sequence(32, seed: 0x30);
-        var dataKey = Sequence(32, seed: 0x40);
-        var cipher = new CipherResult(new byte[] { 0xC0 }, new byte[] { 0xD0 });
-        var encoded = new byte[] { 0xEE };
-        var builtMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
-        byte[] expectedAad = [];
-
-        var key = new EncapsulatedKey("key-1", "main", encapsulation, options);
-
-        Freeze<IPlaintextCodec>().Setup(s => s.Serialize(value)).Returns(plaintext);
-        Freeze<IPropertyTypeInspector>()
-            .Setup(n => n.GetPropertyTypeInfo(value))
-            .Returns(new PropertyTypeInfo("INTEGER", new BoltValueSerializationSchemeVersion(1, 0)));
-
-        // poisoned: if the id-typed path ever consulted the alias cache, it would get
-        // this wrong id back and the test would fail downstream.
-        string? poisonedKeyId = "wrong-id";
-        Freeze<IAliasToKeyIdCache>()
-            .Setup(c => c.TryGet(ProfileName, It.IsAny<string>(), out poisonedKeyId))
-            .Returns(true);
-
-        _repository.Setup(r => r.FindAsync(
-                new KeyReference("key-1", KeyReferenceType.Id),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(key);
-
-        byte[]? cacheMiss = null;
-        Freeze<IEncryptionKeyCache>()
-            .Setup(c => c.TryGet(ProfileName, "key-1", out cacheMiss))
-            .Returns(false);
-
-        _kes.Setup(k => k.DecapsulateAsync(
-                Matches(encapsulation),
-                It.IsAny<IReadOnlyDictionary<string, string>>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(dek);
-
-        Freeze<IKeyDerivation>().Setup(d => d.Derive(Matches(dek), 32)).Returns(dataKey);
-        Freeze<IAeadCipher>()
-            .Setup(c => c.Encrypt(Matches(dataKey), Matches(Iv), Matches(plaintext), Matches(expectedAad)))
-            .Returns(cipher);
-
-        Freeze<IEnvelopeMetadataBuilder>()
-            .Setup(b => b.Build(IsExpectedMetadata("key-1", expectedAad)))
-            .Returns(builtMetadata);
-
-        Freeze<IEncryptedValueBytesCodec>()
-            .Setup(c => c.Encode(It.Is<EncryptedStructure>(s => IsExpectedStructure(s, cipher.Combined, builtMetadata))))
-            .Returns(encoded);
-
-        var subject = CreateSubject<EnvelopeEncryptionEngine>();
-        var started = subject.TryStartEncrypt(
-            Profile(),
-            value,
-            new KeyReference("key-1", KeyReferenceType.Id),
-            aad: null,
             TestContext.Current.CancellationToken,
             out var encryptedTask);
 
@@ -343,35 +118,20 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             0,
             new Dictionary<string, object>());
 
-        var encapsulation = new byte[] { 0xBB };
-        var keyMetadata = new Dictionary<string, string> { ["iv"] = "wrap-iv" };
-        var dek = Sequence(32, seed: 0x30);
         var dataKey = Sequence(32, seed: 0x40);
         var plaintext = new byte[] { 0x10, 0x11 };
         const long value = 5L;
-
-        var key = new EncapsulatedKey("key-1", "main", encapsulation, keyMetadata);
+        var profile = Profile();
 
         Freeze<IEncryptedValueBytesCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
         Freeze<IEnvelopeMetadataExtractor>().Setup(e => e.Extract(structureMetadata)).Returns(envelopeMetadata);
 
-        _repository.Setup(r => r.FindAsync(
+        Freeze<IEnvelopeDataKeyProvider>()
+            .Setup(p => p.GetDataKeyAsync(
+                profile,
                 new KeyReference("key-1", KeyReferenceType.Id),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(key);
-
-        byte[]? cacheMiss = null;
-        Freeze<IEncryptionKeyCache>()
-            .Setup(c => c.TryGet(ProfileName, "key-1", out cacheMiss))
-            .Returns(false);
-
-        _kes.Setup(k => k.DecapsulateAsync(
-                Matches(encapsulation),
-                It.IsAny<IReadOnlyDictionary<string, string>>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(dek);
-
-        Freeze<IKeyDerivation>().Setup(d => d.Derive(Matches(dek), 32)).Returns(dataKey);
+            .ReturnsAsync(new DataKeyResult("key-1", dataKey));
 
         var expectedAad = suppliedAad ?? persistedAad;
         Freeze<IAeadCipher>()
@@ -382,7 +142,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
 
         var subject = CreateSubject<EnvelopeEncryptionEngine>();
         var started = subject.TryStartDecrypt(
-            Profile(),
+            profile,
             encrypted,
             suppliedAad,
             TestContext.Current.CancellationToken,
@@ -395,69 +155,27 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
     }
 
     [Fact]
-    public async Task TryStartDecrypt_DekCacheHit_NeverTouchesRepositoryOrKes()
-    {
-        var encrypted = new byte[] { 0xEE };
-        var cipherOutput = new byte[] { 0xC0, 0xD0 };
-        var persistedAad = Array.Empty<byte>();
-        var structureMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
-        var structure = new EncryptedStructure(ProfileName, cipherOutput, "INTEGER", 1, 0, structureMetadata);
-        var envelopeMetadata = new EnvelopeMetadata("key-1", Iv, persistedAad, 1, 0, new Dictionary<string, object>());
-        var dek = Sequence(32, seed: 0x30);
-        var dataKey = Sequence(32, seed: 0x40);
-        var plaintext = new byte[] { 0x10, 0x11 };
-        const long value = 5L;
-
-        Freeze<IEncryptedValueBytesCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
-        Freeze<IEnvelopeMetadataExtractor>().Setup(e => e.Extract(structureMetadata)).Returns(envelopeMetadata);
-
-        byte[]? cachedDek = dek;
-        Freeze<IEncryptionKeyCache>()
-            .Setup(c => c.TryGet(ProfileName, "key-1", out cachedDek))
-            .Returns(true);
-
-        // deliberately not stubbing the repository or KES - either being called fails
-        // the test downstream, proving the DEK cache hit skipped both.
-
-        Freeze<IKeyDerivation>().Setup(d => d.Derive(Matches(dek), 32)).Returns(dataKey);
-        Freeze<IAeadCipher>()
-            .Setup(c => c.Decrypt(Matches(dataKey), Matches(Iv), Matches(cipherOutput), Matches(persistedAad)))
-            .Returns(plaintext);
-
-        Freeze<IPlaintextCodec>().Setup(d => d.Deserialize(Matches(plaintext))).Returns(value);
-
-        var subject = CreateSubject<EnvelopeEncryptionEngine>();
-        var started = subject.TryStartDecrypt(
-            Profile(),
-            encrypted,
-            aad: null,
-            TestContext.Current.CancellationToken,
-            out var decryptedTask);
-
-        started.Should().BeTrue();
-        var result = await decryptedTask!;
-
-        result.Should().Be(value);
-    }
-
-    [Theory]
-    [InlineData(7, 0, "7.0")]
-    [InlineData(6, 2, "6.2")]
-    public async Task TryStartDecrypt_TypeBaselineNewerThanLatestKnown_ReturnsUnsupportedType(
-        int typeProtocolMajor,
-        int typeProtocolMinor,
-        string expectedMinimumVersion)
+    public async Task TryStartDecrypt_GuardReportsUnsupportedBaselineType_ReturnsItWithoutDecrypting()
     {
         var encrypted = new byte[] { 0xEE };
         var structure = new EncryptedStructure(
             ProfileName,
             [0xC0, 0xD0],
             "VECTOR",
-            typeProtocolMajor,
-            typeProtocolMinor,
+            7,
+            0,
             new Dictionary<string, object>());
 
         Freeze<IEncryptedValueBytesCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
+
+        var unsupported = new UnsupportedType("VECTOR", 7, 0, null);
+        UnsupportedType? guardResult = unsupported;
+        Freeze<IBaselineCompatibilityGuard>()
+            .Setup(g => g.IsUnsupportedBaselineType(structure, out guardResult))
+            .Returns(true);
+
+        // nothing beyond the codec and guard is stubbed - reaching the extractor, data-key
+        // provider, or cipher would fail downstream, proving the short-circuit.
 
         var subject = CreateSubject<EnvelopeEncryptionEngine>();
         var started = subject.TryStartDecrypt(
@@ -470,13 +188,11 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         started.Should().BeTrue();
         var result = await decryptedTask!;
 
-        var unsupported = result.Should().BeOfType<UnsupportedType>().Subject;
-        unsupported.Name.Should().Be("VECTOR");
-        unsupported.MinimumProtocolVersion.Should().Be(expectedMinimumVersion);
+        result.Should().BeSameAs(unsupported);
     }
 
     [Fact]
-    public async Task TryStartDecrypt_NoSuppliedAadWithAadBaselineNewerThanLatestKnown_UsesPersistedAadWithoutThrowing()
+    public async Task TryStartDecrypt_PersistedAadOnly_PassesTheRawNullAadToTheGuardNotTheResolvedAad()
     {
         var encrypted = new byte[] { 0xEE };
         var cipherOutput = new byte[] { 0xC0, 0xD0 };
@@ -487,39 +203,34 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             "key-1",
             Iv,
             persistedAad,
-            AadProtocolMajor: 7,
-            AadProtocolMinor: 0,
+            1,
+            0,
             new Dictionary<string, object>());
 
-        var encapsulation = new byte[] { 0xBB };
-        var keyMetadata = new Dictionary<string, string> { ["iv"] = "wrap-iv" };
-        var dek = Sequence(32, seed: 0x30);
         var dataKey = Sequence(32, seed: 0x40);
         var plaintext = new byte[] { 0x10, 0x11 };
         const long value = 5L;
-
-        var key = new EncapsulatedKey("key-1", "main", encapsulation, keyMetadata);
+        var profile = Profile();
 
         Freeze<IEncryptedValueBytesCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
         Freeze<IEnvelopeMetadataExtractor>().Setup(e => e.Extract(structureMetadata)).Returns(envelopeMetadata);
 
-        _repository.Setup(r => r.FindAsync(
+        // guards the regression where the engine passed the resolved aad (aad ?? persisted,
+        // never null) to the guard instead of the raw supplied aad - the guard must see null
+        // on the persisted-only path so AAD reproduction rules don't fire.
+        Freeze<IBaselineCompatibilityGuard>()
+            .Setup(g => g.EnsureAadProtocolCompatibility(
+                It.Is<byte[]?>(a => a != null),
+                It.IsAny<EnvelopeMetadata>()))
+            .Throws(new ClientException("engine passed a non-null AAD to the guard"));
+
+        Freeze<IEnvelopeDataKeyProvider>()
+            .Setup(p => p.GetDataKeyAsync(
+                profile,
                 new KeyReference("key-1", KeyReferenceType.Id),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(key);
+            .ReturnsAsync(new DataKeyResult("key-1", dataKey));
 
-        byte[]? cacheMiss = null;
-        Freeze<IEncryptionKeyCache>()
-            .Setup(c => c.TryGet(ProfileName, "key-1", out cacheMiss))
-            .Returns(false);
-
-        _kes.Setup(k => k.DecapsulateAsync(
-                Matches(encapsulation),
-                It.IsAny<IReadOnlyDictionary<string, string>>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(dek);
-
-        Freeze<IKeyDerivation>().Setup(d => d.Derive(Matches(dek), 32)).Returns(dataKey);
         Freeze<IAeadCipher>()
             .Setup(c => c.Decrypt(Matches(dataKey), Matches(Iv), Matches(cipherOutput), Matches(persistedAad)))
             .Returns(plaintext);
@@ -528,7 +239,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
 
         var subject = CreateSubject<EnvelopeEncryptionEngine>();
         var started = subject.TryStartDecrypt(
-            Profile(),
+            profile,
             encrypted,
             aad: null,
             TestContext.Current.CancellationToken,
@@ -538,37 +249,6 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         var result = await decryptedTask!;
 
         result.Should().Be(value);
-    }
-
-    [Fact]
-    public async Task TryStartDecrypt_SuppliedAadWithAadBaselineNewerThanLatestKnown_Throws()
-    {
-        var encrypted = new byte[] { 0xEE };
-        var structureMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
-        var structure = new EncryptedStructure(ProfileName, [0xC0, 0xD0], "INTEGER", 1, 0, structureMetadata);
-        var envelopeMetadata = new EnvelopeMetadata(
-            "key-1",
-            Iv,
-            [0xAA],
-            AadProtocolMajor: 7,
-            AadProtocolMinor: 0,
-            new Dictionary<string, object>());
-
-        Freeze<IEncryptedValueBytesCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
-        Freeze<IEnvelopeMetadataExtractor>().Setup(e => e.Extract(structureMetadata)).Returns(envelopeMetadata);
-
-        var subject = CreateSubject<EnvelopeEncryptionEngine>();
-        var started = subject.TryStartDecrypt(
-            Profile(),
-            encrypted,
-            aad: [0x99],
-            TestContext.Current.CancellationToken,
-            out var decryptedTask);
-
-        started.Should().BeTrue();
-        var act = async () => await decryptedTask!;
-
-        await act.Should().ThrowAsync<ClientException>();
     }
 
     [Fact]
