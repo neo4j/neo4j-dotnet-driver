@@ -83,4 +83,16 @@ public class ExceptionTypeMapperTests
     {
         _mapper.Map(new ReauthException(false)).Should().Be("UnsupportedFeatureException");
     }
+
+    [Fact]
+    public void Maps_TransactionTerminatedException_to_TransactionTerminatedError()
+    {
+        _mapper.Map(new TransactionTerminatedException(new Exception("boom"))).Should().Be("TransactionTerminatedError");
+    }
+
+    [Fact]
+    public void Maps_ResultConsumedException_to_ResultConsumedError()
+    {
+        _mapper.Map(new ResultConsumedException("boom")).Should().Be("ResultConsumedError");
+    }
 }

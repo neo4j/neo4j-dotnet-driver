@@ -35,7 +35,9 @@ internal class ExceptionTypeMapper : IExceptionTypeMapper
         [typeof(AuthenticationException)] = "AuthenticationError",
         [typeof(UnknownSecurityException)] = "OtherSecurityException",
         [typeof(ArgumentException)] = "ArgumentError",
-        [typeof(ReauthException)] = "UnsupportedFeatureException"
+        [typeof(ReauthException)] = "UnsupportedFeatureException",
+        [typeof(TransactionTerminatedException)] = "TransactionTerminatedError",
+        [typeof(ResultConsumedException)] = "ResultConsumedError"
     };
 
     public string Map(Exception exception)
