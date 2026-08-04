@@ -95,4 +95,10 @@ public class ExceptionTypeMapperTests
     {
         _mapper.Map(new ResultConsumedException("boom")).Should().Be("ResultConsumedError");
     }
+
+    [Fact]
+    public void Maps_ConnectionReadTimeoutException_to_ConnectionReadTimeoutError()
+    {
+        _mapper.Map(new ConnectionReadTimeoutException("boom")).Should().Be("ConnectionReadTimeoutError");
+    }
 }

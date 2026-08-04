@@ -32,13 +32,16 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
     // Keep sorted alphabetically.
     private static readonly string[] SupportedFeatures =
     [
+        "AuthorizationExpiredTreatment",
         "Backend:MockTime",
         "Backend:RTFetch",
         "Backend:RTForceUpdate",
+        "ConfHint:connection.recv_timeout_seconds",
         "Feature:API:BookmarkManager",
         "Feature:API:Driver.ExecuteQuery",
         "Feature:API:Driver.ExecuteQuery:WithAuth",
         "Feature:API:Driver.IsEncrypted",
+        "Feature:API:Driver.SupportsSessionAuth",
         "Feature:API:Driver.VerifyAuthentication",
         "Feature:API:Driver.VerifyConnectivity",
         "Feature:API:Driver:GetServerInfo",
@@ -48,11 +51,16 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
         "Feature:API:SSLClientCertificate",
         "Feature:API:SSLConfig",
         "Feature:API:SSLSchemes",
+        "Feature:API:Session:AuthConfig",
+        "Feature:API:Session:NotificationsConfig",
+        "Feature:API:Summary:GqlStatusObjects",
+        "Feature:API:Summary:Profile:OptionalStats",
         "Feature:API:Type.Spatial",
         "Feature:API:Type.Temporal",
         "Feature:API:Type.UnsupportedType",
         "Feature:API:Type.UUID",
         "Feature:API:Type.Vector",
+        "Feature:Auth:Bearer",
         "Feature:Auth:Managed",
         "Feature:Bolt:3.0",
         "Feature:Bolt:4.1",
@@ -72,7 +80,13 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
         "Feature:Bolt:6.1",
         "Feature:Bolt:HandshakeManifestV1",
         "Feature:Bolt:Patch:UTC",
-        "Optimization:EagerTransactionBegin"
+        "Feature:IdempotentRetries",
+        "Feature:Impersonation",
+        "Optimization:AuthPipelining",
+        "Optimization:EagerTransactionBegin",
+        "Optimization:ExecuteQueryPipelining",
+        "Optimization:HomeDatabaseCache",
+        "Optimization:PullPipelining"
     ];
 
     private readonly IResponseWriter _responseWriter;

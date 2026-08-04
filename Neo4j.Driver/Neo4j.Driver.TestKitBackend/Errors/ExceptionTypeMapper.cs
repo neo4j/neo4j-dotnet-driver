@@ -37,7 +37,8 @@ internal class ExceptionTypeMapper : IExceptionTypeMapper
         [typeof(ArgumentException)] = "ArgumentError",
         [typeof(ReauthException)] = "UnsupportedFeatureException",
         [typeof(TransactionTerminatedException)] = "TransactionTerminatedError",
-        [typeof(ResultConsumedException)] = "ResultConsumedError"
+        [typeof(ResultConsumedException)] = "ResultConsumedError",
+        [typeof(ConnectionReadTimeoutException)] = "ConnectionReadTimeoutError"
     };
 
     public string Map(Exception exception)
