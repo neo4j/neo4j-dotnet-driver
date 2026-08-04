@@ -46,7 +46,7 @@ internal class GetRoutingTableHandler : MessageHandler<GetRoutingTableRequest>
 
     public override async Task ProcessAsync(GetRoutingTableRequest message)
     {
-        var routingTable = ((Internal.Driver)message.Driver.Object).GetRoutingTable(message.Database);
+        var routingTable = ((Internal.IInternalDriver)message.Driver.Object).GetRoutingTable(message.Database);
         _logger.LogDebug(
             "Fetched routing table for driver with id '{Id}', database '{Database}'",
             message.Driver.Id,
@@ -58,7 +58,7 @@ internal class GetRoutingTableHandler : MessageHandler<GetRoutingTableRequest>
             routingTable is null
                 ? new RoutingTableResponse(message.Database, 0, [], [], [])
                 : new RoutingTableResponse(
-                    routingTable.Database,
+                    string.IsNullOrEmpty(routingTable.Database) ? null : routingTable.Database,
                     routingTable.ExpireAfterSeconds,
                     routingTable.Routers.Select(x => x.Authority),
                     routingTable.Readers.Select(x => x.Authority),

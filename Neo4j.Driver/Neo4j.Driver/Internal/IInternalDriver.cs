@@ -26,6 +26,9 @@ internal interface IInternalDriver : IDriver
     IInternalAsyncSession Session(Action<SessionConfigBuilder> action, bool reactive);
 
     //Non public facing api. Used for testing with testkit only
+    IRoutingTable GetRoutingTable(string database);
+
+    //Non public facing api. Used for testing with testkit only
     Task<IRoutingTable> ForceRoutingTableUpdateAsync(string database, Bookmarks bookmarks);
 
     Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
