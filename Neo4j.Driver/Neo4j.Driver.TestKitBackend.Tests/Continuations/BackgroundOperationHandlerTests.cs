@@ -19,6 +19,7 @@ using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
+using Neo4j.Driver.TestKitBackend.Messages;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Continuations;
@@ -54,6 +55,50 @@ public class BackgroundOperationHandlerTests
             await _gate.Task;
             return new TerminalResponse();
         }
+    }
+
+    private class ThrowingHandler : BackgroundOperationHandler<TestRequest>
+    {
+        private readonly Exception _exception;
+
+        public ThrowingHandler(
+            Exception exception,
+            IContinuationCoordinator coordinator,
+            IResponseWriter responseWriter,
+            IDriverErrorMapper driverErrorMapper,
+            ILogger logger)
+            : base(coordinator, responseWriter, driverErrorMapper, logger)
+        {
+            _exception = exception;
+        }
+
+        protected override Task<IProtocolMessage> ExecuteAsync(TestRequest message)
+        {
+            throw _exception;
+        }
+    }
+
+    [Fact]
+    public async Task Reports_DriverError_for_a_time_zone_not_found_exception_from_the_background_operation()
+    {
+        // Mirrors the crash caught by test_unknown_zoned_date_time: SessionReadTransactionHandler
+        // (a BackgroundOperationHandler) touches a ZonedDateTime with an unrecognized IANA zone id
+        // while building the response, which raises a raw TimeZoneNotFoundException.
+        var exception = new TimeZoneNotFoundException("The time zone ID 'Europe/Neo4j' was not found");
+        var errorResponse = new DriverErrorResponse { Id = "error-1", ErrorType = "TimeZoneNotFoundException" };
+        var driverErrorMapperMock = new Mock<IDriverErrorMapper>();
+        driverErrorMapperMock.Setup(m => m.Map(exception)).Returns(errorResponse);
+
+        var handler = new ThrowingHandler(
+            exception,
+            _coordinator,
+            _responseWriterMock.Object,
+            driverErrorMapperMock.Object,
+            Mock.Of<ILogger>());
+
+        await WithTimeoutAsync(handler.ProcessAsync(new TestRequest()));
+
+        _responseWriterMock.Verify(w => w.WriteAsync(errorResponse), Times.Once);
     }
 
     [Fact]

@@ -86,10 +86,10 @@ public class DriverErrorMapperTests
     [Fact]
     public void Maps_an_argument_exception_to_a_non_retryable_ArgumentError()
     {
-        var exception = new ArgumentException("encryption and trust cannot both be set");
+        Exception exception = new ArgumentException("encryption and trust cannot both be set");
         _autoMocker.GetMock<IExceptionTypeMapper>().Setup(m => m.Map(exception)).Returns("ArgumentError");
 
-        var registered = new RegistryObject<ArgumentException>("error-1", exception);
+        var registered = new RegistryObject<Exception>("error-1", exception);
         _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(exception)).Returns(registered);
 
         var mapper = _autoMocker.CreateInstance<DriverErrorMapper>();
@@ -99,6 +99,27 @@ public class DriverErrorMapperTests
         Assert.Equal("error-1", response.Id);
         Assert.Equal("ArgumentError", response.ErrorType);
         Assert.Equal("encryption and trust cannot both be set", response.Msg);
+        Assert.False(response.Retryable);
+        Assert.Null(response.Code);
+        Assert.Null(response.Cause);
+    }
+
+    [Fact]
+    public void Maps_a_time_zone_not_found_exception_to_a_non_retryable_error()
+    {
+        Exception exception = new TimeZoneNotFoundException("The time zone ID 'Europe/Neo4j' was not found");
+        _autoMocker.GetMock<IExceptionTypeMapper>().Setup(m => m.Map(exception)).Returns("TimeZoneNotFoundException");
+
+        var registered = new RegistryObject<Exception>("error-1", exception);
+        _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(exception)).Returns(registered);
+
+        var mapper = _autoMocker.CreateInstance<DriverErrorMapper>();
+
+        var response = mapper.Map(exception);
+
+        Assert.Equal("error-1", response.Id);
+        Assert.Equal("TimeZoneNotFoundException", response.ErrorType);
+        Assert.Equal("The time zone ID 'Europe/Neo4j' was not found", response.Msg);
         Assert.False(response.Retryable);
         Assert.Null(response.Code);
         Assert.Null(response.Cause);

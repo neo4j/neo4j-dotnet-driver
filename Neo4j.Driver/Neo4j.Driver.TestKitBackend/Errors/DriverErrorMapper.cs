@@ -23,7 +23,7 @@ internal interface IDriverErrorMapper
 {
     DriverErrorResponse Map(Neo4jException exception);
 
-    DriverErrorResponse Map(ArgumentException exception);
+    DriverErrorResponse Map(Exception exception);
 }
 
 internal class DriverErrorMapper : IDriverErrorMapper
@@ -62,7 +62,7 @@ internal class DriverErrorMapper : IDriverErrorMapper
         };
     }
 
-    public DriverErrorResponse Map(ArgumentException exception)
+    public DriverErrorResponse Map(Exception exception)
     {
         var registered = _registry.Register(exception);
         return new DriverErrorResponse

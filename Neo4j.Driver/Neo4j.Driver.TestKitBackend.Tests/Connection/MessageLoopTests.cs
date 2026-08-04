@@ -143,4 +143,33 @@ public class MessageLoopTests
         _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(errorResponse), Times.Once);
         _autoMocker.GetMock<IMessageDispatcher>().Verify(d => d.DispatchAsync(goodMessage), Times.Once);
     }
+
+    [Fact]
+    public async Task Reports_DriverError_for_a_time_zone_not_found_exception_and_continues_the_loop()
+    {
+        const string failingJson = """{"name":"ResultNext","data":{}}""";
+        const string goodJson = """{"name":"GetFeatures","data":{}}""";
+        var failingMessage = Mock.Of<IProtocolMessage>();
+        var goodMessage = Mock.Of<IProtocolMessage>();
+        var exception = new TimeZoneNotFoundException("The time zone ID 'Europe/Neo4j' was not found");
+        var errorResponse = new DriverErrorResponse { Id = "error-1", ErrorType = "TimeZoneNotFoundException" };
+
+        _autoMocker.GetMock<IConnectionInput>()
+            .SetupSequence(i => i.ReadRequestAsync())
+            .ReturnsAsync(failingJson)
+            .ReturnsAsync(goodJson)
+            .ReturnsAsync((string?)null);
+
+        _autoMocker.GetMock<IMessageSerializer>().Setup(s => s.Deserialize(failingJson)).Returns(failingMessage);
+        _autoMocker.GetMock<IMessageSerializer>().Setup(s => s.Deserialize(goodJson)).Returns(goodMessage);
+        _autoMocker.GetMock<IMessageDispatcher>().Setup(d => d.DispatchAsync(failingMessage)).ThrowsAsync(exception);
+        _autoMocker.GetMock<IDriverErrorMapper>().Setup(m => m.Map(exception)).Returns(errorResponse);
+
+        var loop = _autoMocker.CreateInstance<MessageLoop>();
+
+        await loop.RunAsync("testkit-1");
+
+        _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(errorResponse), Times.Once);
+        _autoMocker.GetMock<IMessageDispatcher>().Verify(d => d.DispatchAsync(goodMessage), Times.Once);
+    }
 }

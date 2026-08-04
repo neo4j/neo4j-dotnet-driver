@@ -66,6 +66,11 @@ internal abstract class BackgroundOperationHandler<T> : MessageHandler<T> where 
             _logger.LogDebug(exception, "Driver error during background operation");
             _coordinator.CompleteNextResponse(_driverErrorMapper.Map(exception));
         }
+        catch (TimeZoneNotFoundException exception)
+        {
+            _logger.LogDebug(exception, "Driver error during background operation");
+            _coordinator.CompleteNextResponse(_driverErrorMapper.Map(exception));
+        }
         catch (Exception exception)
         {
             _logger.LogError(exception, "Unhandled error during background operation");

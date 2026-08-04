@@ -85,5 +85,10 @@ internal class MessageLoop : IMessageLoop
             _logger.LogDebug(exception, "Driver configuration error while handling request");
             await _responseWriter.WriteAsync(_driverErrorMapper.Map(exception));
         }
+        catch (TimeZoneNotFoundException exception)
+        {
+            _logger.LogDebug(exception, "Driver error while handling request");
+            await _responseWriter.WriteAsync(_driverErrorMapper.Map(exception));
+        }
     }
 }
