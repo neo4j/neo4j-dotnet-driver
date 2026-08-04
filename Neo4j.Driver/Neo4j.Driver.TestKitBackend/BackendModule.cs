@@ -64,7 +64,7 @@ internal class BackendModule : Module
     {
         return assembly.GetTypes()
             .Where(t =>
-                t is { IsClass: true, IsAbstract: false, IsGenericTypeDefinition: false } &&
+                t is { IsClass: true, IsAbstract: false, IsGenericTypeDefinition: false, IsNested: false } &&
                 !t.IsAssignableTo(typeof(Delegate)) &&
                 !t.IsAssignableTo(typeof(IProtocolMessage)));
     }

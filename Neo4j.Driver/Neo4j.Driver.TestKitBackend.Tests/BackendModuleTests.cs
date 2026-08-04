@@ -21,11 +21,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using Neo4j.Driver.Internal.Services;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Serialization;
+using Neo4j.Driver.TestKitBackend.Time;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests;
@@ -136,6 +138,15 @@ public class BackendModuleTests
             $$"""{"thingId":"{{registered.Id}}"}""", options);
 
         act.Should().Throw<TestKitProtocolException>();
+    }
+
+    [Fact]
+    public void IDateTimeProvider_resolves_to_the_backends_wrapper_not_a_types_own_private_nested_class()
+    {
+        var container = BuildContainer();
+        using var scope = container.BeginLifetimeScope();
+
+        scope.Resolve<IDateTimeProvider>().Should().BeOfType<CurrentDateTimeProvider>();
     }
 
     private record Request
