@@ -20,6 +20,7 @@ using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Time;
 
+[Collection(FakeSystemClockCollection.Name)]
 public class FakeTimeServiceTests : IDisposable
 {
     private readonly IDateTimeProvider _original = DateTimeProvider.StaticInstance;

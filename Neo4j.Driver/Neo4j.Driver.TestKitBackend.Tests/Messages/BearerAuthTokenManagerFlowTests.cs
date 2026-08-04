@@ -29,6 +29,7 @@ using WireAuthTokenAndExpiration = Neo4j.Driver.TestKitBackend.Messages.AuthToke
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
+[Collection(FakeSystemClockCollection.Name)]
 public class BearerAuthTokenManagerFlowTests
 {
     private readonly Mock<ICallbackExchanger> _callbacksMock = new();
