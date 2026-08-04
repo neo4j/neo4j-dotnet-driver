@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.TestKitBackend.Connection;
@@ -300,16 +301,13 @@ public class RetryableTransactionFlowTests
 
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
 
-        Assert.Equal(2, writtenMessages.OfType<AuthTokenManagerGetAuthRequest>().Count());
-        Assert.Equal(
-            [
-                typeof(AuthTokenManagerGetAuthRequest),
-                typeof(RetryableTryResponse),
-                typeof(AuthTokenManagerGetAuthRequest),
-                typeof(RetryableTryResponse),
-                typeof(RetryableDoneResponse)
-            ],
-            writtenMessages.Select(m => m.GetType()));
+        writtenMessages.OfType<AuthTokenManagerGetAuthRequest>().Count().Should().Be(2);
+        writtenMessages.Select(m => m.GetType()).Should().Equal(
+            typeof(AuthTokenManagerGetAuthRequest),
+            typeof(RetryableTryResponse),
+            typeof(AuthTokenManagerGetAuthRequest),
+            typeof(RetryableTryResponse),
+            typeof(RetryableDoneResponse));
     }
 
     [Fact]
@@ -382,7 +380,7 @@ public class RetryableTransactionFlowTests
         var completed = await Task.WhenAny(
             task,
             Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
-        Assert.Same(task, completed);
+        completed.Should().BeSameAs(task);
         await task;
     }
 }

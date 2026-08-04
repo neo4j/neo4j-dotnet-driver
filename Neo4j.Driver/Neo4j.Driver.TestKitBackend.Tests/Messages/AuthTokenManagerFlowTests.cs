@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.Internal.Auth;
@@ -59,18 +60,20 @@ public class AuthTokenManagerFlowTests
             Mock.Of<ILogger>());
 
         await newManagerHandler.ProcessAsync(new NewAuthTokenManagerRequest());
-        Assert.NotNull(manager);
+        manager.Should().NotBeNull();
 
-        var token = Assert.IsAssignableFrom<AuthToken>(
-            await manager!.GetTokenAsync(TestContext.Current.CancellationToken));
+        var tokenValue = await manager!.GetTokenAsync(TestContext.Current.CancellationToken);
+        tokenValue.Should().BeAssignableTo<AuthToken>();
+        var token = (AuthToken)tokenValue;
 
-        Assert.NotNull(capturedRequest);
-        var request = Assert.IsType<AuthTokenManagerGetAuthRequest>(capturedRequest!("callback-1"));
-        Assert.Equal("manager-1", request.AuthTokenManagerId);
+        capturedRequest.Should().NotBeNull();
+        var request = capturedRequest!("callback-1");
+        request.Should().BeOfType<AuthTokenManagerGetAuthRequest>();
+        ((AuthTokenManagerGetAuthRequest)request).AuthTokenManagerId.Should().Be("manager-1");
 
-        Assert.Equal("basic", token.Content["scheme"]);
-        Assert.Equal("neo4j", token.Content["principal"]);
-        Assert.Equal("pass", token.Content["credentials"]);
+        token.Content["scheme"].Should().Be("basic");
+        token.Content["principal"].Should().Be("neo4j");
+        token.Content["credentials"].Should().Be("pass");
     }
 
     [Fact]
@@ -108,7 +111,7 @@ public class AuthTokenManagerFlowTests
             Mock.Of<ILogger>());
 
         await newManagerHandler.ProcessAsync(new NewAuthTokenManagerRequest());
-        Assert.NotNull(manager);
+        manager.Should().NotBeNull();
 
         var token = AuthTokens.Custom("neo4j", "pass", null!, "basic");
         var exception = new SecurityException("Neo.ClientError.Security.TokenExpired", "boom");
@@ -118,12 +121,14 @@ public class AuthTokenManagerFlowTests
             exception,
             TestContext.Current.CancellationToken);
 
-        Assert.True(handled);
+        handled.Should().BeTrue();
 
-        Assert.NotNull(capturedRequest);
-        var request = Assert.IsType<AuthTokenManagerHandleSecurityExceptionRequest>(capturedRequest!("callback-1"));
-        Assert.Equal("manager-1", request.AuthTokenManagerId);
-        Assert.Equal("Neo.ClientError.Security.TokenExpired", request.ErrorCode);
-        Assert.Equal(new AuthorizationToken("basic", "neo4j", "pass"), request.Auth);
+        capturedRequest.Should().NotBeNull();
+        var request = capturedRequest!("callback-1");
+        request.Should().BeOfType<AuthTokenManagerHandleSecurityExceptionRequest>();
+        var securityExceptionRequest = (AuthTokenManagerHandleSecurityExceptionRequest)request;
+        securityExceptionRequest.AuthTokenManagerId.Should().Be("manager-1");
+        securityExceptionRequest.ErrorCode.Should().Be("Neo.ClientError.Security.TokenExpired");
+        securityExceptionRequest.Auth.Should().Be(new AuthorizationToken("basic", "neo4j", "pass"));
     }
 }

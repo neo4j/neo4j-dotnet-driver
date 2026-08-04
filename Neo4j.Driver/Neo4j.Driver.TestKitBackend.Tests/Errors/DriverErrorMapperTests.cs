@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using FluentAssertions;
 using Moq.AutoMock;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.TestKitBackend.Cypher;
@@ -62,25 +63,26 @@ public class DriverErrorMapperTests
 
         var response = mapper.Map(exception);
 
-        Assert.Equal("error-1", response.Id);
-        Assert.Equal("ClientError", response.ErrorType);
-        Assert.Equal("bad cypher", response.Msg);
-        Assert.Equal("Neo.ClientError.Statement.SyntaxError", response.Code);
-        Assert.False(response.Retryable);
-        Assert.Equal("50N42", response.GqlStatus);
-        Assert.Equal("some description", response.StatusDescription);
-        Assert.Equal("CLIENT_ERROR", response.Classification);
-        Assert.Equal("CLIENT_ERROR_RAW", response.RawClassification);
-        Assert.Equal(diagnosticRecordValue, Assert.Single(response.DiagnosticRecord!).Value);
+        response.Id.Should().Be("error-1");
+        response.ErrorType.Should().Be("ClientError");
+        response.Msg.Should().Be("bad cypher");
+        response.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
+        response.Retryable.Should().BeFalse();
+        response.GqlStatus.Should().Be("50N42");
+        response.StatusDescription.Should().Be("some description");
+        response.Classification.Should().Be("CLIENT_ERROR");
+        response.RawClassification.Should().Be("CLIENT_ERROR_RAW");
+        response.DiagnosticRecord!.Should().ContainSingle().Which.Value.Should().Be(diagnosticRecordValue);
 
-        var cause = Assert.IsType<GqlErrorResponse>(response.Cause);
-        Assert.Equal("cause message", cause.Msg);
-        Assert.Equal("01000", cause.GqlStatus);
-        Assert.Equal("cause description", cause.StatusDescription);
-        Assert.Equal("CAUSE_CLASS", cause.Classification);
-        Assert.Equal("CAUSE_RAW", cause.RawClassification);
-        Assert.Equal(causeDiagnosticRecordValue, Assert.Single(cause.DiagnosticRecord!).Value);
-        Assert.Null(cause.Cause);
+        response.Cause.Should().BeOfType<GqlErrorResponse>();
+        var cause = (GqlErrorResponse)response.Cause!;
+        cause.Msg.Should().Be("cause message");
+        cause.GqlStatus.Should().Be("01000");
+        cause.StatusDescription.Should().Be("cause description");
+        cause.Classification.Should().Be("CAUSE_CLASS");
+        cause.RawClassification.Should().Be("CAUSE_RAW");
+        cause.DiagnosticRecord!.Should().ContainSingle().Which.Value.Should().Be(causeDiagnosticRecordValue);
+        cause.Cause.Should().BeNull();
     }
 
     [Fact]
@@ -96,12 +98,12 @@ public class DriverErrorMapperTests
 
         var response = mapper.Map(exception);
 
-        Assert.Equal("error-1", response.Id);
-        Assert.Equal("ArgumentError", response.ErrorType);
-        Assert.Equal("encryption and trust cannot both be set", response.Msg);
-        Assert.False(response.Retryable);
-        Assert.Null(response.Code);
-        Assert.Null(response.Cause);
+        response.Id.Should().Be("error-1");
+        response.ErrorType.Should().Be("ArgumentError");
+        response.Msg.Should().Be("encryption and trust cannot both be set");
+        response.Retryable.Should().BeFalse();
+        response.Code.Should().BeNull();
+        response.Cause.Should().BeNull();
     }
 
     [Fact]
@@ -117,11 +119,11 @@ public class DriverErrorMapperTests
 
         var response = mapper.Map(exception);
 
-        Assert.Equal("error-1", response.Id);
-        Assert.Equal("TimeZoneNotFoundException", response.ErrorType);
-        Assert.Equal("The time zone ID 'Europe/Neo4j' was not found", response.Msg);
-        Assert.False(response.Retryable);
-        Assert.Null(response.Code);
-        Assert.Null(response.Cause);
+        response.Id.Should().Be("error-1");
+        response.ErrorType.Should().Be("TimeZoneNotFoundException");
+        response.Msg.Should().Be("The time zone ID 'Europe/Neo4j' was not found");
+        response.Retryable.Should().BeFalse();
+        response.Code.Should().BeNull();
+        response.Cause.Should().BeNull();
     }
 }

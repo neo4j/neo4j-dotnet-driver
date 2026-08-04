@@ -79,10 +79,12 @@ public class CypherToNativeMapperTests
         var outer = new CypherMap(
             new Dictionary<string, ICypherValue> { ["outer"] = new CypherMap(new Dictionary<string, ICypherValue> { ["inner"] = new CypherBool(true) }) });
 
-        var mapped = _mapper.Map(outer)
-            .Should().BeOfType<Dictionary<string, object>>().Subject;
+        var mappedValue = _mapper.Map(outer);
+        mappedValue.Should().BeOfType<Dictionary<string, object>>();
+        var mapped = (Dictionary<string, object>)mappedValue!;
 
-        var inner = mapped["outer"].Should().BeOfType<Dictionary<string, object>>().Subject;
+        mapped["outer"].Should().BeOfType<Dictionary<string, object>>();
+        var inner = (Dictionary<string, object>)mapped["outer"];
 
         inner.Should().Equal(new Dictionary<string, object> { ["inner"] = true });
     }
@@ -208,9 +210,13 @@ public class CypherToNativeMapperTests
     {
         var outer = new CypherList([new CypherList([new CypherBool(true)])]);
 
-        var mapped = _mapper.Map(outer).Should().BeOfType<List<object>>().Subject;
+        var mappedValue = _mapper.Map(outer);
+        mappedValue.Should().BeOfType<List<object>>();
+        var mapped = (List<object>)mappedValue!;
 
-        var inner = mapped.Single().Should().BeOfType<List<object>>().Subject;
+        var innerValue = mapped.Single();
+        innerValue.Should().BeOfType<List<object>>();
+        var inner = (List<object>)innerValue;
         inner.Should().Equal(true);
     }
 

@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using FluentAssertions;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Xunit;
@@ -29,19 +30,19 @@ public class ContinuationCoordinatorTests
     public async Task WaitForNextResponseAsync_completes_with_whatever_CompleteNextResponse_is_given()
     {
         var responseTask = _coordinator.WaitForNextResponseAsync();
-        Assert.False(responseTask.IsCompleted);
+        responseTask.IsCompleted.Should().BeFalse();
 
         _coordinator.CompleteNextResponse(new FakeResponse("try-1"));
 
         var response = await WithTimeoutAsync(responseTask);
-        Assert.Equal(new FakeResponse("try-1"), response);
+        response.Should().Be(new FakeResponse("try-1"));
     }
 
     [Fact]
     public async Task WaitForOutcomeAsync_completes_when_CompleteOutcome_is_called_for_the_same_session()
     {
         var outcomeTask = _coordinator.WaitForOutcomeAsync("session-1");
-        Assert.False(outcomeTask.IsCompleted);
+        outcomeTask.IsCompleted.Should().BeFalse();
 
         _coordinator.CompleteOutcome("session-1");
 
@@ -55,7 +56,7 @@ public class ContinuationCoordinatorTests
         var outcomeTaskB = _coordinator.WaitForOutcomeAsync("session-b");
 
         _coordinator.CompleteOutcome("session-b");
-        Assert.False(outcomeTaskA.IsCompleted);
+        outcomeTaskA.IsCompleted.Should().BeFalse();
         await WithTimeoutAsync(outcomeTaskB);
 
         _coordinator.CompleteOutcome("session-a");
@@ -70,11 +71,11 @@ public class ContinuationCoordinatorTests
         await WithTimeoutAsync(firstResponseTask);
 
         var secondResponseTask = _coordinator.WaitForNextResponseAsync();
-        Assert.False(secondResponseTask.IsCompleted);
+        secondResponseTask.IsCompleted.Should().BeFalse();
 
         _coordinator.CompleteNextResponse(new FakeResponse("try-2"));
         var secondResponse = await WithTimeoutAsync(secondResponseTask);
-        Assert.Equal(new FakeResponse("try-2"), secondResponse);
+        secondResponse.Should().Be(new FakeResponse("try-2"));
     }
 
     [Fact]
@@ -86,18 +87,21 @@ public class ContinuationCoordinatorTests
 
         _coordinator.FailOutcome("session-1", exception);
 
-        var thrown = await Assert.ThrowsAsync<TransientException>(() => WithTimeoutAsync(outcomeTask));
-        Assert.Same(exception, thrown);
+        Func<Task> act = () => WithTimeoutAsync(outcomeTask);
+        var thrown = await act.Should().ThrowAsync<TransientException>();
+        thrown.Which.Should().BeSameAs(exception);
     }
 
     [Fact]
     public async Task Registering_a_second_continuation_while_one_is_pending_fails_loudly()
     {
         _ = _coordinator.WaitForNextResponseAsync();
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _coordinator.WaitForNextResponseAsync());
+        Func<Task> waitForResponseAgain = () => _coordinator.WaitForNextResponseAsync();
+        await waitForResponseAgain.Should().ThrowAsync<InvalidOperationException>();
 
         _ = _coordinator.WaitForOutcomeAsync("session-1");
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _coordinator.WaitForOutcomeAsync("session-1"));
+        Func<Task> waitForOutcomeAgain = () => _coordinator.WaitForOutcomeAsync("session-1");
+        await waitForOutcomeAgain.Should().ThrowAsync<InvalidOperationException>();
     }
 
     private static async Task<T> WithTimeoutAsync<T>(Task<T> task)
@@ -106,7 +110,7 @@ public class ContinuationCoordinatorTests
             task,
             Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
 
-        Assert.Same(task, completed);
+        completed.Should().BeSameAs(task);
         return await task;
     }
 
@@ -116,7 +120,7 @@ public class ContinuationCoordinatorTests
             task,
             Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
 
-        Assert.Same(task, completed);
+        completed.Should().BeSameAs(task);
         await task;
     }
 }

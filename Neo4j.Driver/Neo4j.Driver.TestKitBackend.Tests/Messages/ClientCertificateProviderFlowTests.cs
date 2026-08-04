@@ -15,6 +15,7 @@
 
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.TestKitBackend.Certificates;
@@ -54,7 +55,7 @@ public class ClientCertificateProviderFlowTests
 
         newProviderHandler.ProcessAsync(new NewClientCertificateProviderRequest()).GetAwaiter().GetResult();
 
-        Assert.NotNull(provider);
+        provider.Should().NotBeNull();
         return provider!;
     }
 
@@ -89,7 +90,7 @@ public class ClientCertificateProviderFlowTests
 
         var certificate = await provider.GetCertificateAsync();
 
-        Assert.NotNull(request);
+        request.Should().NotBeNull();
         return (certificate, request!);
     }
 
@@ -111,8 +112,8 @@ public class ClientCertificateProviderFlowTests
             provider,
             new ClientCertificate("cert.pem", "key.pem", "secret"));
 
-        Assert.Equal("provider-1", request.ClientCertificateProviderId);
-        Assert.Same(certificate, roundTripped);
+        request.ClientCertificateProviderId.Should().Be("provider-1");
+        roundTripped.Should().BeSameAs(certificate);
     }
 
     [Fact]
@@ -132,7 +133,7 @@ public class ClientCertificateProviderFlowTests
         var (first, _) = await RoundTripCertificateAsync(provider, new ClientCertificate("cert1.pem", "key1.pem"));
         var (second, _) = await RoundTripCertificateAsync(provider, new ClientCertificate("cert2.pem", "key2.pem"));
 
-        Assert.Same(firstCertificate, first);
-        Assert.Same(secondCertificate, second);
+        first.Should().BeSameAs(firstCertificate);
+        second.Should().BeSameAs(secondCertificate);
     }
 }

@@ -299,7 +299,7 @@ public class NewDriverConfigMapperTests
             ClientCertificate = new ClientCertificate("cert.pem", "key.pem", "secret")
         });
 
-        Assert.NotNull(provider);
+        provider.Should().NotBeNull();
         (await provider!.GetCertificateAsync()).Should().BeSameAs(certificate);
     }
 

@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.Internal.Auth;
@@ -62,17 +63,19 @@ public class BasicAuthTokenManagerFlowTests
         await newManagerHandler.ProcessAsync(new NewBasicAuthTokenManagerRequest());
 
         responseWriterMock.Verify(w => w.WriteAsync(new BasicAuthTokenManagerResponse("manager-1")), Times.Once);
-        Assert.NotNull(manager);
+        manager.Should().NotBeNull();
 
-        var token = Assert.IsAssignableFrom<AuthToken>(
-            await manager!.GetTokenAsync(TestContext.Current.CancellationToken));
+        var tokenValue = await manager!.GetTokenAsync(TestContext.Current.CancellationToken);
+        tokenValue.Should().BeAssignableTo<AuthToken>();
+        var token = (AuthToken)tokenValue;
 
-        Assert.NotNull(capturedRequest);
-        var request = Assert.IsType<BasicAuthTokenProviderRequest>(capturedRequest!("callback-1"));
-        Assert.Equal("manager-1", request.BasicAuthTokenManagerId);
+        capturedRequest.Should().NotBeNull();
+        var request = capturedRequest!("callback-1");
+        request.Should().BeOfType<BasicAuthTokenProviderRequest>();
+        ((BasicAuthTokenProviderRequest)request).BasicAuthTokenManagerId.Should().Be("manager-1");
 
-        Assert.Equal("basic", token.Content["scheme"]);
-        Assert.Equal("neo4j", token.Content["principal"]);
-        Assert.Equal("pass", token.Content["credentials"]);
+        token.Content["scheme"].Should().Be("basic");
+        token.Content["principal"].Should().Be("neo4j");
+        token.Content["credentials"].Should().Be("pass");
     }
 }

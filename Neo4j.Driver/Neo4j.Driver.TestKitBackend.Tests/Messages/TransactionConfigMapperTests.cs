@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Cypher;
@@ -43,7 +44,7 @@ public class TransactionConfigMapperTests
         var mapper = _autoMocker.CreateInstance<TransactionConfigMapper>();
         var configure = mapper.Map(txMeta, Optional<long?>.Absent);
 
-        Assert.Equal(mapped, Apply(configure).Metadata);
+        Apply(configure).Metadata.Should().BeEquivalentTo(mapped);
     }
 
     [Fact]
@@ -52,7 +53,7 @@ public class TransactionConfigMapperTests
         var mapper = _autoMocker.CreateInstance<TransactionConfigMapper>();
         var configure = mapper.Map(null, Optional<long?>.Absent);
 
-        Assert.Empty(Apply(configure).Metadata);
+        Apply(configure).Metadata.Should().BeEmpty();
     }
 
     [Fact]
@@ -61,7 +62,7 @@ public class TransactionConfigMapperTests
         var mapper = _autoMocker.CreateInstance<TransactionConfigMapper>();
         var configure = mapper.Map(null, Optional<long?>.Absent);
 
-        Assert.Null(Apply(configure).Timeout);
+        Apply(configure).Timeout.Should().BeNull();
     }
 
     [Fact]
@@ -70,7 +71,7 @@ public class TransactionConfigMapperTests
         var mapper = _autoMocker.CreateInstance<TransactionConfigMapper>();
         var configure = mapper.Map(null, Optional<long?>.Specified(null));
 
-        Assert.Null(Apply(configure).Timeout);
+        Apply(configure).Timeout.Should().BeNull();
     }
 
     [Fact]
@@ -79,6 +80,6 @@ public class TransactionConfigMapperTests
         var mapper = _autoMocker.CreateInstance<TransactionConfigMapper>();
         var configure = mapper.Map(null, Optional<long?>.Specified(17));
 
-        Assert.Equal(TimeSpan.FromMilliseconds(17), Apply(configure).Timeout);
+        Apply(configure).Timeout.Should().Be(TimeSpan.FromMilliseconds(17));
     }
 }

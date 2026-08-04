@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
@@ -59,9 +60,9 @@ public class CallbackExchangerTests
 
         var response = await exchange.SendAsync<FakeCompletedRequest>(id => new FakeRequest(id));
 
-        Assert.NotNull(written);
-        Assert.Equal("hello", response.Tag);
-        Assert.Equal(written!.Id, response.RequestId);
+        written.Should().NotBeNull();
+        response.Tag.Should().Be("hello");
+        response.RequestId.Should().Be(written!.Id);
     }
 
     [Fact]
@@ -79,8 +80,9 @@ public class CallbackExchangerTests
 
         var exchange = _autoMocker.CreateInstance<CallbackExchanger>();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => exchange.SendAsync<FakeCompletedRequest>(id => new FakeRequest(id)));
+        Func<Task> act = () => exchange.SendAsync<FakeCompletedRequest>(id => new FakeRequest(id));
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
     }
 
     [Fact]
@@ -98,8 +100,9 @@ public class CallbackExchangerTests
 
         var exchange = _autoMocker.CreateInstance<CallbackExchanger>();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => exchange.SendAsync<FakeCompletedRequest>(id => new FakeRequest(id)));
+        Func<Task> act = () => exchange.SendAsync<FakeCompletedRequest>(id => new FakeRequest(id));
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
     }
 
     [Fact]
@@ -113,7 +116,8 @@ public class CallbackExchangerTests
 
         var exchange = _autoMocker.CreateInstance<CallbackExchanger>();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => exchange.SendAsync<FakeCompletedRequest>(id => new FakeRequest(id)));
+        Func<Task> act = () => exchange.SendAsync<FakeCompletedRequest>(id => new FakeRequest(id));
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
     }
 }

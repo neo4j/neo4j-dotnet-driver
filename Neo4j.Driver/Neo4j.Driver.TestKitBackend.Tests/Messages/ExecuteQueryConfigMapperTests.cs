@@ -131,10 +131,11 @@ public class ExecuteQueryConfigMapperTests
         var config = Map(
             new ExecuteQueryConfig { AuthorizationToken = new AuthorizationToken("basic", "neo4j", "pass") });
 
-        var token = Assert.IsAssignableFrom<AuthToken>(config.AuthToken);
-        Assert.Equal("basic", token.Content["scheme"]);
-        Assert.Equal("neo4j", token.Content["principal"]);
-        Assert.Equal("pass", token.Content["credentials"]);
+        config.AuthToken.Should().BeAssignableTo<AuthToken>();
+        var token = (AuthToken)config.AuthToken;
+        token.Content["scheme"].Should().Be("basic");
+        token.Content["principal"].Should().Be("neo4j");
+        token.Content["credentials"].Should().Be("pass");
     }
 
     [Fact]

@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using FluentAssertions;
 using Moq;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Messages;
@@ -41,12 +42,12 @@ public class ResolverFlowTests
 
         var resolved = resolver.Resolve(ServerAddress.From("router1", 9001));
 
-        Assert.NotNull(capturedRequest);
-        var request = Assert.IsType<ResolverResolutionRequired>(capturedRequest!("callback-1"));
-        Assert.Equal("router1:9001", request.Address);
+        capturedRequest.Should().NotBeNull();
+        var request = capturedRequest!("callback-1");
+        request.Should().BeOfType<ResolverResolutionRequired>();
+        ((ResolverResolutionRequired)request).Address.Should().Be("router1:9001");
 
-        Assert.Equal(
-            new HashSet<ServerAddress> { ServerAddress.From("hosta", 9002), ServerAddress.From("hostb", 9003) },
-            resolved);
+        resolved.Should().BeEquivalentTo(
+            new HashSet<ServerAddress> { ServerAddress.From("hosta", 9002), ServerAddress.From("hostb", 9003) });
     }
 }

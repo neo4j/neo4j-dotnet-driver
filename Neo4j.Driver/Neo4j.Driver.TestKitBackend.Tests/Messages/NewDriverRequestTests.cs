@@ -47,7 +47,8 @@ public class NewDriverRequestTests
 
         var message = Serializer().Deserialize(json);
 
-        var request = message.Should().BeOfType<NewDriverRequest>().Subject;
+        message.Should().BeOfType<NewDriverRequest>();
+        var request = (NewDriverRequest)message;
         request.Uri.Should().Be("bolt://127.0.0.1:9010");
         request.AuthorizationToken.Should().Be(new AuthorizationToken("basic", "", ""));
     }
@@ -75,7 +76,8 @@ public class NewDriverRequestTests
 
         var message = Serializer().Deserialize(json);
 
-        var request = message.Should().BeOfType<NewDriverRequest>().Subject;
+        message.Should().BeOfType<NewDriverRequest>();
+        var request = (NewDriverRequest)message;
         request.Uri.Should().Be("neo4j://localhost:7687");
         request.AuthorizationToken.Should().Be(new AuthorizationToken("basic", "neo4j", "secret", "myrealm"));
         request.AuthTokenManagerId.Should().BeNull();

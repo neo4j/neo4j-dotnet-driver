@@ -78,10 +78,13 @@ public class NativeToCypherMapperTests
     [Fact]
     public void Maps_a_nested_list_recursively()
     {
-        var inner = _mapper.Map(new List<object> { new List<object> { true } })
+        var innerValue = _mapper.Map(new List<object> { new List<object> { true } })
             .Should().BeOfType<CypherList>()
             .Which.Value.Should().ContainSingle()
-            .Which.Should().BeOfType<CypherList>().Subject;
+            .Which;
+
+        innerValue.Should().BeOfType<CypherList>();
+        var inner = (CypherList)innerValue;
 
         inner.Value.Should().Equal(new CypherBool(true));
     }
@@ -109,10 +112,13 @@ public class NativeToCypherMapperTests
     [Fact]
     public void Maps_a_nested_dictionary_recursively()
     {
-        var inner = _mapper.Map(new Dictionary<string, object> { ["outer"] = new Dictionary<string, object> { ["inner"] = true } })
+        var innerValue = _mapper.Map(new Dictionary<string, object> { ["outer"] = new Dictionary<string, object> { ["inner"] = true } })
             .Should().BeOfType<CypherMap>()
             .Which.Value.Should().ContainSingle()
-            .Which.Value.Should().BeOfType<CypherMap>().Subject;
+            .Which.Value;
+
+        innerValue.Should().BeOfType<CypherMap>();
+        var inner = (CypherMap)innerValue;
 
         inner.Value.Should().Equal(new Dictionary<string, ICypherValue> { ["inner"] = new CypherBool(true) });
     }

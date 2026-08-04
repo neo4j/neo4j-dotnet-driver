@@ -50,7 +50,7 @@ public class BookmarkManagerFlowTests
 
         handler.ProcessAsync(request).GetAwaiter().GetResult();
 
-        Assert.NotNull(manager);
+        manager.Should().NotBeNull();
         return manager!;
     }
 
@@ -68,9 +68,10 @@ public class BookmarkManagerFlowTests
 
         var bookmarks = await manager.GetBookmarksAsync(TestContext.Current.CancellationToken);
 
-        Assert.NotNull(capturedRequest);
-        var request = Assert.IsType<BookmarksSupplierRequest>(capturedRequest!("callback-1"));
-        Assert.Equal("bm-1", request.BookmarkManagerId);
+        capturedRequest.Should().NotBeNull();
+        var request = capturedRequest!("callback-1");
+        request.Should().BeOfType<BookmarksSupplierRequest>();
+        ((BookmarksSupplierRequest)request).BookmarkManagerId.Should().Be("bm-1");
         bookmarks.Should().BeEquivalentTo("bm:s1", "bm:s2");
     }
 
@@ -87,9 +88,11 @@ public class BookmarkManagerFlowTests
 
         await manager.UpdateBookmarksAsync([], ["bm:new1", "bm:new2"], TestContext.Current.CancellationToken);
 
-        Assert.NotNull(capturedRequest);
-        var request = Assert.IsType<BookmarksConsumerRequest>(capturedRequest!("callback-1"));
-        Assert.Equal("bm-1", request.BookmarkManagerId);
-        request.Bookmarks.Should().BeEquivalentTo("bm:new1", "bm:new2");
+        capturedRequest.Should().NotBeNull();
+        var request = capturedRequest!("callback-1");
+        request.Should().BeOfType<BookmarksConsumerRequest>();
+        var consumerRequest = (BookmarksConsumerRequest)request;
+        consumerRequest.BookmarkManagerId.Should().Be("bm-1");
+        consumerRequest.Bookmarks.Should().BeEquivalentTo("bm:new1", "bm:new2");
     }
 }

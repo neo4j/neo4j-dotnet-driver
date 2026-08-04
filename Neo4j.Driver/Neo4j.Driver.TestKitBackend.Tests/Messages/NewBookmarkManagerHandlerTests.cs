@@ -48,7 +48,7 @@ public class NewBookmarkManagerHandlerTests
         _autoMocker.GetMock<IResponseWriter>()
             .Verify(w => w.WriteAsync(new BookmarkManagerResponse("bm-1")), Times.Once);
 
-        Assert.NotNull(manager);
+        manager.Should().NotBeNull();
         var bookmarks = await manager!.GetBookmarksAsync(TestContext.Current.CancellationToken);
         bookmarks.Should().BeEquivalentTo("bm:1", "bm:2");
     }

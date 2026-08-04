@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using FluentAssertions;
 using Neo4j.Driver.Internal.Services;
 using Neo4j.Driver.TestKitBackend.Time;
 using Xunit;
@@ -37,7 +38,7 @@ public class FakeTimeServiceTests : IDisposable
         var first = DateTimeProvider.StaticInstance.Now();
         var second = DateTimeProvider.StaticInstance.Now();
 
-        Assert.Equal(first, second);
+        second.Should().Be(first);
     }
 
     [Fact]
@@ -48,7 +49,7 @@ public class FakeTimeServiceTests : IDisposable
 
         _service.Tick(3_599_999);
 
-        Assert.Equal(before.AddMilliseconds(3_599_999), DateTimeProvider.StaticInstance.Now());
+        DateTimeProvider.StaticInstance.Now().Should().Be(before.AddMilliseconds(3_599_999));
     }
 
     [Fact]
@@ -60,7 +61,7 @@ public class FakeTimeServiceTests : IDisposable
 
         _service.Tick(1_500);
 
-        Assert.Equal(1_500, timer.ElapsedMilliseconds);
+        timer.ElapsedMilliseconds.Should().Be(1_500);
     }
 
     [Fact]
@@ -70,6 +71,6 @@ public class FakeTimeServiceTests : IDisposable
 
         _service.Uninstall();
 
-        Assert.Same(_original, DateTimeProvider.StaticInstance);
+        DateTimeProvider.StaticInstance.Should().BeSameAs(_original);
     }
 }

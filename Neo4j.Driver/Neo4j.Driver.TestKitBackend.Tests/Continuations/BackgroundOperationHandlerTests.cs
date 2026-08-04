@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.TestKitBackend.Connection;
@@ -125,7 +126,7 @@ public class BackgroundOperationHandlerTests
         var nextResponseTask = _coordinator.WaitForNextResponseAsync();
         gate.SetResult();
 
-        Assert.IsType<TerminalResponse>(await WithTimeoutAsync(nextResponseTask));
+        (await WithTimeoutAsync(nextResponseTask)).Should().BeOfType<TerminalResponse>();
     }
 
     private static async Task<T> WithTimeoutAsync<T>(Task<T> task)
@@ -134,7 +135,7 @@ public class BackgroundOperationHandlerTests
             task,
             Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
 
-        Assert.Same(task, completed);
+        completed.Should().BeSameAs(task);
         return await task;
     }
 
@@ -144,7 +145,7 @@ public class BackgroundOperationHandlerTests
             task,
             Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
 
-        Assert.Same(task, completed);
+        completed.Should().BeSameAs(task);
         await task;
     }
 }

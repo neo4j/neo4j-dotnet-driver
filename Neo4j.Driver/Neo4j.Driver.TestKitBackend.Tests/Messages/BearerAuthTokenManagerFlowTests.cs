@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.Internal.Auth;
@@ -55,7 +56,7 @@ public class BearerAuthTokenManagerFlowTests
 
         newManagerHandler.ProcessAsync(new NewBearerAuthTokenManagerRequest()).GetAwaiter().GetResult();
 
-        Assert.NotNull(manager);
+        manager.Should().NotBeNull();
         return manager!;
     }
 
@@ -81,11 +82,12 @@ public class BearerAuthTokenManagerFlowTests
 
         SetupNextToken("a-token", 60_000);
 
-        var token = Assert.IsAssignableFrom<AuthToken>(
-            await manager.GetTokenAsync(TestContext.Current.CancellationToken));
+        var tokenValue = await manager.GetTokenAsync(TestContext.Current.CancellationToken);
+        tokenValue.Should().BeAssignableTo<AuthToken>();
+        var token = (AuthToken)tokenValue;
 
-        Assert.Equal("bearer", token.Content["scheme"]);
-        Assert.Equal("a-token", token.Content["credentials"]);
+        token.Content["scheme"].Should().Be("bearer");
+        token.Content["credentials"].Should().Be("a-token");
     }
 
     [Fact]
@@ -97,10 +99,11 @@ public class BearerAuthTokenManagerFlowTests
         await manager.GetTokenAsync(TestContext.Current.CancellationToken);
         _callbacksMock.Invocations.Clear();
 
-        var secondToken = Assert.IsAssignableFrom<AuthToken>(
-            await manager.GetTokenAsync(TestContext.Current.CancellationToken));
+        var secondTokenValue = await manager.GetTokenAsync(TestContext.Current.CancellationToken);
+        secondTokenValue.Should().BeAssignableTo<AuthToken>();
+        var secondToken = (AuthToken)secondTokenValue;
 
-        Assert.Equal("a-token", secondToken.Content["credentials"]);
+        secondToken.Content["credentials"].Should().Be("a-token");
         _callbacksMock.Verify(
             c => c.SendAsync<BearerAuthTokenProviderCompletedRequest>(It.IsAny<Func<string, ICallbackRequest>>()),
             Times.Never);
@@ -123,10 +126,11 @@ public class BearerAuthTokenManagerFlowTests
             fakeTime.Tick(10_001);
 
             SetupNextToken("second-token", expiresInMs: 10_000);
-            var refreshed = Assert.IsAssignableFrom<AuthToken>(
-                await manager.GetTokenAsync(TestContext.Current.CancellationToken));
+            var refreshedValue = await manager.GetTokenAsync(TestContext.Current.CancellationToken);
+            refreshedValue.Should().BeAssignableTo<AuthToken>();
+            var refreshed = (AuthToken)refreshedValue;
 
-            Assert.Equal("second-token", refreshed.Content["credentials"]);
+            refreshed.Content["credentials"].Should().Be("second-token");
         }
         finally
         {
