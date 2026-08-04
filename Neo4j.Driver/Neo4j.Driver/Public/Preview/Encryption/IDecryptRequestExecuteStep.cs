@@ -20,11 +20,25 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Preview.Encryption;
 
-/// <summary>The final stage of building a decrypt request: execute it.</summary>
+/// <summary>
+/// The final stage of building a decrypt request: execute it. This interface is part of the
+/// Encryption Preview feature, and is subject to change or removal.
+/// </summary>
 public interface IDecryptRequestExecuteStep
 {
-    /// <summary>Decrypts the value.</summary>
+    /// <summary>
+    /// Decrypts the value. This method is part of the Encryption Preview feature, and is subject to
+    /// change or removal.
+    /// </summary>
     /// <param name="cancellationToken">The cancellation token for the operation.</param>
     /// <returns>The decrypted property value.</returns>
+    /// <exception cref="PropertyEncryptionException">
+    /// The value could not be decrypted, e.g. because no configured profile or encryption engine
+    /// accepts the request, or the additional authenticated data (AAD) does not match.
+    /// </exception>
+    /// <exception cref="Neo4jException">
+    /// The configured <see cref="IKeyEncapsulationService"/> or <see cref="IEncapsulatedKeyRepository"/>
+    /// raised a driver exception, which propagates unchanged.
+    /// </exception>
     Task<object> DecryptAsync(CancellationToken cancellationToken = default);
 }

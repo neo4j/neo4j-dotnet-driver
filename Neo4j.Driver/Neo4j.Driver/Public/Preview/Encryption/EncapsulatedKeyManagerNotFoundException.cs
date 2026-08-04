@@ -17,7 +17,10 @@
 
 namespace Neo4j.Driver.Preview.Encryption;
 
-/// <summary>Thrown when no key manager provider accepts the given encryption profile.</summary>
+/// <summary>
+/// Thrown when no key manager provider accepts the given encryption profile. This exception is
+/// part of the Encryption Preview feature, and is subject to change or removal.
+/// </summary>
 /// <param name="profileName">The name of the profile that no provider accepted.</param>
 public class EncapsulatedKeyManagerNotFoundException(string profileName)
     : PropertyEncryptionException($"No key manager provider found that accepts profile '{profileName}'.");

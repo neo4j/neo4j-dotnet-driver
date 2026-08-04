@@ -23,12 +23,21 @@ namespace Neo4j.Driver.Preview.Encryption;
 /// <summary>
 /// Creates new encapsulated data encryption keys for a specific encryption profile. Obtain an instance via
 /// <see cref="IPropertyEncryption.KeyManager()"/> or <see cref="IPropertyEncryption.KeyManager(string)"/>.
+/// This interface is part of the Encryption Preview feature, and is subject to change or removal.
 /// </summary>
 public interface IEncapsulatedKeyManager
 {
-    /// <summary>Generates a new data encryption key, encapsulates it, and persists it under the given alias.</summary>
+    /// <summary>
+    /// Generates a new data encryption key, encapsulates it, and persists it under the given alias.
+    /// This method is part of the Encryption Preview feature, and is subject to change or removal.
+    /// </summary>
     /// <param name="alias">The alias to bind to the new key.</param>
     /// <param name="cancellationToken">The cancellation token for the operation.</param>
     /// <returns>The stored key.</returns>
+    /// <exception cref="PropertyEncryptionException">The key could not be created.</exception>
+    /// <exception cref="Neo4jException">
+    /// The configured <see cref="IKeyEncapsulationService"/> or <see cref="IEncapsulatedKeyRepository"/>
+    /// raised a driver exception.
+    /// </exception>
     Task<EncapsulatedKey> CreateAsync(string alias, CancellationToken cancellationToken = default);
 }

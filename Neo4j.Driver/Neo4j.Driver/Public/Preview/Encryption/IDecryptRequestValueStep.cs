@@ -17,10 +17,16 @@
 
 namespace Neo4j.Driver.Preview.Encryption;
 
-/// <summary>The first stage of building a request to decrypt a value.</summary>
+/// <summary>
+/// The first stage of building a request to decrypt a value. This interface is part of the
+/// Encryption Preview feature, and is subject to change or removal.
+/// </summary>
 public interface IDecryptRequestValueStep
 {
-    /// <summary>Sets the encrypted value to decrypt.</summary>
+    /// <summary>
+    /// Sets the encrypted value to decrypt. This method is part of the Encryption Preview feature,
+    /// and is subject to change or removal.
+    /// </summary>
     /// <param name="value">
     /// The encrypted value, as returned by <see cref="IEncryptRequestExecuteStep.EncryptToBytesAsync"/>.
     /// </param>

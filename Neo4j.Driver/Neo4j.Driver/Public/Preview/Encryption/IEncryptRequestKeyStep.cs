@@ -20,25 +20,38 @@ namespace Neo4j.Driver.Preview.Encryption;
 /// <summary>
 /// The stage of building an encrypt request where optional additional authenticated data (AAD) and a
 /// non-default profile can be supplied, before selecting the data encryption key to encrypt with.
+/// This interface is part of the Encryption Preview feature, and is subject to change or removal.
 /// </summary>
 public interface IEncryptRequestKeyStep
 {
-    /// <summary>Sets the additional authenticated data (AAD) to bind to the ciphertext.</summary>
+    /// <summary>
+    /// Sets the additional authenticated data (AAD) to bind to the ciphertext. This method is part
+    /// of the Encryption Preview feature, and is subject to change or removal.
+    /// </summary>
     /// <param name="aad">The AAD value.</param>
     /// <returns>This stage, so further optional calls can be chained.</returns>
     IEncryptRequestKeyStep WithAad(object aad);
 
-    /// <summary>Selects the named encryption profile to encrypt with, instead of the sole configured profile.</summary>
+    /// <summary>
+    /// Selects the named encryption profile to encrypt with, instead of the sole configured profile.
+    /// This method is part of the Encryption Preview feature, and is subject to change or removal.
+    /// </summary>
     /// <param name="profileName">The name of the profile to use.</param>
     /// <returns>This stage, so further optional calls can be chained.</returns>
     IEncryptRequestKeyStep UsingProfile(string profileName);
 
-    /// <summary>Selects the data encryption key to encrypt with by its alias.</summary>
+    /// <summary>
+    /// Selects the data encryption key to encrypt with by its alias. This method is part of the
+    /// Encryption Preview feature, and is subject to change or removal.
+    /// </summary>
     /// <param name="alias">The alias of the key.</param>
     /// <returns>The next stage of the request.</returns>
     IEncryptRequestExecuteStep UsingKeyAlias(string alias);
 
-    /// <summary>Selects the data encryption key to encrypt with by its repository-assigned id.</summary>
+    /// <summary>
+    /// Selects the data encryption key to encrypt with by its repository-assigned id. This method
+    /// is part of the Encryption Preview feature, and is subject to change or removal.
+    /// </summary>
     /// <param name="id">The id of the key.</param>
     /// <returns>The next stage of the request.</returns>
     IEncryptRequestExecuteStep UsingKeyId(string id);

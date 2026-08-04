@@ -21,11 +21,15 @@ namespace Neo4j.Driver.Preview.Encryption;
 
 /// <summary>
 /// Options passed to <see cref="IKeyEncapsulationService.EncapsulateAsync"/> controlling how a data encryption key
-/// is encapsulated.
+/// is encapsulated. This interface is part of the Encryption Preview feature, and is subject to change or removal.
 /// </summary>
 public interface IKeyEncapsulationOptions
 {
-    /// <summary>Converts the options to a flat string-to-string map, e.g. for persistence alongside the encapsulation.</summary>
+    /// <summary>
+    /// Converts the options to a flat string-to-string map, e.g. for persistence alongside the
+    /// encapsulation. This method is part of the Encryption Preview feature, and is subject to
+    /// change or removal.
+    /// </summary>
     /// <returns>The options as a read-only map.</returns>
     IReadOnlyDictionary<string, string> ToMap();
 }

@@ -13,17 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.Preview.Encryption;
 
 /// <summary>
-/// Provides extension methods for enabling preview encryption features in the Neo4j driver.
-/// This class contains methods that extend the driver's configuration capabilities to support
-/// experimental or preview encryption functionality that is not be part of the stable API.
-/// This class will be removed when the encryption preview features are finalized and integrated 
-/// into the main driver API.
+/// Extension methods that attach the client-side property encryption API to
+/// <see cref="IDriver"/>, <see cref="Config"/>, and <see cref="ConfigBuilder"/>. This class is part
+/// of the Encryption Preview feature, and is subject to change or removal.
 /// </summary>
 public static class EncryptionPreviewExtensions
 {
@@ -32,7 +31,7 @@ public static class EncryptionPreviewExtensions
         /// <summary>
         /// Gets the client-side property encryption entry point for this driver. Use it to encrypt
         /// and decrypt property values and to manage encapsulated keys. This method is part of the
-        /// encryption preview and is subject to change or removal.
+        /// Encryption Preview feature, and is subject to change or removal.
         /// </summary>
         /// <returns>The <see cref="IPropertyEncryption"/> entry point for this driver.</returns>
         public IPropertyEncryption PropertyEncryption()
@@ -48,7 +47,7 @@ public static class EncryptionPreviewExtensions
         /// This property provides access to the encryption profiles that define how properties
         /// are encrypted and decrypted when interacting with the Neo4j database. Each profile specifies
         /// the encryption algorithms, key management strategies, and other relevant settings for property encryption.
-        /// This method is part of the encryption preview and is subject to change or removal.
+        /// This property is part of the Encryption Preview feature, and is subject to change or removal.
         /// </summary>
         /// <value>A read-only list of property encryption profiles.</value>
         public IReadOnlyList<IPropertyEncryptionProfile> PropertyEncryptionProfiles =>
@@ -60,10 +59,15 @@ public static class EncryptionPreviewExtensions
         /// <summary>
         /// Configures the Neo4j driver with encryption profiles for property-level encryption.
         /// Encryption profiles define how specific properties should be encrypted when stored in the database.
-        /// This method is part of the encryption preview and is subject to change or removal.
+        /// This method is part of the Encryption Preview feature, and is subject to change or removal.
         /// </summary>
         /// <param name="propertyEncryptionProfiles">A read-only list of property encryption profiles to be used for encrypting and decrypting properties.</param>
         /// <returns>The current <see cref="ConfigBuilder"/> instance to allow method chaining.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="propertyEncryptionProfiles"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">
+        /// An element of <paramref name="propertyEncryptionProfiles"/> was not created via
+        /// <see cref="PropertyEncryptionProfile"/>.
+        /// </exception>
         public ConfigBuilder WithPropertyEncryptionProfiles(
             IReadOnlyList<IPropertyEncryptionProfile> propertyEncryptionProfiles)
         {

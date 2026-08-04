@@ -17,7 +17,10 @@
 
 namespace Neo4j.Driver.Preview.Encryption;
 
-/// <summary>Thrown when no encryption engine accepts the given encryption profile.</summary>
+/// <summary>
+/// Thrown when no encryption engine accepts the given encryption profile. This exception is part
+/// of the Encryption Preview feature, and is subject to change or removal.
+/// </summary>
 /// <param name="profileName">The name of the profile that no engine accepted.</param>
 public class EncryptionEngineNotFoundException(string profileName)
     : PropertyEncryptionException($"No encryption engine found that accepts profile '{profileName}'.");

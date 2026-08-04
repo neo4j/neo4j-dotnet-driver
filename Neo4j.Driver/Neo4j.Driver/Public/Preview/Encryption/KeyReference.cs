@@ -17,17 +17,30 @@
 
 namespace Neo4j.Driver.Preview.Encryption;
 
-/// <summary>Distinguishes whether a <see cref="KeyReference"/> refers to a key by its repository-assigned id or by an alias.</summary>
+/// <summary>
+/// Distinguishes whether a <see cref="KeyReference"/> refers to a key by its repository-assigned id
+/// or by an alias. This enum is part of the Encryption Preview feature, and is subject to change or
+/// removal.
+/// </summary>
 public enum KeyReferenceType
 {
-    /// <summary>The reference is a repository-assigned key id.</summary>
+    /// <summary>
+    /// The reference is a repository-assigned key id. This value is part of the Encryption Preview
+    /// feature, and is subject to change or removal.
+    /// </summary>
     Id,
 
-    /// <summary>The reference is an alias bound to a key.</summary>
+    /// <summary>
+    /// The reference is an alias bound to a key. This value is part of the Encryption Preview
+    /// feature, and is subject to change or removal.
+    /// </summary>
     Alias
 }
 
-/// <summary>A reference to an encapsulated key, either by id or by alias.</summary>
+/// <summary>
+/// A reference to an encapsulated key, either by id or by alias. This record is part of the
+/// Encryption Preview feature, and is subject to change or removal.
+/// </summary>
 /// <param name="Reference">The id or alias value.</param>
 /// <param name="Type">Which kind of reference <paramref name="Reference"/> is.</param>
 public record KeyReference(string Reference, KeyReferenceType Type);

@@ -19,7 +19,8 @@ namespace Neo4j.Driver.Preview.Encryption;
 
 /// <summary>
 /// Thrown when an encrypted property value's metadata is missing required entries or holds entries of
-/// unexpected types.
+/// unexpected types. This exception is part of the Encryption Preview feature, and is subject to
+/// change or removal.
 /// </summary>
 /// <param name="message">The error message.</param>
 public class MetadataExtractionException(string message) : PropertyEncryptionException(message);

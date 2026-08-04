@@ -17,7 +17,10 @@
 
 namespace Neo4j.Driver.Preview.Encryption;
 
-/// <summary>The result of encapsulating a data encryption key with an <see cref="IKeyEncapsulationService"/>.</summary>
+/// <summary>
+/// The result of encapsulating a data encryption key with an <see cref="IKeyEncapsulationService"/>. This
+/// record is part of the Encryption Preview feature, and is subject to change or removal.
+/// </summary>
 /// <param name="Encapsulation">The wrapped (encapsulated) data encryption key, opaque to the caller.</param>
 /// <param name="Options">
 /// Options describing how the encapsulation was produced, to be persisted alongside it and supplied back to

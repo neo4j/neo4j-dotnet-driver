@@ -23,17 +23,25 @@ namespace Neo4j.Driver.Preview.Encryption;
 
 /// <summary>
 /// Represents a property encryption failure: an error encountered while resolving encryption keys,
-/// performing encryption or decryption, or otherwise processing encrypted property values.
+/// performing encryption or decryption, or otherwise processing encrypted property values. This
+/// exception is part of the Encryption Preview feature, and is subject to change or removal.
 /// </summary>
 public class PropertyEncryptionException : ClientException
 {
-    /// <summary>Create a new <see cref="PropertyEncryptionException"/> with an error message.</summary>
+    /// <summary>
+    /// Create a new <see cref="PropertyEncryptionException"/> with an error message. This
+    /// constructor is part of the Encryption Preview feature, and is subject to change or removal.
+    /// </summary>
     /// <param name="message">The error message.</param>
     public PropertyEncryptionException(string message) : this(message, null)
     {
     }
 
-    /// <summary>Create a new <see cref="PropertyEncryptionException"/> with an error message and a cause.</summary>
+    /// <summary>
+    /// Create a new <see cref="PropertyEncryptionException"/> with an error message and a cause.
+    /// This constructor is part of the Encryption Preview feature, and is subject to change or
+    /// removal.
+    /// </summary>
     /// <param name="message">The error message.</param>
     /// <param name="innerException">The original error that caused this failure.</param>
     public PropertyEncryptionException(string message, Exception? innerException)

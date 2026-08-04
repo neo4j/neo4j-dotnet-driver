@@ -17,13 +17,22 @@
 
 namespace Neo4j.Driver.Preview.Encryption;
 
-/// <summary>The base exception for failures raised by an <see cref="IEncapsulatedKeyRepository"/>.</summary>
+/// <summary>
+/// The base exception for failures raised by an <see cref="IEncapsulatedKeyRepository"/>. This
+/// exception is part of the Encryption Preview feature, and is subject to change or removal.
+/// </summary>
 public class EncapsulatedKeyRepositoryException(string message) : Neo4jException(message);
 
-/// <summary>Thrown when an <see cref="IEncapsulatedKeyRepository"/> is asked for a key id it doesn't have.</summary>
+/// <summary>
+/// Thrown when an <see cref="IEncapsulatedKeyRepository"/> is asked for a key id it doesn't have.
+/// This exception is part of the Encryption Preview feature, and is subject to change or removal.
+/// </summary>
 public class EncapsulatedKeyNotFoundException(string id)
     : EncapsulatedKeyRepositoryException($"Encapsulated key with id '{id}' not found.");
 
-/// <summary>Thrown when an <see cref="IEncapsulatedKeyRepository"/> is asked for an alias it doesn't have.</summary>
+/// <summary>
+/// Thrown when an <see cref="IEncapsulatedKeyRepository"/> is asked for an alias it doesn't have.
+/// This exception is part of the Encryption Preview feature, and is subject to change or removal.
+/// </summary>
 public class EncapsulatedAliasNotFoundException(string alias)
     : EncapsulatedKeyRepositoryException($"Alias '{alias}' not found.");

@@ -20,11 +20,25 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Preview.Encryption;
 
-/// <summary>The final stage of building an encrypt request: execute it.</summary>
+/// <summary>
+/// The final stage of building an encrypt request: execute it. This interface is part of the
+/// Encryption Preview feature, and is subject to change or removal.
+/// </summary>
 public interface IEncryptRequestExecuteStep
 {
-    /// <summary>Encrypts the value and returns the encrypted result as a standalone byte array.</summary>
+    /// <summary>
+    /// Encrypts the value and returns the encrypted result as a standalone byte array. This method
+    /// is part of the Encryption Preview feature, and is subject to change or removal.
+    /// </summary>
     /// <param name="cancellationToken">The cancellation token for the operation.</param>
     /// <returns>The encrypted value.</returns>
+    /// <exception cref="PropertyEncryptionException">
+    /// The value could not be encrypted, e.g. because no configured profile or encryption engine
+    /// accepts the request.
+    /// </exception>
+    /// <exception cref="Neo4jException">
+    /// The configured <see cref="IKeyEncapsulationService"/> or <see cref="IEncapsulatedKeyRepository"/>
+    /// raised a driver exception.
+    /// </exception>
     Task<byte[]> EncryptToBytesAsync(CancellationToken cancellationToken = default);
 }

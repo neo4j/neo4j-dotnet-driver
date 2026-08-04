@@ -24,11 +24,14 @@ namespace Neo4j.Driver.Preview.Encryption;
 /// <summary>
 /// Generates and unwraps data encryption keys under a key encryption key managed outside the driver, e.g. by a
 /// cloud KMS. Implement this interface to integrate a key management provider with client-side property
-/// encryption.
+/// encryption. This interface is part of the Encryption Preview feature, and is subject to change or removal.
 /// </summary>
 public interface IKeyEncapsulationService
 {
-    /// <summary>Generates a new data encryption key and encapsulates (wraps) it under the key encryption key.</summary>
+    /// <summary>
+    /// Generates a new data encryption key and encapsulates (wraps) it under the key encryption key.
+    /// This method is part of the Encryption Preview feature, and is subject to change or removal.
+    /// </summary>
     /// <param name="options">Options controlling the encapsulation.</param>
     /// <param name="cancellationToken">The cancellation token for the operation.</param>
     /// <returns>The generated key and its encapsulation.</returns>
@@ -36,7 +39,10 @@ public interface IKeyEncapsulationService
         IKeyEncapsulationOptions options,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Unwraps a previously encapsulated data encryption key.</summary>
+    /// <summary>
+    /// Unwraps a previously encapsulated data encryption key. This method is part of the Encryption
+    /// Preview feature, and is subject to change or removal.
+    /// </summary>
     /// <param name="encapsulation">The encapsulated (wrapped) data encryption key.</param>
     /// <param name="options">The options that were persisted alongside the encapsulation when it was created.</param>
     /// <param name="cancellationToken">The cancellation token for the operation.</param>
