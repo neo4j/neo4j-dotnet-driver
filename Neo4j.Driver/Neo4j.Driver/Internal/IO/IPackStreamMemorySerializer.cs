@@ -15,14 +15,13 @@
 
 #nullable enable
 
-namespace Neo4j.Driver.Internal.Encryption;
+using System;
+using Neo4j.Driver.Internal.Protocol;
 
-internal static class EnvelopeMetadataKeys
+namespace Neo4j.Driver.Internal.IO;
+
+internal interface IPackStreamMemorySerializer
 {
-    public const string KeyId = "key_id";
-    public const string Iv = "iv";
-    public const string Aad = "aad";
-    public const string AadProtocolMajor = "aad_protocol_major";
-    public const string AadProtocolMinor = "aad_protocol_minor";
-    public const string OptionsPrefix = "opt.";
+    byte[] Serialize(MessageFormat format, Action<IPackStreamWriter> write);
+    T Deserialize<T>(MessageFormat format, byte[] bytes, Func<IPackStreamReader, T> read);
 }

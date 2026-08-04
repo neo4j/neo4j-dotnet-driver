@@ -21,10 +21,6 @@ using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-// Implements every stage interface on one mutable object; staging is a compile-time illusion
-// (mirrors DecryptRequestBuilder). _value/_keyReference are only ever read from
-// EncryptToBytesAsync, which is unreachable through the public stage interfaces until
-// FromValue and one of UsingKeyAlias/UsingKeyId have set them.
 internal class EncryptRequestBuilder :
     IEncryptRequestValueStep,
     IEncryptRequestKeyStep,

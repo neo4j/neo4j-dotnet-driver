@@ -22,16 +22,16 @@ using Neo4j.Driver.Internal.Protocol;
 namespace Neo4j.Driver.Internal.IO;
 
 [DriverAutoRegister(singleton: true)]
-internal class PackStreamSerializationHelper : IPackStreamSerializationHelper
+internal class PackStreamMemorySerializer : IPackStreamMemorySerializer
 {
     private readonly IPackStreamReaderWriterFactory _readerWriterFactory;
 
-    public PackStreamSerializationHelper(IPackStreamReaderWriterFactory readerWriterFactory)
+    public PackStreamMemorySerializer(IPackStreamReaderWriterFactory readerWriterFactory)
     {
         _readerWriterFactory = readerWriterFactory;
     }
 
-    public byte[] Write(MessageFormat format, Action<IPackStreamWriter> write)
+    public byte[] Serialize(MessageFormat format, Action<IPackStreamWriter> write)
     {
         using var stream = new MemoryStream();
         var writer = _readerWriterFactory.CreateWriter(format, stream);
@@ -39,7 +39,7 @@ internal class PackStreamSerializationHelper : IPackStreamSerializationHelper
         return stream.ToArray();
     }
 
-    public T Read<T>(MessageFormat format, byte[] bytes, Func<IPackStreamReader, T> read)
+    public T Deserialize<T>(MessageFormat format, byte[] bytes, Func<IPackStreamReader, T> read)
     {
         return read(_readerWriterFactory.CreateReader(format, new MemoryStream(bytes)));
     }

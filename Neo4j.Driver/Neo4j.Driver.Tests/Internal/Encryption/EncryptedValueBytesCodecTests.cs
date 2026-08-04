@@ -25,11 +25,6 @@ using static Neo4j.Driver.Tests.Internal.Encryption.EncryptionTestHelpers;
 
 namespace Neo4j.Driver.Tests.Internal.Encryption;
 
-// EncryptedValueBytesCodec's own responsibility is the outer Encrypted Value Bytes envelope (the
-// 1-byte encoding version prefix) - the inner Encrypted structure's own byte layout is
-// EncryptedStructureCodec's concern (locked down in EncryptedStructureConformanceTests). This
-// codec's own outer-envelope layout is locked down for real in
-// Encryption.FormatConformance.EncryptedValueBytesConformanceTests.
 public class EncryptedValueBytesCodecTests
 {
     private readonly Mock<IEncryptedStructureCodec> _structureCodec = new();
@@ -78,6 +73,32 @@ public class EncryptedValueBytesCodecTests
     public void Decode_EmptyBytes_ThrowsProtocolException()
     {
         var act = () => CreateSubject().Decode([]);
+
+        act.Should().Throw<ProtocolException>();
+    }
+
+    [Fact]
+    public void PeekProfileName_StripsTheEncodingVersionByteAndDelegatesToTheStructureCodec()
+    {
+        _structureCodec.Setup(c => c.PeekProfileName(Matches(new byte[] { 0xAA, 0xBB }))).Returns("Envelope");
+
+        var result = CreateSubject().PeekProfileName([0x01, 0xAA, 0xBB]);
+
+        result.Should().Be("Envelope");
+    }
+
+    [Fact]
+    public void PeekProfileName_WrongEncodingVersion_ThrowsProtocolException()
+    {
+        var act = () => CreateSubject().PeekProfileName([0x02, 0xAA, 0xBB]);
+
+        act.Should().Throw<ProtocolException>();
+    }
+
+    [Fact]
+    public void PeekProfileName_EmptyBytes_ThrowsProtocolException()
+    {
+        var act = () => CreateSubject().PeekProfileName([]);
 
         act.Should().Throw<ProtocolException>();
     }

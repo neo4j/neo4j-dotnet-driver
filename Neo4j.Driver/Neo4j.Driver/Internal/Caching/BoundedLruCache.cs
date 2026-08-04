@@ -22,9 +22,6 @@ using Neo4j.Driver.Internal.Services;
 
 namespace Neo4j.Driver.Internal.Caching;
 
-// General-purpose bounded cache: LRU eviction once over capacity, plus an optional TTL
-// (null = entries never expire by age). Not itself DI-registered - composed by named,
-// per-use-case caches (e.g. the encryption alias/key caches).
 internal class BoundedLruCache<TKey, TValue> : IBoundedCache<TKey, TValue> where TKey : notnull
 {
     private readonly int _capacity;

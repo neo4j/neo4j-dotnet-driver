@@ -1,12 +1,12 @@
 // Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,14 +15,14 @@
 
 #nullable enable
 
+using System.Diagnostics.CodeAnalysis;
+using Neo4j.Driver.Preview.Encryption;
+
 namespace Neo4j.Driver.Internal.Encryption;
 
-internal static class EnvelopeMetadataKeys
+internal interface IEncapsulatedKeyManagerProvider
 {
-    public const string KeyId = "key_id";
-    public const string Iv = "iv";
-    public const string Aad = "aad";
-    public const string AadProtocolMajor = "aad_protocol_major";
-    public const string AadProtocolMinor = "aad_protocol_minor";
-    public const string OptionsPrefix = "opt.";
+    bool TryCreateKeyManager(
+        IInternalEncryptionProfile profile,
+        [NotNullWhen(true)] out IEncapsulatedKeyManager? manager);
 }

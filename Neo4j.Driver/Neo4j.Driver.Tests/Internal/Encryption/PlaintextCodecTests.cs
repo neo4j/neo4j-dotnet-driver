@@ -29,14 +29,14 @@ namespace Neo4j.Driver.Tests.Internal.Encryption;
 public class PlaintextCodecTests
 {
     private readonly Mock<IMessageFormatFactory> _messageFormatFactory = new();
-    private readonly Mock<IPackStreamSerializationHelper> _packStreamHelper = new();
+    private readonly Mock<IPackStreamMemorySerializer> _packStreamMemorySerializer = new();
     private readonly MessageFormat _format = new MessageFormatFactory(TestDriverContext.MockContext)
         .CreateMessageFormat(BoltProtocolVersion.V6_0);
 
     private PlaintextCodec CreateSubject()
     {
         _messageFormatFactory.Setup(f => f.CreateMessageFormat(It.IsAny<BoltProtocolVersion>())).Returns(_format);
-        return new PlaintextCodec(_messageFormatFactory.Object, _packStreamHelper.Object);
+        return new PlaintextCodec(_messageFormatFactory.Object, _packStreamMemorySerializer.Object);
     }
 
     [Fact]
@@ -46,8 +46,8 @@ public class PlaintextCodecTests
         var expectedBytes = new byte[] { 0xAA };
         var writer = new Mock<IPackStreamWriter>();
 
-        _packStreamHelper
-            .Setup(h => h.Write(_format, It.IsAny<Action<IPackStreamWriter>>()))
+        _packStreamMemorySerializer
+            .Setup(h => h.Serialize(_format, It.IsAny<Action<IPackStreamWriter>>()))
             .Returns((MessageFormat _, Action<IPackStreamWriter> write) =>
             {
                 write(writer.Object);
@@ -68,8 +68,8 @@ public class PlaintextCodecTests
         var reader = new Mock<IPackStreamReader>();
         reader.Setup(r => r.Read()).Returns(expectedValue);
 
-        _packStreamHelper
-            .Setup(h => h.Read(_format, plaintext, It.IsAny<Func<IPackStreamReader, object>>()))
+        _packStreamMemorySerializer
+            .Setup(h => h.Deserialize(_format, plaintext, It.IsAny<Func<IPackStreamReader, object>>()))
             .Returns((MessageFormat _, byte[] _, Func<IPackStreamReader, object> read) => read(reader.Object));
 
         var result = CreateSubject().Deserialize(plaintext);

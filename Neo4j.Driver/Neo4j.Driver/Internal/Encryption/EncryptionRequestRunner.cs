@@ -15,24 +15,43 @@
 
 #nullable enable
 
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-// Step B: resolve profile via IEncryptionProfileRegistry, serialize AAD, dispatch through
-// IEncryptionEngineDispatcher. Deferred; Step A only needs this to compile and resolve from DI.
 [DriverAutoRegister(singleton: true)]
 internal class EncryptionRequestRunner : IEncryptionRequestRunner
 {
+    private readonly IEncryptionProfileRegistry _registry;
+    private readonly IEncryptionEngineDispatcher _dispatcher;
+    private readonly IPlaintextCodec _plaintextCodec;
+    private readonly IEncryptedValueBytesCodec _encryptedValueBytesCodec;
+
+    public EncryptionRequestRunner(
+        IEncryptionProfileRegistry registry,
+        IEncryptionEngineDispatcher dispatcher,
+        IPlaintextCodec plaintextCodec,
+        IEncryptedValueBytesCodec encryptedValueBytesCodec)
+    {
+        _registry = registry;
+        _dispatcher = dispatcher;
+        _plaintextCodec = plaintextCodec;
+        _encryptedValueBytesCodec = encryptedValueBytesCodec;
+    }
+
     public Task<byte[]> EncryptToBytesAsync(EncryptRequest request, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var profile = _registry.Get(request.ProfileName);
+        var aad = request.Aad is null ? null : _plaintextCodec.Serialize(request.Aad);
+        return _dispatcher.DispatchEncryptAsync(profile, request.Value, request.KeyReference, aad, cancellationToken);
     }
 
     public Task<object> DecryptAsync(DecryptRequest request, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var profileName = _encryptedValueBytesCodec.PeekProfileName(request.Value);
+        var profile = _registry.Get(profileName);
+        var aad = request.UsePersistedAad ? null : _plaintextCodec.Serialize(request.Aad!);
+        return _dispatcher.DispatchDecryptAsync(profile, request.Value, aad, cancellationToken);
     }
 }

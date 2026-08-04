@@ -22,8 +22,6 @@ using Neo4j.Driver.Internal.Services;
 
 namespace Neo4j.Driver.Internal.Caching;
 
-// Buckets a BoundedLruCache per profile name, so one profile's churn can't evict another
-// profile's entries. Not itself DI-registered - composed by named, per-use-case caches.
 internal class PerProfileBoundedCache<TValue>
 {
     private readonly int _capacityPerProfile;

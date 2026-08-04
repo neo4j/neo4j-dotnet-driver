@@ -19,8 +19,6 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.IO;
 
-// Narrow seam over PackStreamReader's public surface, scoped to what callers outside
-// message handling (e.g. the Encryption plaintext/structure codecs) actually need.
 internal interface IPackStreamReader
 {
     object Read();

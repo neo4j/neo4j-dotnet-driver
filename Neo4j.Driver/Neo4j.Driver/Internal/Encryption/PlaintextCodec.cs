@@ -20,28 +20,27 @@ using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
+[DriverAutoRegister(singleton: true)]
 internal class PlaintextCodec : IPlaintextCodec
 {
-    // always serialize at the latest supported version (per ADR 037); UUID is excluded from
-    // the types we encode even though it's within this dialect, until UUID support is confirmed
     private static readonly BoltProtocolVersion PlaintextVersion = BoltProtocolVersion.V6_1;
 
-    private readonly IPackStreamSerializationHelper _packStreamHelper;
+    private readonly IPackStreamMemorySerializer _packStreamMemorySerializer;
     private readonly MessageFormat _format;
 
-    public PlaintextCodec(IMessageFormatFactory messageFormatFactory, IPackStreamSerializationHelper packStreamHelper)
+    public PlaintextCodec(IMessageFormatFactory messageFormatFactory, IPackStreamMemorySerializer packStreamMemorySerializer)
     {
-        _packStreamHelper = packStreamHelper;
+        _packStreamMemorySerializer = packStreamMemorySerializer;
         _format = messageFormatFactory.CreateMessageFormat(PlaintextVersion);
     }
 
     public byte[] Serialize(object value)
     {
-        return _packStreamHelper.Write(_format, writer => writer.Write(value));
+        return _packStreamMemorySerializer.Serialize(_format, writer => writer.Write(value));
     }
 
     public object Deserialize(byte[] plaintext)
     {
-        return _packStreamHelper.Read(_format, plaintext, reader => reader.Read());
+        return _packStreamMemorySerializer.Deserialize(_format, plaintext, reader => reader.Read());
     }
 }

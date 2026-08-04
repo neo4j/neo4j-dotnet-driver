@@ -37,13 +37,11 @@ public class LocalKeyEncapsulationServiceTests
 
     private static readonly byte[] Kek = Sequence(32, seed: 0x50);
 
-    // SequentialRandom fills each buffer with 0,1,2,... so the generated DEK and IV are known.
     private static readonly byte[] Dek = Sequence(DekLength);
     private static readonly byte[] Iv = Sequence(IvLength);
 
     private readonly AutoMocker _autoMock = new(MockBehavior.Loose);
 
-    // Local KES ignores input options (the KEK is supplied at construction).
     private record NoOptions : IKeyEncapsulationOptions
     {
         public IReadOnlyDictionary<string, string> ToMap()

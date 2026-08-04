@@ -22,7 +22,6 @@ using Neo4j.Driver.Internal.Services;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-// Per ADR 037's key-cache section: alias -> key id, TTL 15s / cap 100 per profile.
 [DriverAutoRegister(singleton: true)]
 internal class AliasToKeyIdCache : IAliasToKeyIdCache
 {

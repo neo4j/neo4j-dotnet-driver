@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Linq;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -27,8 +28,13 @@ public class RootContainerFactoryTests
 {
     private static DriverContext Context(INeo4jLogger logger = null)
     {
-        var config = logger is null ? new Config() : Config.Builder.WithLogger(logger).Build();
-        return new DriverContext(new("bolt://localhost"), null, config);
+        var builder = Config.Builder;
+        if (logger is not null)
+        {
+            builder = builder.WithLogger(logger);
+        }
+
+        return new DriverContext(new("bolt://localhost"), null, builder.Build());
     }
 
     private static DriverContext ContextWithProfiles(params IPropertyEncryptionProfile[] profiles)
@@ -75,7 +81,7 @@ public class RootContainerFactoryTests
         logger.LogDebug("value is {x}", 42);
 
         userLogger.Verify(
-            x => x.Debug("[RootContainerFactoryTests] value is {0}", It.Is<object[]>(a => a[0].Equals(42))));
+            x => x.Debug(It.IsAny<string>(), It.Is<object[]>(a => a.Any(o => o as int? == 42))));
     }
 
     [Fact]

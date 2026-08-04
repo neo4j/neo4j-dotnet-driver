@@ -27,14 +27,10 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.Encryption;
 
-// EncryptedStructureCodec's own responsibility is delegating to IPackStreamSerializationHelper
-// plus the version/signature guard clauses in Decode - the actual on-wire byte layout is a
-// conformance concern, locked down for real in
-// Encryption.FormatConformance.EncryptedStructureConformanceTests.
 public class EncryptedStructureCodecTests
 {
     private readonly Mock<IMessageFormatFactory> _messageFormatFactory = new();
-    private readonly Mock<IPackStreamSerializationHelper> _packStreamHelper = new();
+    private readonly Mock<IPackStreamMemorySerializer> _packStreamMemorySerializer = new();
     private readonly MessageFormat _format = new MessageFormatFactory(TestDriverContext.MockContext)
         .CreateMessageFormat(BoltProtocolVersion.V6_0);
 
@@ -53,14 +49,21 @@ public class EncryptedStructureCodecTests
     private EncryptedStructureCodec CreateSubject()
     {
         _messageFormatFactory.Setup(f => f.CreateMessageFormat(It.IsAny<BoltProtocolVersion>())).Returns(_format);
-        return new EncryptedStructureCodec(_messageFormatFactory.Object, _packStreamHelper.Object);
+        return new EncryptedStructureCodec(_messageFormatFactory.Object, _packStreamMemorySerializer.Object);
     }
 
     private void StubHelperRead(IPackStreamReader reader)
     {
-        _packStreamHelper
-            .Setup(h => h.Read(_format, It.IsAny<byte[]>(), It.IsAny<Func<IPackStreamReader, EncryptedStructure>>()))
+        _packStreamMemorySerializer
+            .Setup(h => h.Deserialize(_format, It.IsAny<byte[]>(), It.IsAny<Func<IPackStreamReader, EncryptedStructure>>()))
             .Returns((MessageFormat _, byte[] _, Func<IPackStreamReader, EncryptedStructure> read) => read(reader));
+    }
+
+    private void StubHelperReadString(IPackStreamReader reader)
+    {
+        _packStreamMemorySerializer
+            .Setup(h => h.Deserialize(_format, It.IsAny<byte[]>(), It.IsAny<Func<IPackStreamReader, string>>()))
+            .Returns((MessageFormat _, byte[] _, Func<IPackStreamReader, string> read) => read(reader));
     }
 
     [Fact]
@@ -70,8 +73,8 @@ public class EncryptedStructureCodecTests
         var writer = new Mock<IPackStreamWriter>();
         var expectedBytes = new byte[] { 0xAA };
 
-        _packStreamHelper
-            .Setup(h => h.Write(_format, It.IsAny<Action<IPackStreamWriter>>()))
+        _packStreamMemorySerializer
+            .Setup(h => h.Serialize(_format, It.IsAny<Action<IPackStreamWriter>>()))
             .Returns((MessageFormat _, Action<IPackStreamWriter> write) =>
             {
                 write(writer.Object);
@@ -92,6 +95,32 @@ public class EncryptedStructureCodecTests
         StubHelperRead(reader.Object);
 
         var act = () => CreateSubject().Decode([]);
+
+        act.Should().Throw<ProtocolException>();
+    }
+
+    [Fact]
+    public void PeekProfileName_ReadsOnlyTheProfileNameField()
+    {
+        var reader = new Mock<IPackStreamReader>(MockBehavior.Strict);
+        reader.Setup(r => r.ReadStructHeader()).Returns(1L);
+        reader.Setup(r => r.ReadStructSignature()).Returns((byte)0x65);
+        reader.Setup(r => r.ReadString()).Returns("Envelope");
+        StubHelperReadString(reader.Object);
+
+        var result = CreateSubject().PeekProfileName([]);
+
+        result.Should().Be("Envelope");
+    }
+
+    [Fact]
+    public void PeekProfileName_WrongSignature_ThrowsProtocolException()
+    {
+        var reader = new Mock<IPackStreamReader>();
+        reader.Setup(r => r.ReadStructSignature()).Returns((byte)0x99);
+        StubHelperReadString(reader.Object);
+
+        var act = () => CreateSubject().PeekProfileName([]);
 
         act.Should().Throw<ProtocolException>();
     }

@@ -1,12 +1,12 @@
 // Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,6 +32,11 @@ public class EncryptionEngineDispatcherTests
         Mock.Of<IInternalEncryptionProfile>(p => p.Name == "profile-a");
     private static readonly KeyReference KeyRef = new("key-1", KeyReferenceType.Id);
 
+    private static EncryptionEngineDispatcher CreateSubjectWithRealErrorPolicy(params IEncryptionEngine[] engines)
+    {
+        return new EncryptionEngineDispatcher(engines, new EncryptionErrorPolicy());
+    }
+
     [Fact]
     public async Task DispatchEncryptAsync_ReturnsResultFromTheAcceptingEngine()
     {
@@ -48,7 +53,7 @@ public class EncryptionEngineDispatcherTests
                 out encryptionTask))
             .Returns(true);
 
-        var dispatcher = new EncryptionEngineDispatcher([engine.Object]);
+        var dispatcher = CreateSubjectWithRealErrorPolicy(engine.Object);
 
         var result = await dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, CancellationToken.None);
 
@@ -82,7 +87,7 @@ public class EncryptionEngineDispatcherTests
                 out yesTask))
             .Returns(true);
 
-        var dispatcher = new EncryptionEngineDispatcher([rejecting.Object, accepting.Object]);
+        var dispatcher = CreateSubjectWithRealErrorPolicy(rejecting.Object, accepting.Object);
 
         var result = await dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, CancellationToken.None);
 
@@ -104,7 +109,7 @@ public class EncryptionEngineDispatcherTests
                 out noTask))
             .Returns(false);
 
-        var dispatcher = new EncryptionEngineDispatcher([engine.Object]);
+        var dispatcher = CreateSubjectWithRealErrorPolicy(engine.Object);
 
         var act = () => dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, CancellationToken.None);
 
@@ -127,7 +132,7 @@ public class EncryptionEngineDispatcherTests
                 out decryptionTask))
             .Returns(true);
 
-        var dispatcher = new EncryptionEngineDispatcher([engine.Object]);
+        var dispatcher = CreateSubjectWithRealErrorPolicy(engine.Object);
 
         var result = await dispatcher.DispatchDecryptAsync(Profile, encrypted, null, CancellationToken.None);
 
@@ -149,7 +154,7 @@ public class EncryptionEngineDispatcherTests
                 out noTask))
             .Returns(false);
 
-        var dispatcher = new EncryptionEngineDispatcher([engine.Object]);
+        var dispatcher = CreateSubjectWithRealErrorPolicy(engine.Object);
 
         var act = () => dispatcher.DispatchDecryptAsync(Profile, encrypted, null, CancellationToken.None);
 
@@ -157,7 +162,7 @@ public class EncryptionEngineDispatcherTests
     }
 
     [Fact]
-    public async Task DispatchEncryptAsync_WrapsNonDriverErrorsInPropertyEncryptionExceptionWithCause()
+    public async Task DispatchEncryptAsync_ExceptionFromTheAcceptingEngine_DelegatesToTheErrorPolicy()
     {
         var cause = new InvalidOperationException("kes blew up");
         Task<byte[]>? failingTask = Task.FromException<byte[]>(cause);
@@ -172,40 +177,21 @@ public class EncryptionEngineDispatcherTests
                 out failingTask))
             .Returns(true);
 
-        var dispatcher = new EncryptionEngineDispatcher([engine.Object]);
+        var wrapped = new PropertyEncryptionException("wrapped", cause);
+        var errorPolicy = new Mock<IEncryptionErrorPolicy>();
+        errorPolicy.Setup(p => p.Throw("encryption", cause)).Throws(wrapped);
+
+        var dispatcher = new EncryptionEngineDispatcher([engine.Object], errorPolicy.Object);
 
         var act = () => dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, CancellationToken.None);
 
         var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
-        thrown.Which.InnerException.Should().BeSameAs(cause);
+        thrown.Which.Should().BeSameAs(wrapped);
+        errorPolicy.Verify(p => p.Throw("encryption", cause), Times.Once);
     }
 
     [Fact]
-    public async Task DispatchEncryptAsync_PropagatesDriverErrorsUnchanged()
-    {
-        var driverError = new TransientException("Neo.TransientError.General.X", "retry me");
-        Task<byte[]>? failingTask = Task.FromException<byte[]>(driverError);
-
-        var engine = new Mock<IEncryptionEngine>();
-        engine.Setup(e => e.TryStartEncrypt(
-                Profile,
-                "value",
-                KeyRef,
-                null,
-                It.IsAny<CancellationToken>(),
-                out failingTask))
-            .Returns(true);
-
-        var dispatcher = new EncryptionEngineDispatcher([engine.Object]);
-
-        var act = () => dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, CancellationToken.None);
-
-        var thrown = await act.Should().ThrowAsync<TransientException>();
-        thrown.Which.Should().BeSameAs(driverError);
-    }
-
-    [Fact]
-    public async Task DispatchDecryptAsync_WrapsNonDriverErrorsInPropertyEncryptionExceptionWithCause()
+    public async Task DispatchDecryptAsync_ExceptionFromTheAcceptingEngine_DelegatesToTheErrorPolicy()
     {
         var encrypted = new byte[] { 4, 5, 6 };
         var cause = new InvalidOperationException("kes blew up");
@@ -220,35 +206,16 @@ public class EncryptionEngineDispatcherTests
                 out failingTask))
             .Returns(true);
 
-        var dispatcher = new EncryptionEngineDispatcher([engine.Object]);
+        var wrapped = new PropertyEncryptionException("wrapped", cause);
+        var errorPolicy = new Mock<IEncryptionErrorPolicy>();
+        errorPolicy.Setup(p => p.Throw("decryption", cause)).Throws(wrapped);
+
+        var dispatcher = new EncryptionEngineDispatcher([engine.Object], errorPolicy.Object);
 
         var act = () => dispatcher.DispatchDecryptAsync(Profile, encrypted, null, CancellationToken.None);
 
         var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
-        thrown.Which.InnerException.Should().BeSameAs(cause);
-    }
-
-    [Fact]
-    public async Task DispatchDecryptAsync_PropagatesDriverErrorsUnchanged()
-    {
-        var encrypted = new byte[] { 4, 5, 6 };
-        var driverError = new TransientException("Neo.TransientError.General.X", "retry me");
-        Task<object>? failingTask = Task.FromException<object>(driverError);
-
-        var engine = new Mock<IEncryptionEngine>();
-        engine.Setup(e => e.TryStartDecrypt(
-                Profile,
-                encrypted,
-                null,
-                It.IsAny<CancellationToken>(),
-                out failingTask))
-            .Returns(true);
-
-        var dispatcher = new EncryptionEngineDispatcher([engine.Object]);
-
-        var act = () => dispatcher.DispatchDecryptAsync(Profile, encrypted, null, CancellationToken.None);
-
-        var thrown = await act.Should().ThrowAsync<TransientException>();
-        thrown.Which.Should().BeSameAs(driverError);
+        thrown.Which.Should().BeSameAs(wrapped);
+        errorPolicy.Verify(p => p.Throw("decryption", cause), Times.Once);
     }
 }

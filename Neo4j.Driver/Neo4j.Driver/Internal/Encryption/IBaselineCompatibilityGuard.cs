@@ -19,10 +19,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-// BVSS compatibility policy for decrypt: whether a recorded type baseline is newer than
-// this driver supports, and whether supplied AAD can be reproduced against the persisted
-// aad_protocol_* baseline. Grows the ADR's multi-version selection logic if a type is
-// ever re-versioned.
 internal interface IBaselineCompatibilityGuard
 {
     bool IsUnsupportedBaselineType(

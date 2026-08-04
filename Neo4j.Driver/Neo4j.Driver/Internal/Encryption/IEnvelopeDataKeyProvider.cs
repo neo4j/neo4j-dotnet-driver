@@ -21,8 +21,6 @@ using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-// One call from key reference to a ready-to-use AES key: alias/id resolution, caching,
-// repository lookup, KES decapsulation, and HKDF derivation all live behind this seam.
 internal interface IEnvelopeDataKeyProvider
 {
     Task<DataKeyResult> GetDataKeyAsync(

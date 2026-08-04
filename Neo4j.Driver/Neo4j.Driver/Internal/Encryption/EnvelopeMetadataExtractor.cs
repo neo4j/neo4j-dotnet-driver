@@ -22,13 +22,9 @@ using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-// keyId + iv are mandatory, aad is optional, any "opt." prefixed keys are KES-specific
-// encapsulation options and are not parsed
 [DriverAutoRegister(singleton: true)]
 internal class EnvelopeMetadataExtractor : IEnvelopeMetadataExtractor
 {
-    // aad_protocol_* is absent from older/foreign-driver metadata written before this field
-    // existed - default to the latest baseline, matching the engine's fixed AAD protocol version.
     private static readonly int DefaultAadProtocolMajor = BoltValueSerializationSchemeVersion.Latest.Major;
     private static readonly int DefaultAadProtocolMinor = BoltValueSerializationSchemeVersion.Latest.Minor;
 

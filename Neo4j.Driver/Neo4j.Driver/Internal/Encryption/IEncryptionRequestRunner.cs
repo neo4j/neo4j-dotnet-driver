@@ -21,9 +21,6 @@ using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-// Runs a fully-assembled encrypt/decrypt request: resolves the profile, serializes AAD, and
-// dispatches through IEncryptionEngineDispatcher. The public EncryptRequestBuilder/
-// DecryptRequestBuilder assemble the request; this seam is where it's actually executed.
 internal interface IEncryptionRequestRunner
 {
     Task<byte[]> EncryptToBytesAsync(EncryptRequest request, CancellationToken cancellationToken);

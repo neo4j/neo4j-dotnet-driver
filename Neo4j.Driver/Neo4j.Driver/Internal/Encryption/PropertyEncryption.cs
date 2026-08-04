@@ -23,10 +23,17 @@ namespace Neo4j.Driver.Internal.Encryption;
 internal class PropertyEncryption : IPropertyEncryption
 {
     private readonly IEncryptionRequestRunner _runner;
+    private readonly IEncryptionProfileRegistry _registry;
+    private readonly IEncapsulatedKeyManagerFactory _keyManagerFactory;
 
-    public PropertyEncryption(IEncryptionRequestRunner runner)
+    public PropertyEncryption(
+        IEncryptionRequestRunner runner,
+        IEncryptionProfileRegistry registry,
+        IEncapsulatedKeyManagerFactory keyManagerFactory)
     {
         _runner = runner;
+        _registry = registry;
+        _keyManagerFactory = keyManagerFactory;
     }
 
     public IEncryptRequestValueStep EncryptRequest()
@@ -37,5 +44,15 @@ internal class PropertyEncryption : IPropertyEncryption
     public IDecryptRequestValueStep DecryptRequest()
     {
         return new DecryptRequestBuilder(_runner);
+    }
+
+    public IEncapsulatedKeyManager KeyManager()
+    {
+        return _keyManagerFactory.CreateKeyManager(_registry.Get(null));
+    }
+
+    public IEncapsulatedKeyManager KeyManager(string profileName)
+    {
+        return _keyManagerFactory.CreateKeyManager(_registry.Get(profileName));
     }
 }

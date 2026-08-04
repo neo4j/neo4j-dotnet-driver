@@ -23,26 +23,24 @@ namespace Neo4j.Driver.Internal.Encryption;
 [DriverAutoRegister(singleton: true)]
 internal class EncryptedStructureCodec : IEncryptedStructureCodec
 {
-    // always serialize at the latest supported version (per ADR 037); UUID is excluded from
-    // the types we encode even though it's within this dialect, until UUID support is confirmed
     private static readonly BoltProtocolVersion StructureVersion = BoltProtocolVersion.V6_1;
     private const byte EncryptedSignature = 0x65;
     private const int FieldCount = 6;
 
-    private readonly IPackStreamSerializationHelper _packStreamHelper;
+    private readonly IPackStreamMemorySerializer _packStreamMemorySerializer;
     private readonly MessageFormat _format;
 
     public EncryptedStructureCodec(
         IMessageFormatFactory messageFormatFactory,
-        IPackStreamSerializationHelper packStreamHelper)
+        IPackStreamMemorySerializer packStreamMemorySerializer)
     {
-        _packStreamHelper = packStreamHelper;
+        _packStreamMemorySerializer = packStreamMemorySerializer;
         _format = messageFormatFactory.CreateMessageFormat(StructureVersion);
     }
 
     public byte[] Encode(EncryptedStructure structure)
     {
-        return _packStreamHelper.Write(
+        return _packStreamMemorySerializer.Serialize(
             _format,
             writer =>
             {
@@ -58,18 +56,17 @@ internal class EncryptedStructureCodec : IEncryptedStructureCodec
 
     public EncryptedStructure Decode(byte[] bytes)
     {
-        return _packStreamHelper.Read(_format, bytes, ReadStructure);
+        return _packStreamMemorySerializer.Deserialize(_format, bytes, ReadStructure);
+    }
+
+    public string PeekProfileName(byte[] bytes)
+    {
+        return _packStreamMemorySerializer.Deserialize(_format, bytes, ReadProfileName);
     }
 
     private static EncryptedStructure ReadStructure(IPackStreamReader reader)
     {
-        reader.ReadStructHeader();
-        var signature = reader.ReadStructSignature();
-        if (signature != EncryptedSignature)
-        {
-            throw new ProtocolException(
-                $"Expected an Encrypted structure (0x{EncryptedSignature:X2}), but got: 0x{signature:X2}");
-        }
+        ReadAndValidateSignature(reader);
 
         return new EncryptedStructure(
             ProfileName: reader.ReadString(),
@@ -78,5 +75,22 @@ internal class EncryptedStructureCodec : IEncryptedStructureCodec
             TypeSerializationSchemeMajor: reader.ReadInteger(),
             TypeSerializationSchemeMinor: reader.ReadInteger(),
             Metadata: reader.ReadMap());
+    }
+
+    private static string ReadProfileName(IPackStreamReader reader)
+    {
+        ReadAndValidateSignature(reader);
+        return reader.ReadString();
+    }
+
+    private static void ReadAndValidateSignature(IPackStreamReader reader)
+    {
+        reader.ReadStructHeader();
+        var signature = reader.ReadStructSignature();
+        if (signature != EncryptedSignature)
+        {
+            throw new ProtocolException(
+                $"Expected an Encrypted structure (0x{EncryptedSignature:X2}), but got: 0x{signature:X2}");
+        }
     }
 }

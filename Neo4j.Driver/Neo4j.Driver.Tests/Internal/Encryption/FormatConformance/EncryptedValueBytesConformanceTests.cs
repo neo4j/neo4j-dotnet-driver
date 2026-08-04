@@ -29,11 +29,8 @@ public class EncryptedValueBytesConformanceTests
     private readonly EncryptedValueBytesCodec _subject = new(
         new EncryptedStructureCodec(
             new MessageFormatFactory(TestDriverContext.MockContext),
-            new PackStreamSerializationHelper(new PackStreamReaderWriterFactory())));
+            new PackStreamMemorySerializer(new PackStreamReaderWriterFactory())));
 
-    // Reuses EncryptedStructureConformanceTests' known-answer structure/bytes for the inner
-    // Encrypted structure (already hand-verified there) - this test's only concern is the outer
-    // Encrypted Value Bytes envelope, i.e. the single prepended encoding version byte.
     private static EncryptedStructure KnownAnswerStructure() => new(
         ProfileName: "env",
         CipherOutput: [0xFF],

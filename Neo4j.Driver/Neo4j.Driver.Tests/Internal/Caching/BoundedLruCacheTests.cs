@@ -108,8 +108,6 @@ public class BoundedLruCacheTests
 
         subject.TryGet("a", out _).Should().BeFalse();
 
-        // confirm it was evicted, not just reported as a miss - re-setting should not
-        // collide with a stale entry still occupying capacity
         _now = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         subject.Set("a", "2");
         subject.TryGet("a", out var value).Should().BeTrue();

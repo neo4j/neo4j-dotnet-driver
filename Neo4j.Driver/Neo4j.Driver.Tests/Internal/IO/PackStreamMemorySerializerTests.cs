@@ -26,19 +26,19 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.IO;
 
-public class PackStreamSerializationHelperTests
+public class PackStreamMemorySerializerTests
 {
     private static readonly MessageFormat Format;
 
     private readonly Mock<IPackStreamReaderWriterFactory> _factory = new();
 
-    static PackStreamSerializationHelperTests()
+    static PackStreamMemorySerializerTests()
     {
         var messageFormatFactory = new MessageFormatFactory(TestDriverContext.MockContext);
         Format = messageFormatFactory.CreateMessageFormat(BoltProtocolVersion.V6_0);
     }
 
-    private PackStreamSerializationHelper CreateSubject() => new(_factory.Object);
+    private PackStreamMemorySerializer CreateSubject() => new(_factory.Object);
 
     [Fact]
     public void Write_InvokesTheGivenActionExactlyOnceWithTheWriterFromTheFactory()
@@ -47,7 +47,7 @@ public class PackStreamSerializationHelperTests
         _factory.Setup(f => f.CreateWriter(Format, It.IsAny<Stream>())).Returns(writerFromFactory);
 
         var invocations = new List<IPackStreamWriter>();
-        CreateSubject().Write(Format, invocations.Add);
+        CreateSubject().Serialize(Format, invocations.Add);
 
         invocations.Should().ContainSingle().Which.Should().BeSameAs(writerFromFactory);
     }
@@ -62,7 +62,7 @@ public class PackStreamSerializationHelperTests
                 return Mock.Of<IPackStreamWriter>();
             });
 
-        var bytes = CreateSubject().Write(Format, _ => { });
+        var bytes = CreateSubject().Serialize(Format, _ => { });
 
         bytes.Should().Equal(0x2A);
     }
@@ -79,7 +79,7 @@ public class PackStreamSerializationHelperTests
             });
 
         var inputBytes = new byte[] { 0x2A, 0x2B };
-        CreateSubject().Read(Format, inputBytes, _ => 0);
+        CreateSubject().Deserialize(Format, inputBytes, _ => 0);
 
         streamContents.Should().Equal(inputBytes);
     }
@@ -91,7 +91,7 @@ public class PackStreamSerializationHelperTests
         _factory.Setup(f => f.CreateReader(Format, It.IsAny<MemoryStream>())).Returns(readerFromFactory);
 
         IPackStreamReader? receivedReader = null;
-        var result = CreateSubject().Read(Format, [], r =>
+        var result = CreateSubject().Deserialize(Format, [], r =>
         {
             receivedReader = r;
             return 42;

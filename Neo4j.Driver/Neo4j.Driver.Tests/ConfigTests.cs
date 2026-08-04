@@ -476,8 +476,6 @@ public class ConfigTests
                 .Be(Severity.Warning);
         }
 
-        // this class implements our internal IInternalEncryptionProfile interface which is how
-        // we know it's one we created
         private class ValidProfile(string name) : IInternalEncryptionProfile
         {
             public string Name => name;
@@ -500,8 +498,6 @@ public class ConfigTests
             config.PropertyEncryptionProfiles.Should().ContainSingle().Which.Should().Be(profile);
         }
 
-        // this class only implements the public IPropertyEncryptionProfile interface, which is just the wrapper
-        // interface we use to avoid leaking encryption internals to public scope
         private class AttackerProfile : IPropertyEncryptionProfile
         {
             public string Name => "thisisfine";

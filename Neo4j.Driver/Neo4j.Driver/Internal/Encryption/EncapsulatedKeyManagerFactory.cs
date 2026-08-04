@@ -1,12 +1,12 @@
 // Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,21 +16,30 @@
 #nullable enable
 
 using System.Collections.Generic;
+using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
 [DriverAutoRegister(singleton: true)]
-internal class EnvelopeMetadataBuilder : IEnvelopeMetadataBuilder
+internal class EncapsulatedKeyManagerFactory : IEncapsulatedKeyManagerFactory
 {
-    public IDictionary<string, object> Build(EnvelopeMetadata metadata)
+    private readonly IEnumerable<IEncapsulatedKeyManagerProvider> _providers;
+
+    public EncapsulatedKeyManagerFactory(IEnumerable<IEncapsulatedKeyManagerProvider> providers)
     {
-        return new Dictionary<string, object>
+        _providers = providers;
+    }
+
+    public IEncapsulatedKeyManager CreateKeyManager(IInternalEncryptionProfile profile)
+    {
+        foreach (var provider in _providers)
         {
-            [EnvelopeMetadataKeys.KeyId] = metadata.KeyId,
-            [EnvelopeMetadataKeys.Iv] = metadata.Iv,
-            [EnvelopeMetadataKeys.Aad] = metadata.Aad,
-            [EnvelopeMetadataKeys.AadProtocolMajor] = metadata.AadProtocolMajor,
-            [EnvelopeMetadataKeys.AadProtocolMinor] = metadata.AadProtocolMinor
-        };
+            if (provider.TryCreateKeyManager(profile, out var manager))
+            {
+                return manager;
+            }
+        }
+
+        throw new EncapsulatedKeyManagerNotFoundException(profile.Name);
     }
 }

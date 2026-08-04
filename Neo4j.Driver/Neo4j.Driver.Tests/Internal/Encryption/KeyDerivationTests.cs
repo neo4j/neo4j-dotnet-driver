@@ -26,7 +26,6 @@ public class KeyDerivationTests
 {
     private readonly HkdfKeyDerivation _subject = new();
 
-    // Same IKM produces identical output (deterministic, fixed info label).
     [Fact]
     public void Derive_WithFixedInfoLabel_ProducesStableOutput()
     {
@@ -41,8 +40,6 @@ public class KeyDerivationTests
         first.Should().Equal(second);
     }
 
-    // The production overload (no salt, fixed info) should be equivalent to calling
-    // the test overload with null salt and the "neo4j/property-encryption/v1" label.
     [Fact]
     public void Derive_ProductionOverload_MatchesRawWithFixedLabel()
     {
@@ -54,7 +51,6 @@ public class KeyDerivationTests
         viaRaw.Should().Equal(viaProduction);
     }
 
-    // Different IKMs should produce different derived keys.
     [Fact]
     public void Derive_DifferentIkm_ProducesDifferentOutput()
     {

@@ -21,4 +21,5 @@ internal interface IEncryptedValueBytesCodec
 {
     byte[] Encode(EncryptedStructure structure);
     EncryptedStructure Decode(byte[] bytes);
+    string PeekProfileName(byte[] bytes);
 }

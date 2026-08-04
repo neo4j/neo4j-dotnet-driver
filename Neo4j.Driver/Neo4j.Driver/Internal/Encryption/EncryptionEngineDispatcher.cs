@@ -27,10 +27,12 @@ namespace Neo4j.Driver.Internal.Encryption;
 internal class EncryptionEngineDispatcher : IEncryptionEngineDispatcher
 {
     private readonly IEnumerable<IEncryptionEngine> _engines;
+    private readonly IEncryptionErrorPolicy _errorPolicy;
 
-    public EncryptionEngineDispatcher(IEnumerable<IEncryptionEngine> engines)
+    public EncryptionEngineDispatcher(IEnumerable<IEncryptionEngine> engines, IEncryptionErrorPolicy errorPolicy)
     {
         _engines = engines;
+        _errorPolicy = errorPolicy;
     }
 
     public async Task<byte[]> DispatchEncryptAsync(
@@ -52,15 +54,10 @@ internal class EncryptionEngineDispatcher : IEncryptionEngineDispatcher
 
             throw new EncryptionEngineNotFoundException(profile.Name);
         }
-        catch (Neo4jException)
-        {
-            // ADR 037: driver-defined errors propagate unchanged, judged by type not origin -
-            // e.g. so a KeyEncapsulationService can signal retryability to the managed API.
-            throw;
-        }
         catch (Exception e)
         {
-            throw new PropertyEncryptionException($"Property encryption failed: {e.Message}", e);
+            _errorPolicy.Throw("encryption", e);
+            throw;
         }
     }
 
@@ -82,13 +79,10 @@ internal class EncryptionEngineDispatcher : IEncryptionEngineDispatcher
 
             throw new EncryptionEngineNotFoundException(profile.Name);
         }
-        catch (Neo4jException)
-        {
-            throw;
-        }
         catch (Exception e)
         {
-            throw new PropertyEncryptionException($"Property decryption failed: {e.Message}", e);
+            _errorPolicy.Throw("decryption", e);
+            throw;
         }
     }
 }

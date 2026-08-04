@@ -52,9 +52,6 @@ internal class EnvelopeDataKeyProvider : IEnvelopeDataKeyProvider
         return new DataKeyResult(keyId, _keyDerivation.Derive(dek, DataKeyLength));
     }
 
-    // Id-typed refs resolve immediately; alias-typed refs check the alias cache first,
-    // falling back to a repository lookup that primes the cache and hands back the
-    // fetched row so resolving the DEK doesn't need a second round-trip.
     private async Task<(string KeyId, EncapsulatedKey? PrefetchedKey)> ResolveKeyIdAsync(
         IEnvelopeEncryptionProfile profile,
         KeyReference keyRef,

@@ -42,13 +42,23 @@ internal class EncryptedValueBytesCodec : IEncryptedValueBytesCodec
 
     public EncryptedStructure Decode(byte[] bytes)
     {
+        ValidateEncodingVersion(bytes);
+        return _structureCodec.Decode(bytes[1..]);
+    }
+
+    public string PeekProfileName(byte[] bytes)
+    {
+        ValidateEncodingVersion(bytes);
+        return _structureCodec.PeekProfileName(bytes[1..]);
+    }
+
+    private static void ValidateEncodingVersion(byte[] bytes)
+    {
         if (bytes.Length == 0 || bytes[0] != EncodingVersion)
         {
             throw new ProtocolException(
                 $"Expected Encrypted Value Encoding Version 0x{EncodingVersion:X2}, but got: " +
                 (bytes.Length == 0 ? "an empty byte array" : $"0x{bytes[0]:X2}"));
         }
-
-        return _structureCodec.Decode(bytes[1..]);
     }
 }

@@ -21,14 +21,7 @@ using Neo4j.Driver.Tests.Internal.Core;
 
 namespace Neo4j.Driver.Tests;
 
-// Base for the common "arrange mocks, run one method, assert" unit test. Set up
-// dependencies with Freeze<T>()/Inject via Fixture, then build the subject once
-// with CreateSubject<T>() (call it after arranging so frozen dependencies are used).
-// Hand-roll tests directly against Fixture when the case isn't the basic shape.
-//
-// Non-generic on purpose: xUnit v3 only discovers public test classes, and an
-// internal subject can't appear in a public class's base list, so the subject
-// type is named at the CreateSubject<T>() call site instead.
+// Non-generic: an internal subject type can't appear in a public test class's base list (CS9338).
 public abstract class UnitTestBase
 {
     protected IFixture Fixture { get; }

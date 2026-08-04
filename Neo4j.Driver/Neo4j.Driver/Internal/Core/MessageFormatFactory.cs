@@ -17,6 +17,7 @@ using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal;
 
+[DriverAutoRegister(singleton: true)]
 internal class MessageFormatFactory : IMessageFormatFactory
 {
     private readonly DriverContext _driverContext;

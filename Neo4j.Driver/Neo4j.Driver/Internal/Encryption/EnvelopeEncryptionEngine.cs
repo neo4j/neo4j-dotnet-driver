@@ -28,8 +28,6 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
 {
     private const int IvLength = 12;
 
-    // AAD is opaque bytes at this layer (no typed value to inspect) - fixed at the latest
-    // baseline until the future API layer serializes typed AAD content itself.
     private static readonly int AadProtocolMajor = BoltValueSerializationSchemeVersion.Latest.Major;
     private static readonly int AadProtocolMinor = BoltValueSerializationSchemeVersion.Latest.Minor;
 

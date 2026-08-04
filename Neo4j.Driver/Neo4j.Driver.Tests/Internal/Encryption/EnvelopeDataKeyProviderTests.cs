@@ -118,9 +118,6 @@ public class EnvelopeDataKeyProviderTests : UnitTestBase
             .Setup(c => c.TryGet(ProfileName, "main", out cachedKeyId))
             .Returns(true);
 
-        // deliberately not stubbing repository.FindAsync(alias ref) - if it's called, the
-        // unconfigured mock returns null and the test fails downstream, proving the alias
-        // cache hit was used instead of a repository round-trip.
         _repository.Setup(r => r.FindAsync(
                 new KeyReference("key-1", KeyReferenceType.Id),
                 It.IsAny<CancellationToken>()))
@@ -151,9 +148,6 @@ public class EnvelopeDataKeyProviderTests : UnitTestBase
             .Setup(c => c.TryGet(ProfileName, "key-1", out cachedDek))
             .Returns(true);
 
-        // deliberately not stubbing the repository or KES at all - either being called
-        // returns an unconfigured default and fails the test downstream, proving the
-        // double cache hit skipped both.
 
         Freeze<IKeyDerivation>().Setup(d => d.Derive(Matches(Dek), 32)).Returns(DataKey);
 
@@ -170,8 +164,6 @@ public class EnvelopeDataKeyProviderTests : UnitTestBase
     [Fact]
     public async Task GetDataKey_ByKeyId_IgnoresAliasCacheEvenIfPoisoned()
     {
-        // poisoned: if the id-typed path ever consulted the alias cache, it would get
-        // this wrong id back and the test would fail downstream.
         string? poisonedKeyId = "wrong-id";
         Freeze<IAliasToKeyIdCache>()
             .Setup(c => c.TryGet(ProfileName, It.IsAny<string>(), out poisonedKeyId))

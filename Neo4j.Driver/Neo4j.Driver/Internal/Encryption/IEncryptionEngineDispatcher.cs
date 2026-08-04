@@ -21,9 +21,6 @@ using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-// Finds the IEncryptionEngine that accepts the given profile (via TryStartEncrypt/
-// TryStartDecrypt's pattern-match) and awaits its result. Throws
-// EncryptionEngineNotFoundException if no registered engine accepts the profile.
 internal interface IEncryptionEngineDispatcher
 {
     Task<byte[]> DispatchEncryptAsync(

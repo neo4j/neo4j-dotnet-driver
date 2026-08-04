@@ -34,7 +34,6 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
 {
     private const string ProfileName = "profile-a";
 
-    // SequentialRandom fills each buffer with 0,1,2,... so the generated IV is known.
     private static readonly byte[] Iv = Sequence(12);
 
     public EnvelopeEncryptionEngineTests()
@@ -174,9 +173,6 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             .Setup(g => g.IsUnsupportedBaselineType(structure, out guardResult))
             .Returns(true);
 
-        // nothing beyond the codec and guard is stubbed - reaching the extractor, data-key
-        // provider, or cipher would fail downstream, proving the short-circuit.
-
         var subject = CreateSubject<EnvelopeEncryptionEngine>();
         var started = subject.TryStartDecrypt(
             Profile(),
@@ -215,9 +211,6 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         Freeze<IEncryptedValueBytesCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
         Freeze<IEnvelopeMetadataExtractor>().Setup(e => e.Extract(structureMetadata)).Returns(envelopeMetadata);
 
-        // guards the regression where the engine passed the resolved aad (aad ?? persisted,
-        // never null) to the guard instead of the raw supplied aad - the guard must see null
-        // on the persisted-only path so AAD reproduction rules don't fire.
         Freeze<IBaselineCompatibilityGuard>()
             .Setup(g => g.EnsureAadProtocolCompatibility(
                 It.Is<byte[]?>(a => a != null),

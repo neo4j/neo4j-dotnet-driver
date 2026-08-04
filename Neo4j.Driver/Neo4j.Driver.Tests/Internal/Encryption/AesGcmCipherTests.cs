@@ -36,7 +36,6 @@ public class AesGcmCipherTests
         Random.Shared.NextBytes(Iv);
     }
 
-    // Same key, IV, plaintext, and AAD always produce the same ciphertext and tag.
     [Fact]
     public void Encrypt_SameInputs_ProducesStableOutput()
     {
@@ -50,7 +49,6 @@ public class AesGcmCipherTests
         first.Tag.Should().Equal(second.Tag);
     }
 
-    // Different IVs produce different ciphertext even for the same key and plaintext.
     [Fact]
     public void Encrypt_DifferentIvs_ProduceDifferentOutput()
     {
@@ -65,7 +63,6 @@ public class AesGcmCipherTests
         result1.CipherText.Should().NotEqual(result2.CipherText);
     }
 
-    // Encrypt then Decrypt recovers the original plaintext.
     [Fact]
     public void EncryptThenDecrypt_RecoverPlaintext()
     {
@@ -80,7 +77,6 @@ public class AesGcmCipherTests
         _subject.Decrypt(Key, Iv, cipherOutput, aad).Should().Equal(plaintext);
     }
 
-    // A corrupted tag must cause decryption to throw.
     [Fact]
     public void Decrypt_CorruptedTag_Throws()
     {

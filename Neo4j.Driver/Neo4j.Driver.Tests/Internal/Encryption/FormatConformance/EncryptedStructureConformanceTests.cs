@@ -28,7 +28,7 @@ public class EncryptedStructureConformanceTests
 {
     private readonly EncryptedStructureCodec _subject = new(
         new MessageFormatFactory(TestDriverContext.MockContext),
-        new PackStreamSerializationHelper(new PackStreamReaderWriterFactory()));
+        new PackStreamMemorySerializer(new PackStreamReaderWriterFactory()));
 
     // A minimal, fully hand-computed structure so every byte below is unambiguous
     // (empty metadata sidesteps map key-ordering, a single-byte CipherOutput sidesteps

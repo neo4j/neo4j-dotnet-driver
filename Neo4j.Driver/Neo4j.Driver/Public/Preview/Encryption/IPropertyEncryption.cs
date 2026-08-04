@@ -31,4 +31,13 @@ public interface IPropertyEncryption
     /// <summary>Begins building a request to decrypt a value.</summary>
     /// <returns>The first stage of the request.</returns>
     IDecryptRequestValueStep DecryptRequest();
+
+    /// <summary>Returns the key manager for the sole configured encryption profile.</summary>
+    /// <returns>The key manager.</returns>
+    IEncapsulatedKeyManager KeyManager();
+
+    /// <summary>Returns the key manager for the named encryption profile.</summary>
+    /// <param name="profileName">The name of the profile.</param>
+    /// <returns>The key manager.</returns>
+    IEncapsulatedKeyManager KeyManager(string profileName);
 }
