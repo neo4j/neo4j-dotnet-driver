@@ -25,8 +25,8 @@ namespace Neo4j.Driver.Internal.Encryption;
 [DriverAutoRegister(singleton: true)]
 internal class EnvelopeMetadataExtractor : IEnvelopeMetadataExtractor
 {
-    private static readonly int DefaultAadProtocolMajor = BoltValueSerializationSchemeVersion.Latest.Major;
-    private static readonly int DefaultAadProtocolMinor = BoltValueSerializationSchemeVersion.Latest.Minor;
+    private static readonly long DefaultAadProtocolMajor = BoltValueSerializationSchemeVersion.Latest.Major;
+    private static readonly long DefaultAadProtocolMinor = BoltValueSerializationSchemeVersion.Latest.Minor;
 
     public EnvelopeMetadata Extract(IDictionary<string, object> metadata)
     {
@@ -45,7 +45,7 @@ internal class EnvelopeMetadataExtractor : IEnvelopeMetadataExtractor
             DefaultAadProtocolMinor,
             ExtractionError);
 
-        return new EnvelopeMetadata(keyId, iv, aad, aadProtocolMajor, aadProtocolMinor, options);
+        return new EnvelopeMetadata(keyId, iv, aad, (int)aadProtocolMajor, (int)aadProtocolMinor, options);
 
         static Exception ExtractionError(string message)
         {

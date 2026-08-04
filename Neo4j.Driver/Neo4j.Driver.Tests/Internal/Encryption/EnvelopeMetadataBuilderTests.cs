@@ -42,8 +42,11 @@ public class EnvelopeMetadataBuilderTests
         result["key_id"].Should().Be("key-1");
         result["iv"].Should().Be(metadata.Iv);
         result["aad"].Should().Be(metadata.Aad);
-        result["aad_protocol_major"].Should().Be(6);
-        result["aad_protocol_minor"].Should().Be(0);
+
+        // integers must be written as long: that's what PackStream decoding hands back,
+        // and the extractor requires the exact type
+        result["aad_protocol_major"].Should().Be(6L);
+        result["aad_protocol_minor"].Should().Be(0L);
     }
 
     [Fact]

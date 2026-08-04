@@ -29,8 +29,8 @@ internal class EnvelopeMetadataBuilder : IEnvelopeMetadataBuilder
             [EnvelopeMetadataKeys.KeyId] = metadata.KeyId,
             [EnvelopeMetadataKeys.Iv] = metadata.Iv,
             [EnvelopeMetadataKeys.Aad] = metadata.Aad,
-            [EnvelopeMetadataKeys.AadProtocolMajor] = metadata.AadProtocolMajor,
-            [EnvelopeMetadataKeys.AadProtocolMinor] = metadata.AadProtocolMinor
+            [EnvelopeMetadataKeys.AadProtocolMajor] = (long)metadata.AadProtocolMajor,
+            [EnvelopeMetadataKeys.AadProtocolMinor] = (long)metadata.AadProtocolMinor
         };
     }
 }

@@ -32,8 +32,8 @@ public class EnvelopeMetadataExtractorTests
         ["key_id"] = "key-1",
         ["iv"] = new byte[] { 1, 2, 3 },
         ["aad"] = new byte[] { 4, 5 },
-        ["aad_protocol_major"] = 6,
-        ["aad_protocol_minor"] = 0
+        ["aad_protocol_major"] = 6L,
+        ["aad_protocol_minor"] = 0L
     };
 
     [Fact]
@@ -93,6 +93,17 @@ public class EnvelopeMetadataExtractorTests
         var act = () => _subject.Extract(metadata);
 
         act.Should().Throw<MetadataExtractionException>().WithMessage("*iv*");
+    }
+
+    [Fact]
+    public void Extract_IntTypedAadProtocolVersion_Throws()
+    {
+        var metadata = ValidMetadata();
+        metadata["aad_protocol_major"] = 6;
+
+        var act = () => _subject.Extract(metadata);
+
+        act.Should().Throw<MetadataExtractionException>().WithMessage("*aad_protocol_major*");
     }
 
     [Fact]
