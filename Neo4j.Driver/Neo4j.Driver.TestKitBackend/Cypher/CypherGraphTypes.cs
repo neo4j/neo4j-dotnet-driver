@@ -15,16 +15,16 @@
 
 namespace Neo4j.Driver.TestKitBackend.Cypher;
 
-internal record CypherNode(long Id, ICypherValue Labels, ICypherValue Props, string ElementId) : ICypherValue;
+internal record CypherNode(ICypherValue Id, ICypherValue Labels, ICypherValue Props, ICypherValue ElementId) : ICypherValue;
 
 internal record CypherRelationship(
-    long Id,
-    long StartNodeId,
-    long EndNodeId,
+    ICypherValue Id,
+    ICypherValue StartNodeId,
+    ICypherValue EndNodeId,
     string Type,
     ICypherValue Props,
-    string ElementId,
-    string StartNodeElementId,
-    string EndNodeElementId) : ICypherValue;
+    ICypherValue ElementId,
+    ICypherValue StartNodeElementId,
+    ICypherValue EndNodeElementId) : ICypherValue;
 
 internal record CypherPath(ICypherValue Nodes, ICypherValue Relationships) : ICypherValue;

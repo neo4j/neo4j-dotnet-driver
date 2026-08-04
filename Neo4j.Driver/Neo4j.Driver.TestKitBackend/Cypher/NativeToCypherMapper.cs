@@ -53,20 +53,20 @@ internal class NativeToCypherMapper : INativeToCypherMapper
                 unsupported.Message),
 
             INode node => new CypherNode(
-                node.Id,
+                new CypherInt(node.Id),
                 new CypherList([.. node.Labels.Select(l => Map(l))]),
                 new CypherMap(node.Properties.ToDictionary(kv => kv.Key, kv => Map(kv.Value))),
-                node.ElementId),
+                new CypherString(node.ElementId)),
 
             IRelationship relationship => new CypherRelationship(
-                relationship.Id,
-                relationship.StartNodeId,
-                relationship.EndNodeId,
+                new CypherInt(relationship.Id),
+                new CypherInt(relationship.StartNodeId),
+                new CypherInt(relationship.EndNodeId),
                 relationship.Type,
                 new CypherMap(relationship.Properties.ToDictionary(kv => kv.Key, kv => Map(kv.Value))),
-                relationship.ElementId,
-                relationship.StartNodeElementId,
-                relationship.EndNodeElementId),
+                new CypherString(relationship.ElementId),
+                new CypherString(relationship.StartNodeElementId),
+                new CypherString(relationship.EndNodeElementId)),
 
             IPath path => new CypherPath(
                 new CypherList([.. path.Nodes.Select(n => Map(n))]),

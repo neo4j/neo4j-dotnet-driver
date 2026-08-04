@@ -260,10 +260,10 @@ public class NativeToCypherMapperTests
 
         _mapper.Map(node.Object).Should().BeEquivalentTo(
             new CypherNode(
-                1L,
+                new CypherInt(1),
                 new CypherList([new CypherString("Thing")]),
                 new CypherMap(new Dictionary<string, ICypherValue> { ["uid"] = new CypherString("abc") }),
-                "element-id-1"),
+                new CypherString("element-id-1")),
             ComparingCypherRecordsByMembers);
     }
 
@@ -282,14 +282,14 @@ public class NativeToCypherMapperTests
 
         _mapper.Map(relationship.Object).Should().BeEquivalentTo(
             new CypherRelationship(
-                1L,
-                2L,
-                3L,
+                new CypherInt(1),
+                new CypherInt(2),
+                new CypherInt(3),
                 "KNOWS",
                 new CypherMap(new Dictionary<string, ICypherValue> { ["since"] = new CypherInt(2020) }),
-                "rel-1",
-                "node-2",
-                "node-3"),
+                new CypherString("rel-1"),
+                new CypherString("node-2"),
+                new CypherString("node-3")),
             ComparingCypherRecordsByMembers);
     }
 
@@ -317,20 +317,20 @@ public class NativeToCypherMapperTests
         path.SetupGet(p => p.Relationships).Returns(new List<IRelationship> { relationship.Object });
 
         var expectedNode = new CypherNode(
-            1L,
+            new CypherInt(1),
             new CypherList([]),
             new CypherMap(new Dictionary<string, ICypherValue>()),
-            "node-1");
+            new CypherString("node-1"));
 
         var expectedRelationship = new CypherRelationship(
-            2L,
-            1L,
-            1L,
+            new CypherInt(2),
+            new CypherInt(1),
+            new CypherInt(1),
             "SELF",
             new CypherMap(new Dictionary<string, ICypherValue>()),
-            "rel-2",
-            "node-1",
-            "node-1");
+            new CypherString("rel-2"),
+            new CypherString("node-1"),
+            new CypherString("node-1"));
 
         _mapper.Map(path.Object).Should().BeEquivalentTo(
             new CypherPath(new CypherList([expectedNode]), new CypherList([expectedRelationship])),
