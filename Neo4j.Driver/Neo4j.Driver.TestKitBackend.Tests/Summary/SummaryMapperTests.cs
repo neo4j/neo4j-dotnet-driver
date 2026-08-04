@@ -15,6 +15,7 @@
 
 #pragma warning disable CS0618 // Notifications is obsolete but still part of the wire contract.
 
+using System.Text.Json;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Protocol;
@@ -168,6 +169,24 @@ public class SummaryMapperTests
                 "Neo.ClientNotification.Some.Hint",
                 "A hint",
                 null));
+    }
+
+    [Fact]
+    public void A_notification_without_a_position_omits_it_from_the_wire_instead_of_sending_null()
+    {
+        var notification = new SummaryNotificationResponse(
+            "HINT",
+            "HINT",
+            "WARNING",
+            "WARNING",
+            "a hint",
+            "Neo.ClientNotification.Some.Hint",
+            "A hint",
+            null);
+
+        var json = JsonSerializer.Serialize(notification, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+
+        json.Should().NotContain("position");
     }
 
     [Fact]

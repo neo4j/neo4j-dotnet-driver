@@ -42,6 +42,7 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
         "Feature:API:Driver.VerifyAuthentication",
         "Feature:API:Driver.VerifyConnectivity",
         "Feature:API:Driver:GetServerInfo",
+        "Feature:API:Driver:NotificationsConfig",
         "Feature:API:Liveness.Check",
         "Feature:API:RetryableExceptions",
         "Feature:API:SSLClientCertificate",

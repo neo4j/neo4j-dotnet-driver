@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Text.Json.Serialization;
 using Neo4j.Driver.TestKitBackend.Cypher;
 
 namespace Neo4j.Driver.TestKitBackend.Summary;
@@ -47,6 +48,7 @@ internal record SummaryNotificationResponse(
     string? Description,
     string? Code,
     string? Title,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     SummaryPositionResponse? Position);
 
 internal record SummaryPlanResponse(
