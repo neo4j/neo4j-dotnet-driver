@@ -19,6 +19,7 @@ using System.Diagnostics;
 using System.Linq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.Tests.TestBackend.Protocol;
 using Neo4j.Driver.Tests.TestBackend.Types;
 
@@ -75,7 +76,8 @@ internal static class ExceptionManager
         { typeof(ForbiddenException), "ForbiddenError" },
         { typeof(UnknownSecurityException), "OtherSecurityException" },
         { typeof(ReauthException), "UnsupportedFeatureException" },
-        { typeof(TransactionTerminatedException), "TransactionTerminatedError" }
+        { typeof(TransactionTerminatedException), "TransactionTerminatedError" },
+        { typeof(PropertyEncryptionException), "ClientError" }
     };
 
     internal static ProtocolResponse GenerateExceptionResponse(Exception ex)
