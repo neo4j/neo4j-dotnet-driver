@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System;
+using Neo4j.Driver.Internal.Connector.Trust;
 using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal;
@@ -39,8 +40,17 @@ internal class EncryptionManager
         var configured = level.HasValue || trustManager != null;
         if (configured)
         {
-            AssertSimpleUriScheme(uri, level, trustManager);
-            return CreateFromConfig(level, trustManager, neo4JLogger);
+            if (Neo4jUri.IsSimpleUriScheme(uri))
+            {
+                return CreateFromConfig(level, trustManager, neo4JLogger);
+            }
+
+            if (IsCustomized(level, trustManager))
+            {
+                throw new ArgumentException(
+                    "The uri scheme and driver configuration specify conflicting encryption and trust settings. " +
+                    $"uri scheme = {uri.Scheme}, encryption = {level}, trust = {trustManager}");
+            }
         }
 
         return CreateFromUriScheme(uri, neo4JLogger);
@@ -52,14 +62,14 @@ internal class EncryptionManager
         return Neo4jUri.ParseUriSchemeToEncryptionManager(uri, neo4JLogger);
     }
 
-    private static void AssertSimpleUriScheme(Uri uri, EncryptionLevel? encryptionLevel, TrustManager trustManager)
+    private static bool IsCustomized(EncryptionLevel? level, TrustManager trustManager)
     {
-        if (!Neo4jUri.IsSimpleUriScheme(uri))
-        {
-            throw new ArgumentException(
-                "The encryption and trust settings cannot both be set via uri scheme and driver configuration. " +
-                $"uri scheme = {uri.Scheme}, encryption = {encryptionLevel}, trust = {trustManager}");
-        }
+        return ParseEncrypted(level) || !IsDefaultTrust(trustManager);
+    }
+
+    private static bool IsDefaultTrust(TrustManager trustManager)
+    {
+        return trustManager is null || (trustManager is ChainTrustManager chainTrust && chainTrust.IsDefaultConfiguration);
     }
 
     public static EncryptionManager CreateFromConfig(

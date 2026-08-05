@@ -38,6 +38,7 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
         "Backend:RTForceUpdate",
         "ConfHint:connection.recv_timeout_seconds",
         "Detail:ClosedDriverIsEncrypted",
+        "Detail:DefaultSecurityConfigValueEquality",
         "Feature:API:BookmarkManager",
         "Feature:API:Driver.ExecuteQuery",
         "Feature:API:Driver.ExecuteQuery:WithAuth",
