@@ -15,17 +15,28 @@
 
 using System.Text.Json.Serialization;
 using Neo4j.Driver.TestKitBackend.Serialization;
+
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record AuthorizationToken(
     string Scheme,
     string Principal,
     string Credentials,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Realm = null)
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    string? Realm = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    Dictionary<string, object>? Parameters = null)
     : IWireType<AuthorizationToken>
 {
     public IAuthToken ToAuthToken()
     {
-        return AuthTokens.Custom(Principal, Credentials, Realm, Scheme);
+        if (Scheme == "kerberos")
+        {
+            return AuthTokens.Kerberos(Credentials);
+        }
+
+        return Parameters is null
+            ? AuthTokens.Custom(Principal, Credentials, Realm, Scheme)
+            : AuthTokens.Custom(Principal, Credentials, Realm, Scheme, Parameters);
     }
 }

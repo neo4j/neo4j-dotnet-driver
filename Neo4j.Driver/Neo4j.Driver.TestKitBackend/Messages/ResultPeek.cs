@@ -13,33 +13,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record DriverCloseRequest : IProtocolMessage
+internal record ResultPeekRequest : IProtocolMessage
 {
-    public required RegistryObject<IDriver> Driver { get; init; }
+    public required RegistryObject<IResultCursor> Result { get; init; }
 }
 
-internal class DriverCloseHandler : MessageHandler<DriverCloseRequest>
+internal class ResultPeekHandler : MessageHandler<ResultPeekRequest>
 {
+    private readonly INativeToCypherMapper _mapper;
     private readonly IResponseWriter _responseWriter;
-    private readonly ILogger _logger;
 
-    public DriverCloseHandler(IResponseWriter responseWriter, ILogger logger)
+    public ResultPeekHandler(INativeToCypherMapper mapper, IResponseWriter responseWriter)
     {
+        _mapper = mapper;
         _responseWriter = responseWriter;
-        _logger = logger;
     }
 
-    public override async Task ProcessAsync(DriverCloseRequest message)
+    public override async Task ProcessAsync(ResultPeekRequest message)
     {
-        await message.Driver.Object.DisposeAsync();
-        _logger.LogDebug("Closed driver with id '{Id}'", message.Driver.Id);
-        await _responseWriter.WriteAsync(new DriverResponse(message.Driver.Id));
+        var record = await message.Result.Object.PeekAsync();
+        if (record is null)
+        {
+            await _responseWriter.WriteAsync(new NullRecordResponse());
+            return;
+        }
+
+        var values = record.Keys.Select(key => _mapper.Map(record[key])).ToList();
+        await _responseWriter.WriteAsync(new RecordResponse(values));
     }
 }

@@ -67,7 +67,13 @@ public class ExceptionTypeMapperTests
     }
 
     [Fact]
-    public void Falls_back_to_the_exact_type_name_for_an_unmapped_exception()
+    public void Falls_back_to_the_type_name_with_an_Error_suffix_for_an_unmapped_exception()
+    {
+        _mapper.Map(new NotSupportedException("boom")).Should().Be("NotSupportedError");
+    }
+
+    [Fact]
+    public void Maps_InvalidOperationException_to_itself_unchanged()
     {
         _mapper.Map(new InvalidOperationException("boom")).Should().Be("InvalidOperationException");
     }
@@ -100,5 +106,11 @@ public class ExceptionTypeMapperTests
     public void Maps_ConnectionReadTimeoutException_to_ConnectionReadTimeoutError()
     {
         _mapper.Map(new ConnectionReadTimeoutException("boom")).Should().Be("ConnectionReadTimeoutError");
+    }
+
+    [Fact]
+    public void Maps_ServiceUnavailableException_to_ServiceUnavailableError()
+    {
+        _mapper.Map(new ServiceUnavailableException("boom")).Should().Be("ServiceUnavailableError");
     }
 }

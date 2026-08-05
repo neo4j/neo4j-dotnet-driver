@@ -24,25 +24,17 @@ internal interface IExceptionTypeMapper
 
 internal class ExceptionTypeMapper : IExceptionTypeMapper
 {
-    // Exact-type match, not inheritance-aware
-    private static readonly Dictionary<Type, string> ErrorTypes = new()
-    {
-        [typeof(Neo4jException)] = "Neo4jError",
-        [typeof(ClientException)] = "ClientError",
-        [typeof(TransientException)] = "DriverError",
-        [typeof(AuthorizationException)] = "AuthorizationExpired",
-        [typeof(TokenExpiredException)] = "ClientError",
-        [typeof(AuthenticationException)] = "AuthenticationError",
-        [typeof(UnknownSecurityException)] = "OtherSecurityException",
-        [typeof(ArgumentException)] = "ArgumentError",
-        [typeof(ReauthException)] = "UnsupportedFeatureException",
-        [typeof(TransactionTerminatedException)] = "TransactionTerminatedError",
-        [typeof(ResultConsumedException)] = "ResultConsumedError",
-        [typeof(ConnectionReadTimeoutException)] = "ConnectionReadTimeoutError"
-    };
-
     public string Map(Exception exception)
     {
-        return ErrorTypes.GetValueOrDefault(exception.GetType(), exception.GetType().Name);
+        return exception switch
+        {
+            ReauthException => "UnsupportedFeatureException",
+            TokenExpiredException => "ClientError",
+            TransientException => "DriverError",
+            AuthorizationException => "AuthorizationExpired",
+            UnknownSecurityException => "OtherSecurityException",
+            InvalidOperationException => nameof(InvalidOperationException),
+            _ => exception.GetType().Name.Replace("Exception", "Error")
+        };
     }
 }

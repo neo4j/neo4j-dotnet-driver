@@ -75,20 +75,14 @@ internal class MessageLoop : IMessageLoop
         {
             await _dispatcher.DispatchAsync(message);
         }
-        catch (Neo4jException exception)
+        catch (Exception exception)
         {
-            _logger.LogDebug(exception, "Driver error while handling request");
-            await _responseWriter.WriteAsync(_driverErrorMapper.Map(exception));
-        }
-        catch (ArgumentException exception)
-        {
-            _logger.LogDebug(exception, "Driver configuration error while handling request");
-            await _responseWriter.WriteAsync(_driverErrorMapper.Map(exception));
-        }
-        catch (TimeZoneNotFoundException exception)
-        {
-            _logger.LogDebug(exception, "Driver error while handling request");
-            await _responseWriter.WriteAsync(_driverErrorMapper.Map(exception));
+            _logger.LogDebug(exception, "Error while handling request");
+            var response = exception is Neo4jException neo4jException
+                ? _driverErrorMapper.Map(neo4jException)
+                : _driverErrorMapper.Map(exception);
+
+            await _responseWriter.WriteAsync(response);
         }
     }
 }

@@ -61,15 +61,14 @@ internal abstract class BackgroundOperationHandler<T> : MessageHandler<T> where 
         {
             _coordinator.CompleteNextResponse(new FrontendErrorResponse { Msg = exception.Message });
         }
-        catch (Neo4jException exception)
+        catch (Exception exception) when (exception is Neo4jException or TimeZoneNotFoundException)
         {
             _logger.LogDebug(exception, "Driver error during background operation");
-            _coordinator.CompleteNextResponse(_driverErrorMapper.Map(exception));
-        }
-        catch (TimeZoneNotFoundException exception)
-        {
-            _logger.LogDebug(exception, "Driver error during background operation");
-            _coordinator.CompleteNextResponse(_driverErrorMapper.Map(exception));
+            var response = exception is Neo4jException neo4jException
+                ? _driverErrorMapper.Map(neo4jException)
+                : _driverErrorMapper.Map(exception);
+
+            _coordinator.CompleteNextResponse(response);
         }
         catch (Exception exception)
         {

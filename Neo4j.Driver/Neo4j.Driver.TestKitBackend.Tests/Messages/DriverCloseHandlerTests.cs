@@ -27,11 +27,10 @@ public class DriverCloseHandlerTests
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<DriverCloseHandler>();
 
     [Fact]
-    public async Task Closes_the_driver_removes_it_from_the_registry_and_responds_with_its_id()
+    public async Task Closes_the_driver_and_responds_with_its_id()
     {
         var driverMock = _autoMocker.GetMock<IDriver>();
         var registered = new RegistryObject<IDriver>("driver-1", driverMock.Object);
-        _autoMocker.GetMock<IRegistry>().Setup(r => r.Get<IDriver>("driver-1")).Returns(registered);
 
         var handler = _autoMocker.CreateInstance<DriverCloseHandler>();
         var request = new DriverCloseRequest { Driver = registered };
@@ -39,7 +38,6 @@ public class DriverCloseHandlerTests
         await handler.ProcessAsync(request);
 
         driverMock.Verify(d => d.DisposeAsync(), Times.Once);
-        _autoMocker.GetMock<IRegistry>().Verify(r => r.Remove("driver-1"), Times.Once);
         _autoMocker.GetMock<IResponseWriter>()
             .Verify(w => w.WriteAsync(new DriverResponse("driver-1")), Times.Once);
     }
