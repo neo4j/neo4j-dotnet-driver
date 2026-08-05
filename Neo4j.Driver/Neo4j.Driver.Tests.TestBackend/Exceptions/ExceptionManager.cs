@@ -77,7 +77,10 @@ internal static class ExceptionManager
         { typeof(UnknownSecurityException), "OtherSecurityException" },
         { typeof(ReauthException), "UnsupportedFeatureException" },
         { typeof(TransactionTerminatedException), "TransactionTerminatedError" },
-        { typeof(PropertyEncryptionException), "ClientError" }
+        { typeof(PropertyEncryptionException), "ClientError" },
+        { typeof(EncapsulatedAliasNotFoundException), "Neo4jError" },
+        { typeof(EncapsulatedKeyNotFoundException), "Neo4jError" },
+        { typeof(AmbiguousEncryptionProfileException), "ClientError" }
     };
 
     internal static ProtocolResponse GenerateExceptionResponse(Exception ex)
