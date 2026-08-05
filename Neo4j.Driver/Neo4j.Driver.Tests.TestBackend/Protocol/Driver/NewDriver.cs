@@ -17,7 +17,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
+using Neo4j.Driver.Tests.TestBackend.PropertyEncryption;
 using Neo4j.Driver.Tests.TestBackend.Resolvers;
 using Newtonsoft.Json;
 
@@ -187,6 +189,19 @@ internal class NewDriver : ProtocolObject
             configBuilder.WithDisableAutoCommitRetries(data.disableAutoCommitRetries.Value);
         }
 
+        if (data.propertyEncryptionProfiles != null)
+        {
+            var profiles = data.propertyEncryptionProfiles
+                .Select(
+                    p => PropertyEncryptionProfile.Envelope(
+                        p.name,
+                        new FixtureKeyEncapsulationService(),
+                        new FixtureEncapsulatedKeyRepository()))
+                .ToArray();
+
+            configBuilder.WithPropertyEncryptionProfiles(profiles);
+        }
+
         var logger = new SimpleNeo4JLogger();
         configBuilder.WithLogger(logger);
     }
@@ -234,5 +249,11 @@ internal class NewDriver : ProtocolObject
         public string[] notificationsDisabledCategories { get; set; }
         public int? livenessCheckTimeoutMs { get; set; }
         public bool? disableAutoCommitRetries { get; set; }
+        public PropertyEncryptionProfileType[] propertyEncryptionProfiles { get; set; }
+    }
+
+    public class PropertyEncryptionProfileType
+    {
+        public string name { get; set; }
     }
 }

@@ -70,6 +70,11 @@ internal class NewDriverConverter : JsonConverter<NewDriver.NewDriverType>
             newDriverRequest.notificationsDisabledCategories = token.ToObject<string[]>();
         }
 
+        if (jsonObj.TryGetValue("propertyEncryptionProfiles", out token))
+        {
+            newDriverRequest.propertyEncryptionProfiles = token.ToObject<NewDriver.PropertyEncryptionProfileType[]>();
+        }
+
         return newDriverRequest;
     }
 }
