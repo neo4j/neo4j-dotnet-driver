@@ -37,8 +37,12 @@ internal class SessionLastBookmarksHandler : MessageHandler<SessionLastBookmarks
 
     public override async Task ProcessAsync(SessionLastBookmarksRequest message)
     {
-        var bookmarks = message.Session.Object.LastBookmarks.Values;
-        _logger.LogDebug("Got {Count} last bookmark(s) for session with id '{Id}'", bookmarks.Length, message.Session.Id);
+        var bookmarks = message.Session.Object.LastBookmarks?.Values ?? [];
+        _logger.LogDebug(
+            "Got {Count} last bookmark(s) for session with id '{Id}'",
+            bookmarks.Length,
+            message.Session.Id);
+
         await _responseWriter.WriteAsync(new BookmarksResponse(bookmarks));
     }
 }

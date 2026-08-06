@@ -76,6 +76,6 @@ public class CypherGraphTypesWireFormatTests
         var json = JsonSerializer.Serialize(cypherRelationship, Options());
 
         json.Should().Be(
-            """{"name":"CypherRelationship","data":{"id":{"name":"CypherInt","data":{"value":1}},"startNodeId":{"name":"CypherInt","data":{"value":2}},"endNodeId":{"name":"CypherInt","data":{"value":3}},"type":"KNOWS","props":{"name":"CypherMap","data":{"value":{}}},"elementId":{"name":"CypherString","data":{"value":"rel-1"}},"startNodeElementId":{"name":"CypherString","data":{"value":"node-2"}},"endNodeElementId":{"name":"CypherString","data":{"value":"node-3"}}}}""");
+            """{"name":"CypherRelationship","data":{"id":{"name":"CypherInt","data":{"value":1}},"startNodeId":{"name":"CypherInt","data":{"value":2}},"endNodeId":{"name":"CypherInt","data":{"value":3}},"type":{"name":"CypherString","data":{"value":"KNOWS"}},"props":{"name":"CypherMap","data":{"value":{}}},"elementId":{"name":"CypherString","data":{"value":"rel-1"}},"startNodeElementId":{"name":"CypherString","data":{"value":"node-2"}},"endNodeElementId":{"name":"CypherString","data":{"value":"node-3"}}}}""");
     }
 }

@@ -37,6 +37,47 @@ internal class ObjectJsonConverter : JsonConverter<object?>, IProtocolJsonConver
 
     public override void Write(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
     {
-        throw new NotSupportedException("ObjectJsonConverter is read-only.");
+        switch (value)
+        {
+            case null:
+                writer.WriteNullValue();
+                break;
+            case string s:
+                writer.WriteStringValue(s);
+                break;
+            case bool b:
+                writer.WriteBooleanValue(b);
+                break;
+            case long l:
+                writer.WriteNumberValue(l);
+                break;
+            case int i:
+                writer.WriteNumberValue(i);
+                break;
+            case double d:
+                writer.WriteNumberValue(d);
+                break;
+            case IDictionary<string, object> map:
+                writer.WriteStartObject();
+                foreach (var (key, mapValue) in map)
+                {
+                    writer.WritePropertyName(key);
+                    Write(writer, mapValue, options);
+                }
+
+                writer.WriteEndObject();
+                break;
+            case IEnumerable<object> list:
+                writer.WriteStartArray();
+                foreach (var item in list)
+                {
+                    Write(writer, item, options);
+                }
+
+                writer.WriteEndArray();
+                break;
+            default:
+                throw new NotSupportedException($"Cannot write untyped value of type '{value.GetType().Name}'.");
+        }
     }
 }

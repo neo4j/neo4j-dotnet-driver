@@ -50,4 +50,27 @@ public class ObjectJsonConverterTests
 
         value.Should().BeNull();
     }
+
+    [Fact]
+    public void Writes_native_scalars_as_untyped_json()
+    {
+        JsonSerializer.Serialize<object?>("no", Options()).Should().Be("\"no\"");
+        JsonSerializer.Serialize<object?>(true, Options()).Should().Be("true");
+        JsonSerializer.Serialize<object?>((object?)null, Options()).Should().Be("null");
+    }
+
+    [Fact]
+    public void Writes_nested_lists_and_dictionaries_as_untyped_json()
+    {
+        // Shape of a real query plan's Args: a map of scalars, some of which are lists.
+        var value = new Dictionary<string, object>
+        {
+            ["EstimatedRows"] = 12L,
+            ["Details"] = new List<object> { "n", "m" }
+        };
+
+        var json = JsonSerializer.Serialize<object?>(value, Options());
+
+        json.Should().Be("""{"EstimatedRows":12,"Details":["n","m"]}""");
+    }
 }

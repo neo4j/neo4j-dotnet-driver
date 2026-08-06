@@ -44,4 +44,22 @@ public class SessionLastBookmarksHandlerTests
                     r => r.Bookmarks.SequenceEqual(new[] { "bookmark-1", "bookmark-2" }))),
                 Times.Once);
     }
+
+    [Fact]
+    public async Task Returns_empty_bookmarks_when_the_session_has_none()
+    {
+        var sessionMock = _autoMocker.GetMock<IAsyncSession>();
+        sessionMock.SetupGet(s => s.LastBookmarks).Returns((Bookmarks)null!);
+        var registered = new RegistryObject<IAsyncSession>("session-1", sessionMock.Object);
+
+        var handler = _autoMocker.CreateInstance<SessionLastBookmarksHandler>();
+        var request = new SessionLastBookmarksRequest(registered);
+
+        await handler.ProcessAsync(request);
+
+        _autoMocker.GetMock<IResponseWriter>()
+            .Verify(
+                w => w.WriteAsync(It.Is<BookmarksResponse>(r => r.Bookmarks.Length == 0)),
+                Times.Once);
+    }
 }

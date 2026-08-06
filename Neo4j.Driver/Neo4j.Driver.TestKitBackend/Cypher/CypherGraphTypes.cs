@@ -21,7 +21,7 @@ internal record CypherRelationship(
     ICypherValue Id,
     ICypherValue StartNodeId,
     ICypherValue EndNodeId,
-    string Type,
+    ICypherValue Type,
     ICypherValue Props,
     ICypherValue ElementId,
     ICypherValue StartNodeElementId,

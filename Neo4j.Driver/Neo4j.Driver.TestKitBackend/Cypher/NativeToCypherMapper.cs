@@ -62,7 +62,7 @@ internal class NativeToCypherMapper : INativeToCypherMapper
                 new CypherInt(relationship.Id),
                 new CypherInt(relationship.StartNodeId),
                 new CypherInt(relationship.EndNodeId),
-                relationship.Type,
+                new CypherString(relationship.Type),
                 new CypherMap(relationship.Properties.ToDictionary(kv => kv.Key, kv => Map(kv.Value))),
                 new CypherString(relationship.ElementId),
                 new CypherString(relationship.StartNodeElementId),
