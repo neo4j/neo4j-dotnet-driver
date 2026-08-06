@@ -19,8 +19,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
+using Neo4j.Driver.Tests.TestBackend.Protocol.JsonConverters;
+using Neo4j.Driver.Tests.TestBackend.Protocol.PropertyEncryption;
 using Neo4j.Driver.Tests.TestBackend.PropertyEncryption;
 using Neo4j.Driver.Tests.TestBackend.Resolvers;
+using Neo4j.Driver.Tests.TestBackend.Types;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend.Protocol.Driver;
@@ -193,10 +196,19 @@ internal class NewDriver : ProtocolObject
         {
             var profiles = data.propertyEncryptionProfiles
                 .Select(
-                    p => PropertyEncryptionProfile.Envelope(
-                        p.name,
-                        new FixtureKeyEncapsulationService(),
-                        new FixtureEncapsulatedKeyRepository()))
+                    p =>
+                    {
+                        var kes = p.fixedKek != null
+                            ? new FixtureKeyEncapsulationService((byte[])CypherToNative.Convert(p.fixedKek))
+                            : new FixtureKeyEncapsulationService();
+
+                        var repository = new FixtureEncapsulatedKeyRepository();
+                        ObjManager.AddProtocolObject(
+                            new EncryptionProfileFixture(kes, repository),
+                            $"{uniqueId}:{p.name}");
+
+                        return PropertyEncryptionProfile.Envelope(p.name, kes, repository);
+                    })
                 .ToArray();
 
             configBuilder.WithPropertyEncryptionProfiles(profiles);
@@ -255,5 +267,8 @@ internal class NewDriver : ProtocolObject
     public class PropertyEncryptionProfileType
     {
         public string name { get; set; }
+
+        [JsonConverter(typeof(SingleCypherValueConverter))]
+        public CypherToNativeObject fixedKek { get; set; }
     }
 }

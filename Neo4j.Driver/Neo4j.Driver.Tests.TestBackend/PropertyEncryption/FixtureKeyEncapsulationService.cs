@@ -28,7 +28,17 @@ internal class FixtureKeyEncapsulationService : IKeyEncapsulationService
     private const int IvLength = 12;
     private const int TagLength = 16;
 
-    private readonly byte[] _kek = RandomNumberGenerator.GetBytes(KeyLength);
+    private readonly byte[] _kek;
+
+    public FixtureKeyEncapsulationService()
+    {
+        _kek = RandomNumberGenerator.GetBytes(KeyLength);
+    }
+
+    public FixtureKeyEncapsulationService(byte[] kek)
+    {
+        _kek = kek;
+    }
 
     public Task<EncapsulationResult> EncapsulateAsync(
         IKeyEncapsulationOptions options,
