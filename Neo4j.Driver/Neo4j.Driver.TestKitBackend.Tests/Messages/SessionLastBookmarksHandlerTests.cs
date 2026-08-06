@@ -34,7 +34,7 @@ public class SessionLastBookmarksHandlerTests
         var registered = new RegistryObject<IAsyncSession>("session-1", sessionMock.Object);
 
         var handler = _autoMocker.CreateInstance<SessionLastBookmarksHandler>();
-        var request = new SessionLastBookmarksRequest { Session = registered };
+        var request = new SessionLastBookmarksRequest(registered);
 
         await handler.ProcessAsync(request);
 

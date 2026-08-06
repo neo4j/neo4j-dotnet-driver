@@ -20,10 +20,7 @@ using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record RetryablePositiveRequest : IProtocolMessage
-{
-    public required RegistryObject<IAsyncSession> Session { get; init; }
-}
+internal record RetryablePositiveRequest(RegistryObject<IAsyncSession> Session) : IProtocolMessage;
 
 internal class RetryablePositiveHandler : MessageHandler<RetryablePositiveRequest>
 {

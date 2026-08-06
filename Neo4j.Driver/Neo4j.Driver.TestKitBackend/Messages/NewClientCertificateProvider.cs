@@ -64,7 +64,7 @@ internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCer
 
     private async ValueTask<X509Certificate> ProvideCertificateAsync(string providerId)
     {
-        var completion = await _callbackExchanger.SendAsync<ClientCertificateProviderCompletedRequest>(
+        var completion = await _callbackExchanger.SendAsync<ClientCertificateProviderCompleted>(
             id => new ClientCertificateProviderRequest(id, providerId));
 
         var certificate = completion.ClientCertificate.Value;

@@ -34,7 +34,7 @@ public class CheckDriverIsEncryptedHandlerTests
         var registered = new RegistryObject<IDriver>("driver-1", driverMock.Object);
 
         var handler = _autoMocker.CreateInstance<CheckDriverIsEncryptedHandler>();
-        var request = new CheckDriverIsEncryptedRequest { Driver = registered };
+        var request = new CheckDriverIsEncryptedRequest(registered);
 
         await handler.ProcessAsync(request);
 

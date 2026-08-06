@@ -61,10 +61,10 @@ public class BookmarkManagerFlowTests
 
         Func<string, ICallbackRequest>? capturedRequest = null;
         _callbacksMock
-            .Setup(c => c.SendAsync<BookmarksSupplierCompletedRequest>(It.IsAny<Func<string, ICallbackRequest>>()))
+            .Setup(c => c.SendAsync<BookmarksSupplierCompleted>(It.IsAny<Func<string, ICallbackRequest>>()))
             .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
             .ReturnsAsync(
-                new BookmarksSupplierCompletedRequest { RequestId = "callback-1", Bookmarks = ["bm:s1", "bm:s2"] });
+                new BookmarksSupplierCompleted { RequestId = "callback-1", Bookmarks = ["bm:s1", "bm:s2"] });
 
         var bookmarks = await manager.GetBookmarksAsync(TestContext.Current.CancellationToken);
 
@@ -82,9 +82,9 @@ public class BookmarkManagerFlowTests
 
         Func<string, ICallbackRequest>? capturedRequest = null;
         _callbacksMock
-            .Setup(c => c.SendAsync<BookmarksConsumerCompletedRequest>(It.IsAny<Func<string, ICallbackRequest>>()))
+            .Setup(c => c.SendAsync<BookmarksConsumerCompleted>(It.IsAny<Func<string, ICallbackRequest>>()))
             .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
-            .ReturnsAsync(new BookmarksConsumerCompletedRequest { RequestId = "callback-1" });
+            .ReturnsAsync(new BookmarksConsumerCompleted { RequestId = "callback-1" });
 
         await manager.UpdateBookmarksAsync([], ["bm:new1", "bm:new2"], TestContext.Current.CancellationToken);
 

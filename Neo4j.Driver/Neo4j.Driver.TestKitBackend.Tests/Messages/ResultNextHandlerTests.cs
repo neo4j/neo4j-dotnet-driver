@@ -29,7 +29,7 @@ public class ResultNextHandlerTests
 
     private ResultNextRequest RequestFor(IResultCursor cursor)
     {
-        return new ResultNextRequest { Result = new RegistryObject<IResultCursor>("result-1", cursor) };
+        return new ResultNextRequest(new RegistryObject<IResultCursor>("result-1", cursor));
     }
 
     [Fact]

@@ -25,7 +25,7 @@ internal record AuthTokenAndExpiration(
     IWireType<AuthorizationToken> Auth,
     long? ExpiresInMs = null) : IWireType<AuthTokenAndExpiration>;
 
-internal record BearerAuthTokenProviderCompletedRequest : ICallbackResponse
+internal record BearerAuthTokenProviderCompleted : ICallbackResponse
 {
     public required string RequestId { get; init; }
     public required IWireType<AuthTokenAndExpiration> Auth { get; init; }

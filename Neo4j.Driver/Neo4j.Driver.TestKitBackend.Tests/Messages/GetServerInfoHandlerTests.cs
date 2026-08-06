@@ -39,7 +39,7 @@ public class GetServerInfoHandlerTests
         var registered = new RegistryObject<IDriver>("driver-1", driverMock.Object);
 
         var handler = _autoMocker.CreateInstance<GetServerInfoHandler>();
-        var request = new GetServerInfoRequest { Driver = registered };
+        var request = new GetServerInfoRequest(registered);
 
         await handler.ProcessAsync(request);
 

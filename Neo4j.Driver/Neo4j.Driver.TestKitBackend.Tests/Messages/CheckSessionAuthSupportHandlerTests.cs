@@ -34,7 +34,7 @@ public class CheckSessionAuthSupportHandlerTests
         var registered = new RegistryObject<IDriver>("driver-1", driverMock.Object);
 
         var handler = _autoMocker.CreateInstance<CheckSessionAuthSupportHandler>();
-        var request = new CheckSessionAuthSupportRequest { Driver = registered };
+        var request = new CheckSessionAuthSupportRequest(registered);
 
         await handler.ProcessAsync(request);
 

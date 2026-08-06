@@ -64,7 +64,7 @@ internal class NewBearerAuthTokenManagerHandler : MessageHandler<NewBearerAuthTo
 
     private async ValueTask<DriverAuthTokenAndExpiration> ProvideTokenAsync(string managerId)
     {
-        var completion = await _callbackExchanger.SendAsync<BearerAuthTokenProviderCompletedRequest>(
+        var completion = await _callbackExchanger.SendAsync<BearerAuthTokenProviderCompleted>(
             id => new BearerAuthTokenProviderRequest(id, managerId));
 
         var payload = completion.Auth.Value;

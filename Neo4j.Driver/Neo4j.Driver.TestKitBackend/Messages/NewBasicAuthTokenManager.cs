@@ -59,7 +59,7 @@ internal class NewBasicAuthTokenManagerHandler : MessageHandler<NewBasicAuthToke
 
     private async ValueTask<IAuthToken> ProvideTokenAsync(string managerId)
     {
-        var completion = await _callbackExchanger.SendAsync<BasicAuthTokenProviderCompletedRequest>(
+        var completion = await _callbackExchanger.SendAsync<BasicAuthTokenProviderCompleted>(
             id => new BasicAuthTokenProviderRequest(id, managerId));
 
         return completion.Auth.Value.ToAuthToken();

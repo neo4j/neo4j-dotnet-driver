@@ -21,11 +21,9 @@ using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record VerifyAuthenticationRequest : IProtocolMessage
-{
-    public required RegistryObject<IDriver> Driver { get; init; }
-    public required IWireType<AuthorizationToken> AuthorizationToken { get; init; }
-}
+internal record VerifyAuthenticationRequest(
+    RegistryObject<IDriver> Driver,
+    IWireType<AuthorizationToken> AuthorizationToken) : IProtocolMessage;
 
 internal record DriverIsAuthenticatedResponse(string Id, bool Authenticated) : IProtocolMessage;
 

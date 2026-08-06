@@ -32,10 +32,7 @@ public class TransactionCloseHandlerTests
         var txMock = _autoMocker.GetMock<IAsyncTransaction>();
 
         var handler = _autoMocker.CreateInstance<TransactionCloseHandler>();
-        var request = new TransactionCloseRequest
-        {
-            Tx = new RegistryObject<IAsyncTransaction>("tx-1", txMock.Object)
-        };
+        var request = new TransactionCloseRequest(new RegistryObject<IAsyncTransaction>("tx-1", txMock.Object));
 
         await handler.ProcessAsync(request);
 

@@ -20,10 +20,7 @@ using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record CheckDriverIsEncryptedRequest : IProtocolMessage
-{
-    public required RegistryObject<IDriver> Driver { get; init; }
-}
+internal record CheckDriverIsEncryptedRequest(RegistryObject<IDriver> Driver) : IProtocolMessage;
 
 internal record DriverIsEncryptedResponse(bool Encrypted) : IProtocolMessage;
 

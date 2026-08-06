@@ -56,7 +56,7 @@ public class GetRoutingTableHandlerTests
             .Returns(Task.CompletedTask);
 
         var handler = _autoMocker.CreateInstance<GetRoutingTableHandler>();
-        await handler.ProcessAsync(new GetRoutingTableRequest { Driver = registered, Database = requestedDatabase });
+        await handler.ProcessAsync(new GetRoutingTableRequest(registered, requestedDatabase));
 
         return captured;
     }

@@ -67,7 +67,7 @@ public class RetryableTransactionFlowTests
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableTryResponse("tx-1")), Times.Once);
 
         await WithTimeoutAsync(
-            PositiveHandler().ProcessAsync(new RetryablePositiveRequest { Session = _sessionHandle }));
+            PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
 
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
     }
@@ -119,12 +119,12 @@ public class RetryableTransactionFlowTests
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableTryResponse("tx-1")), Times.Once);
 
         await WithTimeoutAsync(
-            PositiveHandler().ProcessAsync(new RetryablePositiveRequest { Session = _sessionHandle }));
+            PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
 
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableTryResponse("tx-2")), Times.Once);
 
         await WithTimeoutAsync(
-            PositiveHandler().ProcessAsync(new RetryablePositiveRequest { Session = _sessionHandle }));
+            PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
 
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
     }
@@ -177,7 +177,7 @@ public class RetryableTransactionFlowTests
 
         await WithTimeoutAsync(
             NegativeHandler().ProcessAsync(
-                new RetryableNegativeRequest { Session = _sessionHandle, ErrorId = "error-1" }));
+                new RetryableNegativeRequest(_sessionHandle, "error-1")));
 
         _responseWriterMock.Verify(w => w.WriteAsync(errorResponse), Times.Once);
     }
@@ -218,12 +218,12 @@ public class RetryableTransactionFlowTests
 
         await WithTimeoutAsync(
             NegativeHandler().ProcessAsync(
-                new RetryableNegativeRequest { Session = _sessionHandle, ErrorId = "error-1" }));
+                new RetryableNegativeRequest(_sessionHandle, "error-1")));
 
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableTryResponse("tx-2")), Times.Once);
 
         await WithTimeoutAsync(
-            PositiveHandler().ProcessAsync(new RetryablePositiveRequest { Session = _sessionHandle }));
+            PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
 
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
     }
@@ -253,7 +253,7 @@ public class RetryableTransactionFlowTests
         _serializerMock
             .Setup(s => s.Deserialize("completion"))
             .Returns(
-                () => new AuthTokenManagerGetAuthCompletedRequest
+                () => new AuthTokenManagerGetAuthCompleted
                 {
                     RequestId = lastRequestId!,
                     Auth = new AuthorizationToken("basic", "neo4j", "pass")
@@ -275,12 +275,12 @@ public class RetryableTransactionFlowTests
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 async (work, _) =>
                 {
-                    await callbackExchanger.SendAsync<AuthTokenManagerGetAuthCompletedRequest>(
+                    await callbackExchanger.SendAsync<AuthTokenManagerGetAuthCompleted>(
                         id => new AuthTokenManagerGetAuthRequest(id, "manager-1"));
 
                     await work(firstTxMock.Object);
 
-                    await callbackExchanger.SendAsync<AuthTokenManagerGetAuthCompletedRequest>(
+                    await callbackExchanger.SendAsync<AuthTokenManagerGetAuthCompleted>(
                         id => new AuthTokenManagerGetAuthRequest(id, "manager-1"));
 
                     await work(secondTxMock.Object);
@@ -292,12 +292,12 @@ public class RetryableTransactionFlowTests
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableTryResponse("tx-1")), Times.Once);
 
         await WithTimeoutAsync(
-            PositiveHandler().ProcessAsync(new RetryablePositiveRequest { Session = _sessionHandle }));
+            PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
 
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableTryResponse("tx-2")), Times.Once);
 
         await WithTimeoutAsync(
-            PositiveHandler().ProcessAsync(new RetryablePositiveRequest { Session = _sessionHandle }));
+            PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
 
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
 
@@ -327,7 +327,7 @@ public class RetryableTransactionFlowTests
 
         await WithTimeoutAsync(
             NegativeHandler().ProcessAsync(
-                new RetryableNegativeRequest { Session = _sessionHandle, ErrorId = "" }));
+                new RetryableNegativeRequest(_sessionHandle, "")));
 
         _responseWriterMock.Verify(w => w.WriteAsync(It.IsAny<FrontendErrorResponse>()), Times.Once);
         _registryMock.Verify(r => r.Get<Exception>(It.IsAny<string>()), Times.Never);

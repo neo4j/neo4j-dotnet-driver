@@ -32,10 +32,7 @@ public class TransactionCommitHandlerTests
         var txMock = _autoMocker.GetMock<IAsyncTransaction>();
 
         var handler = _autoMocker.CreateInstance<TransactionCommitHandler>();
-        var request = new TransactionCommitRequest
-        {
-            Tx = new RegistryObject<IAsyncTransaction>("tx-1", txMock.Object)
-        };
+        var request = new TransactionCommitRequest(new RegistryObject<IAsyncTransaction>("tx-1", txMock.Object));
 
         await handler.ProcessAsync(request);
 

@@ -30,7 +30,7 @@ public class ResultSingleHandlerTests
 
     private ResultSingleRequest RequestFor(IResultCursor cursor)
     {
-        return new ResultSingleRequest { Result = new RegistryObject<IResultCursor>("result-1", cursor) };
+        return new ResultSingleRequest(new RegistryObject<IResultCursor>("result-1", cursor));
     }
 
     [Fact]

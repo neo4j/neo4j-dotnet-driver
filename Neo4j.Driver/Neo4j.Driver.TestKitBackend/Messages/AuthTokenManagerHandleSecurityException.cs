@@ -24,7 +24,7 @@ internal record AuthTokenManagerHandleSecurityExceptionRequest(
     IWireType<AuthorizationToken> Auth,
     string ErrorCode) : ICallbackRequest;
 
-internal record AuthTokenManagerHandleSecurityExceptionCompletedRequest : ICallbackResponse
+internal record AuthTokenManagerHandleSecurityExceptionCompleted : ICallbackResponse
 {
     public required string RequestId { get; init; }
     public required bool Handled { get; init; }

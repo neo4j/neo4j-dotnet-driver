@@ -20,10 +20,7 @@ using Neo4j.Driver.TestKitBackend.Summary;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record ResultConsumeRequest : IProtocolMessage
-{
-    public required RegistryObject<IResultCursor> Result { get; init; }
-}
+internal record ResultConsumeRequest(RegistryObject<IResultCursor> Result) : IProtocolMessage;
 
 internal record SummaryResponse(
     SummaryQueryResponse Query,

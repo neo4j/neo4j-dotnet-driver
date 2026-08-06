@@ -65,9 +65,9 @@ public class BearerAuthTokenManagerFlowTests
     {
         _callbacksMock
             .Setup(
-                c => c.SendAsync<BearerAuthTokenProviderCompletedRequest>(It.IsAny<Func<string, ICallbackRequest>>()))
+                c => c.SendAsync<BearerAuthTokenProviderCompleted>(It.IsAny<Func<string, ICallbackRequest>>()))
             .ReturnsAsync(
-                new BearerAuthTokenProviderCompletedRequest
+                new BearerAuthTokenProviderCompleted
                 {
                     RequestId = "callback",
                     Auth = new WireAuthTokenAndExpiration(new AuthorizationToken("bearer", "", credentials), expiresInMs)
@@ -106,7 +106,7 @@ public class BearerAuthTokenManagerFlowTests
 
         secondToken.Content["credentials"].Should().Be("a-token");
         _callbacksMock.Verify(
-            c => c.SendAsync<BearerAuthTokenProviderCompletedRequest>(It.IsAny<Func<string, ICallbackRequest>>()),
+            c => c.SendAsync<BearerAuthTokenProviderCompleted>(It.IsAny<Func<string, ICallbackRequest>>()),
             Times.Never);
     }
 

@@ -34,7 +34,7 @@ public class VerifyConnectivityHandlerTests
         _autoMocker.GetMock<IRegistry>().Setup(r => r.Get<IDriver>("driver-1")).Returns(registered);
 
         var handler = _autoMocker.CreateInstance<VerifyConnectivityHandler>();
-        var request = new VerifyConnectivityRequest { Driver = registered };
+        var request = new VerifyConnectivityRequest(registered);
 
         await handler.ProcessAsync(request);
 

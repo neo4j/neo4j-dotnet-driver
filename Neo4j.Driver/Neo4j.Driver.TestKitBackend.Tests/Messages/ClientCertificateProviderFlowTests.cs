@@ -78,10 +78,10 @@ public class ClientCertificateProviderFlowTests
         ClientCertificateProviderRequest? request = null;
         _callbacksMock
             .Setup(
-                c => c.SendAsync<ClientCertificateProviderCompletedRequest>(It.IsAny<Func<string, ICallbackRequest>>()))
+                c => c.SendAsync<ClientCertificateProviderCompleted>(It.IsAny<Func<string, ICallbackRequest>>()))
             .Callback<Func<string, ICallbackRequest>>(f => request = (ClientCertificateProviderRequest)f("callback-1"))
             .ReturnsAsync(
-                new ClientCertificateProviderCompletedRequest
+                new ClientCertificateProviderCompleted
                 {
                     RequestId = "callback-1",
                     HasUpdate = false,

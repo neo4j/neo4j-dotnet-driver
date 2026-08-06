@@ -32,10 +32,7 @@ public class TransactionRollbackHandlerTests
         var txMock = _autoMocker.GetMock<IAsyncTransaction>();
 
         var handler = _autoMocker.CreateInstance<TransactionRollbackHandler>();
-        var request = new TransactionRollbackRequest
-        {
-            Tx = new RegistryObject<IAsyncTransaction>("tx-1", txMock.Object)
-        };
+        var request = new TransactionRollbackRequest(new RegistryObject<IAsyncTransaction>("tx-1", txMock.Object));
 
         await handler.ProcessAsync(request);
 

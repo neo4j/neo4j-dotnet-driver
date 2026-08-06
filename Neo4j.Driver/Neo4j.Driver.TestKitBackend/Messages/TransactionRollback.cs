@@ -20,10 +20,7 @@ using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record TransactionRollbackRequest : IProtocolMessage
-{
-    public required RegistryObject<IAsyncTransaction> Tx { get; init; }
-}
+internal record TransactionRollbackRequest(RegistryObject<IAsyncTransaction> Tx) : IProtocolMessage;
 
 internal class TransactionRollbackHandler : MessageHandler<TransactionRollbackRequest>
 {

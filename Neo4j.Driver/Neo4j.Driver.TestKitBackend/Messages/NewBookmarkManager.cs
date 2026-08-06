@@ -73,7 +73,7 @@ internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequ
 
     private async Task<string[]> SupplyBookmarksAsync(string managerId)
     {
-        var completion = await _callbackExchanger.SendAsync<BookmarksSupplierCompletedRequest>(
+        var completion = await _callbackExchanger.SendAsync<BookmarksSupplierCompleted>(
             id => new BookmarksSupplierRequest(id, managerId));
 
         return completion.Bookmarks;
@@ -81,7 +81,7 @@ internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequ
 
     private async Task ConsumeBookmarksAsync(string managerId, string[] bookmarks)
     {
-        await _callbackExchanger.SendAsync<BookmarksConsumerCompletedRequest>(
+        await _callbackExchanger.SendAsync<BookmarksConsumerCompleted>(
             id => new BookmarksConsumerRequest(id, managerId, bookmarks));
     }
 }

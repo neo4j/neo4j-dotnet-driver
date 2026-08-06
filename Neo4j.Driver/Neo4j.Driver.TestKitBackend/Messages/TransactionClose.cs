@@ -20,10 +20,7 @@ using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record TransactionCloseRequest : IProtocolMessage
-{
-    public required RegistryObject<IAsyncTransaction> Tx { get; init; }
-}
+internal record TransactionCloseRequest(RegistryObject<IAsyncTransaction> Tx) : IProtocolMessage;
 
 internal class TransactionCloseHandler : MessageHandler<TransactionCloseRequest>
 {

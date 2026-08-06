@@ -20,10 +20,7 @@ using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record DriverCloseRequest : IProtocolMessage
-{
-    public required RegistryObject<IDriver> Driver { get; init; }
-}
+internal record DriverCloseRequest(RegistryObject<IDriver> Driver) : IProtocolMessage;
 
 internal class DriverCloseHandler : MessageHandler<DriverCloseRequest>
 {

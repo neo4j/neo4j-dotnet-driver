@@ -29,10 +29,10 @@ public class ResolverFlowTests
         Func<string, ICallbackRequest>? capturedRequest = null;
         var callbacksMock = new Mock<ICallbackExchanger>();
         callbacksMock
-            .Setup(c => c.SendAsync<ResolverResolutionCompletedRequest>(It.IsAny<Func<string, ICallbackRequest>>()))
+            .Setup(c => c.SendAsync<ResolverResolutionCompleted>(It.IsAny<Func<string, ICallbackRequest>>()))
             .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
             .ReturnsAsync(
-                new ResolverResolutionCompletedRequest
+                new ResolverResolutionCompleted
                 {
                     RequestId = "callback-1",
                     Addresses = ["hosta:9002", "hostb:9003"]

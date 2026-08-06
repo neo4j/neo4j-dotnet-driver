@@ -20,10 +20,7 @@ using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record CheckMultiDBSupportRequest : IProtocolMessage
-{
-    public required RegistryObject<IDriver> Driver { get; init; }
-}
+internal record CheckMultiDBSupportRequest(RegistryObject<IDriver> Driver) : IProtocolMessage;
 
 internal record MultiDBSupportResponse(string Id, bool Available) : IProtocolMessage;
 

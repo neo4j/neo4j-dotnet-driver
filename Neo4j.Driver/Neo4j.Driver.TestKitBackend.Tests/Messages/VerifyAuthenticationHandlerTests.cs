@@ -34,11 +34,9 @@ public class VerifyAuthenticationHandlerTests
         var registered = new RegistryObject<IDriver>("driver-1", driverMock.Object);
 
         var handler = _autoMocker.CreateInstance<VerifyAuthenticationHandler>();
-        var request = new VerifyAuthenticationRequest
-        {
-            Driver = registered,
-            AuthorizationToken = new AuthorizationToken("basic", "neo4j", "secret")
-        };
+        var request = new VerifyAuthenticationRequest(
+            registered,
+            new AuthorizationToken("basic", "neo4j", "secret"));
 
         await handler.ProcessAsync(request);
 

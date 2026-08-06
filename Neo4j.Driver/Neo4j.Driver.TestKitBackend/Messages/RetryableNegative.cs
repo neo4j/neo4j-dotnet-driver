@@ -21,12 +21,7 @@ using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record RetryableNegativeRequest : IProtocolMessage
-{
-    public required RegistryObject<IAsyncSession> Session { get; init; }
-
-    public required string ErrorId { get; init; }
-}
+internal record RetryableNegativeRequest(RegistryObject<IAsyncSession> Session, string ErrorId) : IProtocolMessage;
 
 internal class RetryableNegativeHandler : MessageHandler<RetryableNegativeRequest>
 {

@@ -34,7 +34,7 @@ public class SessionCloseHandlerTests
         _autoMocker.GetMock<IRegistry>().Setup(r => r.Get<IAsyncSession>("session-1")).Returns(registered);
 
         var handler = _autoMocker.CreateInstance<SessionCloseHandler>();
-        var request = new SessionCloseRequest { Session = registered };
+        var request = new SessionCloseRequest(registered);
 
         await handler.ProcessAsync(request);
 

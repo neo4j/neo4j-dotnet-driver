@@ -34,7 +34,7 @@ public class CheckMultiDBSupportHandlerTests
         var registered = new RegistryObject<IDriver>("driver-1", driverMock.Object);
 
         var handler = _autoMocker.CreateInstance<CheckMultiDBSupportHandler>();
-        var request = new CheckMultiDBSupportRequest { Driver = registered };
+        var request = new CheckMultiDBSupportRequest(registered);
 
         await handler.ProcessAsync(request);
 

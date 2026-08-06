@@ -20,10 +20,7 @@ using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record GetServerInfoRequest : IProtocolMessage
-{
-    public required RegistryObject<IDriver> Driver { get; init; }
-}
+internal record GetServerInfoRequest(RegistryObject<IDriver> Driver) : IProtocolMessage;
 
 internal record ServerInfoResponse(string Address, string Agent, string ProtocolVersion) : IProtocolMessage;
 

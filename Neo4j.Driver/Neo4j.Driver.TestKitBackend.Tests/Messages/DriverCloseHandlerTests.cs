@@ -33,7 +33,7 @@ public class DriverCloseHandlerTests
         var registered = new RegistryObject<IDriver>("driver-1", driverMock.Object);
 
         var handler = _autoMocker.CreateInstance<DriverCloseHandler>();
-        var request = new DriverCloseRequest { Driver = registered };
+        var request = new DriverCloseRequest(registered);
 
         await handler.ProcessAsync(request);
 

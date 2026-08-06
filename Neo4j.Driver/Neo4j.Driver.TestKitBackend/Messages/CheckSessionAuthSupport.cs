@@ -20,10 +20,7 @@ using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record CheckSessionAuthSupportRequest : IProtocolMessage
-{
-    public required RegistryObject<IDriver> Driver { get; init; }
-}
+internal record CheckSessionAuthSupportRequest(RegistryObject<IDriver> Driver) : IProtocolMessage;
 
 internal record SessionAuthSupportResponse(string Id, bool Available) : IProtocolMessage;
 

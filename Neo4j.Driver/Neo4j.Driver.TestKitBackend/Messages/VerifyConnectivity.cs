@@ -20,10 +20,7 @@ using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record VerifyConnectivityRequest : IProtocolMessage
-{
-    public required RegistryObject<IDriver> Driver { get; init; }
-}
+internal record VerifyConnectivityRequest(RegistryObject<IDriver> Driver) : IProtocolMessage;
 
 internal class VerifyConnectivityHandler : MessageHandler<VerifyConnectivityRequest>
 {

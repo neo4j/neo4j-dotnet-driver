@@ -62,7 +62,7 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
 
     private async ValueTask<IAuthToken> GetAuthAsync(string managerId)
     {
-        var completion = await _callbackExchanger.SendAsync<AuthTokenManagerGetAuthCompletedRequest>(
+        var completion = await _callbackExchanger.SendAsync<AuthTokenManagerGetAuthCompleted>(
             id => new AuthTokenManagerGetAuthRequest(id, managerId));
 
         return completion.Auth.Value.ToAuthToken();
@@ -73,7 +73,7 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
         IAuthToken token,
         SecurityException exception)
     {
-        var completion = await _callbackExchanger.SendAsync<AuthTokenManagerHandleSecurityExceptionCompletedRequest>(
+        var completion = await _callbackExchanger.SendAsync<AuthTokenManagerHandleSecurityExceptionCompleted>(
             id => new AuthTokenManagerHandleSecurityExceptionRequest(id, managerId, ToWireToken(token), exception.Code));
 
         return completion.Handled;

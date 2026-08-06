@@ -20,11 +20,7 @@ using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record GetConnectionPoolMetricsRequest : IProtocolMessage
-{
-    public required RegistryObject<IDriver> Driver { get; init; }
-    public required string Address { get; init; }
-}
+internal record GetConnectionPoolMetricsRequest(RegistryObject<IDriver> Driver, string Address) : IProtocolMessage;
 
 internal record ConnectionPoolMetricsResponse(int InUse, int Idle) : IProtocolMessage;
 

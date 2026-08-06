@@ -44,10 +44,10 @@ public class AuthTokenManagerFlowTests
         Func<string, ICallbackRequest>? capturedRequest = null;
         var callbacksMock = new Mock<ICallbackExchanger>();
         callbacksMock
-            .Setup(c => c.SendAsync<AuthTokenManagerGetAuthCompletedRequest>(It.IsAny<Func<string, ICallbackRequest>>()))
+            .Setup(c => c.SendAsync<AuthTokenManagerGetAuthCompleted>(It.IsAny<Func<string, ICallbackRequest>>()))
             .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
             .ReturnsAsync(
-                new AuthTokenManagerGetAuthCompletedRequest
+                new AuthTokenManagerGetAuthCompleted
                 {
                     RequestId = "callback-1",
                     Auth = new AuthorizationToken("basic", "neo4j", "pass")
@@ -94,11 +94,11 @@ public class AuthTokenManagerFlowTests
         var callbacksMock = new Mock<ICallbackExchanger>();
         callbacksMock
             .Setup(
-                c => c.SendAsync<AuthTokenManagerHandleSecurityExceptionCompletedRequest>(
+                c => c.SendAsync<AuthTokenManagerHandleSecurityExceptionCompleted>(
                     It.IsAny<Func<string, ICallbackRequest>>()))
             .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
             .ReturnsAsync(
-                new AuthTokenManagerHandleSecurityExceptionCompletedRequest
+                new AuthTokenManagerHandleSecurityExceptionCompleted
                 {
                     RequestId = "callback-1",
                     Handled = true

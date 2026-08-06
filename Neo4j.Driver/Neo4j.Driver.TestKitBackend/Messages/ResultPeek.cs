@@ -20,10 +20,7 @@ using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record ResultPeekRequest : IProtocolMessage
-{
-    public required RegistryObject<IResultCursor> Result { get; init; }
-}
+internal record ResultPeekRequest(RegistryObject<IResultCursor> Result) : IProtocolMessage;
 
 internal class ResultPeekHandler : MessageHandler<ResultPeekRequest>
 {

@@ -20,10 +20,7 @@ using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record SessionLastBookmarksRequest : IProtocolMessage
-{
-    public required RegistryObject<IAsyncSession> Session { get; init; }
-}
+internal record SessionLastBookmarksRequest(RegistryObject<IAsyncSession> Session) : IProtocolMessage;
 
 internal record BookmarksResponse(string[] Bookmarks) : IProtocolMessage;
 

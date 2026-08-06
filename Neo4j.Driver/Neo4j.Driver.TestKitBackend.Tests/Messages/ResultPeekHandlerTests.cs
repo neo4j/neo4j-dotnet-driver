@@ -29,7 +29,7 @@ public class ResultPeekHandlerTests
 
     private ResultPeekRequest RequestFor(IResultCursor cursor)
     {
-        return new ResultPeekRequest { Result = new RegistryObject<IResultCursor>("result-1", cursor) };
+        return new ResultPeekRequest(new RegistryObject<IResultCursor>("result-1", cursor));
     }
 
     [Fact]

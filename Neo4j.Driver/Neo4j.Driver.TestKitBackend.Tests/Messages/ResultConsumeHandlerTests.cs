@@ -51,10 +51,7 @@ public class ResultConsumeHandlerTests
         _autoMocker.GetMock<ISummaryMapper>().Setup(m => m.Map(summary)).Returns(mapped);
 
         var handler = _autoMocker.CreateInstance<ResultConsumeHandler>();
-        var request = new ResultConsumeRequest
-        {
-            Result = new RegistryObject<IResultCursor>("result-1", cursorMock.Object)
-        };
+        var request = new ResultConsumeRequest(new RegistryObject<IResultCursor>("result-1", cursorMock.Object));
 
         await handler.ProcessAsync(request);
 

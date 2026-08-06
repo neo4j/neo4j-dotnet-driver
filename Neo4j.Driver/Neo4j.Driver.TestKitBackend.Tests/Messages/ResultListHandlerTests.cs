@@ -29,7 +29,7 @@ public class ResultListHandlerTests
 
     private ResultListRequest RequestFor(IResultCursor cursor)
     {
-        return new ResultListRequest { Result = new RegistryObject<IResultCursor>("result-1", cursor) };
+        return new ResultListRequest(new RegistryObject<IResultCursor>("result-1", cursor));
     }
 
     [Fact]

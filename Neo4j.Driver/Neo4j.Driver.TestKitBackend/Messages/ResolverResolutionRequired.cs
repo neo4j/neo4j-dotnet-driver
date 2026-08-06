@@ -19,7 +19,7 @@ namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record ResolverResolutionRequired(string Id, string Address) : ICallbackRequest;
 
-internal record ResolverResolutionCompletedRequest : ICallbackResponse
+internal record ResolverResolutionCompleted : ICallbackResponse
 {
     public required string RequestId { get; init; }
     public required string[] Addresses { get; init; }
@@ -37,7 +37,7 @@ internal class TestKitServerAddressResolver : IServerAddressResolver
     public ISet<ServerAddress> Resolve(ServerAddress address)
     {
         var completion = _callbackExchanger
-            .SendAsync<ResolverResolutionCompletedRequest>(
+            .SendAsync<ResolverResolutionCompleted>(
                 id => new ResolverResolutionRequired(id, $"{address.Host}:{address.Port}"))
             .GetAwaiter()
             .GetResult();

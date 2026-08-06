@@ -20,10 +20,7 @@ using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record ResultListRequest : IProtocolMessage
-{
-    public required RegistryObject<IResultCursor> Result { get; init; }
-}
+internal record ResultListRequest(RegistryObject<IResultCursor> Result) : IProtocolMessage;
 
 internal record RecordListEntry(IReadOnlyList<ICypherValue> Values);
 
