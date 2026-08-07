@@ -1168,6 +1168,54 @@ public static class RoutingTableManagerTests
 
             result.Should().Be(refreshedRoutingTable);
         }
+
+        [Fact]
+        public async Task ShouldRediscoverFromTheInitialRoutersNotTheDiscardedCachedOnes()
+        {
+            // Discarding the cached table is what sends rediscovery back to the initial routers.
+            // Keeping the cached table and relying only on skipping the staleness check would
+            // silently rediscover from the cached routers instead.
+            var cachedRouter = new Uri("bolt://cached-router");
+            var seedRouter = new Uri("bolt://seed-router");
+
+            var cachedRoutingTable =
+                new RoutingTable("foo", new[] { cachedRouter }, new[] { server05 }, new[] { server06 }, 1000);
+
+            var refreshedRoutingTable =
+                new RoutingTable("foo", new[] { server07 }, new[] { server08 }, new[] { server09 }, 1000);
+
+            var discovery = new Mock<IDiscovery>();
+            discovery.Setup(
+                    x => x.DiscoverAsync(
+                        It.IsAny<IConnection>(),
+                        "foo",
+                        null,
+                        Bookmarks.Empty,
+                        It.IsAny<IHomeDbCache>()))
+                .ReturnsAsync(refreshedRoutingTable);
+
+            var contactedRouters = new List<Uri>();
+            var poolManager = new Mock<IClusterConnectionPoolManager>();
+            poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), It.IsAny<SessionConfig>()))
+                .Callback<Uri, SessionConfig>((uri, _) => contactedRouters.Add(uri))
+                .ReturnsAsync(Mock.Of<IConnection>);
+
+            var initialAddressProvider = new Mock<IInitialServerAddressProvider>();
+            initialAddressProvider.Setup(x => x.Get()).Returns(new HashSet<Uri> { seedRouter });
+
+            var manager = new RoutingTableManager(
+                initialAddressProvider.Object,
+                discovery.Object,
+                poolManager.Object,
+                Mock.Of<INeo4jLogger>(),
+                TimeSpan.MaxValue,
+                cachedRoutingTable);
+
+            await manager.ForceUpdateAsync("foo", null, Bookmarks.Empty);
+
+            contactedRouters.Should().Contain(seedRouter);
+            contactedRouters.Should().NotContain(cachedRouter);
+        }
     }
 
     public class RoutingErrorPropagation

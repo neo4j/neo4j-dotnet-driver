@@ -72,12 +72,40 @@ internal class RoutingTableManager : IRoutingTableManager
         }
     }
 
-    public async Task<IRoutingTable> EnsureRoutingTableForModeAsync(
+    public Task<IRoutingTable> EnsureRoutingTableForModeAsync(
         AccessMode mode,
         string database,
         bool isCachedHomeDb,
         SessionConfig sessionConfig,
         Bookmarks bookmarks)
+    {
+        return EnsureRoutingTableForModeAsync(
+            mode,
+            database,
+            isCachedHomeDb,
+            sessionConfig,
+            bookmarks,
+            forceUpdate: false);
+    }
+
+    public Task<IRoutingTable> ForceUpdateAsync(string database, SessionConfig sessionConfig, Bookmarks bookmarks)
+    {
+        return EnsureRoutingTableForModeAsync(
+            AccessMode.Read,
+            database,
+            false,
+            sessionConfig,
+            bookmarks,
+            forceUpdate: true);
+    }
+
+    private async Task<IRoutingTable> EnsureRoutingTableForModeAsync(
+        AccessMode mode,
+        string database,
+        bool isCachedHomeDb,
+        SessionConfig sessionConfig,
+        Bookmarks bookmarks,
+        bool forceUpdate)
     {
         database ??= string.Empty;
 
@@ -87,7 +115,12 @@ internal class RoutingTableManager : IRoutingTableManager
         await semaphore.WaitAsync().ConfigureAwait(false);
         try
         {
-            if (_routingTables.TryGetValue(database, out var existingTable) &&
+            // discard under the lock, or a concurrently cached table can be returned unrefreshed
+            if (forceUpdate)
+            {
+                _routingTables.TryRemove(database, out _);
+            }
+            else if (_routingTables.TryGetValue(database, out var existingTable) &&
                 !existingTable.IsStale(mode))
             {
                 return existingTable;
@@ -108,13 +141,6 @@ internal class RoutingTableManager : IRoutingTableManager
             // no matter whether we succeeded to update or not, we release the lock
             semaphore.Release();
         }
-    }
-
-    public Task<IRoutingTable> ForceUpdateAsync(string database, SessionConfig sessionConfig, Bookmarks bookmarks)
-    {
-        database ??= string.Empty;
-        _routingTables.TryRemove(database, out _);
-        return EnsureRoutingTableForModeAsync(AccessMode.Read, database, false, sessionConfig, bookmarks);
     }
 
     public async Task<IServerInfo> GetServerInfoAsync(Uri uri, string database)
