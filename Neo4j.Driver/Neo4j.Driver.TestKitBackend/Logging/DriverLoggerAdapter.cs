@@ -20,7 +20,7 @@ namespace Neo4j.Driver.TestKitBackend.Logging;
 [RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
 internal class DriverLoggerAdapter : INeo4jLogger
 {
-    private const string CategoryName = "DRIVER";
+    private const string CategoryName = "Neo4j.Driver";
     private readonly ILogger _logger;
 
     public DriverLoggerAdapter(ILoggerFactory loggerFactory)

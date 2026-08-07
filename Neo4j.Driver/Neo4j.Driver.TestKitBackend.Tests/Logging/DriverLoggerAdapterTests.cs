@@ -33,7 +33,7 @@ public class DriverLoggerAdapterTests
     [Fact]
     public void Creates_its_logger_under_the_driver_category()
     {
-        _loggerFactory.RequestedCategory.Should().Be("DRIVER");
+        _loggerFactory.RequestedCategory.Should().Be("Neo4j.Driver");
     }
 
     [Fact]
