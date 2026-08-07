@@ -71,13 +71,25 @@ public class SummaryMapperTests
     }
 
     [Fact]
-    public void Maps_server_info()
+    public void Maps_server_info_agent_and_protocol_version_but_omits_the_address()
     {
         var summary = CreateSummaryMock();
 
         var result = _mapper.Map(summary.Object);
 
-        result.ServerInfo.Should().Be(new SummaryServerInfoResponse("localhost:7687", "Neo4j/5.20.0", "5.4"));
+        result.ServerInfo.Should().Be(new SummaryServerInfoResponse(null, "Neo4j/5.20.0", "5.4"));
+    }
+
+    [Fact]
+    public void Server_info_omits_the_address_from_the_wire_instead_of_sending_null()
+    {
+        var serverInfo = new SummaryServerInfoResponse(null, "Neo4j/5.20.0", "5.4");
+
+        var json = JsonSerializer.Serialize(
+            serverInfo,
+            new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+
+        json.Should().NotContain("address");
     }
 
     [Fact]

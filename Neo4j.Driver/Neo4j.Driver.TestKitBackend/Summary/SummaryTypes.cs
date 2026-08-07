@@ -36,7 +36,10 @@ internal record SummaryCountersResponse(
     int SystemUpdates,
     bool ContainsSystemUpdates);
 
-internal record SummaryServerInfoResponse(string? Address, string? Agent, string? ProtocolVersion);
+internal record SummaryServerInfoResponse(
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Address,
+    string? Agent,
+    string? ProtocolVersion);
 
 internal record SummaryPositionResponse(int Column, int Offset, int Line);
 

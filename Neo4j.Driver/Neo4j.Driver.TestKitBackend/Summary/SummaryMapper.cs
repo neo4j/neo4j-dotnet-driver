@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma warning disable CS0618
+// deprecated notification members
+#pragma warning disable CS0618  
 
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.TestKitBackend.Cypher;
@@ -73,7 +74,8 @@ internal class SummaryMapper : ISummaryMapper
 
     private static SummaryServerInfoResponse MapServerInfo(IServerInfo server)
     {
-        return new SummaryServerInfoResponse(server.Address, server.Agent, server.ProtocolVersion);
+        // passing a null address because driver does not resolve it to an IP yet
+        return new SummaryServerInfoResponse(null, server.Agent, server.ProtocolVersion);
     }
 
     private static SummaryCountersResponse MapCounters(ICounters counters)
