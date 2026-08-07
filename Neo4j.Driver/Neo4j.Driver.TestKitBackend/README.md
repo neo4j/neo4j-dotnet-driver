@@ -23,7 +23,8 @@ The backend takes no command-line arguments.
 Configuration comes entirely from `appsettings*.json` and the `ASPNETCORE_ENVIRONMENT` variable, which also selects the logging sink:
 
 - `dev` logs to the console.
-- `ci` logs to a file, used by the `testkit/Dockerfile` build.
+- `ci` logs to the console with the test name attached to each line, used by the `testkit/Dockerfile` build.
+  Testkit captures the container's stdout into `artifacts/driver_backend/out.log`, which is what CI collects.
 
 ```bash
 dotnet publish Neo4j.Driver/Neo4j.Driver.TestKitBackend/Neo4j.Driver.TestKitBackend.csproj \
