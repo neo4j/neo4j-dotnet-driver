@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Globalization;
 using System.Text.Json;
 using FluentAssertions;
 using Neo4j.Driver.TestKitBackend.Messages;
@@ -46,5 +47,23 @@ public class ExecuteQueryConfigTests
     public void Reads_a_string_bookmarkManagerId()
     {
         Deserialize("""{"bookmarkManagerId": "5"}""").BookmarkManagerId.Should().Be("5");
+    }
+
+    [Fact]
+    public void Reads_the_numeric_disable_sentinel_as_an_ascii_hyphen_regardless_of_culture()
+    {
+        var original = CultureInfo.CurrentCulture;
+        try
+        {
+            // sv-SE formats a negative long with U+2212 MINUS SIGN, not the ASCII hyphen
+            // that ExecuteQueryConfigMapper matches against.
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("sv-SE");
+
+            Deserialize("""{"bookmarkManagerId": -1}""").BookmarkManagerId.Should().Be("-1");
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = original;
+        }
     }
 }

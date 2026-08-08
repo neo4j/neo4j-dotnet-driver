@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
@@ -44,7 +45,9 @@ internal class BookmarkManagerIdConverter : JsonConverter<string>
 {
     public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        return reader.TokenType == JsonTokenType.Number ? reader.GetInt64().ToString() : reader.GetString();
+        return reader.TokenType == JsonTokenType.Number
+            ? reader.GetInt64().ToString(CultureInfo.InvariantCulture)
+            : reader.GetString();
     }
 
     public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options)
