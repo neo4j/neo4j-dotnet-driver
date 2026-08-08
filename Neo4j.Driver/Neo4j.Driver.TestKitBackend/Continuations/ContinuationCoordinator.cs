@@ -46,6 +46,11 @@ internal class ContinuationCoordinator : IContinuationCoordinator
         tcs.SetResult(response);
     }
 
+    public void CancelNextResponse()
+    {
+        _pendingResponse = null;
+    }
+
     public Task WaitForOutcomeAsync(string sessionId)
     {
         if (_pendingOutcomes.ContainsKey(sessionId))

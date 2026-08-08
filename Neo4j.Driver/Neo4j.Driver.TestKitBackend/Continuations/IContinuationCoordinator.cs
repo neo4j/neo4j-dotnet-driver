@@ -23,6 +23,8 @@ internal interface IContinuationCoordinator
 
     void CompleteNextResponse(IProtocolMessage response);
 
+    void CancelNextResponse();
+
     Task WaitForOutcomeAsync(string sessionId);
 
     void CompleteOutcome(string sessionId);

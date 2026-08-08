@@ -333,6 +333,34 @@ public class RetryableTransactionFlowTests
         _registryMock.Verify(r => r.Get<Exception>(It.IsAny<string>()), Times.Never);
     }
 
+    [Fact]
+    public async Task An_unregistered_errorId_does_not_leave_the_response_slot_registered()
+    {
+        var txMock = RegisterTx("tx-1");
+        _sessionMock
+            .Setup(
+                s => s.ExecuteReadAsync(
+                    It.IsAny<Func<IAsyncQueryRunner, Task>>(),
+                    It.IsAny<Action<TransactionConfigBuilder>>()))
+            .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
+                (work, _) => work(txMock.Object));
+
+        await WithTimeoutAsync(
+            ReadHandler().ProcessAsync(new SessionReadTransactionRequest { Session = _sessionHandle }));
+
+        _registryMock
+            .Setup(r => r.Get<Exception>("bad-id"))
+            .Throws(new TestKitProtocolException("No object is registered with id 'bad-id'."));
+
+        var act = () => NegativeHandler().ProcessAsync(new RetryableNegativeRequest(_sessionHandle, "bad-id"));
+        await act.Should().ThrowAsync<TestKitProtocolException>();
+
+        // Action, not Func<Task<T>>: asserting on the latter awaits the deliberately
+        // never-completed task instead of just checking the synchronous registration.
+        Action act2 = () => { _coordinator.WaitForNextResponseAsync(); };
+        act2.Should().NotThrow();
+    }
+
     private Mock<IAsyncTransaction> RegisterTx(string id)
     {
         var txMock = new Mock<IAsyncTransaction>();
