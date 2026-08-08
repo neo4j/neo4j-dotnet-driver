@@ -64,16 +64,27 @@ internal abstract class BackgroundOperationHandler<T> : MessageHandler<T> where 
         catch (Exception exception) when (exception is Neo4jException or TimeZoneNotFoundException)
         {
             _logger.LogDebug(exception, "Driver error during background operation");
-            var response = exception is Neo4jException neo4jException
-                ? _driverErrorMapper.Map(neo4jException)
-                : _driverErrorMapper.Map(exception);
-
-            _coordinator.CompleteNextResponse(response);
+            _coordinator.CompleteNextResponse(MapDriverError(exception));
         }
         catch (Exception exception)
         {
             _logger.LogError(exception, "Unhandled error during background operation");
             _coordinator.CompleteNextResponse(new BackendErrorResponse { Msg = exception.Message });
+        }
+    }
+
+    private IProtocolMessage MapDriverError(Exception exception)
+    {
+        try
+        {
+            return _driverErrorMapper.Map(exception);
+        }
+        catch (Exception mappingFailure)
+        {
+            // A response must still reach the slot below, or the connection hangs to
+            // testkit's own receive timeout instead of failing with this error.
+            _logger.LogError(mappingFailure, "Failed to map the driver error");
+            return new BackendErrorResponse { Msg = exception.Message };
         }
     }
 }

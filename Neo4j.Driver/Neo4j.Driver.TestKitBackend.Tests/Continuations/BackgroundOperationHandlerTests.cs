@@ -103,6 +103,30 @@ public class BackgroundOperationHandlerTests
     }
 
     [Fact]
+    public async Task A_mapper_failure_still_completes_the_slot_with_a_bare_BackendError()
+    {
+        // If _driverErrorMapper.Map itself throws, that exception used to escape the
+        // fire-and-forget background task unobserved, leaving the response slot registered
+        // forever and hanging the connection until testkit's own receive timeout.
+        var exception = new ClientException("Neo.ClientError.Statement.SyntaxError", "bad cypher");
+        var driverErrorMapperMock = new Mock<IDriverErrorMapper>();
+        driverErrorMapperMock.Setup(m => m.Map(exception)).Throws(new Exception("mapper bug"));
+
+        var handler = new ThrowingHandler(
+            exception,
+            _coordinator,
+            _responseWriterMock.Object,
+            driverErrorMapperMock.Object,
+            Mock.Of<ILogger>());
+
+        await WithTimeoutAsync(handler.ProcessAsync(new TestRequest()));
+
+        _responseWriterMock.Verify(
+            w => w.WriteAsync(new BackendErrorResponse { Msg = exception.Message }),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task A_nested_response_can_complete_the_slot_before_the_background_operation_itself_finishes()
     {
         // Mirrors the retry flow: RetryableTransactionHandler's ExecuteAsync can still be

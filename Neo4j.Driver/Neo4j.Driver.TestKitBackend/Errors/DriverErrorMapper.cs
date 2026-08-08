@@ -21,8 +21,6 @@ namespace Neo4j.Driver.TestKitBackend.Errors;
 
 internal interface IDriverErrorMapper
 {
-    DriverErrorResponse Map(Neo4jException exception);
-
     DriverErrorResponse Map(Exception exception);
 }
 
@@ -42,35 +40,33 @@ internal class DriverErrorMapper : IDriverErrorMapper
         _cypherMapper = cypherMapper;
     }
 
-    public DriverErrorResponse Map(Neo4jException exception)
-    {
-        var registered = _registry.Register(exception);
-        return new DriverErrorResponse
-        {
-            Id = registered.Id,
-            ErrorType = _exceptionTypeMapper.Map(exception),
-            Msg = exception.Message,
-            Code = exception.Code,
-            Retryable = exception.IsRetriable,
-            GqlStatus = exception.GqlStatus,
-            StatusDescription = exception.GqlStatusDescription,
-            Classification = exception.GqlClassification,
-            RawClassification = exception.GqlRawClassification,
-            DiagnosticRecord = exception.GqlDiagnosticRecord?
-                .ToDictionary(kv => kv.Key, kv => _cypherMapper.Map(kv.Value)),
-            Cause = MapCause(exception.InnerException)
-        };
-    }
-
     public DriverErrorResponse Map(Exception exception)
     {
         var registered = _registry.Register(exception);
-        return new DriverErrorResponse
+        return exception switch
         {
-            Id = registered.Id,
-            ErrorType = _exceptionTypeMapper.Map(exception),
-            Msg = exception.Message,
-            Retryable = false
+            Neo4jException nex => new DriverErrorResponse
+            {
+                Id = registered.Id,
+                ErrorType = _exceptionTypeMapper.Map(nex),
+                Msg = nex.Message,
+                Code = nex.Code,
+                Retryable = nex.IsRetriable,
+                GqlStatus = nex.GqlStatus,
+                StatusDescription = nex.GqlStatusDescription,
+                Classification = nex.GqlClassification,
+                RawClassification = nex.GqlRawClassification,
+                DiagnosticRecord = nex.GqlDiagnosticRecord?
+                    .ToDictionary(kv => kv.Key, kv => _cypherMapper.Map(kv.Value)),
+                Cause = MapCause(nex.InnerException)
+            },
+            _ => new DriverErrorResponse
+            {
+                Id = registered.Id,
+                ErrorType = _exceptionTypeMapper.Map(exception),
+                Msg = exception.Message,
+                Retryable = false
+            }
         };
     }
 

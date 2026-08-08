@@ -78,10 +78,7 @@ internal class MessageLoop : IMessageLoop
         catch (Exception exception)
         {
             _logger.LogDebug(exception, "Error while handling request");
-            var response = exception is Neo4jException neo4jException
-                ? _driverErrorMapper.Map(neo4jException)
-                : _driverErrorMapper.Map(exception);
-
+            var response = _driverErrorMapper.Map(exception);
             await _responseWriter.WriteAsync(response);
         }
     }

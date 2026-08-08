@@ -56,8 +56,8 @@ public class DriverErrorMapperTests
         _autoMocker.GetMock<INativeToCypherMapper>().Setup(m => m.Map("")).Returns(causeDiagnosticRecordValue);
         _autoMocker.GetMock<IExceptionTypeMapper>().Setup(m => m.Map(exception)).Returns("ClientError");
 
-        var registered = new RegistryObject<Neo4jException>("error-1", exception);
-        _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(exception)).Returns(registered);
+        var registered = new RegistryObject<Exception>("error-1", exception);
+        _autoMocker.GetMock<IRegistry>().Setup(r => r.Register<Exception>(exception)).Returns(registered);
 
         var mapper = _autoMocker.CreateInstance<DriverErrorMapper>();
 
