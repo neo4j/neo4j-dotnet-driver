@@ -52,6 +52,28 @@ public class ObjectJsonConverterTests
     }
 
     [Fact]
+    public void Reads_a_whole_number_as_a_long_and_a_fractional_number_as_a_double()
+    {
+        JsonSerializer.Deserialize<object>("42", Options()).Should().BeOfType<long>().And.Be(42L);
+        JsonSerializer.Deserialize<object>("42.5", Options()).Should().BeOfType<double>().And.Be(42.5);
+    }
+
+    [Fact]
+    public void Reads_nested_dictionaries_and_lists_round_tripping_what_write_produces()
+    {
+        var value = new Dictionary<string, object>
+        {
+            ["EstimatedRows"] = 12L,
+            ["Details"] = new List<object> { "n", "m" }
+        };
+
+        var json = JsonSerializer.Serialize<object?>(value, Options());
+        var roundTripped = JsonSerializer.Deserialize<Dictionary<string, object>>(json, Options());
+
+        roundTripped.Should().BeEquivalentTo(value);
+    }
+
+    [Fact]
     public void Writes_native_scalars_as_untyped_json()
     {
         JsonSerializer.Serialize<object?>("no", Options()).Should().Be("\"no\"");
