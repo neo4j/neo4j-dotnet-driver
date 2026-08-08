@@ -20,8 +20,10 @@ namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record AuthorizationToken(
     string Scheme,
-    string Principal,
-    string Credentials,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    string? Principal,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    string? Credentials,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     string? Realm = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

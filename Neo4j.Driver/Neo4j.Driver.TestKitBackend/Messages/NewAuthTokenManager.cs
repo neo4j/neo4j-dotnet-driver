@@ -84,8 +84,8 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
         var content = ((AuthToken)token).Content;
         return new AuthorizationToken(
             (string)content["scheme"],
-            (string)content["principal"],
-            (string)content["credentials"],
+            content.TryGetValue("principal", out var principal) ? (string)principal : null,
+            content.TryGetValue("credentials", out var credentials) ? (string)credentials : null,
             content.TryGetValue("realm", out var realm) ? (string)realm : null);
     }
 }

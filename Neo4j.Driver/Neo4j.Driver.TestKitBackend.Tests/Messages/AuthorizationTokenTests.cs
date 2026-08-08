@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Text.Json;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.TestKitBackend.Messages;
@@ -22,6 +23,20 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
 public class AuthorizationTokenTests
 {
+    private static readonly JsonSerializerOptions Options =
+        new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+    [Fact]
+    public void A_null_principal_or_credentials_is_omitted_from_the_wire_rather_than_written_as_null()
+    {
+        var token = new AuthorizationToken("bearer", null, "token-value");
+
+        var json = JsonSerializer.Serialize(token, Options);
+
+        json.Should().NotContain("principal");
+        json.Should().Contain("\"credentials\":\"token-value\"");
+    }
+
     [Fact]
     public void Basic_scheme_maps_to_a_basic_auth_token()
     {

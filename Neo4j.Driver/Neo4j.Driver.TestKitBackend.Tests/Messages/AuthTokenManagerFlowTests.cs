@@ -131,4 +131,60 @@ public class AuthTokenManagerFlowTests
         securityExceptionRequest.ErrorCode.Should().Be("Neo.ClientError.Security.TokenExpired");
         securityExceptionRequest.Auth.Should().Be(new AuthorizationToken("basic", "neo4j", "pass"));
     }
+
+    [Fact]
+    public async Task
+        The_registered_manager_requests_a_HandleSecurityException_callback_for_a_bearer_token_with_no_principal()
+    {
+        IAuthTokenManager? manager = null;
+        var registryMock = new Mock<IRegistry>();
+        registryMock
+            .Setup(r => r.Register(It.IsAny<Func<string, IAuthTokenManager>>()))
+            .Returns<Func<string, IAuthTokenManager>>(
+                create =>
+                {
+                    manager = create("manager-1");
+                    return new RegistryObject<IAuthTokenManager>("manager-1", manager);
+                });
+
+        Func<string, ICallbackRequest>? capturedRequest = null;
+        var callbacksMock = new Mock<ICallbackExchanger>();
+        callbacksMock
+            .Setup(
+                c => c.SendAsync<AuthTokenManagerHandleSecurityExceptionCompleted>(
+                    It.IsAny<Func<string, ICallbackRequest>>()))
+            .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
+            .ReturnsAsync(
+                new AuthTokenManagerHandleSecurityExceptionCompleted
+                {
+                    RequestId = "callback-1",
+                    Handled = true
+                });
+
+        var newManagerHandler = new NewAuthTokenManagerHandler(
+            registryMock.Object,
+            callbacksMock.Object,
+            Mock.Of<IResponseWriter>(),
+            Mock.Of<ILogger>());
+
+        await newManagerHandler.ProcessAsync(new NewAuthTokenManagerRequest());
+        manager.Should().NotBeNull();
+
+        var token = AuthTokens.Bearer("token-value");
+        var exception = new SecurityException("Neo.ClientError.Security.TokenExpired", "boom");
+
+        var handled = await manager!.HandleSecurityExceptionAsync(
+            token,
+            exception,
+            TestContext.Current.CancellationToken);
+
+        handled.Should().BeTrue();
+
+        capturedRequest.Should().NotBeNull();
+        var request = capturedRequest!("callback-1");
+        var securityExceptionRequest = (AuthTokenManagerHandleSecurityExceptionRequest)request;
+        securityExceptionRequest.Auth.Value.Scheme.Should().Be("bearer");
+        securityExceptionRequest.Auth.Value.Credentials.Should().Be("token-value");
+        securityExceptionRequest.Auth.Value.Principal.Should().BeNull();
+    }
 }
