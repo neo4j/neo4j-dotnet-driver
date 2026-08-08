@@ -28,11 +28,16 @@ internal interface IFakeTimeService
     void Uninstall();
 }
 
-[RegistrationLifetime(RegistrationLifetime.Singleton)]
-internal class FakeTimeService : IFakeTimeService
+[RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
+internal class FakeTimeService : IFakeTimeService, IDisposable
 {
     private IDateTimeProvider? _original;
     private FakeDateTimeProvider? _fake;
+
+    public void Dispose()
+    {
+        Uninstall();
+    }
 
     public void Install()
     {
@@ -48,6 +53,11 @@ internal class FakeTimeService : IFakeTimeService
 
     public void Uninstall()
     {
+        if (_fake is null)
+        {
+            return;
+        }
+
         DateTimeProvider.StaticInstance = _original!;
         _original = null;
         _fake = null;

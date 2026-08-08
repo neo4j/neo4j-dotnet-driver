@@ -74,4 +74,30 @@ public class FakeTimeServiceTests : IDisposable
 
         DateTimeProvider.StaticInstance.Should().BeSameAs(_original);
     }
+
+    [Fact]
+    public void Dispose_uninstalls_a_clock_left_installed()
+    {
+        _service.Install();
+
+        _service.Dispose();
+
+        DateTimeProvider.StaticInstance.Should().BeSameAs(_original);
+    }
+
+    [Fact]
+    public void Dispose_without_a_preceding_install_leaves_the_real_provider_in_place()
+    {
+        _service.Dispose();
+
+        DateTimeProvider.StaticInstance.Should().BeSameAs(_original);
+    }
+
+    [Fact]
+    public void Uninstall_without_a_preceding_install_leaves_the_real_provider_in_place()
+    {
+        _service.Uninstall();
+
+        DateTimeProvider.StaticInstance.Should().BeSameAs(_original);
+    }
 }
