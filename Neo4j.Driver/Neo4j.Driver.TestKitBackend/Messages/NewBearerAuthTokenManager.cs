@@ -70,7 +70,7 @@ internal class NewBearerAuthTokenManagerHandler : MessageHandler<NewBearerAuthTo
         var payload = completion.Auth.Value;
         var token = payload.Auth.Value.ToAuthToken();
         return payload.ExpiresInMs is {} expiresInMs
-            ? new DriverAuthTokenAndExpiration(token, (int)expiresInMs)
+            ? new DriverAuthTokenAndExpiration(token, DateTimeProvider.StaticInstance.Now().AddMilliseconds(expiresInMs))
             : new DriverAuthTokenAndExpiration(token);
     }
 }

@@ -111,6 +111,25 @@ public class BearerAuthTokenManagerFlowTests
     }
 
     [Fact]
+    public async Task A_token_with_expiry_beyond_int_MaxValue_milliseconds_stays_valid()
+    {
+        var manager = RegisterManager();
+        SetupNextToken("a-token", expiresInMs: (long)int.MaxValue + 10_000);
+
+        await manager.GetTokenAsync(TestContext.Current.CancellationToken);
+        _callbacksMock.Invocations.Clear();
+
+        var secondTokenValue = await manager.GetTokenAsync(TestContext.Current.CancellationToken);
+        secondTokenValue.Should().BeAssignableTo<AuthToken>();
+        var secondToken = (AuthToken)secondTokenValue;
+
+        secondToken.Content["credentials"].Should().Be("a-token");
+        _callbacksMock.Verify(
+            c => c.SendAsync<BearerAuthTokenProviderCompleted>(It.IsAny<Func<string, ICallbackRequest>>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task An_expired_token_is_refreshed_when_fake_time_was_installed_after_the_manager()
     {
         var original = DateTimeProvider.StaticInstance;
