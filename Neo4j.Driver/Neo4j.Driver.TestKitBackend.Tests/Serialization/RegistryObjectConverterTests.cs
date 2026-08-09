@@ -40,6 +40,22 @@ public class RegistryObjectConverterTests
         request.Thing.Id.Should().Be(registered.Id);
     }
 
+    [Fact]
+    public void Rejects_a_non_string_wire_id()
+    {
+        var deserialize = () => JsonSerializer.Deserialize<Request>("""{"thingId":123}""", Options());
+
+        deserialize.Should().Throw<TestKitProtocolException>();
+    }
+
+    [Fact]
+    public void Rejects_a_null_wire_id()
+    {
+        var deserialize = () => JsonSerializer.Deserialize<Request>("""{"thingId":null}""", Options());
+
+        deserialize.Should().Throw<TestKitProtocolException>();
+    }
+
     private record Request
     {
         public RegistryObject<Stored> Thing { get; init; } = null!;

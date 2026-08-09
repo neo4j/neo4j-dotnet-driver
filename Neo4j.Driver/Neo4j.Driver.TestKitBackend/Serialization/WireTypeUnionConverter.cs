@@ -33,6 +33,11 @@ internal abstract class WireTypeUnionConverter<TUnion> : JsonConverter<TUnion>, 
         using var document = JsonDocument.ParseValue(ref reader);
         var root = document.RootElement;
 
+        if (root.ValueKind != JsonValueKind.Object)
+        {
+            throw new TestKitProtocolException("Wire type envelope must be a JSON object.");
+        }
+
         if (!root.TryGetProperty("name", out var nameElement) || nameElement.ValueKind != JsonValueKind.String)
         {
             throw new TestKitProtocolException("Wire type envelope is missing a string \"name\".");
@@ -45,14 +50,22 @@ internal abstract class WireTypeUnionConverter<TUnion> : JsonConverter<TUnion>, 
             ? dataElement.GetRawText()
             : "{}";
 
+        object? data;
         try
         {
-            return (TUnion)JsonSerializer.Deserialize(dataJson, concreteType, options)!;
+            data = JsonSerializer.Deserialize(dataJson, concreteType, options);
         }
         catch (JsonException ex)
         {
             throw new TestKitProtocolException($"Failed to deserialize the data of wire type \"{name}\".", ex);
         }
+
+        if (data is null)
+        {
+            throw new TestKitProtocolException($"The \"data\" of wire type \"{name}\" must not be null.");
+        }
+
+        return (TUnion)data;
     }
 
     public override void Write(Utf8JsonWriter writer, TUnion value, JsonSerializerOptions options)

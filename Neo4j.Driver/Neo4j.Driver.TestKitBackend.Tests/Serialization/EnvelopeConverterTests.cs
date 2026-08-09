@@ -138,6 +138,32 @@ public class EnvelopeConverterTests
     }
 
     [Fact]
+    public void Rejects_a_null_data_object()
+    {
+        const string json =
+            """
+            {
+                "name": "Sample",
+                "data": null
+            }
+            """;
+
+        var deserialize = () => JsonSerializer.Deserialize<IProtocolMessage>(json, Options());
+
+        deserialize.Should().Throw<TestKitProtocolException>();
+    }
+
+    [Fact]
+    public void Rejects_a_non_object_envelope()
+    {
+        const string json = "\"just a string\"";
+
+        var deserialize = () => JsonSerializer.Deserialize<IProtocolMessage>(json, Options());
+
+        deserialize.Should().Throw<TestKitProtocolException>();
+    }
+
+    [Fact]
     public void Writes_the_outbound_wire_name_and_camelCase_data()
     {
         var json = JsonSerializer.Serialize<IProtocolMessage>(new SampleResponse { Value = "x" }, Options());

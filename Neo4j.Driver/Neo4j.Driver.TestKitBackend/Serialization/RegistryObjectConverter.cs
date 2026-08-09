@@ -51,12 +51,17 @@ internal class RegistryObjectConverter<T> : JsonConverter<RegistryObject<T>> whe
         _registry = registry;
     }
 
+    public override bool HandleNull => true;
+
     public override RegistryObject<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        var id = reader.GetString() ??
-            throw new TestKitProtocolException($"A {typeof(T).Name} handle id must be a string, not null.");
+        if (reader.TokenType != JsonTokenType.String)
+        {
+            throw new TestKitProtocolException(
+                $"A {typeof(T).Name} handle id must be a string, not {reader.TokenType}.");
+        }
 
-        return _registry.Get<T>(id);
+        return _registry.Get<T>(reader.GetString()!);
     }
 
     public override void Write(Utf8JsonWriter writer, RegistryObject<T> value, JsonSerializerOptions options)
