@@ -44,12 +44,13 @@ internal class RetryableNegativeHandler : MessageHandler<RetryableNegativeReques
         var sessionId = message.Session.Id;
         var responseTask = _coordinator.WaitForNextResponseAsync();
 
-        Exception exception;
         try
         {
-            exception = message.ErrorId == ""
+            var exception = message.ErrorId == ""
                 ? new FrontendException("Error from client in retryable tx")
                 : _registry.Get<Exception>(message.ErrorId).Object;
+
+            _coordinator.FailOutcome(sessionId, exception);
         }
         catch
         {
@@ -57,7 +58,6 @@ internal class RetryableNegativeHandler : MessageHandler<RetryableNegativeReques
             throw;
         }
 
-        _coordinator.FailOutcome(sessionId, exception);
         await _responseWriter.WriteAsync(await responseTask);
     }
 }

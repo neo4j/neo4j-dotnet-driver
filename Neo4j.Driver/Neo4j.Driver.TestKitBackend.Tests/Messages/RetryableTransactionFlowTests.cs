@@ -361,6 +361,64 @@ public class RetryableTransactionFlowTests
         act2.Should().NotThrow();
     }
 
+    [Fact]
+    public async Task A_duplicate_RetryablePositive_does_not_leave_the_response_slot_registered()
+    {
+        var txMock = RegisterTx("tx-1");
+        _sessionMock
+            .Setup(
+                s => s.ExecuteReadAsync(
+                    It.IsAny<Func<IAsyncQueryRunner, Task>>(),
+                    It.IsAny<Action<TransactionConfigBuilder>>()))
+            .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
+                (work, _) => work(txMock.Object));
+
+        await WithTimeoutAsync(
+            ReadHandler().ProcessAsync(new SessionReadTransactionRequest { Session = _sessionHandle }));
+
+        await WithTimeoutAsync(
+            PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
+
+        var act = () => PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle));
+        await act.Should().ThrowAsync<InvalidOperationException>();
+
+        Action act2 = () => { _coordinator.WaitForNextResponseAsync(); };
+        act2.Should().NotThrow();
+    }
+
+    [Fact]
+    public async Task A_duplicate_RetryableNegative_does_not_leave_the_response_slot_registered()
+    {
+        var storedException = new ClientException("Neo.ClientError.Statement.SyntaxError", "bad cypher");
+        _registryMock
+            .Setup(r => r.Get<Exception>("error-1"))
+            .Returns(new RegistryObject<Exception>("error-1", storedException));
+
+        var errorResponse = new DriverErrorResponse { Id = "error-2", ErrorType = "ClientError" };
+        _driverErrorMapperMock.Setup(m => m.Map(storedException)).Returns(errorResponse);
+
+        var txMock = RegisterTx("tx-1");
+        _sessionMock
+            .Setup(
+                s => s.ExecuteReadAsync(
+                    It.IsAny<Func<IAsyncQueryRunner, Task>>(),
+                    It.IsAny<Action<TransactionConfigBuilder>>()))
+            .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
+                (work, _) => work(txMock.Object));
+
+        await WithTimeoutAsync(
+            ReadHandler().ProcessAsync(new SessionReadTransactionRequest { Session = _sessionHandle }));
+
+        await WithTimeoutAsync(
+            NegativeHandler().ProcessAsync(new RetryableNegativeRequest(_sessionHandle, "error-1")));
+
+        var act = () => NegativeHandler().ProcessAsync(new RetryableNegativeRequest(_sessionHandle, "error-1"));
+        await act.Should().ThrowAsync<InvalidOperationException>();
+
+        Action act2 = () => { _coordinator.WaitForNextResponseAsync(); };
+        act2.Should().NotThrow();
+    }
+
     private Mock<IAsyncTransaction> RegisterTx(string id)
     {
         var txMock = new Mock<IAsyncTransaction>();

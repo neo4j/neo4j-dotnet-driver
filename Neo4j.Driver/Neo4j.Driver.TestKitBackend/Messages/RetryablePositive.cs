@@ -37,7 +37,17 @@ internal class RetryablePositiveHandler : MessageHandler<RetryablePositiveReques
     {
         var sessionId = message.Session.Id;
         var responseTask = _coordinator.WaitForNextResponseAsync();
-        _coordinator.CompleteOutcome(sessionId);
+
+        try
+        {
+            _coordinator.CompleteOutcome(sessionId);
+        }
+        catch
+        {
+            _coordinator.CancelNextResponse();
+            throw;
+        }
+
         await _responseWriter.WriteAsync(await responseTask);
     }
 }
