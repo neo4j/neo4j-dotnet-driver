@@ -85,7 +85,7 @@ internal class WireTypeConverter<T> : JsonConverter<IWireType<T>> where T : IWir
     public override void Write(Utf8JsonWriter writer, IWireType<T> value, JsonSerializerOptions options)
     {
         writer.WriteStartObject();
-        writer.WriteString("name", _expectedName);
+        writer.WriteString("name", value.OutboundTypeName);
         writer.WritePropertyName("data");
 
         JsonSerializer.Serialize(writer, (T)value, options);

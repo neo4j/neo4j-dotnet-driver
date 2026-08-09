@@ -139,6 +139,22 @@ public class WireTypeConverterTests
     }
 
     [Fact]
+    public void Writes_the_outbound_name_for_a_suffixed_wire_type()
+    {
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            Converters = { _autoMocker.CreateInstance<WireTypeConverterFactory>() }
+        };
+
+        IWireType<SuffixedTestWireTypeRequest> value = new SuffixedTestWireTypeRequest();
+        var json = JsonSerializer.Serialize(value, options);
+
+        using var document = JsonDocument.Parse(json);
+        document.RootElement.GetProperty("name").GetString().Should().Be("SuffixedTestWireTypeRequest");
+    }
+
+    [Fact]
     public void Rejects_a_wire_type_whose_name_does_not_match_the_declared_type()
     {
         var options = new JsonSerializerOptions
@@ -169,3 +185,5 @@ internal record OuterTestWireType : IWireType<OuterTestWireType>
 {
     public IWireType<AuthorizationToken>? Token { get; init; }
 }
+
+internal record SuffixedTestWireTypeRequest : IWireType<SuffixedTestWireTypeRequest>;
