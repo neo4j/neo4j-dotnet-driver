@@ -41,6 +41,11 @@ internal class FakeTimeService : IFakeTimeService, IDisposable
 
     public void Install()
     {
+        if (_fake is not null)
+        {
+            throw new InvalidOperationException("The fake time service is already installed.");
+        }
+
         _original = DateTimeProvider.StaticInstance;
         _fake = new FakeDateTimeProvider();
         DateTimeProvider.StaticInstance = _fake;

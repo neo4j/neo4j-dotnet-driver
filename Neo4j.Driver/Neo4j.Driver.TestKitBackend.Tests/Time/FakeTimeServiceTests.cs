@@ -66,6 +66,28 @@ public class FakeTimeServiceTests : IDisposable
     }
 
     [Fact]
+    public void Install_twice_without_uninstalling_throws()
+    {
+        _service.Install();
+
+        var act = () => _service.Install();
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Uninstall_after_a_rejected_double_install_still_restores_the_real_provider()
+    {
+        _service.Install();
+        var act = () => _service.Install();
+        act.Should().Throw<InvalidOperationException>();
+
+        _service.Uninstall();
+
+        DateTimeProvider.StaticInstance.Should().BeSameAs(_original);
+    }
+
+    [Fact]
     public void Uninstall_restores_the_real_provider()
     {
         _service.Install();
