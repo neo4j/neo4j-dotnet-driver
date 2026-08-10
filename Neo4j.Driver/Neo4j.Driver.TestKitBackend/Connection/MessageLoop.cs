@@ -50,13 +50,31 @@ internal class MessageLoop : IMessageLoop
     {
         try
         {
-            string? json;
-            while ((json = await _input.ReadRequestAsync()) is not null)
+            bool readSuccess;
+            string? json = null;
+
+            do
             {
+                readSuccess = false;
+                try
+                {
+                    json = await _input.ReadRequestAsync();
+                    readSuccess = true;
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogError(exception, "Connection {ConnectionId} failed while reading", connectionId);
+                }
+
+                if (!readSuccess || json is null)
+                {
+                    continue;
+                }
+
                 _logger.LogDebug("Request: {Request}", json);
                 var message = _serializer.Deserialize(json);
                 await DispatchWithErrorHandlingAsync(message);
-            }
+            } while (readSuccess);
         }
         catch (Exception exception)
         {

@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
@@ -48,6 +49,25 @@ public class MessageLoopTests
         await loop.RunAsync("testkit-1");
 
         _autoMocker.GetMock<IMessageDispatcher>().Verify(d => d.DispatchAsync(message), Times.Once);
+
+        _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(It.IsAny<IProtocolMessage>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task A_read_failure_ends_the_loop_without_attempting_a_reply()
+    {
+        _autoMocker.GetMock<IConnectionInput>()
+            .Setup(i => i.ReadRequestAsync())
+            .ThrowsAsync(new IOException("connection reset by peer"));
+
+        _autoMocker.GetMock<IResponseWriter>()
+            .Setup(w => w.WriteAsync(It.IsAny<IProtocolMessage>()))
+            .ThrowsAsync(new IOException("cannot write to a closed connection"));
+
+        var loop = _autoMocker.CreateInstance<MessageLoop>();
+
+        var act = () => loop.RunAsync("testkit-1");
+        await act.Should().NotThrowAsync();
 
         _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(It.IsAny<IProtocolMessage>()), Times.Never);
     }
