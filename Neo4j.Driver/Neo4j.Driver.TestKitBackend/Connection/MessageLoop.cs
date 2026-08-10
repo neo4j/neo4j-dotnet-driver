@@ -28,6 +28,7 @@ internal class MessageLoop : IMessageLoop
     private readonly IMessageDispatcher _dispatcher;
     private readonly IResponseWriter _responseWriter;
     private readonly IDriverErrorMapper _driverErrorMapper;
+    private readonly IExceptionOriginClassifier _originClassifier;
     private readonly ILogger _logger;
 
     public MessageLoop(
@@ -36,6 +37,7 @@ internal class MessageLoop : IMessageLoop
         IMessageDispatcher dispatcher,
         IResponseWriter responseWriter,
         IDriverErrorMapper driverErrorMapper,
+        IExceptionOriginClassifier originClassifier,
         ILogger logger)
     {
         _input = input;
@@ -43,6 +45,7 @@ internal class MessageLoop : IMessageLoop
         _dispatcher = dispatcher;
         _responseWriter = responseWriter;
         _driverErrorMapper = driverErrorMapper;
+        _originClassifier = originClassifier;
         _logger = logger;
     }
 
@@ -93,11 +96,16 @@ internal class MessageLoop : IMessageLoop
         {
             await _dispatcher.DispatchAsync(message);
         }
-        catch (Exception exception)
+        catch (Exception exception) when (_originClassifier.OriginatesInDriver(exception))
         {
             _logger.LogDebug(exception, "Error while handling request");
             var response = _driverErrorMapper.Map(exception);
             await _responseWriter.WriteAsync(response);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "Unhandled error while handling request");
+            await _responseWriter.WriteAsync(new BackendErrorResponse { Msg = exception.Message });
         }
     }
 }

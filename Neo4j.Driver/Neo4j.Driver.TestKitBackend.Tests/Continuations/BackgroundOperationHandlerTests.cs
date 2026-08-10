@@ -45,8 +45,9 @@ public class BackgroundOperationHandlerTests
             IContinuationCoordinator coordinator,
             IResponseWriter responseWriter,
             IDriverErrorMapper driverErrorMapper,
+            IExceptionOriginClassifier originClassifier,
             ILogger logger)
-            : base(coordinator, responseWriter, driverErrorMapper, logger)
+            : base(coordinator, responseWriter, driverErrorMapper, originClassifier, logger)
         {
             _gate = gate;
         }
@@ -67,8 +68,9 @@ public class BackgroundOperationHandlerTests
             IContinuationCoordinator coordinator,
             IResponseWriter responseWriter,
             IDriverErrorMapper driverErrorMapper,
+            IExceptionOriginClassifier originClassifier,
             ILogger logger)
-            : base(coordinator, responseWriter, driverErrorMapper, logger)
+            : base(coordinator, responseWriter, driverErrorMapper, originClassifier, logger)
         {
             _exception = exception;
         }
@@ -89,12 +91,15 @@ public class BackgroundOperationHandlerTests
         var errorResponse = new DriverErrorResponse { Id = "error-1", ErrorType = "TimeZoneNotFoundException" };
         var driverErrorMapperMock = new Mock<IDriverErrorMapper>();
         driverErrorMapperMock.Setup(m => m.Map(exception)).Returns(errorResponse);
+        var originClassifierMock = new Mock<IExceptionOriginClassifier>();
+        originClassifierMock.Setup(c => c.OriginatesInDriver(exception)).Returns(true);
 
         var handler = new ThrowingHandler(
             exception,
             _coordinator,
             _responseWriterMock.Object,
             driverErrorMapperMock.Object,
+            originClassifierMock.Object,
             Mock.Of<ILogger>());
 
         await WithTimeoutAsync(handler.ProcessAsync(new TestRequest()));
@@ -111,12 +116,37 @@ public class BackgroundOperationHandlerTests
         var exception = new ClientException("Neo.ClientError.Statement.SyntaxError", "bad cypher");
         var driverErrorMapperMock = new Mock<IDriverErrorMapper>();
         driverErrorMapperMock.Setup(m => m.Map(exception)).Throws(new Exception("mapper bug"));
+        var originClassifierMock = new Mock<IExceptionOriginClassifier>();
+        originClassifierMock.Setup(c => c.OriginatesInDriver(exception)).Returns(true);
 
         var handler = new ThrowingHandler(
             exception,
             _coordinator,
             _responseWriterMock.Object,
             driverErrorMapperMock.Object,
+            originClassifierMock.Object,
+            Mock.Of<ILogger>());
+
+        await WithTimeoutAsync(handler.ProcessAsync(new TestRequest()));
+
+        _responseWriterMock.Verify(
+            w => w.WriteAsync(new BackendErrorResponse { Msg = exception.Message }),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Reports_a_bare_BackendError_when_the_exception_does_not_originate_in_the_driver()
+    {
+        var exception = new NullReferenceException("backend bug");
+        var originClassifierMock = new Mock<IExceptionOriginClassifier>();
+        originClassifierMock.Setup(c => c.OriginatesInDriver(exception)).Returns(false);
+
+        var handler = new ThrowingHandler(
+            exception,
+            _coordinator,
+            _responseWriterMock.Object,
+            Mock.Of<IDriverErrorMapper>(),
+            originClassifierMock.Object,
             Mock.Of<ILogger>());
 
         await WithTimeoutAsync(handler.ProcessAsync(new TestRequest()));
@@ -138,6 +168,7 @@ public class BackgroundOperationHandlerTests
             _coordinator,
             _responseWriterMock.Object,
             Mock.Of<IDriverErrorMapper>(),
+            Mock.Of<IExceptionOriginClassifier>(),
             Mock.Of<ILogger>());
 
         var processTask = handler.ProcessAsync(new TestRequest());

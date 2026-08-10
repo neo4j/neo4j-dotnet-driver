@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.Configuration;
 using Neo4j.Driver.TestKitBackend.Certificates;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
@@ -213,7 +214,7 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
             }
             catch (TargetInvocationException e) when (e.InnerException is not null)
             {
-                throw e.InnerException;
+                ExceptionDispatchInfo.Capture(e.InnerException).Throw();
             }
         }
     }

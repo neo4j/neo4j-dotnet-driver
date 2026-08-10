@@ -26,17 +26,20 @@ internal abstract class BackgroundOperationHandler<T> : MessageHandler<T> where 
     private readonly IContinuationCoordinator _coordinator;
     private readonly IResponseWriter _responseWriter;
     private readonly IDriverErrorMapper _driverErrorMapper;
+    private readonly IExceptionOriginClassifier _originClassifier;
     private readonly ILogger _logger;
 
     protected BackgroundOperationHandler(
         IContinuationCoordinator coordinator,
         IResponseWriter responseWriter,
         IDriverErrorMapper driverErrorMapper,
+        IExceptionOriginClassifier originClassifier,
         ILogger logger)
     {
         _coordinator = coordinator;
         _responseWriter = responseWriter;
         _driverErrorMapper = driverErrorMapper;
+        _originClassifier = originClassifier;
         _logger = logger;
     }
 
@@ -61,7 +64,7 @@ internal abstract class BackgroundOperationHandler<T> : MessageHandler<T> where 
         {
             _coordinator.CompleteNextResponse(new FrontendErrorResponse { Msg = exception.Message });
         }
-        catch (Exception exception) when (exception is Neo4jException or TimeZoneNotFoundException)
+        catch (Exception exception) when (_originClassifier.OriginatesInDriver(exception))
         {
             _logger.LogDebug(exception, "Driver error during background operation");
             _coordinator.CompleteNextResponse(MapDriverError(exception));

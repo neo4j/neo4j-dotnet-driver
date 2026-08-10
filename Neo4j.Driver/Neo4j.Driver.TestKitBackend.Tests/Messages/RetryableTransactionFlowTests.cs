@@ -38,6 +38,7 @@ public class RetryableTransactionFlowTests
     private readonly Mock<IConnectionInput> _connectionInputMock = new();
     private readonly Mock<IMessageSerializer> _serializerMock = new();
     private readonly Mock<IDriverErrorMapper> _driverErrorMapperMock = new();
+    private readonly Mock<IExceptionOriginClassifier> _originClassifierMock = new();
     private readonly Mock<IAsyncSession> _sessionMock = new();
     private readonly RegistryObject<IAsyncSession> _sessionHandle;
 
@@ -162,6 +163,7 @@ public class RetryableTransactionFlowTests
 
         var errorResponse = new DriverErrorResponse { Id = "error-2", ErrorType = "ClientError" };
         _driverErrorMapperMock.Setup(m => m.Map(storedException)).Returns(errorResponse);
+        _originClassifierMock.Setup(c => c.OriginatesInDriver(storedException)).Returns(true);
 
         var txMock = RegisterTx("tx-1");
         _sessionMock
@@ -396,6 +398,7 @@ public class RetryableTransactionFlowTests
 
         var errorResponse = new DriverErrorResponse { Id = "error-2", ErrorType = "ClientError" };
         _driverErrorMapperMock.Setup(m => m.Map(storedException)).Returns(errorResponse);
+        _originClassifierMock.Setup(c => c.OriginatesInDriver(storedException)).Returns(true);
 
         var txMock = RegisterTx("tx-1");
         _sessionMock
@@ -437,6 +440,7 @@ public class RetryableTransactionFlowTests
             _transactionConfigMapperMock.Object,
             _responseWriterMock.Object,
             _driverErrorMapperMock.Object,
+            _originClassifierMock.Object,
             Mock.Of<ILogger>());
     }
 
@@ -448,6 +452,7 @@ public class RetryableTransactionFlowTests
             _transactionConfigMapperMock.Object,
             _responseWriterMock.Object,
             _driverErrorMapperMock.Object,
+            _originClassifierMock.Object,
             Mock.Of<ILogger>());
     }
 

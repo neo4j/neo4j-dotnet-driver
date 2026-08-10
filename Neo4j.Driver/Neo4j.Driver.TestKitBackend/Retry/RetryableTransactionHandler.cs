@@ -47,8 +47,9 @@ internal abstract class RetryableTransactionHandler<T> : BackgroundOperationHand
         ITransactionConfigMapper transactionConfigMapper,
         IResponseWriter responseWriter,
         IDriverErrorMapper driverErrorMapper,
+        IExceptionOriginClassifier originClassifier,
         ILogger logger)
-        : base(coordinator, responseWriter, driverErrorMapper, logger)
+        : base(coordinator, responseWriter, driverErrorMapper, originClassifier, logger)
     {
         _registry = registry;
         _coordinator = coordinator;

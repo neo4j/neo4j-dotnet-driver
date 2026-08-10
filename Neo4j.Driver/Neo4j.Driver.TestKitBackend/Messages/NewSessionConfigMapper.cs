@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -132,7 +133,7 @@ internal class NewSessionConfigMapper : INewSessionConfigMapper
             }
             catch (TargetInvocationException e) when (e.InnerException is not null)
             {
-                throw e.InnerException;
+                ExceptionDispatchInfo.Capture(e.InnerException).Throw();
             }
         }
     }

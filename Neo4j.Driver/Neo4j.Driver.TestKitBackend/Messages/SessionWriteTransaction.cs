@@ -43,8 +43,9 @@ internal class SessionWriteTransactionHandler : RetryableTransactionHandler<Sess
         ITransactionConfigMapper transactionConfigMapper,
         IResponseWriter responseWriter,
         IDriverErrorMapper driverErrorMapper,
+        IExceptionOriginClassifier originClassifier,
         ILogger logger)
-        : base(registry, coordinator, transactionConfigMapper, responseWriter, driverErrorMapper, logger)
+        : base(registry, coordinator, transactionConfigMapper, responseWriter, driverErrorMapper, originClassifier, logger)
     {
     }
 

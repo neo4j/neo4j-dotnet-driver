@@ -20,6 +20,7 @@ using Microsoft.Extensions.Configuration;
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Certificates;
+using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Types;
@@ -342,6 +343,18 @@ public class NewDriverConfigMapperTests
         var act = () => Apply(MinimalRequest() with { FetchSize = -5 });
 
         act.Should().Throw<ArgumentOutOfRangeException>().WithMessage("*boom*");
+    }
+
+    [Fact]
+    public void An_exception_unwrapped_from_reflection_still_carries_its_original_driver_stack_trace()
+    {
+        var mapper = _autoMocker.CreateInstance<NewDriverConfigMapper>();
+
+        var exception = Record.Exception(
+            () => mapper.Apply(MinimalRequest() with { FetchSize = -5 }, Config.Builder));
+
+        exception.Should().BeOfType<ArgumentOutOfRangeException>();
+        new ExceptionOriginClassifier().OriginatesInDriver(exception!).Should().BeTrue();
     }
 
     private record RequestWithUnmappedProperty : NewDriverRequest
