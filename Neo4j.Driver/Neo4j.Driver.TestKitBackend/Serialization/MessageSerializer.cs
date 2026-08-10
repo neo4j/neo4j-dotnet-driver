@@ -18,6 +18,7 @@ using System.Text.Json;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 namespace Neo4j.Driver.TestKitBackend.Serialization;
 
+[RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
 internal class MessageSerializer : IMessageSerializer
 {
     private readonly IJsonOptionsProvider _optionsProvider;

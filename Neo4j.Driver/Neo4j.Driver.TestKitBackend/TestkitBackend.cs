@@ -31,7 +31,7 @@ public class TestkitBackend
 {
     public static Task Main(string[] args)
     {
-        var host = Host.CreateDefaultBuilder()
+        var host = Host.CreateDefaultBuilder(args)
             .UseContentRoot(AppContext.BaseDirectory)
             .UseServiceProviderFactory(new AutofacServiceProviderFactory(b => b.RegisterModule<BackendModule>()))
             .UseSerilog((context, services, logger) => logger
@@ -41,11 +41,7 @@ public class TestkitBackend
                     new ShortSourceContextEnricher()))
             .ConfigureWebHostDefaults(host => host
                 .Configure(_ => { })
-                .ConfigureServices((context, services) =>
-                {
-                    services.Configure<BackendOptions>(context.Configuration.GetSection("Backend"));
-                    services.AddSingleton<TestkitConnectionHandler>();
-                })
+                .ConfigureServices((_, services) => services.AddSingleton<TestkitConnectionHandler>())
                 .UseKestrel((context, kestrel) =>
                 {
                     var options = context.Configuration.GetSection("Backend").Get<BackendOptions>()!;

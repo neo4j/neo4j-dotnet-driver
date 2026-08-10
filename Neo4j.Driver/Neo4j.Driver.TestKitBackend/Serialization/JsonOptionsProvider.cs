@@ -20,6 +20,7 @@ using System.Text.Json.Serialization.Metadata;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 namespace Neo4j.Driver.TestKitBackend.Serialization;
 
+[RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
 internal class JsonOptionsProvider : IJsonOptionsProvider
 {
     private readonly JsonSerializerOptions _options;

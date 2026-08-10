@@ -154,6 +154,39 @@ public class BackendModuleTests
         scope.Resolve<IDateTimeProvider>().Should().BeOfType<CurrentDateTimeProvider>();
     }
 
+    [Fact]
+    public void Json_options_provider_resolves_to_the_same_instance_within_a_connection_scope()
+    {
+        var container = BuildContainer();
+        using var scope =
+            container.BeginLifetimeScope(b => b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory()));
+
+        scope.Resolve<IJsonOptionsProvider>().Should().BeSameAs(scope.Resolve<IJsonOptionsProvider>());
+    }
+
+    [Fact]
+    public void Message_serializer_resolves_to_the_same_instance_within_a_connection_scope()
+    {
+        var container = BuildContainer();
+        using var scope =
+            container.BeginLifetimeScope(b => b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory()));
+
+        scope.Resolve<IMessageSerializer>().Should().BeSameAs(scope.Resolve<IMessageSerializer>());
+    }
+
+    [Fact]
+    public void Response_writer_resolves_to_the_same_instance_within_a_connection_scope()
+    {
+        var container = BuildContainer();
+        using var scope = container.BeginLifetimeScope(b =>
+        {
+            b.RegisterInstance(Mock.Of<IConnectionOutput>()).As<IConnectionOutput>();
+            b.RegisterInstance(new TestOutputLoggerFactory()).As<ILoggerFactory>();
+        });
+
+        scope.Resolve<IResponseWriter>().Should().BeSameAs(scope.Resolve<IResponseWriter>());
+    }
+
     private record Request
     {
         public RegistryObject<Stored> Thing { get; init; } = null!;

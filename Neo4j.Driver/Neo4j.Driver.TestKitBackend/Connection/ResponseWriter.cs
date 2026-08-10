@@ -19,6 +19,7 @@ using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Serialization;
 namespace Neo4j.Driver.TestKitBackend.Connection;
 
+[RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
 internal class ResponseWriter : IResponseWriter
 {
     private readonly IConnectionOutput _output;
