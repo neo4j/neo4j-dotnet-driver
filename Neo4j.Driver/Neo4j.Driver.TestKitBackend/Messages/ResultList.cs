@@ -22,9 +22,7 @@ namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record ResultListRequest(RegistryObject<IResultCursor> Result) : IProtocolMessage;
 
-internal record RecordListEntry(IReadOnlyList<ICypherValue> Values);
-
-internal record RecordListResponse(IReadOnlyList<RecordListEntry> Records) : IProtocolMessage;
+internal record RecordListResponse(IReadOnlyList<RecordResponse> Records) : IProtocolMessage;
 
 internal class ResultListHandler : MessageHandler<ResultListRequest>
 {
@@ -40,11 +38,11 @@ internal class ResultListHandler : MessageHandler<ResultListRequest>
     public override async Task ProcessAsync(ResultListRequest message)
     {
         var cursor = message.Result.Object;
-        var records = new List<RecordListEntry>();
+        var records = new List<RecordResponse>();
         while (await cursor.FetchAsync())
         {
             var record = cursor.Current;
-            records.Add(new RecordListEntry(record.Keys.Select(key => _mapper.Map(record[key])).ToList()));
+            records.Add(new RecordResponse(record.Keys.Select(key => _mapper.Map(record[key])).ToList()));
         }
 
         await _responseWriter.WriteAsync(new RecordListResponse(records));

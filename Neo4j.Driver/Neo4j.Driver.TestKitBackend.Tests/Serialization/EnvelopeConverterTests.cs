@@ -191,6 +191,16 @@ public class EnvelopeConverterTests
     }
 
     [Fact]
+    public void Concrete_protocol_message_types_nested_in_a_list_do_not_get_their_own_envelope()
+    {
+        var message = new SampleListEnvelope { Items = [new SampleResponse { Value = "y" }] };
+
+        var json = JsonSerializer.Serialize<IProtocolMessage>(message, Options());
+
+        json.Should().Be("""{"name":"SampleListEnvelope","data":{"items":[{"value":"y"}]}}""");
+    }
+
+    [Fact]
     public void Reads_nested_envelopes_into_protocol_message_properties()
     {
         _autoMocker.GetMock<IMessageTypeMap>()
@@ -231,5 +241,10 @@ public class EnvelopeConverterTests
     private record SampleEnvelope : IProtocolMessage
     {
         public IProtocolMessage Inner { get; init; } = null!;
+    }
+
+    private record SampleListEnvelope : IProtocolMessage
+    {
+        public IReadOnlyList<SampleResponse> Items { get; init; } = [];
     }
 }

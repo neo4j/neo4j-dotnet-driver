@@ -40,11 +40,12 @@ public class ResultSingleHandlerTests
         record.Setup(r => r.Keys).Returns(["n"]);
         record.Setup(r => r["n"]).Returns(1L);
 
+        var enumeratorMock = new Mock<IAsyncEnumerator<IRecord>>();
+        enumeratorMock.SetupSequence(e => e.MoveNextAsync()).ReturnsAsync(true).ReturnsAsync(false);
+        enumeratorMock.Setup(e => e.Current).Returns(record.Object);
+
         var cursorMock = _autoMocker.GetMock<IResultCursor>();
-        cursorMock.SetupSequence(c => c.FetchAsync())
-            .ReturnsAsync(true)
-            .ReturnsAsync(false);
-        cursorMock.Setup(c => c.Current).Returns(record.Object);
+        cursorMock.Setup(c => c.GetAsyncEnumerator(It.IsAny<CancellationToken>())).Returns(enumeratorMock.Object);
 
         var mapperMock = _autoMocker.GetMock<INativeToCypherMapper>();
         mapperMock.Setup(m => m.Map(1L)).Returns(new CypherInt(1));
@@ -62,8 +63,11 @@ public class ResultSingleHandlerTests
     [Fact]
     public async Task Throws_when_the_stream_is_empty()
     {
+        var enumeratorMock = new Mock<IAsyncEnumerator<IRecord>>();
+        enumeratorMock.Setup(e => e.MoveNextAsync()).ReturnsAsync(false);
+
         var cursorMock = _autoMocker.GetMock<IResultCursor>();
-        cursorMock.Setup(c => c.FetchAsync()).ReturnsAsync(false);
+        cursorMock.Setup(c => c.GetAsyncEnumerator(It.IsAny<CancellationToken>())).Returns(enumeratorMock.Object);
 
         var handler = _autoMocker.CreateInstance<ResultSingleHandler>();
 
@@ -79,11 +83,12 @@ public class ResultSingleHandlerTests
         record.Setup(r => r.Keys).Returns(["n"]);
         record.Setup(r => r["n"]).Returns(1L);
 
+        var enumeratorMock = new Mock<IAsyncEnumerator<IRecord>>();
+        enumeratorMock.SetupSequence(e => e.MoveNextAsync()).ReturnsAsync(true).ReturnsAsync(true);
+        enumeratorMock.Setup(e => e.Current).Returns(record.Object);
+
         var cursorMock = _autoMocker.GetMock<IResultCursor>();
-        cursorMock.SetupSequence(c => c.FetchAsync())
-            .ReturnsAsync(true)
-            .ReturnsAsync(true);
-        cursorMock.Setup(c => c.Current).Returns(record.Object);
+        cursorMock.Setup(c => c.GetAsyncEnumerator(It.IsAny<CancellationToken>())).Returns(enumeratorMock.Object);
 
         var handler = _autoMocker.CreateInstance<ResultSingleHandler>();
 

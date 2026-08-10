@@ -36,19 +36,9 @@ internal class ResultSingleHandler : MessageHandler<ResultSingleRequest>
     public override async Task ProcessAsync(ResultSingleRequest message)
     {
         var cursor = message.Result.Object;
-        if (!await cursor.FetchAsync())
-        {
-            throw new InvalidOperationException("The result is empty.");
-        }
+        var values = await cursor.SingleAsync(
+            record => (IReadOnlyList<ICypherValue>)record.Keys.Select(key => _mapper.Map(record[key])).ToList());
 
-        var record = cursor.Current;
-
-        if (await cursor.FetchAsync())
-        {
-            throw new InvalidOperationException("The result contains more than one element.");
-        }
-
-        var values = record.Keys.Select(key => _mapper.Map(record[key])).ToList();
         await _responseWriter.WriteAsync(new RecordResponse(values));
     }
 }
