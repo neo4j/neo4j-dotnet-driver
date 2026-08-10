@@ -86,6 +86,22 @@ public class DriverErrorMapperTests
     }
 
     [Fact]
+    public void Falls_back_the_code_to_the_error_type_for_a_Neo4jException_with_no_native_code()
+    {
+        Neo4jException exception = new("boom");
+        _autoMocker.GetMock<IExceptionTypeMapper>().Setup(m => m.Map(exception)).Returns("Neo4jError");
+
+        var registered = new RegistryObject<Exception>("error-1", exception);
+        _autoMocker.GetMock<IRegistry>().Setup(r => r.Register<Exception>(exception)).Returns(registered);
+
+        var mapper = _autoMocker.CreateInstance<DriverErrorMapper>();
+
+        var response = mapper.Map(exception);
+
+        response.Code.Should().Be("Neo4jError");
+    }
+
+    [Fact]
     public void Maps_an_argument_exception_to_a_non_retryable_ArgumentError()
     {
         Exception exception = new ArgumentException("encryption and trust cannot both be set");
@@ -102,7 +118,7 @@ public class DriverErrorMapperTests
         response.ErrorType.Should().Be("ArgumentError");
         response.Msg.Should().Be("encryption and trust cannot both be set");
         response.Retryable.Should().BeFalse();
-        response.Code.Should().BeNull();
+        response.Code.Should().Be("ArgumentError");
         response.Cause.Should().BeNull();
     }
 
@@ -110,7 +126,7 @@ public class DriverErrorMapperTests
     public void Maps_a_time_zone_not_found_exception_to_a_non_retryable_error()
     {
         Exception exception = new TimeZoneNotFoundException("The time zone ID 'Europe/Neo4j' was not found");
-        _autoMocker.GetMock<IExceptionTypeMapper>().Setup(m => m.Map(exception)).Returns("TimeZoneNotFoundException");
+        _autoMocker.GetMock<IExceptionTypeMapper>().Setup(m => m.Map(exception)).Returns("TimeZoneNotFoundError");
 
         var registered = new RegistryObject<Exception>("error-1", exception);
         _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(exception)).Returns(registered);
@@ -120,10 +136,10 @@ public class DriverErrorMapperTests
         var response = mapper.Map(exception);
 
         response.Id.Should().Be("error-1");
-        response.ErrorType.Should().Be("TimeZoneNotFoundException");
+        response.ErrorType.Should().Be("TimeZoneNotFoundError");
         response.Msg.Should().Be("The time zone ID 'Europe/Neo4j' was not found");
         response.Retryable.Should().BeFalse();
-        response.Code.Should().BeNull();
+        response.Code.Should().Be("TimeZoneNotFoundError");
         response.Cause.Should().BeNull();
     }
 }
