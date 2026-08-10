@@ -45,13 +45,13 @@ public class BackendModuleTests
     public void Json_options_in_a_connection_scope_resolve_handles_registered_through_that_scopes_registry()
     {
         var container = BuildContainer();
-        using var scope = container.BeginLifetimeScope();
+        using var scope =
+            container.BeginLifetimeScope(b => b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory()));
 
         var registered = scope.Resolve<IRegistry>().Register(new Stored());
         var options = scope.Resolve<IJsonOptionsProvider>().GetOptions();
 
-        var request = JsonSerializer.Deserialize<Request>(
-            $$"""{"thingId":"{{registered.Id}}"}""", options);
+        var request = JsonSerializer.Deserialize<Request>($$"""{"thingId":"{{registered.Id}}"}""", options);
 
         request!.Thing.Object.Should().BeSameAs(registered.Object);
     }
@@ -65,13 +65,14 @@ public class BackendModuleTests
         {
             b.RegisterInstance(Mock.Of<IConnectionOutput>()).As<IConnectionOutput>();
             b.RegisterInstance(Mock.Of<IConnectionInput>()).As<IConnectionInput>();
-            b.RegisterInstance(NullLoggerFactory.Instance).As<ILoggerFactory>();
+            b.RegisterInstance(new TestOutputLoggerFactory()).As<ILoggerFactory>();
             b.RegisterInstance(new ConfigurationBuilder().Build()).As<IConfiguration>();
         });
 
         var handlerTypes = typeof(BackendModule).Assembly.GetTypes()
             .Where(t => t is { IsClass: true, IsAbstract: false } && t.IsAssignableTo(typeof(IMessageHandler)))
             .ToArray();
+
         handlerTypes.Should().NotBeEmpty();
 
         var handlers = scope.Resolve<IIndex<Type, IMessageHandler>>();
@@ -80,7 +81,9 @@ public class BackendModuleTests
         {
             var messageType = MessageHandlingHelper.MessageTypeFor(handlerType);
             handlers.TryGetValue(messageType, out var handler)
-                .Should().BeTrue($"{handlerType.Name} should be resolvable for {messageType.Name}");
+                .Should()
+                .BeTrue($"{handlerType.Name} should be resolvable for {messageType.Name}");
+
             handler.Should().BeOfType(handlerType);
         }
     }
@@ -128,14 +131,16 @@ public class BackendModuleTests
     public void Handles_registered_in_one_connection_scope_do_not_resolve_in_another()
     {
         var container = BuildContainer();
-        using var scopeA = container.BeginLifetimeScope();
-        using var scopeB = container.BeginLifetimeScope();
+        Action<ContainerBuilder> withLogging = b =>
+            b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory());
+
+        using var scopeA = container.BeginLifetimeScope(withLogging);
+        using var scopeB = container.BeginLifetimeScope(withLogging);
 
         var registered = scopeA.Resolve<IRegistry>().Register(new Stored());
         var options = scopeB.Resolve<IJsonOptionsProvider>().GetOptions();
 
-        var act = () => JsonSerializer.Deserialize<Request>(
-            $$"""{"thingId":"{{registered.Id}}"}""", options);
+        var act = () => JsonSerializer.Deserialize<Request>($$"""{"thingId":"{{registered.Id}}"}""", options);
 
         act.Should().Throw<TestKitProtocolException>();
     }

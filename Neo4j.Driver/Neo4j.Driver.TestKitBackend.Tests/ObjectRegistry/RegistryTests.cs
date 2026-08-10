@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using FluentAssertions;
+using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
@@ -22,7 +23,7 @@ namespace Neo4j.Driver.TestKitBackend.Tests.ObjectRegistry;
 
 public class RegistryTests
 {
-    private readonly Registry _registry = new();
+    private readonly Registry _registry = AutoMocker.ForTesting<Registry>().CreateInstance<Registry>();
 
     [Fact]
     public void Register_returns_a_registry_object_carrying_the_registered_object()
@@ -131,6 +132,23 @@ public class RegistryTests
     }
 
     [Fact]
+    public async Task DisposeAsync_continues_past_a_throwing_disposal_and_still_clears_the_registry()
+    {
+        var throwing = new ThrowingDisposable();
+        _registry.Register(throwing);
+        var second = new DisposableStored();
+        var registeredSecond = _registry.Register(second);
+
+        var act = () => _registry.DisposeAsync().AsTask();
+        await act.Should().NotThrowAsync();
+
+        second.Disposed.Should().BeTrue();
+
+        var get = () => _registry.Get<DisposableStored>(registeredSecond.Id);
+        get.Should().Throw<TestKitProtocolException>();
+    }
+
+    [Fact]
     public async Task DisposeAsync_does_not_dispose_an_object_that_was_already_removed()
     {
         var stored = new DisposableStored();
@@ -154,6 +172,14 @@ public class RegistryTests
         {
             Disposed = true;
             return ValueTask.CompletedTask;
+        }
+    }
+
+    private class ThrowingDisposable : IAsyncDisposable
+    {
+        public ValueTask DisposeAsync()
+        {
+            throw new InvalidOperationException("boom");
         }
     }
 

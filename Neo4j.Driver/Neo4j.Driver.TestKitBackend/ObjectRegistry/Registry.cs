@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Serialization;
 namespace Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
@@ -20,7 +21,13 @@ namespace Neo4j.Driver.TestKitBackend.ObjectRegistry;
 internal class Registry : IRegistry, IAsyncDisposable
 {
     private readonly OrderedDictionary<string, object> _objects = [];
+    private readonly ILogger _logger;
     private int _nextId;
+
+    public Registry(ILogger logger)
+    {
+        _logger = logger;
+    }
 
     public RegistryObject<T> Register<T>(T obj) where T : notnull
     {
@@ -61,13 +68,20 @@ internal class Registry : IRegistry, IAsyncDisposable
         for (var i = _objects.Count - 1; i >= 0; i--)
         {
             var obj = _objects.GetAt(i).Value;
-            if (obj is IAsyncDisposable asyncDisposable)
+            try
             {
-                await asyncDisposable.DisposeAsync();
+                if (obj is IAsyncDisposable asyncDisposable)
+                {
+                    await asyncDisposable.DisposeAsync();
+                }
+                else if (obj is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
             }
-            else if (obj is IDisposable disposable)
+            catch (Exception exception)
             {
-                disposable.Dispose();
+                _logger.LogError(exception, "Failed to dispose a registered {Type}", obj.GetType().Name);
             }
         }
 

@@ -15,6 +15,7 @@
 
 using Autofac;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
@@ -27,6 +28,7 @@ public class NewDriverRequestTests
     {
         var builder = new ContainerBuilder();
         builder.RegisterModule<BackendModule>();
+        builder.RegisterInstance(new TestOutputLoggerFactory()).As<ILoggerFactory>();
         return builder.Build().BeginLifetimeScope().Resolve<IMessageSerializer>();
     }
 

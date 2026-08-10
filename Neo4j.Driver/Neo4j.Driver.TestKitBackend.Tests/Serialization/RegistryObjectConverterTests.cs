@@ -15,6 +15,7 @@
 
 using System.Text.Json;
 using FluentAssertions;
+using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
@@ -23,7 +24,7 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Serialization;
 
 public class RegistryObjectConverterTests
 {
-    private readonly Registry _registry = new();
+    private readonly Registry _registry = AutoMocker.ForTesting<Registry>().CreateInstance<Registry>();
 
     private JsonSerializerOptions Options() =>
         new JsonOptionsProvider([new RegistryObjectConverterFactory(_registry)]).GetOptions();

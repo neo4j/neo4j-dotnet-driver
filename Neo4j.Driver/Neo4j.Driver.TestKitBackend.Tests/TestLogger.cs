@@ -29,10 +29,13 @@ internal class TestLogger : ILogger
     private readonly string _suffix;
     private string _scopeSuffix = "";
 
-    public TestLogger(Type? subjectType = null)
+    public TestLogger(Type? subjectType = null) : this((subjectType ?? typeof(UnitTest)).Name)
     {
-        subjectType ??= typeof(UnitTest);
-        _suffix = $"[{subjectType.Name}]";
+    }
+
+    public TestLogger(string categoryName)
+    {
+        _suffix = $"[{categoryName}]";
     }
 
     private void WriteFormatted(string level, string messageTemplate, object?[] args, Exception? exception = null)
