@@ -187,4 +187,63 @@ public class AuthTokenManagerFlowTests
         securityExceptionRequest.Auth.Value.Credentials.Should().Be("token-value");
         securityExceptionRequest.Auth.Value.Principal.Should().BeNull();
     }
+
+    [Fact]
+    public async Task
+        The_registered_manager_requests_a_HandleSecurityException_callback_for_a_custom_token_with_parameters()
+    {
+        IAuthTokenManager? manager = null;
+        var registryMock = new Mock<IRegistry>();
+        registryMock
+            .Setup(r => r.Register(It.IsAny<Func<string, IAuthTokenManager>>()))
+            .Returns<Func<string, IAuthTokenManager>>(
+                create =>
+                {
+                    manager = create("manager-1");
+                    return new RegistryObject<IAuthTokenManager>("manager-1", manager);
+                });
+
+        Func<string, ICallbackRequest>? capturedRequest = null;
+        var callbacksMock = new Mock<ICallbackExchanger>();
+        callbacksMock
+            .Setup(
+                c => c.SendAsync<AuthTokenManagerHandleSecurityExceptionCompleted>(
+                    It.IsAny<Func<string, ICallbackRequest>>()))
+            .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
+            .ReturnsAsync(
+                new AuthTokenManagerHandleSecurityExceptionCompleted
+                {
+                    RequestId = "callback-1",
+                    Handled = true
+                });
+
+        var newManagerHandler = new NewAuthTokenManagerHandler(
+            registryMock.Object,
+            callbacksMock.Object,
+            Mock.Of<IResponseWriter>(),
+            Mock.Of<ILogger>());
+
+        await newManagerHandler.ProcessAsync(new NewAuthTokenManagerRequest());
+        manager.Should().NotBeNull();
+
+        var parameters = new Dictionary<string, object> { ["region"] = "eu-west" };
+        var token = AuthTokens.Custom("neo4j", "pass", "realm1", "custom-scheme", parameters);
+        var exception = new SecurityException("Neo.ClientError.Security.TokenExpired", "boom");
+
+        var handled = await manager!.HandleSecurityExceptionAsync(
+            token,
+            exception,
+            TestContext.Current.CancellationToken);
+
+        handled.Should().BeTrue();
+
+        capturedRequest.Should().NotBeNull();
+        var request = capturedRequest!("callback-1");
+        var securityExceptionRequest = (AuthTokenManagerHandleSecurityExceptionRequest)request;
+        securityExceptionRequest.Auth.Value.Scheme.Should().Be("custom-scheme");
+        securityExceptionRequest.Auth.Value.Principal.Should().Be("neo4j");
+        securityExceptionRequest.Auth.Value.Credentials.Should().Be("pass");
+        securityExceptionRequest.Auth.Value.Realm.Should().Be("realm1");
+        securityExceptionRequest.Auth.Value.Parameters.Should().BeEquivalentTo(parameters);
+    }
 }

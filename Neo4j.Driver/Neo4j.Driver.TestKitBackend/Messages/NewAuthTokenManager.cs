@@ -86,7 +86,8 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
             (string)content["scheme"],
             content.TryGetValue("principal", out var principal) ? (string)principal : null,
             content.TryGetValue("credentials", out var credentials) ? (string)credentials : null,
-            content.TryGetValue("realm", out var realm) ? (string)realm : null);
+            content.TryGetValue("realm", out var realm) ? (string)realm : null,
+            content.TryGetValue("parameters", out var parameters) ? (Dictionary<string, object>)parameters : null);
     }
 }
 
