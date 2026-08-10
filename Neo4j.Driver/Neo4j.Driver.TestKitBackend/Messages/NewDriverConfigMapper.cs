@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Neo4j.Driver.TestKitBackend.Certificates;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
@@ -37,7 +38,11 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
         nameof(NewDriverRequest.NotificationsDisabledCategories),
         nameof(NewDriverRequest.ClientCertificate),
         nameof(NewDriverRequest.ClientCertificateProviderId),
-        nameof(NewDriverRequest.ResolverRegistered)
+        nameof(NewDriverRequest.ResolverRegistered),
+        nameof(NewDriverRequest.Uri),
+        nameof(NewDriverRequest.AuthorizationToken),
+        nameof(NewDriverRequest.AuthTokenManagerId),
+        nameof(NewDriverRequest.DomainNameResolverRegistered)
     ];
 
     private readonly ICertificateLoader _certificateLoader;
@@ -181,7 +186,7 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
 
     private static void ApplyRemainingProperties(NewDriverRequest request, IConfigBuilder builder)
     {
-        foreach (var property in typeof(NewDriverRequest).GetProperties())
+        foreach (var property in request.GetType().GetProperties())
         {
             if (HandledExplicitly.Contains(property.Name))
             {
@@ -198,8 +203,18 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
                 ? ("With" + property.Name[..^2], (object)TimeSpan.FromMilliseconds((long)value))
                 : ("With" + property.Name, value);
 
-            var method = typeof(IConfigBuilder).GetMethod(methodName);
-            method?.Invoke(builder, [argument]);
+            var method = typeof(IConfigBuilder).GetMethod(methodName) ??
+                throw new InvalidOperationException(
+                    $"No {methodName} method found on {nameof(IConfigBuilder)} for {property.Name}.");
+
+            try
+            {
+                method.Invoke(builder, [argument]);
+            }
+            catch (TargetInvocationException e) when (e.InnerException is not null)
+            {
+                throw e.InnerException;
+            }
         }
     }
 }

@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Diagnostics.CodeAnalysis;
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
@@ -196,5 +197,35 @@ public class NewSessionConfigMapperTests
         _builder.Verify(
             b => b.WithNotifications(It.IsAny<Severity?>(), It.IsAny<Category[]>()),
             Times.Never);
+    }
+
+    [Fact]
+    public void Throws_when_a_fallback_tier_property_has_no_matching_builder_method()
+    {
+        var request = new RequestWithUnmappedProperty(MinimalRequest()) { Nonexistent = "value" };
+
+        var act = () => Apply(request);
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*Nonexistent*");
+    }
+
+    [Fact]
+    public void Surfaces_the_builders_own_exception_instead_of_a_TargetInvocationException()
+    {
+        _builder.Setup(b => b.WithFetchSize(-5)).Throws(new ArgumentOutOfRangeException("size", "boom"));
+
+        var act = () => Apply(MinimalRequest() with { FetchSize = -5 });
+
+        act.Should().Throw<ArgumentOutOfRangeException>().WithMessage("*boom*");
+    }
+
+    private record RequestWithUnmappedProperty : NewSessionRequest
+    {
+        [SetsRequiredMembers]
+        public RequestWithUnmappedProperty(NewSessionRequest source) : base(source)
+        {
+        }
+
+        public string? Nonexistent { get; init; }
     }
 }

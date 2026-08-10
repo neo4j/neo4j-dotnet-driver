@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Reflection;
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -31,7 +32,8 @@ internal class NewSessionConfigMapper : INewSessionConfigMapper
         nameof(NewSessionRequest.AuthorizationToken),
         nameof(NewSessionRequest.NotificationsMinSeverity),
         nameof(NewSessionRequest.NotificationsDisabledCategories),
-        nameof(NewSessionRequest.BookmarkManagerId)
+        nameof(NewSessionRequest.BookmarkManagerId),
+        nameof(NewSessionRequest.Driver)
     ];
 
     private readonly IRegistry _registry;
@@ -106,7 +108,7 @@ internal class NewSessionConfigMapper : INewSessionConfigMapper
 
     private static void ApplyRemainingProperties(NewSessionRequest request, ISessionConfigBuilder builder)
     {
-        foreach (var property in typeof(NewSessionRequest).GetProperties())
+        foreach (var property in request.GetType().GetProperties())
         {
             if (HandledExplicitly.Contains(property.Name))
             {
@@ -119,8 +121,19 @@ internal class NewSessionConfigMapper : INewSessionConfigMapper
                 continue;
             }
 
-            var method = typeof(ISessionConfigBuilder).GetMethod("With" + property.Name);
-            method?.Invoke(builder, [value]);
+            var methodName = "With" + property.Name;
+            var method = typeof(ISessionConfigBuilder).GetMethod(methodName) ??
+                throw new InvalidOperationException(
+                    $"No {methodName} method found on {nameof(ISessionConfigBuilder)} for {property.Name}.");
+
+            try
+            {
+                method.Invoke(builder, [value]);
+            }
+            catch (TargetInvocationException e) when (e.InnerException is not null)
+            {
+                throw e.InnerException;
+            }
         }
     }
 }

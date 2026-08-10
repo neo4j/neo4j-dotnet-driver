@@ -323,4 +323,29 @@ public class NewDriverConfigMapperTests
 
         _builder.Verify(b => b.WithResolver(_autoMocker.Get<IServerAddressResolver>()), Times.Once);
     }
+
+    [Fact]
+    public void Throws_when_a_fallback_tier_property_has_no_matching_builder_method()
+    {
+        var request = new RequestWithUnmappedProperty { Uri = "bolt://x", Nonexistent = "value" };
+
+        var act = () => Apply(request);
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*Nonexistent*");
+    }
+
+    [Fact]
+    public void Surfaces_the_builders_own_exception_instead_of_a_TargetInvocationException()
+    {
+        _builder.Setup(b => b.WithFetchSize(-5)).Throws(new ArgumentOutOfRangeException("size", "boom"));
+
+        var act = () => Apply(MinimalRequest() with { FetchSize = -5 });
+
+        act.Should().Throw<ArgumentOutOfRangeException>().WithMessage("*boom*");
+    }
+
+    private record RequestWithUnmappedProperty : NewDriverRequest
+    {
+        public string? Nonexistent { get; init; }
+    }
 }
