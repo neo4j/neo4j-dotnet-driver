@@ -14,7 +14,6 @@
 // limitations under the License.
 
 using Neo4j.Driver.Internal.Services;
-
 using ITimer = Neo4j.Driver.Internal.ITimer;
 
 namespace Neo4j.Driver.TestKitBackend.Time;

@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Globalization;
 using Neo4j.Driver.TestKitBackend.Continuations;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -48,6 +49,8 @@ internal class TestKitServerAddressResolver : IServerAddressResolver
     private static ServerAddress ParseAddress(string address)
     {
         var separator = address.LastIndexOf(':');
-        return ServerAddress.From(address[..separator], int.Parse(address[(separator + 1)..]));
+        return ServerAddress.From(
+            address[..separator],
+            int.Parse(address[(separator + 1)..], CultureInfo.InvariantCulture));
     }
 }

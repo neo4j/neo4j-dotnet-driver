@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Neo4j.Driver.TestKitBackend.Dispatch;
+
 namespace Neo4j.Driver.TestKitBackend.Serialization;
 
 internal interface IMessageSerializer

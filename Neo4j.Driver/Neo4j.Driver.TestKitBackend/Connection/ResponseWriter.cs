@@ -14,9 +14,9 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
-
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Serialization;
+
 namespace Neo4j.Driver.TestKitBackend.Connection;
 
 [RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]

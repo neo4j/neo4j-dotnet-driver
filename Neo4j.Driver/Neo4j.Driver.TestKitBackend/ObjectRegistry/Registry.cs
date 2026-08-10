@@ -15,6 +15,7 @@
 
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Serialization;
+
 namespace Neo4j.Driver.TestKitBackend.ObjectRegistry;
 
 [RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]

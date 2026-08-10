@@ -21,10 +21,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Logging;
 using Serilog;
 
-using Neo4j.Driver.TestKitBackend.Connection;
 namespace Neo4j.Driver.TestKitBackend;
 
 public class TestkitBackend

@@ -48,8 +48,7 @@ internal class GetRoutingTableHandler : MessageHandler<GetRoutingTableRequest>
             message.Driver.Id,
             message.Database);
 
-        // No cached table (e.g. every router failed on the last refresh) - respond with an empty
-        // table rather than failing the request; testkit expects an empty RoutingTable, not an error.
+        // No cached table - testkit expects an empty RoutingTable here, not an error.
         await _responseWriter.WriteAsync(
             routingTable is null
                 ? new RoutingTableResponse(message.Database, 0, [], [], [])

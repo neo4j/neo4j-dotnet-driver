@@ -18,8 +18,7 @@ using System.Text.Json.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Serialization;
 
-// Without this, System.Text.Json boxes untyped values (e.g. Dictionary<string, object> values)
-// as JsonElement instead of native CLR scalars.
+// Without this, System.Text.Json boxes untyped values as JsonElement instead of native CLR scalars.
 internal class ObjectJsonConverter : JsonConverter<object?>, IProtocolJsonConverter
 {
     public override object? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

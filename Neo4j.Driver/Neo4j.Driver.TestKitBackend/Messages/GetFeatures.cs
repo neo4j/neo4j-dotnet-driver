@@ -28,8 +28,7 @@ internal record FeatureListResponse : IProtocolMessage
 
 internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
 {
-    // Strings must come from testkit's Feature enum (nutkit/protocol/feature.py)
-    // Keep sorted alphabetically.
+    // Strings must match testkit's Feature enum (nutkit/protocol/feature.py); keep sorted alphabetically.
     private static readonly string[] SupportedFeatures =
     [
         "AuthorizationExpiredTreatment",

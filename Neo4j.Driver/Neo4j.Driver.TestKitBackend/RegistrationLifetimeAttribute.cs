@@ -23,7 +23,7 @@ internal enum RegistrationLifetime
 }
 
 [AttributeUsage(AttributeTargets.Class)]
-internal sealed class RegistrationLifetimeAttribute : Attribute
+internal class RegistrationLifetimeAttribute : Attribute
 {
     public RegistrationLifetimeAttribute(RegistrationLifetime lifetime)
     {

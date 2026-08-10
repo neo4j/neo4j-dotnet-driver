@@ -84,8 +84,7 @@ internal abstract class BackgroundOperationHandler<T> : MessageHandler<T> where 
         }
         catch (Exception mappingFailure)
         {
-            // A response must still reach the slot below, or the connection hangs to
-            // testkit's own receive timeout instead of failing with this error.
+            // A response must still reach the slot below, or the connection hangs to testkit's receive timeout.
             _logger.LogError(mappingFailure, "Failed to map the driver error");
             return new BackendErrorResponse { Msg = exception.Message };
         }

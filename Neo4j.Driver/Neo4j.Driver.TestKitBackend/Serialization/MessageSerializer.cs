@@ -14,8 +14,8 @@
 // limitations under the License.
 
 using System.Text.Json;
-
 using Neo4j.Driver.TestKitBackend.Dispatch;
+
 namespace Neo4j.Driver.TestKitBackend.Serialization;
 
 [RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]

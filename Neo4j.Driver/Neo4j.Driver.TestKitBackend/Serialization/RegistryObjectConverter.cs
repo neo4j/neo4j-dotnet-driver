@@ -15,8 +15,8 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
-
 using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+
 namespace Neo4j.Driver.TestKitBackend.Serialization;
 
 internal class RegistryObjectConverterFactory : JsonConverterFactory, IProtocolJsonConverter

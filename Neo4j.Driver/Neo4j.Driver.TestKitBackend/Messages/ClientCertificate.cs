@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Neo4j.Driver.TestKitBackend.Serialization;
+
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record ClientCertificate(

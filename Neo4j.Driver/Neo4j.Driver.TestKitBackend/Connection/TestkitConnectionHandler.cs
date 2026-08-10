@@ -52,10 +52,7 @@ internal class TestkitConnectionHandler : ConnectionHandler
         connection.ConnectionId = connectionId;
 
         var reader = new StreamReader(connection.Transport.Input.AsStream(leaveOpen: true), Encoding.UTF8);
-        var writer = new StreamWriter(connection.Transport.Output.AsStream(leaveOpen: true), new UTF8Encoding(false))
-        {
-            NewLine = "\n"
-        };
+        var writer = new StreamWriter(connection.Transport.Output.AsStream(leaveOpen: true), new UTF8Encoding(false));
 
         var input = _createInput(reader);
         var output = _createOutput(writer);

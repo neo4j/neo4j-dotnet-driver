@@ -19,5 +19,5 @@ namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record FrontendErrorResponse : IProtocolMessage
 {
-    public string Msg { get; init; } = "";
+    public required string Msg { get; init; }
 }
