@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
@@ -43,5 +44,40 @@ public class ResponseWriterTests
             """{"name":"Sample","data":{}}""" + "\n" +
             "#response end\n"), Times.Once);
         output.Verify(o => o.FlushAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task WriteAsync_serializes_concurrent_calls_so_the_second_never_starts_before_the_first_finishes()
+    {
+        _autoMocker.GetMock<IMessageSerializer>()
+            .Setup(s => s.Serialize(It.IsAny<IProtocolMessage>()))
+            .Returns("json");
+        var writer = _autoMocker.CreateInstance<ResponseWriter>();
+
+        var events = new List<string>();
+        var releaseFirstWrite = new TaskCompletionSource();
+        var writeCallCount = 0;
+        var output = _autoMocker.GetMock<IConnectionOutput>();
+        output.Setup(o => o.WriteAsync(It.IsAny<string>()))
+            .Returns(() =>
+            {
+                var callNumber = Interlocked.Increment(ref writeCallCount);
+                events.Add($"write-{callNumber}");
+                return callNumber == 1 ? releaseFirstWrite.Task : Task.CompletedTask;
+            });
+        output.Setup(o => o.FlushAsync())
+            .Returns(() =>
+            {
+                events.Add("flush");
+                return Task.CompletedTask;
+            });
+
+        var firstWrite = writer.WriteAsync(Mock.Of<IProtocolMessage>());
+        var secondWrite = writer.WriteAsync(Mock.Of<IProtocolMessage>());
+
+        releaseFirstWrite.SetResult();
+        await Task.WhenAll(firstWrite, secondWrite);
+
+        events.Should().Equal("write-1", "flush", "write-2", "flush");
     }
 }

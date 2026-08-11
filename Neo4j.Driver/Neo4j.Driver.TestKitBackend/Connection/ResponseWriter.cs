@@ -22,6 +22,7 @@ namespace Neo4j.Driver.TestKitBackend.Connection;
 [RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
 internal class ResponseWriter : IResponseWriter
 {
+    private readonly SemaphoreSlim _writeLock = new(1, 1);
     private readonly IConnectionOutput _output;
     private readonly IMessageSerializer _serializer;
     private readonly ILogger _logger;
@@ -40,7 +41,16 @@ internal class ResponseWriter : IResponseWriter
     {
         var json = _serializer.Serialize(message);
         _logger.LogDebug("Response: {Json}", json);
-        await _output.WriteAsync($"#response begin\n{json}\n#response end\n");
-        await _output.FlushAsync();
+
+        await _writeLock.WaitAsync();
+        try
+        {
+            await _output.WriteAsync($"#response begin\n{json}\n#response end\n");
+            await _output.FlushAsync();
+        }
+        finally
+        {
+            _writeLock.Release();
+        }
     }
 }
