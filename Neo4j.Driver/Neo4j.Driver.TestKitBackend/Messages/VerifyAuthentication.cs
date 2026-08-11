@@ -16,13 +16,13 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record VerifyAuthenticationRequest(
-    RegistryObject<IDriver> Driver,
+    Stored<IDriver> Driver,
     IWireType<AuthorizationToken> AuthorizationToken) : IProtocolMessage;
 
 internal record DriverIsAuthenticatedResponse(string Id, bool Authenticated) : IProtocolMessage;

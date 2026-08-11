@@ -17,7 +17,7 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -27,13 +27,13 @@ public class BookmarkManagerCloseHandlerTests
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<BookmarkManagerCloseHandler>();
 
     [Fact]
-    public async Task Removes_the_manager_from_the_registry_and_responds_with_its_id()
+    public async Task Removes_the_manager_from_the_objectStore_and_responds_with_its_id()
     {
         var handler = _autoMocker.CreateInstance<BookmarkManagerCloseHandler>();
 
         await handler.ProcessAsync(new BookmarkManagerCloseRequest { Id = "bm-1" });
 
-        _autoMocker.GetMock<IRegistry>().Verify(r => r.Remove("bm-1"), Times.Once);
+        _autoMocker.GetMock<IObjectStore>().Verify(r => r.Remove("bm-1"), Times.Once);
         _autoMocker.GetMock<IResponseWriter>()
             .Verify(w => w.WriteAsync(new BookmarkManagerResponse("bm-1")), Times.Once);
     }

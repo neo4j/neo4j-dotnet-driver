@@ -18,7 +18,7 @@ using Neo4j.Driver.Internal.Services;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using DriverAuthTokenAndExpiration = Neo4j.Driver.AuthTokenAndExpiration;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -29,20 +29,20 @@ internal record BearerAuthTokenManagerResponse(string Id) : IProtocolMessage;
 
 internal class NewBearerAuthTokenManagerHandler : MessageHandler<NewBearerAuthTokenManagerRequest>
 {
-    private readonly IRegistry _registry;
+    private readonly IObjectStore _objectStore;
     private readonly ICallbackExchanger _callbackExchanger;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewBearerAuthTokenManagerHandler(
-        IRegistry registry,
+        IObjectStore objectStore,
         ICallbackExchanger callbackExchanger,
         IDateTimeProvider dateTimeProvider,
         IResponseWriter responseWriter,
         ILogger logger)
     {
-        _registry = registry;
+        _objectStore = objectStore;
         _callbackExchanger = callbackExchanger;
         _dateTimeProvider = dateTimeProvider;
         _responseWriter = responseWriter;
@@ -51,7 +51,7 @@ internal class NewBearerAuthTokenManagerHandler : MessageHandler<NewBearerAuthTo
 
     public override async Task ProcessAsync(NewBearerAuthTokenManagerRequest message)
     {
-        var registered = _registry.Register(CreateRegisteredManager);
+        var registered = _objectStore.Register(CreateRegisteredManager);
         _logger.LogDebug("Created bearer auth token manager with id '{Id}'", registered.Id);
         await _responseWriter.WriteAsync(new BearerAuthTokenManagerResponse(registered.Id));
     }

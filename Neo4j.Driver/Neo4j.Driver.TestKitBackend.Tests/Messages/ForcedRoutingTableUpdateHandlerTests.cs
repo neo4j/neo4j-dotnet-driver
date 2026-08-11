@@ -19,7 +19,7 @@ using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -36,7 +36,7 @@ public class ForcedRoutingTableUpdateHandlerTests
             .Setup(d => d.ForceRoutingTableUpdateAsync("adb", It.IsAny<Bookmarks>()))
             .ReturnsAsync(Mock.Of<IRoutingTable>());
 
-        var registered = new RegistryObject<IDriver>("driver-1", driverMock.Object);
+        var registered = new Stored<IDriver>("driver-1", driverMock.Object);
 
         var handler = _autoMocker.CreateInstance<ForcedRoutingTableUpdateHandler>();
         var request = new ForcedRoutingTableUpdateRequest

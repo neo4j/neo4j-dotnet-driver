@@ -15,7 +15,7 @@
 
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Errors;
 
@@ -26,23 +26,23 @@ internal interface IDriverErrorMapper
 
 internal class DriverErrorMapper : IDriverErrorMapper
 {
-    private readonly IRegistry _registry;
+    private readonly IObjectStore _objectStore;
     private readonly IExceptionTypeMapper _exceptionTypeMapper;
     private readonly INativeToCypherMapper _cypherMapper;
 
     public DriverErrorMapper(
-        IRegistry registry,
+        IObjectStore objectStore,
         IExceptionTypeMapper exceptionTypeMapper,
         INativeToCypherMapper cypherMapper)
     {
-        _registry = registry;
+        _objectStore = objectStore;
         _exceptionTypeMapper = exceptionTypeMapper;
         _cypherMapper = cypherMapper;
     }
 
     public DriverErrorResponse Map(Exception exception)
     {
-        var registered = _registry.Register(exception);
+        var registered = _objectStore.Register(exception);
         var errorType = _exceptionTypeMapper.Map(exception);
 
         return exception switch

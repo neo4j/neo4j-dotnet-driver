@@ -20,7 +20,7 @@ using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -31,14 +31,14 @@ public class AuthTokenManagerFlowTests
     public async Task The_registered_manager_requests_a_GetAuth_callback_for_its_token()
     {
         IAuthTokenManager? manager = null;
-        var registryMock = new Mock<IRegistry>();
-        registryMock
+        var objectStoreMock = new Mock<IObjectStore>();
+        objectStoreMock
             .Setup(r => r.Register(It.IsAny<Func<string, IAuthTokenManager>>()))
             .Returns<Func<string, IAuthTokenManager>>(
                 create =>
                 {
                     manager = create("manager-1");
-                    return new RegistryObject<IAuthTokenManager>("manager-1", manager);
+                    return new Stored<IAuthTokenManager>("manager-1", manager);
                 });
 
         Func<string, ICallbackRequest>? capturedRequest = null;
@@ -54,7 +54,7 @@ public class AuthTokenManagerFlowTests
                 });
 
         var newManagerHandler = new NewAuthTokenManagerHandler(
-            registryMock.Object,
+            objectStoreMock.Object,
             callbacksMock.Object,
             Mock.Of<IResponseWriter>(),
             Mock.Of<ILogger>());
@@ -80,14 +80,14 @@ public class AuthTokenManagerFlowTests
     public async Task The_registered_manager_requests_a_HandleSecurityException_callback()
     {
         IAuthTokenManager? manager = null;
-        var registryMock = new Mock<IRegistry>();
-        registryMock
+        var objectStoreMock = new Mock<IObjectStore>();
+        objectStoreMock
             .Setup(r => r.Register(It.IsAny<Func<string, IAuthTokenManager>>()))
             .Returns<Func<string, IAuthTokenManager>>(
                 create =>
                 {
                     manager = create("manager-1");
-                    return new RegistryObject<IAuthTokenManager>("manager-1", manager);
+                    return new Stored<IAuthTokenManager>("manager-1", manager);
                 });
 
         Func<string, ICallbackRequest>? capturedRequest = null;
@@ -105,7 +105,7 @@ public class AuthTokenManagerFlowTests
                 });
 
         var newManagerHandler = new NewAuthTokenManagerHandler(
-            registryMock.Object,
+            objectStoreMock.Object,
             callbacksMock.Object,
             Mock.Of<IResponseWriter>(),
             Mock.Of<ILogger>());
@@ -137,14 +137,14 @@ public class AuthTokenManagerFlowTests
         The_registered_manager_requests_a_HandleSecurityException_callback_for_a_bearer_token_with_no_principal()
     {
         IAuthTokenManager? manager = null;
-        var registryMock = new Mock<IRegistry>();
-        registryMock
+        var objectStoreMock = new Mock<IObjectStore>();
+        objectStoreMock
             .Setup(r => r.Register(It.IsAny<Func<string, IAuthTokenManager>>()))
             .Returns<Func<string, IAuthTokenManager>>(
                 create =>
                 {
                     manager = create("manager-1");
-                    return new RegistryObject<IAuthTokenManager>("manager-1", manager);
+                    return new Stored<IAuthTokenManager>("manager-1", manager);
                 });
 
         Func<string, ICallbackRequest>? capturedRequest = null;
@@ -162,7 +162,7 @@ public class AuthTokenManagerFlowTests
                 });
 
         var newManagerHandler = new NewAuthTokenManagerHandler(
-            registryMock.Object,
+            objectStoreMock.Object,
             callbacksMock.Object,
             Mock.Of<IResponseWriter>(),
             Mock.Of<ILogger>());
@@ -193,14 +193,14 @@ public class AuthTokenManagerFlowTests
         The_registered_manager_requests_a_HandleSecurityException_callback_for_a_custom_token_with_parameters()
     {
         IAuthTokenManager? manager = null;
-        var registryMock = new Mock<IRegistry>();
-        registryMock
+        var objectStoreMock = new Mock<IObjectStore>();
+        objectStoreMock
             .Setup(r => r.Register(It.IsAny<Func<string, IAuthTokenManager>>()))
             .Returns<Func<string, IAuthTokenManager>>(
                 create =>
                 {
                     manager = create("manager-1");
-                    return new RegistryObject<IAuthTokenManager>("manager-1", manager);
+                    return new Stored<IAuthTokenManager>("manager-1", manager);
                 });
 
         Func<string, ICallbackRequest>? capturedRequest = null;
@@ -218,7 +218,7 @@ public class AuthTokenManagerFlowTests
                 });
 
         var newManagerHandler = new NewAuthTokenManagerHandler(
-            registryMock.Object,
+            objectStoreMock.Object,
             callbacksMock.Object,
             Mock.Of<IResponseWriter>(),
             Mock.Of<ILogger>());

@@ -16,11 +16,11 @@
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record ResultSingleRequest(RegistryObject<IResultCursor> Result) : IProtocolMessage;
+internal record ResultSingleRequest(Stored<IResultCursor> Result) : IProtocolMessage;
 
 internal class ResultSingleHandler : MessageHandler<ResultSingleRequest>
 {

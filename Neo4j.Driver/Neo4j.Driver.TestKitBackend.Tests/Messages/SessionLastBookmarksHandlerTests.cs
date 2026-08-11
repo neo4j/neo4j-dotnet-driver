@@ -17,7 +17,7 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -31,7 +31,7 @@ public class SessionLastBookmarksHandlerTests
     {
         var sessionMock = _autoMocker.GetMock<IAsyncSession>();
         sessionMock.SetupGet(s => s.LastBookmarks).Returns(Bookmarks.From("bookmark-1", "bookmark-2"));
-        var registered = new RegistryObject<IAsyncSession>("session-1", sessionMock.Object);
+        var registered = new Stored<IAsyncSession>("session-1", sessionMock.Object);
 
         var handler = _autoMocker.CreateInstance<SessionLastBookmarksHandler>();
         var request = new SessionLastBookmarksRequest(registered);
@@ -50,7 +50,7 @@ public class SessionLastBookmarksHandlerTests
     {
         var sessionMock = _autoMocker.GetMock<IAsyncSession>();
         sessionMock.SetupGet(s => s.LastBookmarks).Returns((Bookmarks)null!);
-        var registered = new RegistryObject<IAsyncSession>("session-1", sessionMock.Object);
+        var registered = new Stored<IAsyncSession>("session-1", sessionMock.Object);
 
         var handler = _autoMocker.CreateInstance<SessionLastBookmarksHandler>();
         var request = new SessionLastBookmarksRequest(registered);

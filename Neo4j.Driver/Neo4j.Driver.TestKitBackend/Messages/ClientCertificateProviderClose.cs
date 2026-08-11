@@ -16,7 +16,7 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
@@ -27,23 +27,23 @@ internal record ClientCertificateProviderCloseRequest : IProtocolMessage
 
 internal class ClientCertificateProviderCloseHandler : MessageHandler<ClientCertificateProviderCloseRequest>
 {
-    private readonly IRegistry _registry;
+    private readonly IObjectStore _objectStore;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public ClientCertificateProviderCloseHandler(
-        IRegistry registry,
+        IObjectStore objectStore,
         IResponseWriter responseWriter,
         ILogger logger)
     {
-        _registry = registry;
+        _objectStore = objectStore;
         _responseWriter = responseWriter;
         _logger = logger;
     }
 
     public override async Task ProcessAsync(ClientCertificateProviderCloseRequest message)
     {
-        _registry.Remove(message.Id);
+        _objectStore.Remove(message.Id);
         _logger.LogDebug("Closed client certificate provider with id '{Id}'", message.Id);
         await _responseWriter.WriteAsync(new ClientCertificateProviderResponse(message.Id));
     }

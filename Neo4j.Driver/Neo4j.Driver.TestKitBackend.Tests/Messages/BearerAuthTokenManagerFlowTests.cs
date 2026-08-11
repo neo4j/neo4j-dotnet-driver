@@ -21,7 +21,7 @@ using Neo4j.Driver.Internal.Services;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Time;
 using Xunit;
 
@@ -38,18 +38,18 @@ public class BearerAuthTokenManagerFlowTests
     private IAuthTokenManager RegisterManager()
     {
         IAuthTokenManager? manager = null;
-        var registryMock = new Mock<IRegistry>();
-        registryMock
+        var objectStoreMock = new Mock<IObjectStore>();
+        objectStoreMock
             .Setup(r => r.Register(It.IsAny<Func<string, IAuthTokenManager>>()))
             .Returns<Func<string, IAuthTokenManager>>(
                 create =>
                 {
                     manager = create("manager-1");
-                    return new RegistryObject<IAuthTokenManager>("manager-1", manager);
+                    return new Stored<IAuthTokenManager>("manager-1", manager);
                 });
 
         var newManagerHandler = new NewBearerAuthTokenManagerHandler(
-            registryMock.Object,
+            objectStoreMock.Object,
             _callbacksMock.Object,
             new CurrentDateTimeProvider(),
             _responseWriterMock.Object,

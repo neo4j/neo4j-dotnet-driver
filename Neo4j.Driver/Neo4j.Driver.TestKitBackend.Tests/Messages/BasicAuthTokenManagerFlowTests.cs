@@ -20,7 +20,7 @@ using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -31,14 +31,14 @@ public class BasicAuthTokenManagerFlowTests
     public async Task The_registered_manager_requests_a_provider_callback_for_its_token()
     {
         IAuthTokenManager? manager = null;
-        var registryMock = new Mock<IRegistry>();
-        registryMock
+        var objectStoreMock = new Mock<IObjectStore>();
+        objectStoreMock
             .Setup(r => r.Register(It.IsAny<Func<string, IAuthTokenManager>>()))
             .Returns<Func<string, IAuthTokenManager>>(
                 create =>
                 {
                     manager = create("manager-1");
-                    return new RegistryObject<IAuthTokenManager>("manager-1", manager);
+                    return new Stored<IAuthTokenManager>("manager-1", manager);
                 });
 
         Func<string, ICallbackRequest>? capturedRequest = null;
@@ -55,7 +55,7 @@ public class BasicAuthTokenManagerFlowTests
 
         var responseWriterMock = new Mock<IResponseWriter>();
         var newManagerHandler = new NewBasicAuthTokenManagerHandler(
-            registryMock.Object,
+            objectStoreMock.Object,
             callbacksMock.Object,
             responseWriterMock.Object,
             Mock.Of<ILogger>());

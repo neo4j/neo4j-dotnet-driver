@@ -18,7 +18,7 @@ using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -42,13 +42,13 @@ public class TransactionRunHandlerTests
             .Setup(t => t.RunAsync("RETURN 1 AS n", It.Is<IDictionary<string, object>>(p => p.Count == 0)))
             .ReturnsAsync(cursorMock.Object);
 
-        var registeredCursor = new RegistryObject<IResultCursor>("result-1", cursorMock.Object);
-        _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(cursorMock.Object)).Returns(registeredCursor);
+        var registeredCursor = new Stored<IResultCursor>("result-1", cursorMock.Object);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register(cursorMock.Object)).Returns(registeredCursor);
 
         var handler = _autoMocker.CreateInstance<TransactionRunHandler>();
         var request = new TransactionRunRequest
         {
-            Tx = new RegistryObject<IAsyncTransaction>("tx-1", txMock.Object),
+            Tx = new Stored<IAsyncTransaction>("tx-1", txMock.Object),
             Cypher = "RETURN 1 AS n"
         };
 
@@ -78,13 +78,13 @@ public class TransactionRunHandlerTests
                 p => p.Count == 1 && Equals(p["p"], 1L))))
             .ReturnsAsync(cursorMock.Object);
 
-        var registeredCursor = new RegistryObject<IResultCursor>("result-1", cursorMock.Object);
-        _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(cursorMock.Object)).Returns(registeredCursor);
+        var registeredCursor = new Stored<IResultCursor>("result-1", cursorMock.Object);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register(cursorMock.Object)).Returns(registeredCursor);
 
         var handler = _autoMocker.CreateInstance<TransactionRunHandler>();
         var request = new TransactionRunRequest
         {
-            Tx = new RegistryObject<IAsyncTransaction>("tx-1", txMock.Object),
+            Tx = new Stored<IAsyncTransaction>("tx-1", txMock.Object),
             Cypher = "RETURN $p AS n",
             Params = parameters
         };

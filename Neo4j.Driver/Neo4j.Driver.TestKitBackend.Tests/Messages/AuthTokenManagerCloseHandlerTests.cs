@@ -17,7 +17,7 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -27,13 +27,13 @@ public class AuthTokenManagerCloseHandlerTests
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<AuthTokenManagerCloseHandler>();
 
     [Fact]
-    public async Task Removes_the_manager_from_the_registry_and_responds_with_its_id()
+    public async Task Removes_the_manager_from_the_objectStore_and_responds_with_its_id()
     {
         var handler = _autoMocker.CreateInstance<AuthTokenManagerCloseHandler>();
 
         await handler.ProcessAsync(new AuthTokenManagerCloseRequest { Id = "manager-1" });
 
-        _autoMocker.GetMock<IRegistry>().Verify(r => r.Remove("manager-1"), Times.Once);
+        _autoMocker.GetMock<IObjectStore>().Verify(r => r.Remove("manager-1"), Times.Once);
         _autoMocker.GetMock<IResponseWriter>()
             .Verify(w => w.WriteAsync(new AuthTokenManagerResponse("manager-1")), Times.Once);
     }

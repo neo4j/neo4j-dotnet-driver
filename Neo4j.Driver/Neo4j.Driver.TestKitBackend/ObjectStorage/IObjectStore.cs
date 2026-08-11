@@ -13,6 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.TestKitBackend.ObjectRegistry;
+namespace Neo4j.Driver.TestKitBackend.ObjectStorage;
 
-internal record RegistryObject<T>(string Id, T Object);
+internal interface IObjectStore
+{
+    Stored<T> Register<T>(T obj) where T : notnull;
+
+    Stored<T> Register<T>(Func<string, T> create) where T : notnull;
+
+    Stored<T> Get<T>(string id) where T : notnull;
+
+    void Remove(string id);
+}

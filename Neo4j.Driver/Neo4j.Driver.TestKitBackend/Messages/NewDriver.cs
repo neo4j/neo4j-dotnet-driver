@@ -16,7 +16,7 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Neo4j.Driver.TestKitBackend.Types;
 
@@ -51,20 +51,20 @@ internal record DriverResponse(string Id) : IProtocolMessage;
 
 internal class NewDriverHandler : MessageHandler<NewDriverRequest>
 {
-    private readonly IRegistry _registry;
+    private readonly IObjectStore _objectStore;
     private readonly INewDriverConfigMapper _configMapper;
     private readonly INeo4jLogger _neo4JLogger;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewDriverHandler(
-        IRegistry registry,
+        IObjectStore objectStore,
         INewDriverConfigMapper configMapper,
         INeo4jLogger neo4JLogger,
         IResponseWriter responseWriter,
         ILogger logger)
     {
-        _registry = registry;
+        _objectStore = objectStore;
         _configMapper = configMapper;
         _neo4JLogger = neo4JLogger;
         _responseWriter = responseWriter;
@@ -83,12 +83,12 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
         var driver = message.AuthTokenManagerId is not null
             ? GraphDatabase.Driver(
                 message.Uri,
-                _registry.Get<IAuthTokenManager>(message.AuthTokenManagerId).Object,
+                _objectStore.Get<IAuthTokenManager>(message.AuthTokenManagerId).Object,
                 Configure)
             : GraphDatabase.Driver(message.Uri, message.AuthorizationToken?.Value.ToAuthToken(), Configure);
 
-        var registryObject = _registry.Register(driver);
-        _logger.LogDebug("Created driver with id '{Id}'", registryObject.Id);
-        await _responseWriter.WriteAsync(new DriverResponse(registryObject.Id));
+        var stored = _objectStore.Register(driver);
+        _logger.LogDebug("Created driver with id '{Id}'", stored.Id);
+        await _responseWriter.WriteAsync(new DriverResponse(stored.Id));
     }
 }

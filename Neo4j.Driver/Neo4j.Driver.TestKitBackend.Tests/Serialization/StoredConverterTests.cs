@@ -16,23 +16,23 @@
 using System.Text.Json;
 using FluentAssertions;
 using Moq.AutoMock;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Serialization;
 
-public class RegistryObjectConverterTests
+public class StoredConverterTests
 {
-    private readonly Registry _registry = AutoMocker.ForTesting<Registry>().CreateInstance<Registry>();
+    private readonly ObjectStore _objectStore = AutoMocker.ForTesting<ObjectStore>().CreateInstance<ObjectStore>();
 
     private JsonSerializerOptions Options() =>
-        new JsonOptionsProvider([new RegistryObjectConverterFactory(_registry)]).GetOptions();
+        new JsonOptionsProvider([new StoredConverterFactory(_objectStore)]).GetOptions();
 
     [Fact]
-    public void Reads_a_wire_id_by_resolving_it_from_the_registry()
+    public void Reads_a_wire_id_by_resolving_it_from_the_objectStore()
     {
-        var registered = _registry.Register(new Stored());
+        var registered = _objectStore.Register(new Stored());
 
         var request = JsonSerializer.Deserialize<Request>(
             $$"""{"thingId":"{{registered.Id}}"}""", Options());
@@ -59,7 +59,7 @@ public class RegistryObjectConverterTests
 
     private record Request
     {
-        public RegistryObject<Stored> Thing { get; init; } = null!;
+        public Stored<Stored> Thing { get; init; } = null!;
     }
 
     private class Stored;

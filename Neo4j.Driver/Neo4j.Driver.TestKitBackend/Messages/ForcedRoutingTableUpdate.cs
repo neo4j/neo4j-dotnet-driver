@@ -16,13 +16,13 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record ForcedRoutingTableUpdateRequest : IProtocolMessage
 {
-    public required RegistryObject<IDriver> Driver { get; init; }
+    public required Stored<IDriver> Driver { get; init; }
     public string? Database { get; init; }
     public string[]? Bookmarks { get; init; }
 }

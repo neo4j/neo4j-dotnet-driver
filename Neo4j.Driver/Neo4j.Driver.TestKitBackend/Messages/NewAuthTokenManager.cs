@@ -18,7 +18,7 @@ using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
@@ -26,18 +26,18 @@ internal record NewAuthTokenManagerRequest : IProtocolMessage;
 
 internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRequest>
 {
-    private readonly IRegistry _registry;
+    private readonly IObjectStore _objectStore;
     private readonly ICallbackExchanger _callbackExchanger;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewAuthTokenManagerHandler(
-        IRegistry registry,
+        IObjectStore objectStore,
         ICallbackExchanger callbackExchanger,
         IResponseWriter responseWriter,
         ILogger logger)
     {
-        _registry = registry;
+        _objectStore = objectStore;
         _callbackExchanger = callbackExchanger;
         _responseWriter = responseWriter;
         _logger = logger;
@@ -45,7 +45,7 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
 
     public override async Task ProcessAsync(NewAuthTokenManagerRequest message)
     {
-        var registered = _registry.Register(CreateRegisteredManager);
+        var registered = _objectStore.Register(CreateRegisteredManager);
         _logger.LogDebug("Created auth token manager with id '{Id}'", registered.Id);
         await _responseWriter.WriteAsync(new AuthTokenManagerResponse(registered.Id));
     }

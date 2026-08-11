@@ -17,7 +17,7 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -27,11 +27,11 @@ public class SessionCloseHandlerTests
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<SessionCloseHandler>();
 
     [Fact]
-    public async Task Closes_the_session_removes_it_from_the_registry_and_responds_with_its_id()
+    public async Task Closes_the_session_removes_it_from_the_objectStore_and_responds_with_its_id()
     {
         var sessionMock = _autoMocker.GetMock<IAsyncSession>();
-        var registered = new RegistryObject<IAsyncSession>("session-1", sessionMock.Object);
-        _autoMocker.GetMock<IRegistry>().Setup(r => r.Get<IAsyncSession>("session-1")).Returns(registered);
+        var registered = new Stored<IAsyncSession>("session-1", sessionMock.Object);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Get<IAsyncSession>("session-1")).Returns(registered);
 
         var handler = _autoMocker.CreateInstance<SessionCloseHandler>();
         var request = new SessionCloseRequest(registered);
@@ -39,7 +39,7 @@ public class SessionCloseHandlerTests
         await handler.ProcessAsync(request);
 
         sessionMock.Verify(s => s.CloseAsync(), Times.Once);
-        _autoMocker.GetMock<IRegistry>().Verify(r => r.Remove("session-1"), Times.Once);
+        _autoMocker.GetMock<IObjectStore>().Verify(r => r.Remove("session-1"), Times.Once);
         _autoMocker.GetMock<IResponseWriter>()
             .Verify(w => w.WriteAsync(new SessionResponse("session-1")), Times.Once);
     }

@@ -16,11 +16,11 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record GetConnectionPoolMetricsRequest(RegistryObject<IDriver> Driver, string Address) : IProtocolMessage;
+internal record GetConnectionPoolMetricsRequest(Stored<IDriver> Driver, string Address) : IProtocolMessage;
 
 internal record ConnectionPoolMetricsResponse(int InUse, int Idle) : IProtocolMessage;
 

@@ -17,7 +17,7 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.Configuration;
 using Neo4j.Driver.TestKitBackend.Certificates;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
@@ -47,18 +47,18 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
     ];
 
     private readonly ICertificateLoader _certificateLoader;
-    private readonly IRegistry _registry;
+    private readonly IObjectStore _objectStore;
     private readonly IServerAddressResolver _resolver;
     private readonly IConfiguration _configuration;
 
     public NewDriverConfigMapper(
         ICertificateLoader certificateLoader,
-        IRegistry registry,
+        IObjectStore objectStore,
         IServerAddressResolver resolver,
         IConfiguration configuration)
     {
         _certificateLoader = certificateLoader;
-        _registry = registry;
+        _objectStore = objectStore;
         _resolver = resolver;
         _configuration = configuration;
     }
@@ -95,7 +95,7 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
 
         if (request.ClientCertificateProviderId is { } providerId)
         {
-            builder.WithClientCertificateProvider(_registry.Get<IClientCertificateProvider>(providerId).Object);
+            builder.WithClientCertificateProvider(_objectStore.Get<IClientCertificateProvider>(providerId).Object);
         }
     }
 

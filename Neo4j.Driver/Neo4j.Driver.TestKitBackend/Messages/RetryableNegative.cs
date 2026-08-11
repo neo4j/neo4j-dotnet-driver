@@ -17,24 +17,24 @@ using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record RetryableNegativeRequest(RegistryObject<IAsyncSession> Session, string ErrorId) : IProtocolMessage;
+internal record RetryableNegativeRequest(Stored<IAsyncSession> Session, string ErrorId) : IProtocolMessage;
 
 internal class RetryableNegativeHandler : MessageHandler<RetryableNegativeRequest>
 {
-    private readonly IRegistry _registry;
+    private readonly IObjectStore _objectStore;
     private readonly IContinuationCoordinator _coordinator;
     private readonly IResponseWriter _responseWriter;
 
     public RetryableNegativeHandler(
-        IRegistry registry,
+        IObjectStore objectStore,
         IContinuationCoordinator coordinator,
         IResponseWriter responseWriter)
     {
-        _registry = registry;
+        _objectStore = objectStore;
         _coordinator = coordinator;
         _responseWriter = responseWriter;
     }
@@ -48,7 +48,7 @@ internal class RetryableNegativeHandler : MessageHandler<RetryableNegativeReques
         {
             var exception = message.ErrorId == ""
                 ? new FrontendException("Error from client in retryable tx")
-                : _registry.Get<Exception>(message.ErrorId).Object;
+                : _objectStore.Get<Exception>(message.ErrorId).Object;
 
             _coordinator.FailOutcome(sessionId, exception);
         }

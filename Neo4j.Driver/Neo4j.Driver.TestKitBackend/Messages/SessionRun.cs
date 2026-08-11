@@ -17,14 +17,14 @@ using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Types;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record SessionRunRequest : IProtocolMessage
 {
-    public required RegistryObject<IAsyncSession> Session { get; init; }
+    public required Stored<IAsyncSession> Session { get; init; }
     public required string Cypher { get; init; }
 
     public Dictionary<string, ICypherValue>? Params { get; init; }
@@ -39,20 +39,20 @@ internal record ResultResponse(string Id, string[]? Keys) : IProtocolMessage;
 
 internal class SessionRunHandler : MessageHandler<SessionRunRequest>
 {
-    private readonly IRegistry _registry;
+    private readonly IObjectStore _objectStore;
     private readonly ICypherToNativeMapper _cypherToNativeMapper;
     private readonly ITransactionConfigMapper _transactionConfigMapper;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public SessionRunHandler(
-        IRegistry registry,
+        IObjectStore objectStore,
         IResponseWriter responseWriter,
         ICypherToNativeMapper cypherToNativeMapper,
         ITransactionConfigMapper transactionConfigMapper,
         ILogger logger)
     {
-        _registry = registry;
+        _objectStore = objectStore;
         _responseWriter = responseWriter;
         _cypherToNativeMapper = cypherToNativeMapper;
         _transactionConfigMapper = transactionConfigMapper;
@@ -72,7 +72,7 @@ internal class SessionRunHandler : MessageHandler<SessionRunRequest>
             _transactionConfigMapper.Map(message.TxMeta, message.Timeout));
 
         var keys = await cursor.KeysAsync();
-        var registeredResult = _registry.Register(cursor);
+        var registeredResult = _objectStore.Register(cursor);
         _logger.LogDebug("Query result id '{ResultId}' returned keys: {@keys}", registeredResult.Id, keys);
 
         await _responseWriter.WriteAsync(new ResultResponse(registeredResult.Id, keys));

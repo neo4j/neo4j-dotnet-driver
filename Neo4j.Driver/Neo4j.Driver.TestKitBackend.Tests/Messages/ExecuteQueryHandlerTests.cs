@@ -20,7 +20,7 @@ using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Summary;
 using Xunit;
 
@@ -72,7 +72,7 @@ public class ExecuteQueryHandlerTests
         var handler = _autoMocker.CreateInstance<ExecuteQueryHandler>();
         var request = new ExecuteQueryRequest
         {
-            Driver = new RegistryObject<IDriver>("driver-1", _autoMocker.Get<IDriver>()),
+            Driver = new Stored<IDriver>("driver-1", _autoMocker.Get<IDriver>()),
             Cypher = "RETURN 1 AS n",
             Config = config
         };
@@ -112,7 +112,7 @@ public class ExecuteQueryHandlerTests
         var handler = _autoMocker.CreateInstance<ExecuteQueryHandler>();
         var request = new ExecuteQueryRequest
         {
-            Driver = new RegistryObject<IDriver>("driver-1", _autoMocker.Get<IDriver>()),
+            Driver = new Stored<IDriver>("driver-1", _autoMocker.Get<IDriver>()),
             Cypher = "RETURN $p AS n",
             Params = parameters,
             Config = config

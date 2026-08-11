@@ -20,7 +20,7 @@ using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Neo4j.Driver.TestKitBackend.Summary;
 
@@ -58,7 +58,7 @@ internal class BookmarkManagerIdConverter : JsonConverter<string>
 
 internal record ExecuteQueryRequest : IProtocolMessage
 {
-    public required RegistryObject<IDriver> Driver { get; init; }
+    public required Stored<IDriver> Driver { get; init; }
     public required string Cypher { get; init; }
     public Dictionary<string, ICypherValue>? Params { get; init; }
     public required ExecuteQueryConfig Config { get; init; }

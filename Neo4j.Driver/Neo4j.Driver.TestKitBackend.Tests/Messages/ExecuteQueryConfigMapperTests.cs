@@ -19,7 +19,7 @@ using Moq.AutoMock;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -83,9 +83,9 @@ public class ExecuteQueryConfigMapperTests
     public void Resolves_the_bookmark_manager_by_id()
     {
         var bookmarkManagerMock = new Mock<IBookmarkManager>();
-        _autoMocker.GetMock<IRegistry>()
+        _autoMocker.GetMock<IObjectStore>()
             .Setup(r => r.Get<IBookmarkManager>("bm-1"))
-            .Returns(new RegistryObject<IBookmarkManager>("bm-1", bookmarkManagerMock.Object));
+            .Returns(new Stored<IBookmarkManager>("bm-1", bookmarkManagerMock.Object));
 
         var config = Map(new ExecuteQueryConfig { BookmarkManagerId = "bm-1" });
 

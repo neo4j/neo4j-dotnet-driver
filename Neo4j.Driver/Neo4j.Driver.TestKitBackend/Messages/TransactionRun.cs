@@ -17,31 +17,31 @@ using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record TransactionRunRequest : IProtocolMessage
 {
-    public required RegistryObject<IAsyncTransaction> Tx { get; init; }
+    public required Stored<IAsyncTransaction> Tx { get; init; }
     public required string Cypher { get; init; }
     public Dictionary<string, ICypherValue>? Params { get; init; }
 }
 
 internal class TransactionRunHandler : MessageHandler<TransactionRunRequest>
 {
-    private readonly IRegistry _registry;
+    private readonly IObjectStore _objectStore;
     private readonly ICypherToNativeMapper _cypherToNativeMapper;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public TransactionRunHandler(
-        IRegistry registry,
+        IObjectStore objectStore,
         IResponseWriter responseWriter,
         ICypherToNativeMapper cypherToNativeMapper,
         ILogger logger)
     {
-        _registry = registry;
+        _objectStore = objectStore;
         _responseWriter = responseWriter;
         _cypherToNativeMapper = cypherToNativeMapper;
         _logger = logger;
@@ -57,7 +57,7 @@ internal class TransactionRunHandler : MessageHandler<TransactionRunRequest>
         var cursor = await message.Tx.Object.RunAsync(message.Cypher, _cypherToNativeMapper.Map(message.Params));
 
         var keys = await cursor.KeysAsync();
-        var registeredResult = _registry.Register(cursor);
+        var registeredResult = _objectStore.Register(cursor);
         _logger.LogDebug("Query result id '{ResultId}' returned keys: {@keys}", registeredResult.Id, keys);
 
         await _responseWriter.WriteAsync(new ResultResponse(registeredResult.Id, keys));

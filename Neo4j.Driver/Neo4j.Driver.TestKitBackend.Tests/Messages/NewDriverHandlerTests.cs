@@ -18,7 +18,7 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -38,9 +38,9 @@ public class NewDriverHandlerTests
 
     private void RegisterCreatedDriverAs(string id)
     {
-        _autoMocker.GetMock<IRegistry>()
+        _autoMocker.GetMock<IObjectStore>()
             .Setup(r => r.Register(It.IsAny<IDriver>()))
-            .Returns((IDriver driver) => new RegistryObject<IDriver>(id, driver));
+            .Returns((IDriver driver) => new Stored<IDriver>(id, driver));
     }
 
     [Fact]
@@ -72,10 +72,10 @@ public class NewDriverHandlerTests
     public async Task Configures_the_driver_with_the_injected_neo4j_logger()
     {
         IDriver? created = null;
-        _autoMocker.GetMock<IRegistry>()
+        _autoMocker.GetMock<IObjectStore>()
             .Setup(r => r.Register(It.IsAny<IDriver>()))
             .Callback((IDriver driver) => created = driver)
-            .Returns((IDriver driver) => new RegistryObject<IDriver>("driver-1", driver));
+            .Returns((IDriver driver) => new Stored<IDriver>("driver-1", driver));
 
         var neo4JLogger = Mock.Of<INeo4jLogger>();
         _autoMocker.Use(neo4JLogger);
@@ -90,10 +90,10 @@ public class NewDriverHandlerTests
     public async Task Enables_metrics_so_GetConnectionPoolMetrics_can_report_on_the_driver()
     {
         IDriver? created = null;
-        _autoMocker.GetMock<IRegistry>()
+        _autoMocker.GetMock<IObjectStore>()
             .Setup(r => r.Register(It.IsAny<IDriver>()))
             .Callback((IDriver driver) => created = driver)
-            .Returns((IDriver driver) => new RegistryObject<IDriver>("driver-1", driver));
+            .Returns((IDriver driver) => new Stored<IDriver>("driver-1", driver));
 
         var handler = _autoMocker.CreateInstance<NewDriverHandler>();
 

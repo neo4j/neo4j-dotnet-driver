@@ -17,7 +17,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Neo4j.Driver.Internal.Temporal;
 using Neo4j.Driver.TestKitBackend.Errors;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
 
@@ -48,7 +48,7 @@ public class ExceptionOriginClassifierTests
     [Fact]
     public void A_real_exception_thrown_by_the_backends_own_code_does_not_originate_in_the_driver()
     {
-        var exception = Record.Exception(() => new Registry(NullLogger.Instance).Get<object>("missing"));
+        var exception = Record.Exception(() => new ObjectStore(NullLogger.Instance).Get<object>("missing"));
 
         exception.Should().BeOfType<TestKitProtocolException>();
         _classifier.OriginatesInDriver(exception!).Should().BeFalse();

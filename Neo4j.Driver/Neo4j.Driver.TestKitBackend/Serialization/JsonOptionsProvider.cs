@@ -16,7 +16,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Serialization;
 
@@ -46,10 +46,10 @@ internal class JsonOptionsProvider : IJsonOptionsProvider
     {
         foreach (var property in typeInfo.Properties)
         {
-            var isRegistryObject = property.PropertyType.IsGenericType &&
-                property.PropertyType.GetGenericTypeDefinition() == typeof(RegistryObject<>);
+            var isStored = property.PropertyType.IsGenericType &&
+                property.PropertyType.GetGenericTypeDefinition() == typeof(Stored<>);
 
-            if (isRegistryObject)
+            if (isStored)
             {
                 property.Name += "Id";
             }

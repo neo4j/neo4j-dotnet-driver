@@ -86,28 +86,28 @@ The design rests on the following pieces:
   For an incoming request, the name is looked up in a name-to-type map built by reflection.
   For an outgoing response, the type name has its `Request` or `Response` suffix stripped to produce the name testkit expects; for example, `DriverResponse` becomes `"Driver"`, which also avoids any collision with the driver's own `Driver` type.
 - **Handles are resolved during deserialization, not by hand.**
-  A request property of type `RegistryObject<IDriver>` resolves its driver from the per-connection object registry while the request is being deserialized, so the handler only needs to read `.Object`.
+  A request property of type `Stored<IDriver>` resolves its driver from the per-connection object store while the request is being deserialized, so the handler only needs to read `.Object`.
   Responses work in the opposite direction: they carry a plain `string Id` copied from the handle, since an outgoing message never needs the live object itself.
-  See [The object registry](#the-object-registry) below.
+  See [The object store](#the-object-store) below.
 - **`Optional<T>` exists for the rare field where absence, a present null, and a present value are three distinct meanings**, as with `timeout` and `trustedCertificates`.
   Everywhere else, absence collapses to null, so a plain `T?` is the correct and simpler choice.
 
-## The object registry
+## The object store
 
 Every object a test creates through the backend, a driver, a session, a transaction, a result, a manager, a stored error, needs to be referred to by later requests without serializing the object itself.
-The object registry (`IRegistry`) exists to solve this, and understanding it is one of the more important parts of implementing this protocol.
+The object store (`IObjectStore`) exists to solve this, and understanding it is one of the more important parts of implementing this protocol.
 
-`IRegistry.Register<T>(T obj)` stores an object and returns a `RegistryObject<T>` pairing a freshly generated string id with the object.
+`IObjectStore.Register<T>(T obj)` stores an object and returns a `Stored<T>` pairing a freshly generated string id with the object.
 A second overload, `Register<T>(Func<string, T> create)`, exists for objects that need to know their own id while they are still being constructed.
 A bookmark manager is the clearest example: its supplier and consumer callbacks must reference the manager's own id, so the manager is built inside the factory function the id is generated for.
-`IRegistry.Get<T>(string id)` looks an object up by id, throwing `TestKitProtocolException` if the id is unknown or resolves to an object of the wrong type.
+`IObjectStore.Get<T>(string id)` looks an object up by id, throwing `TestKitProtocolException` if the id is unknown or resolves to an object of the wrong type.
 
 Most handlers never call `Get` directly.
-A request property declared as `RegistryObject<T>` is resolved automatically during deserialization, and the naming follows one fixed rule: `JsonOptionsProvider.BindHandlesToIdMembers` appends `Id` to the camelCased property name to get the field it reads from testkit's request.
-A property `RegistryObject<IDriver> Driver` therefore reads its id from the field `driverId`, calls `IRegistry.Get<IDriver>` with that id, and hands the handler an already-resolved object; the handler never sees the id itself unless it also asks for it through `.Id`.
+A request property declared as `Stored<T>` is resolved automatically during deserialization, and the naming follows one fixed rule: `JsonOptionsProvider.BindHandlesToIdMembers` appends `Id` to the camelCased property name to get the field it reads from testkit's request.
+A property `Stored<IDriver> Driver` therefore reads its id from the field `driverId`, calls `IObjectStore.Get<IDriver>` with that id, and hands the handler an already-resolved object; the handler never sees the id itself unless it also asks for it through `.Id`.
 Calling `Get` directly is reserved for the few cases where an id arrives as a plain string rather than through that property-based resolution, such as `RetryableNegative` looking up a stored error by `ErrorId`.
 
-The registry is scoped to the connection, so it is disposed automatically when a test's connection closes.
+The store is scoped to the connection, so it is disposed automatically when a test's connection closes.
 Disposal walks every registered object in reverse registration order and disposes anything implementing `IAsyncDisposable` or `IDisposable`.
 This is what actually releases drivers, sessions, and other resources at the end of a test.
 Explicit close handlers such as `DriverClose` exist to satisfy testkit's protocol, not to perform the underlying cleanup.
@@ -118,7 +118,7 @@ Explicit close handlers such as `DriverClose` exist to satisfy testkit's protoco
 Both are fully self-contained (the request, the response, and the handler all live in one file, with nothing borrowed from elsewhere), and each resolves an existing handle, reads something off the object behind it, and responds:
 
 ```csharp
-internal record CheckMultiDBSupportRequest(RegistryObject<IDriver> Driver) : IProtocolMessage;
+internal record CheckMultiDBSupportRequest(Stored<IDriver> Driver) : IProtocolMessage;
 
 internal record MultiDBSupportResponse(string Id, bool Available) : IProtocolMessage;
 
@@ -140,7 +140,7 @@ internal class CheckMultiDBSupportHandler : MessageHandler<CheckMultiDBSupportRe
 ```
 
 ```csharp
-internal record SessionLastBookmarksRequest(RegistryObject<IAsyncSession> Session) : IProtocolMessage;
+internal record SessionLastBookmarksRequest(Stored<IAsyncSession> Session) : IProtocolMessage;
 
 internal record BookmarksResponse(string[] Bookmarks) : IProtocolMessage;
 
@@ -161,8 +161,8 @@ internal class SessionLastBookmarksHandler : MessageHandler<SessionLastBookmarks
 }
 ```
 
-The second one reads a property directly instead of awaiting a driver call, and resolves a `RegistryObject<IAsyncSession>` instead of a `RegistryObject<IDriver>`: the pattern is the same regardless of which registered type or which kind of driver access is involved.
-No registration step, no envelope wiring, and no manual name mapping are required beyond declaring the `RegistryObject<T>` property; once the file exists and the project builds, testkit can send the request and get the response back.
+The second one reads a property directly instead of awaiting a driver call, and resolves a `Stored<IAsyncSession>` instead of a `Stored<IDriver>`: the pattern is the same regardless of which registered type or which kind of driver access is involved.
+No registration step, no envelope wiring, and no manual name mapping are required beyond declaring the `Stored<T>` property; once the file exists and the project builds, testkit can send the request and get the response back.
 
 Both examples resolve an existing handle rather than creating one.
 For a message that creates a driver object and registers it, see `Messages/NewDriver.cs`:
@@ -171,14 +171,14 @@ For a message that creates a driver object and registers it, see `Messages/NewDr
 public override async Task ProcessAsync(NewDriverRequest message)
 {
     var driver = GraphDatabase.Driver(message.Uri, ..., Configure);
-    var registryObject = _registry.Register(driver);
-    await _responseWriter.WriteAsync(new DriverResponse(registryObject.Id));
+    var stored = _objectStore.Register(driver);
+    await _responseWriter.WriteAsync(new DriverResponse(stored.Id));
 }
 ```
 
 Before considering a new handler complete, verify the following:
 
-- If the request needs a handle to an existing object, such as a driver or a session, declare that property as `RegistryObject<T>` rather than a bare `string` identifier.
+- If the request needs a handle to an existing object, such as a driver or a session, declare that property as `Stored<T>` rather than a bare `string` identifier.
   The conversion is then handled automatically.
 - If a field must distinguish an absent value from a present null value, use `Optional<T>`.
   Otherwise, use `T?`.
@@ -309,7 +309,7 @@ This differs from Cypher types, which share a single property across many possib
 Query parameters, on the incoming side, and record values, summary fields, and diagnostic records, on the outgoing side, all pass through the Cypher type envelope testkit expects, defined in `nutkit/protocol/cypher.py`, for example `{"name": "CypherInt", "data": {"value": 1}}`.
 Each Cypher type is a record under `Cypher/` implementing `ICypherValue`.
 Each direction of the mapping is a single exhaustive `switch` expression: `NativeToCypherMapper.Map(object?)` for outgoing values, and `CypherToNativeMapper.Map(ICypherValue)` for incoming values.
-Adding a new Cypher type means adding a record and a case in both switch expressions; no separate registry needs to be updated.
+Adding a new Cypher type means adding a record and a case in both switch expressions; no separate lookup table needs to be updated.
 
 ## Verifying a change
 

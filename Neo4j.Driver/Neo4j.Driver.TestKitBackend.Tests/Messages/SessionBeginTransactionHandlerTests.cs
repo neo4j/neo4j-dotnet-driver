@@ -18,7 +18,7 @@ using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Types;
 using Xunit;
 
@@ -38,13 +38,13 @@ public class SessionBeginTransactionHandlerTests
             .Setup(s => s.BeginTransactionAsync(It.IsAny<Action<TransactionConfigBuilder>>()))
             .ReturnsAsync(transactionMock.Object);
 
-        var registeredTransaction = new RegistryObject<IAsyncTransaction>("tx-1", transactionMock.Object);
-        _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(transactionMock.Object)).Returns(registeredTransaction);
+        var registeredTransaction = new Stored<IAsyncTransaction>("tx-1", transactionMock.Object);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register(transactionMock.Object)).Returns(registeredTransaction);
 
         var handler = _autoMocker.CreateInstance<SessionBeginTransactionHandler>();
         var request = new SessionBeginTransactionRequest
         {
-            Session = new RegistryObject<IAsyncSession>("session-1", sessionMock.Object)
+            Session = new Stored<IAsyncSession>("session-1", sessionMock.Object)
         };
 
         await handler.ProcessAsync(request);
@@ -69,13 +69,13 @@ public class SessionBeginTransactionHandlerTests
             .Setup(s => s.BeginTransactionAsync(configure))
             .ReturnsAsync(transactionMock.Object);
 
-        var registeredTransaction = new RegistryObject<IAsyncTransaction>("tx-1", transactionMock.Object);
-        _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(transactionMock.Object)).Returns(registeredTransaction);
+        var registeredTransaction = new Stored<IAsyncTransaction>("tx-1", transactionMock.Object);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register(transactionMock.Object)).Returns(registeredTransaction);
 
         var handler = _autoMocker.CreateInstance<SessionBeginTransactionHandler>();
         var request = new SessionBeginTransactionRequest
         {
-            Session = new RegistryObject<IAsyncSession>("session-1", sessionMock.Object),
+            Session = new Stored<IAsyncSession>("session-1", sessionMock.Object),
             TxMeta = txMeta,
             Timeout = timeout
         };

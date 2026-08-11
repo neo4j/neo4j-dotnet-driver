@@ -18,7 +18,7 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -31,13 +31,13 @@ public class NewBookmarkManagerHandlerTests
     public async Task Registers_a_manager_seeded_with_the_initial_bookmarks_and_responds_with_its_id()
     {
         IBookmarkManager? manager = null;
-        _autoMocker.GetMock<IRegistry>()
+        _autoMocker.GetMock<IObjectStore>()
             .Setup(r => r.Register(It.IsAny<Func<string, IBookmarkManager>>()))
             .Returns<Func<string, IBookmarkManager>>(
                 create =>
                 {
                     manager = create("bm-1");
-                    return new RegistryObject<IBookmarkManager>("bm-1", manager);
+                    return new Stored<IBookmarkManager>("bm-1", manager);
                 });
 
         var handler = _autoMocker.CreateInstance<NewBookmarkManagerHandler>();

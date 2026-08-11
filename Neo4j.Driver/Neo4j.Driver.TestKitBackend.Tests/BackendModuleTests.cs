@@ -25,7 +25,7 @@ using Neo4j.Driver.Internal.Services;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Neo4j.Driver.TestKitBackend.Time;
 using Xunit;
@@ -42,13 +42,13 @@ public class BackendModuleTests
     }
 
     [Fact]
-    public void Json_options_in_a_connection_scope_resolve_handles_registered_through_that_scopes_registry()
+    public void Json_options_in_a_connection_scope_resolve_handles_registered_through_that_scopes_objectStore()
     {
         var container = BuildContainer();
         using var scope =
             container.BeginLifetimeScope(b => b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory()));
 
-        var registered = scope.Resolve<IRegistry>().Register(new Stored());
+        var registered = scope.Resolve<IObjectStore>().Register(new Stored());
         var options = scope.Resolve<IJsonOptionsProvider>().GetOptions();
 
         var request = JsonSerializer.Deserialize<Request>($$"""{"thingId":"{{registered.Id}}"}""", options);
@@ -137,7 +137,7 @@ public class BackendModuleTests
         using var scopeA = container.BeginLifetimeScope(withLogging);
         using var scopeB = container.BeginLifetimeScope(withLogging);
 
-        var registered = scopeA.Resolve<IRegistry>().Register(new Stored());
+        var registered = scopeA.Resolve<IObjectStore>().Register(new Stored());
         var options = scopeB.Resolve<IJsonOptionsProvider>().GetOptions();
 
         var act = () => JsonSerializer.Deserialize<Request>($$"""{"thingId":"{{registered.Id}}"}""", options);
@@ -189,7 +189,7 @@ public class BackendModuleTests
 
     private record Request
     {
-        public RegistryObject<Stored> Thing { get; init; } = null!;
+        public Stored<Stored> Thing { get; init; } = null!;
     }
 
     private class Stored;

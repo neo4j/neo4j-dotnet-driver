@@ -18,7 +18,7 @@ using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -38,7 +38,7 @@ public class NewSessionConfigMapperTests
     {
         return new NewSessionRequest
         {
-            Driver = new RegistryObject<IDriver>("driver-1", Mock.Of<IDriver>()),
+            Driver = new Stored<IDriver>("driver-1", Mock.Of<IDriver>()),
             AccessMode = "r"
         };
     }
@@ -78,9 +78,9 @@ public class NewSessionConfigMapperTests
     public void Resolves_and_applies_the_bookmark_manager_by_id()
     {
         var manager = Mock.Of<IBookmarkManager>();
-        _autoMocker.GetMock<IRegistry>()
+        _autoMocker.GetMock<IObjectStore>()
             .Setup(r => r.Get<IBookmarkManager>("bm-1"))
-            .Returns(new RegistryObject<IBookmarkManager>("bm-1", manager));
+            .Returns(new Stored<IBookmarkManager>("bm-1", manager));
 
         Apply(MinimalRequest() with { BookmarkManagerId = "bm-1" });
 

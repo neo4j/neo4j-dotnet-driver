@@ -22,7 +22,7 @@ using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Neo4j.Driver.TestKitBackend.Types;
 using Xunit;
@@ -32,7 +32,7 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 public class RetryableTransactionFlowTests
 {
     private readonly ContinuationCoordinator _coordinator = new();
-    private readonly Mock<IRegistry> _registryMock = new();
+    private readonly Mock<IObjectStore> _objectStoreMock = new();
     private readonly Mock<ITransactionConfigMapper> _transactionConfigMapperMock = new();
     private readonly Mock<IResponseWriter> _responseWriterMock = new();
     private readonly Mock<IConnectionInput> _connectionInputMock = new();
@@ -40,11 +40,11 @@ public class RetryableTransactionFlowTests
     private readonly Mock<IDriverErrorMapper> _driverErrorMapperMock = new();
     private readonly Mock<IExceptionOriginClassifier> _originClassifierMock = new();
     private readonly Mock<IAsyncSession> _sessionMock = new();
-    private readonly RegistryObject<IAsyncSession> _sessionHandle;
+    private readonly Stored<IAsyncSession> _sessionHandle;
 
     public RetryableTransactionFlowTests()
     {
-        _sessionHandle = new RegistryObject<IAsyncSession>("session-1", _sessionMock.Object);
+        _sessionHandle = new Stored<IAsyncSession>("session-1", _sessionMock.Object);
         _transactionConfigMapperMock
             .Setup(m => m.Map(It.IsAny<Dictionary<string, ICypherValue>?>(), It.IsAny<Optional<long?>>()))
             .Returns((Action<TransactionConfigBuilder>)(_ => { }));
@@ -157,9 +157,9 @@ public class RetryableTransactionFlowTests
     public async Task Negative_with_a_stored_error_the_driver_does_not_retry_terminates_with_DriverError()
     {
         var storedException = new ClientException("Neo.ClientError.Statement.SyntaxError", "bad cypher");
-        _registryMock
+        _objectStoreMock
             .Setup(r => r.Get<Exception>("error-1"))
-            .Returns(new RegistryObject<Exception>("error-1", storedException));
+            .Returns(new Stored<Exception>("error-1", storedException));
 
         var errorResponse = new DriverErrorResponse { Id = "error-2", ErrorType = "ClientError" };
         _driverErrorMapperMock.Setup(m => m.Map(storedException)).Returns(errorResponse);
@@ -188,9 +188,9 @@ public class RetryableTransactionFlowTests
     public async Task Negative_with_a_retryable_stored_error_lets_the_driver_retry_with_a_new_RetryableTry()
     {
         var storedException = new TransientException("Neo.TransientError.General.Whatever", "try again");
-        _registryMock
+        _objectStoreMock
             .Setup(r => r.Get<Exception>("error-1"))
-            .Returns(new RegistryObject<Exception>("error-1", storedException));
+            .Returns(new Stored<Exception>("error-1", storedException));
 
         var firstTxMock = RegisterTx("tx-1");
         var secondTxMock = RegisterTx("tx-2");
@@ -332,7 +332,7 @@ public class RetryableTransactionFlowTests
                 new RetryableNegativeRequest(_sessionHandle, "")));
 
         _responseWriterMock.Verify(w => w.WriteAsync(It.IsAny<FrontendErrorResponse>()), Times.Once);
-        _registryMock.Verify(r => r.Get<Exception>(It.IsAny<string>()), Times.Never);
+        _objectStoreMock.Verify(r => r.Get<Exception>(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -350,7 +350,7 @@ public class RetryableTransactionFlowTests
         await WithTimeoutAsync(
             ReadHandler().ProcessAsync(new SessionReadTransactionRequest { Session = _sessionHandle }));
 
-        _registryMock
+        _objectStoreMock
             .Setup(r => r.Get<Exception>("bad-id"))
             .Throws(new TestKitProtocolException("No object is registered with id 'bad-id'."));
 
@@ -392,9 +392,9 @@ public class RetryableTransactionFlowTests
     public async Task A_duplicate_RetryableNegative_does_not_leave_the_response_slot_registered()
     {
         var storedException = new ClientException("Neo.ClientError.Statement.SyntaxError", "bad cypher");
-        _registryMock
+        _objectStoreMock
             .Setup(r => r.Get<Exception>("error-1"))
-            .Returns(new RegistryObject<Exception>("error-1", storedException));
+            .Returns(new Stored<Exception>("error-1", storedException));
 
         var errorResponse = new DriverErrorResponse { Id = "error-2", ErrorType = "ClientError" };
         _driverErrorMapperMock.Setup(m => m.Map(storedException)).Returns(errorResponse);
@@ -425,9 +425,9 @@ public class RetryableTransactionFlowTests
     private Mock<IAsyncTransaction> RegisterTx(string id)
     {
         var txMock = new Mock<IAsyncTransaction>();
-        _registryMock
+        _objectStoreMock
             .Setup(r => r.Register(txMock.Object))
-            .Returns(new RegistryObject<IAsyncTransaction>(id, txMock.Object));
+            .Returns(new Stored<IAsyncTransaction>(id, txMock.Object));
 
         return txMock;
     }
@@ -435,7 +435,7 @@ public class RetryableTransactionFlowTests
     private SessionReadTransactionHandler ReadHandler()
     {
         return new SessionReadTransactionHandler(
-            _registryMock.Object,
+            _objectStoreMock.Object,
             _coordinator,
             _transactionConfigMapperMock.Object,
             _responseWriterMock.Object,
@@ -447,7 +447,7 @@ public class RetryableTransactionFlowTests
     private SessionWriteTransactionHandler WriteHandler()
     {
         return new SessionWriteTransactionHandler(
-            _registryMock.Object,
+            _objectStoreMock.Object,
             _coordinator,
             _transactionConfigMapperMock.Object,
             _responseWriterMock.Object,
@@ -463,7 +463,7 @@ public class RetryableTransactionFlowTests
 
     private RetryableNegativeHandler NegativeHandler()
     {
-        return new RetryableNegativeHandler(_registryMock.Object, _coordinator, _responseWriterMock.Object);
+        return new RetryableNegativeHandler(_objectStoreMock.Object, _coordinator, _responseWriterMock.Object);
     }
 
     private static async Task WithTimeoutAsync(Task task)

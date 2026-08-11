@@ -15,45 +15,45 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Serialization;
 
-internal class RegistryObjectConverterFactory : JsonConverterFactory, IProtocolJsonConverter
+internal class StoredConverterFactory : JsonConverterFactory, IProtocolJsonConverter
 {
-    private readonly IRegistry _registry;
+    private readonly IObjectStore _objectStore;
 
-    public RegistryObjectConverterFactory(IRegistry registry)
+    public StoredConverterFactory(IObjectStore objectStore)
     {
-        _registry = registry;
+        _objectStore = objectStore;
     }
 
     public override bool CanConvert(Type typeToConvert)
     {
         return typeToConvert.IsGenericType &&
-            typeToConvert.GetGenericTypeDefinition() == typeof(RegistryObject<>);
+            typeToConvert.GetGenericTypeDefinition() == typeof(Stored<>);
     }
 
     public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
     {
         var storedType = typeToConvert.GetGenericArguments()[0];
         return (JsonConverter)Activator.CreateInstance(
-            typeof(RegistryObjectConverter<>).MakeGenericType(storedType), _registry)!;
+            typeof(StoredConverter<>).MakeGenericType(storedType), _objectStore)!;
     }
 }
 
-internal class RegistryObjectConverter<T> : JsonConverter<RegistryObject<T>> where T : notnull
+internal class StoredConverter<T> : JsonConverter<Stored<T>> where T : notnull
 {
-    private readonly IRegistry _registry;
+    private readonly IObjectStore _objectStore;
 
-    public RegistryObjectConverter(IRegistry registry)
+    public StoredConverter(IObjectStore objectStore)
     {
-        _registry = registry;
+        _objectStore = objectStore;
     }
 
     public override bool HandleNull => true;
 
-    public override RegistryObject<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override Stored<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType != JsonTokenType.String)
         {
@@ -61,11 +61,11 @@ internal class RegistryObjectConverter<T> : JsonConverter<RegistryObject<T>> whe
                 $"A {typeof(T).Name} handle id must be a string, not {reader.TokenType}.");
         }
 
-        return _registry.Get<T>(reader.GetString()!);
+        return _objectStore.Get<T>(reader.GetString()!);
     }
 
-    public override void Write(Utf8JsonWriter writer, RegistryObject<T> value, JsonSerializerOptions options)
+    public override void Write(Utf8JsonWriter writer, Stored<T> value, JsonSerializerOptions options)
     {
-        throw new NotSupportedException("RegistryObject<T> is never serialized.");
+        throw new NotSupportedException("Stored<T> is never serialized.");
     }
 }

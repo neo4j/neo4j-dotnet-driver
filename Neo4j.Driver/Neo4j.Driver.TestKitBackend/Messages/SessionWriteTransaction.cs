@@ -19,7 +19,7 @@ using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Retry;
 using Neo4j.Driver.TestKitBackend.Types;
 
@@ -27,7 +27,7 @@ namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record SessionWriteTransactionRequest : IProtocolMessage, IRetryableTransactionRequest
 {
-    public required RegistryObject<IAsyncSession> Session { get; init; }
+    public required Stored<IAsyncSession> Session { get; init; }
 
     public Dictionary<string, ICypherValue>? TxMeta { get; init; }
 
@@ -38,14 +38,14 @@ internal record SessionWriteTransactionRequest : IProtocolMessage, IRetryableTra
 internal class SessionWriteTransactionHandler : RetryableTransactionHandler<SessionWriteTransactionRequest>
 {
     public SessionWriteTransactionHandler(
-        IRegistry registry,
+        IObjectStore objectStore,
         IContinuationCoordinator coordinator,
         ITransactionConfigMapper transactionConfigMapper,
         IResponseWriter responseWriter,
         IDriverErrorMapper driverErrorMapper,
         IExceptionOriginClassifier originClassifier,
         ILogger logger)
-        : base(registry, coordinator, transactionConfigMapper, responseWriter, driverErrorMapper, originClassifier, logger)
+        : base(objectStore, coordinator, transactionConfigMapper, responseWriter, driverErrorMapper, originClassifier, logger)
     {
     }
 

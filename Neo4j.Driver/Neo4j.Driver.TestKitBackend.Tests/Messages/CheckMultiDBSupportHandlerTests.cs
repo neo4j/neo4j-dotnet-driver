@@ -17,7 +17,7 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -31,7 +31,7 @@ public class CheckMultiDBSupportHandlerTests
     {
         var driverMock = _autoMocker.GetMock<IDriver>();
         driverMock.Setup(d => d.SupportsMultiDbAsync()).ReturnsAsync(true);
-        var registered = new RegistryObject<IDriver>("driver-1", driverMock.Object);
+        var registered = new Stored<IDriver>("driver-1", driverMock.Object);
 
         var handler = _autoMocker.CreateInstance<CheckMultiDBSupportHandler>();
         var request = new CheckMultiDBSupportRequest(registered);

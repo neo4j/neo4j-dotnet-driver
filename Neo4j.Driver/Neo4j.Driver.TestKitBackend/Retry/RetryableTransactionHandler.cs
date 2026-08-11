@@ -20,14 +20,14 @@ using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Types;
 
 namespace Neo4j.Driver.TestKitBackend.Retry;
 
 internal interface IRetryableTransactionRequest
 {
-    RegistryObject<IAsyncSession> Session { get; }
+    Stored<IAsyncSession> Session { get; }
 
     Dictionary<string, ICypherValue>? TxMeta { get; }
 
@@ -37,12 +37,12 @@ internal interface IRetryableTransactionRequest
 internal abstract class RetryableTransactionHandler<T> : BackgroundOperationHandler<T>
     where T : IProtocolMessage, IRetryableTransactionRequest
 {
-    private readonly IRegistry _registry;
+    private readonly IObjectStore _objectStore;
     private readonly IContinuationCoordinator _coordinator;
     private readonly ITransactionConfigMapper _transactionConfigMapper;
 
     protected RetryableTransactionHandler(
-        IRegistry registry,
+        IObjectStore objectStore,
         IContinuationCoordinator coordinator,
         ITransactionConfigMapper transactionConfigMapper,
         IResponseWriter responseWriter,
@@ -51,7 +51,7 @@ internal abstract class RetryableTransactionHandler<T> : BackgroundOperationHand
         ILogger logger)
         : base(coordinator, responseWriter, driverErrorMapper, originClassifier, logger)
     {
-        _registry = registry;
+        _objectStore = objectStore;
         _coordinator = coordinator;
         _transactionConfigMapper = transactionConfigMapper;
     }
@@ -75,7 +75,7 @@ internal abstract class RetryableTransactionHandler<T> : BackgroundOperationHand
 
     private async Task RunAttemptAsync(IAsyncQueryRunner runner, string sessionId)
     {
-        var registered = _registry.Register((IAsyncTransaction)runner);
+        var registered = _objectStore.Register((IAsyncTransaction)runner);
         var outcomeTask = _coordinator.WaitForOutcomeAsync(sessionId);
         _coordinator.CompleteNextResponse(new RetryableTryResponse(registered.Id));
         await outcomeTask;

@@ -18,7 +18,7 @@ using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Summary;
 using Xunit;
 
@@ -51,7 +51,7 @@ public class ResultConsumeHandlerTests
         _autoMocker.GetMock<ISummaryMapper>().Setup(m => m.Map(summary)).Returns(mapped);
 
         var handler = _autoMocker.CreateInstance<ResultConsumeHandler>();
-        var request = new ResultConsumeRequest(new RegistryObject<IResultCursor>("result-1", cursorMock.Object));
+        var request = new ResultConsumeRequest(new Stored<IResultCursor>("result-1", cursorMock.Object));
 
         await handler.ProcessAsync(request);
 

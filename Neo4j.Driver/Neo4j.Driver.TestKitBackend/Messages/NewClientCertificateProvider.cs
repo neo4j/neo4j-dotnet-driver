@@ -19,7 +19,7 @@ using Neo4j.Driver.TestKitBackend.Certificates;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
@@ -29,20 +29,20 @@ internal record ClientCertificateProviderResponse(string Id) : IProtocolMessage;
 
 internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCertificateProviderRequest>
 {
-    private readonly IRegistry _registry;
+    private readonly IObjectStore _objectStore;
     private readonly ICallbackExchanger _callbackExchanger;
     private readonly ICertificateLoader _certificateLoader;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewClientCertificateProviderHandler(
-        IRegistry registry,
+        IObjectStore objectStore,
         ICallbackExchanger callbackExchanger,
         ICertificateLoader certificateLoader,
         IResponseWriter responseWriter,
         ILogger logger)
     {
-        _registry = registry;
+        _objectStore = objectStore;
         _callbackExchanger = callbackExchanger;
         _certificateLoader = certificateLoader;
         _responseWriter = responseWriter;
@@ -51,7 +51,7 @@ internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCer
 
     public override async Task ProcessAsync(NewClientCertificateProviderRequest message)
     {
-        var registered = _registry.Register(CreateRegisteredProvider);
+        var registered = _objectStore.Register(CreateRegisteredProvider);
         _logger.LogDebug("Created client certificate provider with id '{Id}'", registered.Id);
         await _responseWriter.WriteAsync(new ClientCertificateProviderResponse(registered.Id));
     }

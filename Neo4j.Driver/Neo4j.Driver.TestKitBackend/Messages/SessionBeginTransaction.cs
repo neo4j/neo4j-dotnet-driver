@@ -17,14 +17,14 @@ using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Types;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record SessionBeginTransactionRequest : IProtocolMessage
 {
-    public required RegistryObject<IAsyncSession> Session { get; init; }
+    public required Stored<IAsyncSession> Session { get; init; }
 
     public Dictionary<string, ICypherValue>? TxMeta { get; init; }
 
@@ -36,18 +36,18 @@ internal record TransactionResponse(string Id) : IProtocolMessage;
 
 internal class SessionBeginTransactionHandler : MessageHandler<SessionBeginTransactionRequest>
 {
-    private readonly IRegistry _registry;
+    private readonly IObjectStore _objectStore;
     private readonly ITransactionConfigMapper _transactionConfigMapper;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public SessionBeginTransactionHandler(
-        IRegistry registry,
+        IObjectStore objectStore,
         IResponseWriter responseWriter,
         ITransactionConfigMapper transactionConfigMapper,
         ILogger logger)
     {
-        _registry = registry;
+        _objectStore = objectStore;
         _responseWriter = responseWriter;
         _transactionConfigMapper = transactionConfigMapper;
         _logger = logger;
@@ -58,7 +58,7 @@ internal class SessionBeginTransactionHandler : MessageHandler<SessionBeginTrans
         var transaction = await message.Session.Object.BeginTransactionAsync(
             _transactionConfigMapper.Map(message.TxMeta, message.Timeout));
 
-        var registered = _registry.Register(transaction);
+        var registered = _objectStore.Register(transaction);
         _logger.LogDebug(
             "Began transaction with id '{Id}' on session with id '{SessionId}'",
             registered.Id,

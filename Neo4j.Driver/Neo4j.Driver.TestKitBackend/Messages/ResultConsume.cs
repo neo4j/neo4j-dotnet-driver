@@ -15,12 +15,12 @@
 
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Summary;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record ResultConsumeRequest(RegistryObject<IResultCursor> Result) : IProtocolMessage;
+internal record ResultConsumeRequest(Stored<IResultCursor> Result) : IProtocolMessage;
 
 internal record SummaryResponse(
     SummaryQueryResponse Query,

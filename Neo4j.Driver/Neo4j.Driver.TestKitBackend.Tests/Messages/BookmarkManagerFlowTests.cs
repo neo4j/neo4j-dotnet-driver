@@ -19,7 +19,7 @@ using Moq;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -32,18 +32,18 @@ public class BookmarkManagerFlowTests
     private IBookmarkManager RegisterManager(NewBookmarkManagerRequest request)
     {
         IBookmarkManager? manager = null;
-        var registryMock = new Mock<IRegistry>();
-        registryMock
+        var objectStoreMock = new Mock<IObjectStore>();
+        objectStoreMock
             .Setup(r => r.Register(It.IsAny<Func<string, IBookmarkManager>>()))
             .Returns<Func<string, IBookmarkManager>>(
                 create =>
                 {
                     manager = create("bm-1");
-                    return new RegistryObject<IBookmarkManager>("bm-1", manager);
+                    return new Stored<IBookmarkManager>("bm-1", manager);
                 });
 
         var handler = new NewBookmarkManagerHandler(
-            registryMock.Object,
+            objectStoreMock.Object,
             _callbacksMock.Object,
             _responseWriterMock.Object,
             Mock.Of<ILogger>());

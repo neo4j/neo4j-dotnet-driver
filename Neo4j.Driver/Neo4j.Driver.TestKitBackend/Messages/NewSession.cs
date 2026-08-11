@@ -16,14 +16,14 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record NewSessionRequest : IProtocolMessage
 {
-    public required RegistryObject<IDriver> Driver { get; init; }
+    public required Stored<IDriver> Driver { get; init; }
     public required string AccessMode { get; init; }
     public string[]? Bookmarks { get; init; }
     public string? Database { get; init; }
@@ -40,18 +40,18 @@ internal record SessionResponse(string Id) : IProtocolMessage;
 
 internal class NewSessionHandler : MessageHandler<NewSessionRequest>
 {
-    private readonly IRegistry _registry;
+    private readonly IObjectStore _objectStore;
     private readonly INewSessionConfigMapper _configMapper;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewSessionHandler(
-        IRegistry registry,
+        IObjectStore objectStore,
         INewSessionConfigMapper configMapper,
         IResponseWriter responseWriter,
         ILogger logger)
     {
-        _registry = registry;
+        _objectStore = objectStore;
         _configMapper = configMapper;
         _responseWriter = responseWriter;
         _logger = logger;
@@ -60,8 +60,8 @@ internal class NewSessionHandler : MessageHandler<NewSessionRequest>
     public override async Task ProcessAsync(NewSessionRequest message)
     {
         var session = message.Driver.Object.AsyncSession(builder => _configMapper.Apply(message, builder));
-        var registryObject = _registry.Register(session);
-        _logger.LogDebug("Created session with id '{Id}'", registryObject.Id);
-        await _responseWriter.WriteAsync(new SessionResponse(registryObject.Id));
+        var stored = _objectStore.Register(session);
+        _logger.LogDebug("Created session with id '{Id}'", stored.Id);
+        await _responseWriter.WriteAsync(new SessionResponse(stored.Id));
     }
 }

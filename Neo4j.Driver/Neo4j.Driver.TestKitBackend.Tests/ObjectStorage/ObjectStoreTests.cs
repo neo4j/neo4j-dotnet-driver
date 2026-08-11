@@ -15,22 +15,22 @@
 
 using FluentAssertions;
 using Moq.AutoMock;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
 
-namespace Neo4j.Driver.TestKitBackend.Tests.ObjectRegistry;
+namespace Neo4j.Driver.TestKitBackend.Tests.ObjectStorage;
 
-public class RegistryTests
+public class ObjectStoreTests
 {
-    private readonly Registry _registry = AutoMocker.ForTesting<Registry>().CreateInstance<Registry>();
+    private readonly ObjectStore _objectStore = AutoMocker.ForTesting<ObjectStore>().CreateInstance<ObjectStore>();
 
     [Fact]
-    public void Register_returns_a_registry_object_carrying_the_registered_object()
+    public void Register_returns_a_objectStore_object_carrying_the_registered_object()
     {
         var stored = new Stored();
 
-        var registered = _registry.Register(stored);
+        var registered = _objectStore.Register(stored);
 
         registered.Object.Should().BeSameAs(stored);
         registered.Id.Should().NotBeNullOrEmpty();
@@ -39,8 +39,8 @@ public class RegistryTests
     [Fact]
     public void Register_assigns_distinct_ids()
     {
-        var first = _registry.Register(new Stored());
-        var second = _registry.Register(new Stored());
+        var first = _objectStore.Register(new Stored());
+        var second = _objectStore.Register(new Stored());
 
         second.Id.Should().NotBe(first.Id);
     }
@@ -51,7 +51,7 @@ public class RegistryTests
         string? idGivenToFactory = null;
         Stored? created = null;
 
-        var registered = _registry.Register(id =>
+        var registered = _objectStore.Register(id =>
         {
             idGivenToFactory = id;
             created = new Stored();
@@ -60,16 +60,16 @@ public class RegistryTests
 
         idGivenToFactory.Should().Be(registered.Id);
         registered.Object.Should().BeSameAs(created);
-        _registry.Get<Stored>(registered.Id).Object.Should().BeSameAs(created);
+        _objectStore.Get<Stored>(registered.Id).Object.Should().BeSameAs(created);
     }
 
     [Fact]
     public void Get_returns_the_registered_object_under_its_id()
     {
         var stored = new Stored();
-        var registered = _registry.Register(stored);
+        var registered = _objectStore.Register(stored);
 
-        var got = _registry.Get<Stored>(registered.Id);
+        var got = _objectStore.Get<Stored>(registered.Id);
 
         got.Object.Should().BeSameAs(stored);
         got.Id.Should().Be(registered.Id);
@@ -78,7 +78,7 @@ public class RegistryTests
     [Fact]
     public void Get_throws_for_an_unknown_id()
     {
-        var get = () => _registry.Get<Stored>("no-such-id");
+        var get = () => _objectStore.Get<Stored>("no-such-id");
 
         get.Should().Throw<TestKitProtocolException>().WithMessage("*no-such-id*");
     }
@@ -86,9 +86,9 @@ public class RegistryTests
     [Fact]
     public void Get_throws_when_the_id_belongs_to_an_object_of_a_different_type()
     {
-        var registered = _registry.Register(new Stored());
+        var registered = _objectStore.Register(new Stored());
 
-        var get = () => _registry.Get<OtherStored>(registered.Id);
+        var get = () => _objectStore.Get<OtherStored>(registered.Id);
 
         get.Should().Throw<TestKitProtocolException>().WithMessage($"*{registered.Id}*");
     }
@@ -96,11 +96,11 @@ public class RegistryTests
     [Fact]
     public void Remove_makes_the_id_unknown()
     {
-        var registered = _registry.Register(new Stored());
+        var registered = _objectStore.Register(new Stored());
 
-        _registry.Remove(registered.Id);
+        _objectStore.Remove(registered.Id);
 
-        var get = () => _registry.Get<Stored>(registered.Id);
+        var get = () => _objectStore.Get<Stored>(registered.Id);
         get.Should().Throw<TestKitProtocolException>();
     }
 
@@ -109,10 +109,10 @@ public class RegistryTests
     {
         var first = new DisposableStored();
         var second = new DisposableStored();
-        _registry.Register(first);
-        _registry.Register(second);
+        _objectStore.Register(first);
+        _objectStore.Register(second);
 
-        await _registry.DisposeAsync();
+        await _objectStore.DisposeAsync();
 
         first.Disposed.Should().BeTrue();
         second.Disposed.Should().BeTrue();
@@ -122,29 +122,29 @@ public class RegistryTests
     public async Task DisposeAsync_disposes_in_reverse_registration_order()
     {
         var disposalOrder = new List<string>();
-        _registry.Register(new SequencedDisposable("first", disposalOrder));
-        _registry.Register(new SequencedDisposable("second", disposalOrder));
-        _registry.Register(new SequencedDisposable("third", disposalOrder));
+        _objectStore.Register(new SequencedDisposable("first", disposalOrder));
+        _objectStore.Register(new SequencedDisposable("second", disposalOrder));
+        _objectStore.Register(new SequencedDisposable("third", disposalOrder));
 
-        await _registry.DisposeAsync();
+        await _objectStore.DisposeAsync();
 
         disposalOrder.Should().Equal("third", "second", "first");
     }
 
     [Fact]
-    public async Task DisposeAsync_continues_past_a_throwing_disposal_and_still_clears_the_registry()
+    public async Task DisposeAsync_continues_past_a_throwing_disposal_and_still_clears_the_objectStore()
     {
         var throwing = new ThrowingDisposable();
-        _registry.Register(throwing);
+        _objectStore.Register(throwing);
         var second = new DisposableStored();
-        var registeredSecond = _registry.Register(second);
+        var registeredSecond = _objectStore.Register(second);
 
-        var act = () => _registry.DisposeAsync().AsTask();
+        var act = () => _objectStore.DisposeAsync().AsTask();
         await act.Should().NotThrowAsync();
 
         second.Disposed.Should().BeTrue();
 
-        var get = () => _registry.Get<DisposableStored>(registeredSecond.Id);
+        var get = () => _objectStore.Get<DisposableStored>(registeredSecond.Id);
         get.Should().Throw<TestKitProtocolException>();
     }
 
@@ -152,10 +152,10 @@ public class RegistryTests
     public async Task DisposeAsync_does_not_dispose_an_object_that_was_already_removed()
     {
         var stored = new DisposableStored();
-        var registered = _registry.Register(stored);
-        _registry.Remove(registered.Id);
+        var registered = _objectStore.Register(stored);
+        _objectStore.Remove(registered.Id);
 
-        await _registry.DisposeAsync();
+        await _objectStore.DisposeAsync();
 
         stored.Disposed.Should().BeFalse();
     }

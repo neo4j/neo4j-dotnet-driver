@@ -18,7 +18,7 @@ using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Types;
 using Xunit;
 
@@ -47,13 +47,13 @@ public class SessionRunHandlerTests
                     It.IsAny<Action<TransactionConfigBuilder>>()))
             .ReturnsAsync(cursorMock.Object);
 
-        var registeredCursor = new RegistryObject<IResultCursor>("result-1", cursorMock.Object);
-        _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(cursorMock.Object)).Returns(registeredCursor);
+        var registeredCursor = new Stored<IResultCursor>("result-1", cursorMock.Object);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register(cursorMock.Object)).Returns(registeredCursor);
 
         var handler = _autoMocker.CreateInstance<SessionRunHandler>();
         var request = new SessionRunRequest
         {
-            Session = new RegistryObject<IAsyncSession>("session-1", sessionMock.Object),
+            Session = new Stored<IAsyncSession>("session-1", sessionMock.Object),
             Cypher = "RETURN 1 AS n"
         };
 
@@ -86,13 +86,13 @@ public class SessionRunHandlerTests
                     It.IsAny<Action<TransactionConfigBuilder>>()))
             .ReturnsAsync(cursorMock.Object);
 
-        var registeredCursor = new RegistryObject<IResultCursor>("result-1", cursorMock.Object);
-        _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(cursorMock.Object)).Returns(registeredCursor);
+        var registeredCursor = new Stored<IResultCursor>("result-1", cursorMock.Object);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register(cursorMock.Object)).Returns(registeredCursor);
 
         var handler = _autoMocker.CreateInstance<SessionRunHandler>();
         var request = new SessionRunRequest
         {
-            Session = new RegistryObject<IAsyncSession>("session-1", sessionMock.Object),
+            Session = new Stored<IAsyncSession>("session-1", sessionMock.Object),
             Cypher = "RETURN $p AS n",
             Params = parameters
         };
@@ -129,13 +129,13 @@ public class SessionRunHandlerTests
             .Setup(s => s.RunAsync("RETURN 1 AS n", It.IsAny<IDictionary<string, object>>(), configure))
             .ReturnsAsync(cursorMock.Object);
 
-        var registeredCursor = new RegistryObject<IResultCursor>("result-1", cursorMock.Object);
-        _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(cursorMock.Object)).Returns(registeredCursor);
+        var registeredCursor = new Stored<IResultCursor>("result-1", cursorMock.Object);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register(cursorMock.Object)).Returns(registeredCursor);
 
         var handler = _autoMocker.CreateInstance<SessionRunHandler>();
         var request = new SessionRunRequest
         {
-            Session = new RegistryObject<IAsyncSession>("session-1", sessionMock.Object),
+            Session = new Stored<IAsyncSession>("session-1", sessionMock.Object),
             Cypher = "RETURN 1 AS n",
             TxMeta = txMeta,
             Timeout = timeout

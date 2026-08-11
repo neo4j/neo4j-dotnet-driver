@@ -16,11 +16,11 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record CheckDriverIsEncryptedRequest(RegistryObject<IDriver> Driver) : IProtocolMessage;
+internal record CheckDriverIsEncryptedRequest(Stored<IDriver> Driver) : IProtocolMessage;
 
 internal record DriverIsEncryptedResponse(bool Encrypted) : IProtocolMessage;
 

@@ -17,7 +17,7 @@ using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
@@ -32,18 +32,18 @@ internal record BookmarkManagerResponse(string Id) : IProtocolMessage;
 
 internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequest>
 {
-    private readonly IRegistry _registry;
+    private readonly IObjectStore _objectStore;
     private readonly ICallbackExchanger _callbackExchanger;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewBookmarkManagerHandler(
-        IRegistry registry,
+        IObjectStore objectStore,
         ICallbackExchanger callbackExchanger,
         IResponseWriter responseWriter,
         ILogger logger)
     {
-        _registry = registry;
+        _objectStore = objectStore;
         _callbackExchanger = callbackExchanger;
         _responseWriter = responseWriter;
         _logger = logger;
@@ -51,7 +51,7 @@ internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequ
 
     public override async Task ProcessAsync(NewBookmarkManagerRequest message)
     {
-        var registered = _registry.Register(id => CreateRegisteredManager(message, id));
+        var registered = _objectStore.Register(id => CreateRegisteredManager(message, id));
         _logger.LogDebug("Created bookmark manager with id '{Id}'", registered.Id);
         await _responseWriter.WriteAsync(new BookmarkManagerResponse(registered.Id));
     }

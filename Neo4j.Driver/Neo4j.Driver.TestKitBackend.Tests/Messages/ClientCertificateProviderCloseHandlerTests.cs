@@ -17,7 +17,7 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -27,13 +27,13 @@ public class ClientCertificateProviderCloseHandlerTests
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<ClientCertificateProviderCloseHandler>();
 
     [Fact]
-    public async Task Removes_the_provider_from_the_registry_and_responds_with_its_id()
+    public async Task Removes_the_provider_from_the_objectStore_and_responds_with_its_id()
     {
         var handler = _autoMocker.CreateInstance<ClientCertificateProviderCloseHandler>();
 
         await handler.ProcessAsync(new ClientCertificateProviderCloseRequest { Id = "provider-1" });
 
-        _autoMocker.GetMock<IRegistry>().Verify(r => r.Remove("provider-1"), Times.Once);
+        _autoMocker.GetMock<IObjectStore>().Verify(r => r.Remove("provider-1"), Times.Once);
         _autoMocker.GetMock<IResponseWriter>()
             .Verify(w => w.WriteAsync(new ClientCertificateProviderResponse("provider-1")), Times.Once);
     }

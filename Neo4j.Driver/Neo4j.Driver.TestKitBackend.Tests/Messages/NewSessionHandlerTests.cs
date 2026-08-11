@@ -17,7 +17,7 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -33,13 +33,13 @@ public class NewSessionHandlerTests
         var driverMock = _autoMocker.GetMock<IDriver>();
         driverMock.Setup(d => d.AsyncSession(It.IsAny<Action<SessionConfigBuilder>>())).Returns(sessionMock.Object);
 
-        var registeredSession = new RegistryObject<IAsyncSession>("session-1", sessionMock.Object);
-        _autoMocker.GetMock<IRegistry>().Setup(r => r.Register(sessionMock.Object)).Returns(registeredSession);
+        var registeredSession = new Stored<IAsyncSession>("session-1", sessionMock.Object);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register(sessionMock.Object)).Returns(registeredSession);
 
         var handler = _autoMocker.CreateInstance<NewSessionHandler>();
         var request = new NewSessionRequest
         {
-            Driver = new RegistryObject<IDriver>("driver-1", driverMock.Object),
+            Driver = new Stored<IDriver>("driver-1", driverMock.Object),
             AccessMode = "r"
         };
 

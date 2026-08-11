@@ -17,7 +17,7 @@ using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Logging;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
@@ -41,7 +41,7 @@ internal class StartTestHandler : MessageHandler<StartTestRequest>
     private readonly ISkipPolicy _skipPolicy;
     private readonly LoggingDisposableCreator _createLoggingDisposable;
     private readonly IResponseWriter _responseWriter;
-    private readonly IRegistry _registry;
+    private readonly IObjectStore _objectStore;
     private readonly ILogger _logger;
 
     public StartTestHandler(
@@ -49,14 +49,14 @@ internal class StartTestHandler : MessageHandler<StartTestRequest>
         ISkipPolicy skipPolicy,
         LoggingDisposableCreator createLoggingDisposable,
         IResponseWriter responseWriter,
-        IRegistry registry,
+        IObjectStore objectStore,
         ILogger logger)
     {
         _loggingContext = loggingContext;
         _skipPolicy = skipPolicy;
         _createLoggingDisposable = createLoggingDisposable;
         _responseWriter = responseWriter;
-        _registry = registry;
+        _objectStore = objectStore;
         _logger = logger;
     }
 
@@ -81,7 +81,7 @@ internal class StartTestHandler : MessageHandler<StartTestRequest>
 
             var endTestMsg = $"END TEST {message.TestName}";
             var endTestLogger = _createLoggingDisposable("Test closedown", endTestMsg);
-            _registry.Register(endTestLogger);
+            _objectStore.Register(endTestLogger);
         }
     }
 }

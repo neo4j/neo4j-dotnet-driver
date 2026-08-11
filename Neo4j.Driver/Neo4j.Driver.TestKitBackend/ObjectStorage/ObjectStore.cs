@@ -16,34 +16,34 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Serialization;
 
-namespace Neo4j.Driver.TestKitBackend.ObjectRegistry;
+namespace Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 [RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
-internal class Registry : IRegistry, IAsyncDisposable
+internal class ObjectStore : IObjectStore, IAsyncDisposable
 {
     private readonly OrderedDictionary<string, object> _objects = [];
     private readonly ILogger _logger;
     private int _nextId;
 
-    public Registry(ILogger logger)
+    public ObjectStore(ILogger logger)
     {
         _logger = logger;
     }
 
-    public RegistryObject<T> Register<T>(T obj) where T : notnull
+    public Stored<T> Register<T>(T obj) where T : notnull
     {
         return Register(_ => obj);
     }
 
-    public RegistryObject<T> Register<T>(Func<string, T> create) where T : notnull
+    public Stored<T> Register<T>(Func<string, T> create) where T : notnull
     {
         var id = (_nextId++).ToString();
         var obj = create(id);
         _objects[id] = obj;
-        return new RegistryObject<T>(id, obj);
+        return new Stored<T>(id, obj);
     }
 
-    public RegistryObject<T> Get<T>(string id) where T : notnull
+    public Stored<T> Get<T>(string id) where T : notnull
     {
         if (!_objects.TryGetValue(id, out var obj))
         {
@@ -56,7 +56,7 @@ internal class Registry : IRegistry, IAsyncDisposable
                 $"The object registered with id '{id}' is a {obj.GetType().Name}, not a {typeof(T).Name}.");
         }
 
-        return new RegistryObject<T>(id, typed);
+        return new Stored<T>(id, typed);
     }
 
     public void Remove(string id)

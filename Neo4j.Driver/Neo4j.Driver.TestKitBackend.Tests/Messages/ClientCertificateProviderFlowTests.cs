@@ -22,7 +22,7 @@ using Neo4j.Driver.TestKitBackend.Certificates;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -36,18 +36,18 @@ public class ClientCertificateProviderFlowTests
     private IClientCertificateProvider RegisterProvider()
     {
         IClientCertificateProvider? provider = null;
-        var registryMock = new Mock<IRegistry>();
-        registryMock
+        var objectStoreMock = new Mock<IObjectStore>();
+        objectStoreMock
             .Setup(r => r.Register(It.IsAny<Func<string, IClientCertificateProvider>>()))
             .Returns<Func<string, IClientCertificateProvider>>(
                 create =>
                 {
                     provider = create("provider-1");
-                    return new RegistryObject<IClientCertificateProvider>("provider-1", provider);
+                    return new Stored<IClientCertificateProvider>("provider-1", provider);
                 });
 
         var newProviderHandler = new NewClientCertificateProviderHandler(
-            registryMock.Object,
+            objectStoreMock.Object,
             _callbacksMock.Object,
             _certificateLoaderMock.Object,
             _responseWriterMock.Object,

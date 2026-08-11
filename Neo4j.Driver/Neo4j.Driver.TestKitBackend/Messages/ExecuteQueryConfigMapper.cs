@@ -14,7 +14,7 @@
 // limitations under the License.
 
 using Neo4j.Driver.TestKitBackend.Cypher;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
@@ -25,12 +25,12 @@ internal interface IExecuteQueryConfigMapper
 
 internal class ExecuteQueryConfigMapper : IExecuteQueryConfigMapper
 {
-    private readonly IRegistry _registry;
+    private readonly IObjectStore _objectStore;
     private readonly ICypherToNativeMapper _cypherToNativeMapper;
 
-    public ExecuteQueryConfigMapper(IRegistry registry, ICypherToNativeMapper cypherToNativeMapper)
+    public ExecuteQueryConfigMapper(IObjectStore objectStore, ICypherToNativeMapper cypherToNativeMapper)
     {
-        _registry = registry;
+        _objectStore = objectStore;
         _cypherToNativeMapper = cypherToNativeMapper;
     }
 
@@ -42,7 +42,7 @@ internal class ExecuteQueryConfigMapper : IExecuteQueryConfigMapper
         {
             null => (default(IBookmarkManager), true),
             "-1" => (default(IBookmarkManager), false),
-            var id => (_registry.Get<IBookmarkManager>(id).Object, true)
+            var id => (_objectStore.Get<IBookmarkManager>(id).Object, true)
         };
 
         var transactionConfig = new TransactionConfig(

@@ -19,7 +19,7 @@ using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -30,7 +30,7 @@ public class ResultSingleHandlerTests
 
     private ResultSingleRequest RequestFor(IResultCursor cursor)
     {
-        return new ResultSingleRequest(new RegistryObject<IResultCursor>("result-1", cursor));
+        return new ResultSingleRequest(new Stored<IResultCursor>("result-1", cursor));
     }
 
     [Fact]

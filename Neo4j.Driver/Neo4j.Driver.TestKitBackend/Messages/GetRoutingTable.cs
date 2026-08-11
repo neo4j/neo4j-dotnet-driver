@@ -16,11 +16,11 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectRegistry;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record GetRoutingTableRequest(RegistryObject<IDriver> Driver, string? Database = null) : IProtocolMessage;
+internal record GetRoutingTableRequest(Stored<IDriver> Driver, string? Database = null) : IProtocolMessage;
 
 internal record RoutingTableResponse(
     string? Database,
