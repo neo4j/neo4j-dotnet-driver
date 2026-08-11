@@ -16,8 +16,8 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -27,18 +27,18 @@ internal record NewAuthTokenManagerRequest : IProtocolMessage;
 internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRequest>
 {
     private readonly IObjectStore _objectStore;
-    private readonly ICallbackExchanger _callbackExchanger;
+    private readonly IReverseRoundTrip _roundTrip;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewAuthTokenManagerHandler(
         IObjectStore objectStore,
-        ICallbackExchanger callbackExchanger,
+        IReverseRoundTrip roundTrip,
         IResponseWriter responseWriter,
         ILogger logger)
     {
         _objectStore = objectStore;
-        _callbackExchanger = callbackExchanger;
+        _roundTrip = roundTrip;
         _responseWriter = responseWriter;
         _logger = logger;
     }
@@ -62,10 +62,8 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
 
     private async ValueTask<IAuthToken> GetAuthAsync(string managerId)
     {
-        var completion = await _callbackExchanger.SendAsync<AuthTokenManagerGetAuthCompleted>(
-            id => new AuthTokenManagerGetAuthRequest(id, managerId));
-
-        return completion.Auth.Value.ToAuthToken();
+        var authRequest = new AuthTokenManagerGetAuthRequest(managerId);
+        return await _roundTrip.SendExpectingAsync<IAuthToken>(authRequest);
     }
 
     private async ValueTask<bool> HandleSecurityExceptionAsync(
@@ -73,13 +71,13 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
         IAuthToken token,
         SecurityException exception)
     {
-        var completion = await _callbackExchanger.SendAsync<AuthTokenManagerHandleSecurityExceptionCompleted>(
-            id => new AuthTokenManagerHandleSecurityExceptionRequest(id, managerId, ToWireToken(token), exception.Code));
+        var handleSecurityExceptionRequest =
+            new AuthTokenManagerHandleSecurityExceptionRequest(managerId, ToWireToken(token), exception.Code);
 
-        return completion.Handled;
+        return await _roundTrip.SendExpectingAsync<bool>(handleSecurityExceptionRequest);
     }
 
-    private AuthorizationToken ToWireToken(IAuthToken token)
+    private static AuthorizationToken ToWireToken(IAuthToken token)
     {
         var content = ((AuthToken)token).Content;
         return new AuthorizationToken(

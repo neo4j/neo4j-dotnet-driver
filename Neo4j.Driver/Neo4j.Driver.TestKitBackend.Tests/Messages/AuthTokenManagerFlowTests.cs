@@ -18,7 +18,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Continuations;
+using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
@@ -41,21 +41,16 @@ public class AuthTokenManagerFlowTests
                     return new Stored<IAuthTokenManager>("manager-1", manager);
                 });
 
-        Func<string, ICallbackRequest>? capturedRequest = null;
-        var callbacksMock = new Mock<ICallbackExchanger>();
-        callbacksMock
-            .Setup(c => c.SendAsync<AuthTokenManagerGetAuthCompleted>(It.IsAny<Func<string, ICallbackRequest>>()))
-            .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
-            .ReturnsAsync(
-                new AuthTokenManagerGetAuthCompleted
-                {
-                    RequestId = "callback-1",
-                    Auth = new AuthorizationToken("basic", "neo4j", "pass")
-                });
+        ICorrelatedRequest? capturedRequest = null;
+        var roundTripMock = new Mock<IReverseRoundTrip>();
+        roundTripMock
+            .Setup(r => r.SendExpectingAsync<IAuthToken>(It.IsAny<ICorrelatedRequest>()))
+            .Callback<ICorrelatedRequest>(request => capturedRequest = request)
+            .ReturnsAsync(new AuthorizationToken("basic", "neo4j", "pass").ToAuthToken());
 
         var newManagerHandler = new NewAuthTokenManagerHandler(
             objectStoreMock.Object,
-            callbacksMock.Object,
+            roundTripMock.Object,
             Mock.Of<IResponseWriter>(),
             Mock.Of<ILogger>());
 
@@ -66,10 +61,8 @@ public class AuthTokenManagerFlowTests
         tokenValue.Should().BeAssignableTo<AuthToken>();
         var token = (AuthToken)tokenValue;
 
-        capturedRequest.Should().NotBeNull();
-        var request = capturedRequest!("callback-1");
-        request.Should().BeOfType<AuthTokenManagerGetAuthRequest>();
-        ((AuthTokenManagerGetAuthRequest)request).AuthTokenManagerId.Should().Be("manager-1");
+        var request = capturedRequest.Should().BeOfType<AuthTokenManagerGetAuthRequest>().Subject;
+        request.AuthTokenManagerId.Should().Be("manager-1");
 
         token.Content["scheme"].Should().Be("basic");
         token.Content["principal"].Should().Be("neo4j");
@@ -90,23 +83,16 @@ public class AuthTokenManagerFlowTests
                     return new Stored<IAuthTokenManager>("manager-1", manager);
                 });
 
-        Func<string, ICallbackRequest>? capturedRequest = null;
-        var callbacksMock = new Mock<ICallbackExchanger>();
-        callbacksMock
-            .Setup(
-                c => c.SendAsync<AuthTokenManagerHandleSecurityExceptionCompleted>(
-                    It.IsAny<Func<string, ICallbackRequest>>()))
-            .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
-            .ReturnsAsync(
-                new AuthTokenManagerHandleSecurityExceptionCompleted
-                {
-                    RequestId = "callback-1",
-                    Handled = true
-                });
+        ICorrelatedRequest? capturedRequest = null;
+        var roundTripMock = new Mock<IReverseRoundTrip>();
+        roundTripMock
+            .Setup(r => r.SendExpectingAsync<bool>(It.IsAny<ICorrelatedRequest>()))
+            .Callback<ICorrelatedRequest>(request => capturedRequest = request)
+            .ReturnsAsync(true);
 
         var newManagerHandler = new NewAuthTokenManagerHandler(
             objectStoreMock.Object,
-            callbacksMock.Object,
+            roundTripMock.Object,
             Mock.Of<IResponseWriter>(),
             Mock.Of<ILogger>());
 
@@ -123,13 +109,10 @@ public class AuthTokenManagerFlowTests
 
         handled.Should().BeTrue();
 
-        capturedRequest.Should().NotBeNull();
-        var request = capturedRequest!("callback-1");
-        request.Should().BeOfType<AuthTokenManagerHandleSecurityExceptionRequest>();
-        var securityExceptionRequest = (AuthTokenManagerHandleSecurityExceptionRequest)request;
-        securityExceptionRequest.AuthTokenManagerId.Should().Be("manager-1");
-        securityExceptionRequest.ErrorCode.Should().Be("Neo.ClientError.Security.TokenExpired");
-        securityExceptionRequest.Auth.Should().Be(new AuthorizationToken("basic", "neo4j", "pass"));
+        var request = capturedRequest.Should().BeOfType<AuthTokenManagerHandleSecurityExceptionRequest>().Subject;
+        request.AuthTokenManagerId.Should().Be("manager-1");
+        request.ErrorCode.Should().Be("Neo.ClientError.Security.TokenExpired");
+        request.Auth.Should().Be(new AuthorizationToken("basic", "neo4j", "pass"));
     }
 
     [Fact]
@@ -147,23 +130,16 @@ public class AuthTokenManagerFlowTests
                     return new Stored<IAuthTokenManager>("manager-1", manager);
                 });
 
-        Func<string, ICallbackRequest>? capturedRequest = null;
-        var callbacksMock = new Mock<ICallbackExchanger>();
-        callbacksMock
-            .Setup(
-                c => c.SendAsync<AuthTokenManagerHandleSecurityExceptionCompleted>(
-                    It.IsAny<Func<string, ICallbackRequest>>()))
-            .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
-            .ReturnsAsync(
-                new AuthTokenManagerHandleSecurityExceptionCompleted
-                {
-                    RequestId = "callback-1",
-                    Handled = true
-                });
+        ICorrelatedRequest? capturedRequest = null;
+        var roundTripMock = new Mock<IReverseRoundTrip>();
+        roundTripMock
+            .Setup(r => r.SendExpectingAsync<bool>(It.IsAny<ICorrelatedRequest>()))
+            .Callback<ICorrelatedRequest>(request => capturedRequest = request)
+            .ReturnsAsync(true);
 
         var newManagerHandler = new NewAuthTokenManagerHandler(
             objectStoreMock.Object,
-            callbacksMock.Object,
+            roundTripMock.Object,
             Mock.Of<IResponseWriter>(),
             Mock.Of<ILogger>());
 
@@ -180,12 +156,10 @@ public class AuthTokenManagerFlowTests
 
         handled.Should().BeTrue();
 
-        capturedRequest.Should().NotBeNull();
-        var request = capturedRequest!("callback-1");
-        var securityExceptionRequest = (AuthTokenManagerHandleSecurityExceptionRequest)request;
-        securityExceptionRequest.Auth.Value.Scheme.Should().Be("bearer");
-        securityExceptionRequest.Auth.Value.Credentials.Should().Be("token-value");
-        securityExceptionRequest.Auth.Value.Principal.Should().BeNull();
+        var request = capturedRequest.Should().BeOfType<AuthTokenManagerHandleSecurityExceptionRequest>().Subject;
+        request.Auth.Value.Scheme.Should().Be("bearer");
+        request.Auth.Value.Credentials.Should().Be("token-value");
+        request.Auth.Value.Principal.Should().BeNull();
     }
 
     [Fact]
@@ -203,23 +177,16 @@ public class AuthTokenManagerFlowTests
                     return new Stored<IAuthTokenManager>("manager-1", manager);
                 });
 
-        Func<string, ICallbackRequest>? capturedRequest = null;
-        var callbacksMock = new Mock<ICallbackExchanger>();
-        callbacksMock
-            .Setup(
-                c => c.SendAsync<AuthTokenManagerHandleSecurityExceptionCompleted>(
-                    It.IsAny<Func<string, ICallbackRequest>>()))
-            .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
-            .ReturnsAsync(
-                new AuthTokenManagerHandleSecurityExceptionCompleted
-                {
-                    RequestId = "callback-1",
-                    Handled = true
-                });
+        ICorrelatedRequest? capturedRequest = null;
+        var roundTripMock = new Mock<IReverseRoundTrip>();
+        roundTripMock
+            .Setup(r => r.SendExpectingAsync<bool>(It.IsAny<ICorrelatedRequest>()))
+            .Callback<ICorrelatedRequest>(request => capturedRequest = request)
+            .ReturnsAsync(true);
 
         var newManagerHandler = new NewAuthTokenManagerHandler(
             objectStoreMock.Object,
-            callbacksMock.Object,
+            roundTripMock.Object,
             Mock.Of<IResponseWriter>(),
             Mock.Of<ILogger>());
 
@@ -237,13 +204,48 @@ public class AuthTokenManagerFlowTests
 
         handled.Should().BeTrue();
 
-        capturedRequest.Should().NotBeNull();
-        var request = capturedRequest!("callback-1");
-        var securityExceptionRequest = (AuthTokenManagerHandleSecurityExceptionRequest)request;
-        securityExceptionRequest.Auth.Value.Scheme.Should().Be("custom-scheme");
-        securityExceptionRequest.Auth.Value.Principal.Should().Be("neo4j");
-        securityExceptionRequest.Auth.Value.Credentials.Should().Be("pass");
-        securityExceptionRequest.Auth.Value.Realm.Should().Be("realm1");
-        securityExceptionRequest.Auth.Value.Parameters.Should().BeEquivalentTo(parameters);
+        var request = capturedRequest.Should().BeOfType<AuthTokenManagerHandleSecurityExceptionRequest>().Subject;
+        request.Auth.Value.Scheme.Should().Be("custom-scheme");
+        request.Auth.Value.Principal.Should().Be("neo4j");
+        request.Auth.Value.Credentials.Should().Be("pass");
+        request.Auth.Value.Realm.Should().Be("realm1");
+        request.Auth.Value.Parameters.Should().BeEquivalentTo(parameters);
+    }
+
+    [Fact]
+    public void AuthTokenManagerGetAuthCompleted_fulfils_the_expectation_with_the_converted_token()
+    {
+        var expectationsMock = new Mock<IExpectationStore>();
+        IAuthToken? fulfilledToken = null;
+        expectationsMock
+            .Setup(e => e.Fulfil("callback-1", It.IsAny<IAuthToken>()))
+            .Callback<string, IAuthToken>((_, token) => fulfilledToken = token);
+
+        var handler = new AuthTokenManagerGetAuthCompletedHandler(expectationsMock.Object);
+        var message = new AuthTokenManagerGetAuthCompleted
+        {
+            RequestId = "callback-1",
+            Auth = new AuthorizationToken("basic", "neo4j", "pass")
+        };
+
+        handler.ProcessAsync(message);
+
+        fulfilledToken.Should().BeAssignableTo<AuthToken>();
+        var token = (AuthToken)fulfilledToken!;
+        token.Content["scheme"].Should().Be("basic");
+        token.Content["principal"].Should().Be("neo4j");
+        token.Content["credentials"].Should().Be("pass");
+    }
+
+    [Fact]
+    public void AuthTokenManagerHandleSecurityExceptionCompleted_fulfils_the_expectation_with_the_Handled_flag()
+    {
+        var expectationsMock = new Mock<IExpectationStore>();
+        var handler = new AuthTokenManagerHandleSecurityExceptionCompletedHandler(expectationsMock.Object);
+        var message = new AuthTokenManagerHandleSecurityExceptionCompleted { RequestId = "callback-1", Handled = true };
+
+        handler.ProcessAsync(message);
+
+        expectationsMock.Verify(e => e.Fulfil("callback-1", true), Times.Once);
     }
 }

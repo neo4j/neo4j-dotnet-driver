@@ -244,7 +244,7 @@ public class RetryableTransactionFlowTests
                 m =>
                 {
                     writtenMessages.Add(m);
-                    if (m is AuthTokenManagerGetAuthRequest request)
+                    if (m is BookmarksSupplierRequest request)
                     {
                         lastRequestId = request.Id;
                     }
@@ -255,10 +255,10 @@ public class RetryableTransactionFlowTests
         _serializerMock
             .Setup(s => s.Deserialize("completion"))
             .Returns(
-                () => new AuthTokenManagerGetAuthCompleted
+                () => new BookmarksSupplierCompleted
                 {
                     RequestId = lastRequestId!,
-                    Auth = new AuthorizationToken("basic", "neo4j", "pass")
+                    Bookmarks = ["bm1"]
                 });
 
         var callbackExchanger = new CallbackExchanger(
@@ -277,13 +277,13 @@ public class RetryableTransactionFlowTests
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 async (work, _) =>
                 {
-                    await callbackExchanger.SendAsync<AuthTokenManagerGetAuthCompleted>(
-                        id => new AuthTokenManagerGetAuthRequest(id, "manager-1"));
+                    await callbackExchanger.SendAsync<BookmarksSupplierCompleted>(
+                        id => new BookmarksSupplierRequest(id, "manager-1"));
 
                     await work(firstTxMock.Object);
 
-                    await callbackExchanger.SendAsync<AuthTokenManagerGetAuthCompleted>(
-                        id => new AuthTokenManagerGetAuthRequest(id, "manager-1"));
+                    await callbackExchanger.SendAsync<BookmarksSupplierCompleted>(
+                        id => new BookmarksSupplierRequest(id, "manager-1"));
 
                     await work(secondTxMock.Object);
                 });
@@ -303,11 +303,11 @@ public class RetryableTransactionFlowTests
 
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
 
-        writtenMessages.OfType<AuthTokenManagerGetAuthRequest>().Count().Should().Be(2);
+        writtenMessages.OfType<BookmarksSupplierRequest>().Count().Should().Be(2);
         writtenMessages.Select(m => m.GetType()).Should().Equal(
-            typeof(AuthTokenManagerGetAuthRequest),
+            typeof(BookmarksSupplierRequest),
             typeof(RetryableTryResponse),
-            typeof(AuthTokenManagerGetAuthRequest),
+            typeof(BookmarksSupplierRequest),
             typeof(RetryableTryResponse),
             typeof(RetryableDoneResponse));
     }

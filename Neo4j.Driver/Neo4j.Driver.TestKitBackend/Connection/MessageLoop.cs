@@ -30,7 +30,7 @@ internal class MessageLoop : IMessageLoop
     private readonly IResponseWriter _responseWriter;
     private readonly IDriverErrorMapper _driverErrorMapper;
     private readonly IExceptionOriginClassifier _originClassifier;
-    private readonly IExpectationStore _expectations;
+    private readonly IExpectationStore _expectationStore;
     private readonly ILogger _logger;
 
     public MessageLoop(
@@ -40,7 +40,7 @@ internal class MessageLoop : IMessageLoop
         IResponseWriter responseWriter,
         IDriverErrorMapper driverErrorMapper,
         IExceptionOriginClassifier originClassifier,
-        IExpectationStore expectations,
+        IExpectationStore expectationStore,
         ILogger logger)
     {
         _input = input;
@@ -49,7 +49,7 @@ internal class MessageLoop : IMessageLoop
         _responseWriter = responseWriter;
         _driverErrorMapper = driverErrorMapper;
         _originClassifier = originClassifier;
-        _expectations = expectations;
+        _expectationStore = expectationStore;
         _logger = logger;
     }
 
@@ -102,7 +102,7 @@ internal class MessageLoop : IMessageLoop
         }
         finally
         {
-            _expectations.CancelAll();
+            _expectationStore.CancelAll();
             try
             {
                 await Task.WhenAll(handlerTasks);

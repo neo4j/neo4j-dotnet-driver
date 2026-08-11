@@ -13,19 +13,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.TestKitBackend.Continuations;
+using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record AuthTokenManagerHandleSecurityExceptionRequest(
-    string Id,
     string AuthTokenManagerId,
     IWireType<AuthorizationToken> Auth,
-    string ErrorCode) : ICallbackRequest;
+    string ErrorCode) : ICorrelatedRequest
+{
+    public string Id { get; set; } = "";
+}
 
-internal record AuthTokenManagerHandleSecurityExceptionCompleted : ICallbackResponse
+internal record AuthTokenManagerHandleSecurityExceptionCompleted : IProtocolMessage
 {
     public required string RequestId { get; init; }
     public required bool Handled { get; init; }
+}
+
+internal class AuthTokenManagerHandleSecurityExceptionCompletedHandler
+    : MessageHandler<AuthTokenManagerHandleSecurityExceptionCompleted>
+{
+    private readonly IExpectationStore _expectationStore;
+
+    public AuthTokenManagerHandleSecurityExceptionCompletedHandler(IExpectationStore expectationStore)
+    {
+        _expectationStore = expectationStore;
+    }
+
+    public override Task ProcessAsync(AuthTokenManagerHandleSecurityExceptionCompleted message)
+    {
+        _expectationStore.Fulfil(message.RequestId, message.Handled);
+        return Task.CompletedTask;
+    }
 }

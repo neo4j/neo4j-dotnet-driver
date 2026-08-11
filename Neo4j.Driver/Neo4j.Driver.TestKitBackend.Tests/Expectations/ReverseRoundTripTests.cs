@@ -28,12 +28,12 @@ public class ReverseRoundTripTests
     private record FakePrompt : IProtocolMessage;
 
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<ReverseRoundTrip>();
-    private readonly IExpectationStore _expectations;
+    private readonly IExpectationStore _expectationStore;
 
     public ReverseRoundTripTests()
     {
-        _expectations = _autoMocker.CreateInstance<ExpectationStore>();
-        _autoMocker.Use(_expectations);
+        _expectationStore = _autoMocker.CreateInstance<ExpectationStore>();
+        _autoMocker.Use(_expectationStore);
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class ReverseRoundTripTests
             {
                 // If the expectation weren't already registered at this point, this would throw
                 // TestKitProtocolException for an unknown key instead of succeeding.
-                _expectations.Fulfil("key-1", "value-1");
+                _expectationStore.Fulfil("key-1", "value-1");
                 return Task.CompletedTask;
             });
 
@@ -69,7 +69,7 @@ public class ReverseRoundTripTests
         var roundTrip = _autoMocker.CreateInstance<ReverseRoundTrip>();
 
         var task = roundTrip.SendExpectingAsync<string>(prompt);
-        _expectations.Fulfil(prompt.Id, "value-1");
+        _expectationStore.Fulfil(prompt.Id, "value-1");
         var value = await task;
 
         value.Should().Be("value-1");

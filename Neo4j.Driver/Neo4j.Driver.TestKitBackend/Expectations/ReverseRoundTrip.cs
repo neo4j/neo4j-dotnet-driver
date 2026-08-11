@@ -21,18 +21,18 @@ namespace Neo4j.Driver.TestKitBackend.Expectations;
 [RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
 internal class ReverseRoundTrip : IReverseRoundTrip
 {
-    private readonly IExpectationStore _expectations;
+    private readonly IExpectationStore _expectationStore;
     private readonly IResponseWriter _writer;
 
-    public ReverseRoundTrip(IExpectationStore expectations, IResponseWriter writer)
+    public ReverseRoundTrip(IExpectationStore expectationStore, IResponseWriter writer)
     {
-        _expectations = expectations;
+        _expectationStore = expectationStore;
         _writer = writer;
     }
 
     public async Task<T> SendExpectingAsync<T>(IProtocolMessage message, string key)
     {
-        var value = _expectations.Expect<T>(key);
+        var value = _expectationStore.Expect<T>(key);
         await _writer.WriteAsync(message);
         return await value;
     }

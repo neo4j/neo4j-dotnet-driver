@@ -32,16 +32,16 @@ internal record ResolverResolutionCompleted : IProtocolMessage
 
 internal class ResolverResolutionCompletedHandler : MessageHandler<ResolverResolutionCompleted>
 {
-    private readonly IExpectationStore _expectations;
+    private readonly IExpectationStore _expectationStore;
 
-    public ResolverResolutionCompletedHandler(IExpectationStore expectations)
+    public ResolverResolutionCompletedHandler(IExpectationStore expectationStore)
     {
-        _expectations = expectations;
+        _expectationStore = expectationStore;
     }
 
     public override Task ProcessAsync(ResolverResolutionCompleted message)
     {
-        _expectations.Fulfil(message.RequestId, message.Addresses);
+        _expectationStore.Fulfil(message.RequestId, message.Addresses);
         return Task.CompletedTask;
     }
 }
