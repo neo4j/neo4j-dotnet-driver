@@ -14,8 +14,8 @@
 // limitations under the License.
 
 using FluentAssertions;
-using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Expectations;
@@ -27,27 +27,57 @@ public class ReverseRoundTripTests
 {
     private record FakePrompt : IProtocolMessage;
 
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<ReverseRoundTrip>();
+    private readonly IExpectationStore _expectations;
+
+    public ReverseRoundTripTests()
+    {
+        _expectations = _autoMocker.CreateInstance<ExpectationStore>();
+        _autoMocker.Use(_expectations);
+    }
+
     [Fact]
     public async Task SendExpectingAsync_writes_the_prompt_after_registering_the_expectation_then_completes_with_the_fulfilled_value()
     {
-        var expectations = new ExpectationStore(NullLogger.Instance);
-        var writer = new Mock<IResponseWriter>();
         var prompt = new FakePrompt();
-        writer
+        _autoMocker.GetMock<IResponseWriter>()
             .Setup(w => w.WriteAsync(prompt))
             .Returns(() =>
             {
                 // If the expectation weren't already registered at this point, this would throw
                 // TestKitProtocolException for an unknown key instead of succeeding.
-                expectations.Fulfil("key-1", "value-1");
+                _expectations.Fulfil("key-1", "value-1");
                 return Task.CompletedTask;
             });
 
-        var roundTrip = new ReverseRoundTrip(expectations, writer.Object);
+        var roundTrip = _autoMocker.CreateInstance<ReverseRoundTrip>();
 
         var value = await roundTrip.SendExpectingAsync<string>(prompt, "key-1");
 
         value.Should().Be("value-1");
-        writer.Verify(w => w.WriteAsync(prompt), Times.Once);
+        _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(prompt), Times.Once);
+    }
+
+    [Fact]
+    public async Task The_correlated_overload_stamps_a_fresh_id_on_the_message_and_expects_on_it()
+    {
+        var prompt = new FakeCorrelatedPrompt();
+        _autoMocker.GetMock<IResponseWriter>()
+            .Setup(w => w.WriteAsync(prompt))
+            .Returns(Task.CompletedTask);
+
+        var roundTrip = _autoMocker.CreateInstance<ReverseRoundTrip>();
+
+        var task = roundTrip.SendExpectingAsync<string>(prompt);
+        _expectations.Fulfil(prompt.Id, "value-1");
+        var value = await task;
+
+        value.Should().Be("value-1");
+        prompt.Id.Should().NotBeNullOrEmpty();
+    }
+
+    private record FakeCorrelatedPrompt : ICorrelatedRequest
+    {
+        public string Id { get; set; } = "";
     }
 }

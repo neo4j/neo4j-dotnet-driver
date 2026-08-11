@@ -17,7 +17,14 @@ using Neo4j.Driver.TestKitBackend.Dispatch;
 
 namespace Neo4j.Driver.TestKitBackend.Expectations;
 
+internal interface ICorrelatedRequest : IProtocolMessage
+{
+    string Id { get; set; }
+}
+
 internal interface IReverseRoundTrip
 {
     Task<T> SendExpectingAsync<T>(IProtocolMessage message, string key);
+
+    Task<T> SendExpectingAsync<T>(ICorrelatedRequest message);
 }

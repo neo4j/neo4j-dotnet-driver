@@ -14,7 +14,6 @@
 // limitations under the License.
 
 using FluentAssertions;
-using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
@@ -336,7 +335,7 @@ public class MessageLoopTests
     {
         const string holdingJson = """{"name":"SessionReadTransaction","data":{}}""";
         var holdingMessage = Mock.Of<IProtocolMessage>();
-        var expectations = new ExpectationStore(NullLogger.Instance);
+        var expectations = _autoMocker.CreateInstance<ExpectationStore>();
         _autoMocker.Use<IExpectationStore>(expectations);
         var unwound = false;
 

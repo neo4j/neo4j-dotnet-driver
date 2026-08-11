@@ -15,7 +15,7 @@
 
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.TestKitBackend.Continuations;
+using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Xunit;
 
@@ -26,28 +26,33 @@ public class ResolverFlowTests
     [Fact]
     public void Resolve_requests_a_callback_with_the_asked_address_and_parses_the_reply()
     {
-        Func<string, ICallbackRequest>? capturedRequest = null;
-        var callbacksMock = new Mock<ICallbackExchanger>();
-        callbacksMock
-            .Setup(c => c.SendAsync<ResolverResolutionCompleted>(It.IsAny<Func<string, ICallbackRequest>>()))
-            .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
-            .ReturnsAsync(
-                new ResolverResolutionCompleted
-                {
-                    RequestId = "callback-1",
-                    Addresses = ["hosta:9002", "hostb:9003"]
-                });
+        ICorrelatedRequest? capturedRequest = null;
+        var roundTripMock = new Mock<IReverseRoundTrip>();
+        roundTripMock
+            .Setup(r => r.SendExpectingAsync<string[]>(It.IsAny<ICorrelatedRequest>()))
+            .Callback<ICorrelatedRequest>(request => capturedRequest = request)
+            .ReturnsAsync(["hosta:9002", "hostb:9003"]);
 
-        var resolver = new TestKitServerAddressResolver(callbacksMock.Object);
+        var resolver = new TestKitServerAddressResolver(roundTripMock.Object);
 
         var resolved = resolver.Resolve(ServerAddress.From("router1", 9001));
 
-        capturedRequest.Should().NotBeNull();
-        var request = capturedRequest!("callback-1");
-        request.Should().BeOfType<ResolverResolutionRequired>();
-        ((ResolverResolutionRequired)request).Address.Should().Be("router1:9001");
+        var request = capturedRequest.Should().BeOfType<ResolverResolutionRequired>().Subject;
+        request.Address.Should().Be("router1:9001");
 
         resolved.Should().BeEquivalentTo(
             new HashSet<ServerAddress> { ServerAddress.From("hosta", 9002), ServerAddress.From("hostb", 9003) });
+    }
+
+    [Fact]
+    public void ResolverResolutionCompleted_fulfils_the_expectation_for_its_request_id()
+    {
+        var expectationsMock = new Mock<IExpectationStore>();
+        var handler = new ResolverResolutionCompletedHandler(expectationsMock.Object);
+        var message = new ResolverResolutionCompleted { RequestId = "callback-1", Addresses = ["hosta:9002"] };
+
+        handler.ProcessAsync(message);
+
+        expectationsMock.Verify(e => e.Fulfil("callback-1", message.Addresses), Times.Once);
     }
 }

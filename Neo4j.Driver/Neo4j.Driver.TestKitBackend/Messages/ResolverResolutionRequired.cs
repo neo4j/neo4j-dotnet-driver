@@ -14,43 +14,65 @@
 // limitations under the License.
 
 using System.Globalization;
-using Neo4j.Driver.TestKitBackend.Continuations;
+using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Expectations;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record ResolverResolutionRequired(string Id, string Address) : ICallbackRequest;
+internal record ResolverResolutionRequired(string Address) : ICorrelatedRequest
+{
+    public string Id { get; set; } = "";
+}
 
-internal record ResolverResolutionCompleted : ICallbackResponse
+internal record ResolverResolutionCompleted : IProtocolMessage
 {
     public required string RequestId { get; init; }
     public required string[] Addresses { get; init; }
 }
 
+internal class ResolverResolutionCompletedHandler : MessageHandler<ResolverResolutionCompleted>
+{
+    private readonly IExpectationStore _expectations;
+
+    public ResolverResolutionCompletedHandler(IExpectationStore expectations)
+    {
+        _expectations = expectations;
+    }
+
+    public override Task ProcessAsync(ResolverResolutionCompleted message)
+    {
+        _expectations.Fulfil(message.RequestId, message.Addresses);
+        return Task.CompletedTask;
+    }
+}
+
 internal class TestKitServerAddressResolver : IServerAddressResolver
 {
-    private readonly ICallbackExchanger _callbackExchanger;
+    private readonly IReverseRoundTrip _roundTrip;
 
-    public TestKitServerAddressResolver(ICallbackExchanger callbackExchanger)
+    public TestKitServerAddressResolver(IReverseRoundTrip roundTrip)
     {
-        _callbackExchanger = callbackExchanger;
+        _roundTrip = roundTrip;
     }
 
     public ISet<ServerAddress> Resolve(ServerAddress address)
     {
-        var completion = _callbackExchanger
-            .SendAsync<ResolverResolutionCompleted>(
-                id => new ResolverResolutionRequired(id, $"{address.Host}:{address.Port}"))
+        var resolutionRequest = new ResolverResolutionRequired($"{address.Host}:{address.Port}");
+        var addresses = _roundTrip
+            .SendExpectingAsync<string[]>(resolutionRequest)
             .GetAwaiter()
             .GetResult();
 
-        return completion.Addresses.Select(ParseAddress).ToHashSet();
+        return addresses.Select(ParseAddress).ToHashSet();
     }
 
     private static ServerAddress ParseAddress(string address)
     {
         var separator = address.LastIndexOf(':');
-        return ServerAddress.From(
-            address[..separator],
-            int.Parse(address[(separator + 1)..], CultureInfo.InvariantCulture));
+        var afterSeparator = address[(separator + 1)..];
+        
+        return int.TryParse(afterSeparator, NumberStyles.None, CultureInfo.InvariantCulture, out var port)
+            ? ServerAddress.From(address[..separator], port)
+            : throw new InvalidOperationException($"Invalid port number: '{afterSeparator}'");
     }
 }

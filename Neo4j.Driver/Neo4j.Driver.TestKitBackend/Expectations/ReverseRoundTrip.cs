@@ -36,4 +36,10 @@ internal class ReverseRoundTrip : IReverseRoundTrip
         await _writer.WriteAsync(message);
         return await value;
     }
+
+    public Task<T> SendExpectingAsync<T>(ICorrelatedRequest message)
+    {
+        message.Id = Guid.NewGuid().ToString();
+        return SendExpectingAsync<T>(message, message.Id);
+    }
 }
