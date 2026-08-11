@@ -16,6 +16,7 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
+using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.Serialization;
 
@@ -29,6 +30,7 @@ internal class MessageLoop : IMessageLoop
     private readonly IResponseWriter _responseWriter;
     private readonly IDriverErrorMapper _driverErrorMapper;
     private readonly IExceptionOriginClassifier _originClassifier;
+    private readonly IExpectationStore _expectations;
     private readonly ILogger _logger;
 
     public MessageLoop(
@@ -38,6 +40,7 @@ internal class MessageLoop : IMessageLoop
         IResponseWriter responseWriter,
         IDriverErrorMapper driverErrorMapper,
         IExceptionOriginClassifier originClassifier,
+        IExpectationStore expectations,
         ILogger logger)
     {
         _input = input;
@@ -46,11 +49,13 @@ internal class MessageLoop : IMessageLoop
         _responseWriter = responseWriter;
         _driverErrorMapper = driverErrorMapper;
         _originClassifier = originClassifier;
+        _expectations = expectations;
         _logger = logger;
     }
 
     public async Task RunAsync(string connectionId)
     {
+        var handlerTasks = new List<Task>();
         try
         {
             bool readSuccess;
@@ -64,8 +69,19 @@ internal class MessageLoop : IMessageLoop
                     json = await _input.ReadRequestAsync();
                     readSuccess = true;
                 }
+                catch (IOException)
+                {
+                    // This is the exception that the legacy testkit backend threw at
+                    // the end of every test, and we couldn't catch it due to the design.
+                    // It's caused when testkit drops the connection (maybe we failed a test)
+                    // and it doesn't represent an error - it's just the completion of the test.
+                    _logger.LogDebug("Connection {ConnectionId} ended by testkit", connectionId);
+                }
                 catch (Exception exception)
                 {
+                    // Log the error but don't throw since an exception in a test is sent to 
+                    // testkit as a BackEndErrorResponse and we can't do that because the connection
+                    // is dead. Log the error and continue reading.
                     _logger.LogError(exception, "Connection {ConnectionId} failed while reading", connectionId);
                 }
 
@@ -76,7 +92,7 @@ internal class MessageLoop : IMessageLoop
 
                 _logger.LogDebug("Request: {Request}", json);
                 var message = _serializer.Deserialize(json);
-                await DispatchWithErrorHandlingAsync(message);
+                handlerTasks.Add(DispatchTrackedAsync(message));
             } while (readSuccess);
         }
         catch (Exception exception)
@@ -86,15 +102,30 @@ internal class MessageLoop : IMessageLoop
         }
         finally
         {
+            _expectations.CancelAll();
+            try
+            {
+                await Task.WhenAll(handlerTasks);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception, "A handler task failed while connection {ConnectionId} was closing", connectionId);
+            }
+
             _logger.LogDebug("Closing connection {ConnectionId}", connectionId);
         }
     }
 
-    private async Task DispatchWithErrorHandlingAsync(IProtocolMessage message)
+    private async Task DispatchTrackedAsync(IProtocolMessage message)
     {
+        await Task.Yield();
         try
         {
             await _dispatcher.DispatchAsync(message);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogDebug("A held handler was cancelled because its connection closed");
         }
         catch (Exception exception) when (_originClassifier.OriginatesInDriver(exception))
         {

@@ -104,6 +104,17 @@ public class ExpectationStoreTests
     }
 
     [Fact]
+    public async Task Expect_after_CancelAll_returns_an_already_cancelled_task()
+    {
+        _store.CancelAll();
+
+        var pending = _store.Expect<string>("key-1");
+
+        Func<Task> act = () => WithTimeoutAsync(pending);
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    [Fact]
     public async Task Disposing_cancels_all_outstanding_expectations()
     {
         var pending = _store.Expect<string>("key-1");

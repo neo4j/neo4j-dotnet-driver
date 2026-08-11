@@ -22,4 +22,6 @@ internal interface IExpectationStore
     void Fulfil<T>(string key, T value);
 
     void Fail(string key, Exception error);
+
+    void CancelAll();
 }

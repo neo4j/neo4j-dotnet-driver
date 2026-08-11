@@ -14,11 +14,13 @@
 // limitations under the License.
 
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
+using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
@@ -254,5 +256,125 @@ public class MessageLoopTests
             .Verify(w => w.WriteAsync(It.Is<BackendErrorResponse>(e => e.Msg == "backend bug")), Times.Once);
         _autoMocker.GetMock<IDriverErrorMapper>().Verify(m => m.Map(It.IsAny<Exception>()), Times.Never);
         _autoMocker.GetMock<IMessageDispatcher>().Verify(d => d.DispatchAsync(goodMessage), Times.Once);
+    }
+
+    [Fact]
+    public async Task A_held_handler_does_not_block_dispatch_of_later_messages()
+    {
+        const string holdingJson = """{"name":"SessionReadTransaction","data":{}}""";
+        const string fulfillingJson = """{"name":"RetryablePositive","data":{}}""";
+        var holdingMessage = Mock.Of<IProtocolMessage>();
+        var fulfillingMessage = Mock.Of<IProtocolMessage>();
+        var outcome = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        _autoMocker.GetMock<IConnectionInput>()
+            .SetupSequence(i => i.ReadRequestAsync())
+            .ReturnsAsync(holdingJson)
+            .ReturnsAsync(fulfillingJson)
+            .ReturnsAsync((string?)null);
+
+        _autoMocker.GetMock<IMessageSerializer>().Setup(s => s.Deserialize(holdingJson)).Returns(holdingMessage);
+        _autoMocker.GetMock<IMessageSerializer>().Setup(s => s.Deserialize(fulfillingJson)).Returns(fulfillingMessage);
+        _autoMocker.GetMock<IMessageDispatcher>().Setup(d => d.DispatchAsync(holdingMessage)).Returns(outcome.Task);
+        _autoMocker.GetMock<IMessageDispatcher>()
+            .Setup(d => d.DispatchAsync(fulfillingMessage))
+            .Returns(() =>
+            {
+                outcome.SetResult();
+                return Task.CompletedTask;
+            });
+
+        var loop = _autoMocker.CreateInstance<MessageLoop>();
+
+        await WithTimeoutAsync(loop.RunAsync("testkit-1"));
+
+        _autoMocker.GetMock<IMessageDispatcher>().Verify(d => d.DispatchAsync(fulfillingMessage), Times.Once);
+    }
+
+    [Fact]
+    public async Task A_handler_with_a_blocking_synchronous_prefix_does_not_block_the_read_loop()
+    {
+        const string blockingJson = """{"name":"SessionReadTransaction","data":{}}""";
+        const string releasingJson = """{"name":"RetryablePositive","data":{}}""";
+        var blockingMessage = Mock.Of<IProtocolMessage>();
+        var releasingMessage = Mock.Of<IProtocolMessage>();
+        var gate = new ManualResetEventSlim();
+        var released = false;
+
+        _autoMocker.GetMock<IConnectionInput>()
+            .SetupSequence(i => i.ReadRequestAsync())
+            .ReturnsAsync(blockingJson)
+            .ReturnsAsync(releasingJson)
+            .ReturnsAsync((string?)null);
+
+        _autoMocker.GetMock<IMessageSerializer>().Setup(s => s.Deserialize(blockingJson)).Returns(blockingMessage);
+        _autoMocker.GetMock<IMessageSerializer>().Setup(s => s.Deserialize(releasingJson)).Returns(releasingMessage);
+        _autoMocker.GetMock<IMessageDispatcher>()
+            .Setup(d => d.DispatchAsync(blockingMessage))
+            .Returns(() =>
+            {
+                released = gate.Wait(TimeSpan.FromSeconds(2));
+                return Task.CompletedTask;
+            });
+        _autoMocker.GetMock<IMessageDispatcher>()
+            .Setup(d => d.DispatchAsync(releasingMessage))
+            .Returns(() =>
+            {
+                gate.Set();
+                return Task.CompletedTask;
+            });
+
+        var loop = _autoMocker.CreateInstance<MessageLoop>();
+
+        await WithTimeoutAsync(loop.RunAsync("testkit-1"));
+
+        released.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Closing_the_connection_cancels_outstanding_expectations_and_unwinds_held_handlers()
+    {
+        const string holdingJson = """{"name":"SessionReadTransaction","data":{}}""";
+        var holdingMessage = Mock.Of<IProtocolMessage>();
+        var expectations = new ExpectationStore(NullLogger.Instance);
+        _autoMocker.Use<IExpectationStore>(expectations);
+        var unwound = false;
+
+        _autoMocker.GetMock<IConnectionInput>()
+            .SetupSequence(i => i.ReadRequestAsync())
+            .ReturnsAsync(holdingJson)
+            .ReturnsAsync((string?)null);
+
+        _autoMocker.GetMock<IMessageSerializer>().Setup(s => s.Deserialize(holdingJson)).Returns(holdingMessage);
+        _autoMocker.GetMock<IMessageDispatcher>()
+            .Setup(d => d.DispatchAsync(holdingMessage))
+            .Returns(async () =>
+            {
+                try
+                {
+                    await expectations.Expect<string>("key-1");
+                }
+                finally
+                {
+                    unwound = true;
+                }
+            });
+
+        var loop = _autoMocker.CreateInstance<MessageLoop>();
+
+        await WithTimeoutAsync(loop.RunAsync("testkit-1"));
+
+        unwound.Should().BeTrue();
+        _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(It.IsAny<IProtocolMessage>()), Times.Never);
+    }
+
+    private static async Task WithTimeoutAsync(Task task)
+    {
+        var completed = await Task.WhenAny(
+            task,
+            Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
+
+        completed.Should().BeSameAs(task);
+        await task;
     }
 }

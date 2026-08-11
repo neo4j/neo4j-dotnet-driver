@@ -24,6 +24,7 @@ internal class ExpectationStore : IExpectationStore, IDisposable
     private readonly Lock _lock = new();
     private readonly Dictionary<string, TaskCompletionSource<object?>> _pending = [];
     private readonly ILogger _logger;
+    private bool _cancelled;
 
     public ExpectationStore(ILogger logger)
     {
@@ -34,6 +35,11 @@ internal class ExpectationStore : IExpectationStore, IDisposable
     {
         lock (_lock)
         {
+            if (_cancelled)
+            {
+                return Task.FromCanceled<T>(new CancellationToken(canceled: true));
+            }
+
             if (_pending.ContainsKey(key))
             {
                 throw new TestKitProtocolException($"An expectation is already pending for key '{key}'.");
@@ -65,11 +71,12 @@ internal class ExpectationStore : IExpectationStore, IDisposable
         }
     }
 
-    public void Dispose()
+    public void CancelAll()
     {
         List<KeyValuePair<string, TaskCompletionSource<object?>>> outstanding;
         lock (_lock)
         {
+            _cancelled = true;
             outstanding = [.._pending];
             _pending.Clear();
         }
@@ -82,6 +89,11 @@ internal class ExpectationStore : IExpectationStore, IDisposable
 
             source.TrySetCanceled();
         }
+    }
+
+    public void Dispose()
+    {
+        CancelAll();
     }
 
     private static async Task<T> CastAsync<T>(string key, Task<object?> task)
