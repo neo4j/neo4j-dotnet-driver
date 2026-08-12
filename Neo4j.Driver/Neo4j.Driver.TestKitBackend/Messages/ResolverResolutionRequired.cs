@@ -48,9 +48,9 @@ internal class ResolverResolutionCompletedHandler : MessageHandler<ResolverResol
 
 internal class TestKitServerAddressResolver : IServerAddressResolver
 {
-    private readonly IReverseRoundTrip _roundTrip;
+    private readonly IOutboundRoundTrip _roundTrip;
 
-    public TestKitServerAddressResolver(IReverseRoundTrip roundTrip)
+    public TestKitServerAddressResolver(IOutboundRoundTrip roundTrip)
     {
         _roundTrip = roundTrip;
     }

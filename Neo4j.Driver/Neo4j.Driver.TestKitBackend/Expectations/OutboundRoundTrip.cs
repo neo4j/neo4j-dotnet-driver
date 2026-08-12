@@ -19,12 +19,12 @@ using Neo4j.Driver.TestKitBackend.Dispatch;
 namespace Neo4j.Driver.TestKitBackend.Expectations;
 
 [RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
-internal class ReverseRoundTrip : IReverseRoundTrip
+internal class OutboundRoundTrip : IOutboundRoundTrip
 {
     private readonly IExpectationStore _expectationStore;
     private readonly IResponseWriter _writer;
 
-    public ReverseRoundTrip(IExpectationStore expectationStore, IResponseWriter writer)
+    public OutboundRoundTrip(IExpectationStore expectationStore, IResponseWriter writer)
     {
         _expectationStore = expectationStore;
         _writer = writer;

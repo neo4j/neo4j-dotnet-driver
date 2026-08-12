@@ -27,7 +27,7 @@ public class ResolverFlowTests
     public void Resolve_requests_a_callback_with_the_asked_address_and_parses_the_reply()
     {
         ICorrelatedRequest? capturedRequest = null;
-        var roundTripMock = new Mock<IReverseRoundTrip>();
+        var roundTripMock = new Mock<IOutboundRoundTrip>();
         roundTripMock
             .Setup(r => r.SendExpectingAsync<string[]>(It.IsAny<ICorrelatedRequest>()))
             .Callback<ICorrelatedRequest>(request => capturedRequest = request)

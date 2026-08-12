@@ -15,8 +15,8 @@
 
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -28,18 +28,18 @@ internal record BasicAuthTokenManagerResponse(string Id) : IProtocolMessage;
 internal class NewBasicAuthTokenManagerHandler : MessageHandler<NewBasicAuthTokenManagerRequest>
 {
     private readonly IObjectStore _objectStore;
-    private readonly ICallbackExchanger _callbackExchanger;
+    private readonly IOutboundRoundTrip _roundTrip;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewBasicAuthTokenManagerHandler(
         IObjectStore objectStore,
-        ICallbackExchanger callbackExchanger,
+        IOutboundRoundTrip roundTrip,
         IResponseWriter responseWriter,
         ILogger logger)
     {
         _objectStore = objectStore;
-        _callbackExchanger = callbackExchanger;
+        _roundTrip = roundTrip;
         _responseWriter = responseWriter;
         _logger = logger;
     }
@@ -59,9 +59,7 @@ internal class NewBasicAuthTokenManagerHandler : MessageHandler<NewBasicAuthToke
 
     private async ValueTask<IAuthToken> ProvideTokenAsync(string managerId)
     {
-        var completion = await _callbackExchanger.SendAsync<BasicAuthTokenProviderCompleted>(
-            id => new BasicAuthTokenProviderRequest(id, managerId));
-
-        return completion.Auth.Value.ToAuthToken();
+        var providerRequest = new BasicAuthTokenProviderRequest(managerId);
+        return await _roundTrip.SendExpectingAsync<IAuthToken>(providerRequest);
     }
 }

@@ -18,7 +18,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Continuations;
+using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
@@ -41,39 +41,54 @@ public class BasicAuthTokenManagerFlowTests
                     return new Stored<IAuthTokenManager>("manager-1", manager);
                 });
 
-        Func<string, ICallbackRequest>? capturedRequest = null;
-        var callbacksMock = new Mock<ICallbackExchanger>();
-        callbacksMock
-            .Setup(c => c.SendAsync<BasicAuthTokenProviderCompleted>(It.IsAny<Func<string, ICallbackRequest>>()))
-            .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
-            .ReturnsAsync(
-                new BasicAuthTokenProviderCompleted
-                {
-                    RequestId = "callback-1",
-                    Auth = new AuthorizationToken("basic", "neo4j", "pass")
-                });
+        ICorrelatedRequest? capturedRequest = null;
+        var roundTripMock = new Mock<IOutboundRoundTrip>();
+        roundTripMock
+            .Setup(r => r.SendExpectingAsync<IAuthToken>(It.IsAny<ICorrelatedRequest>()))
+            .Callback<ICorrelatedRequest>(request => capturedRequest = request)
+            .ReturnsAsync(new AuthorizationToken("basic", "neo4j", "pass").ToAuthToken());
 
-        var responseWriterMock = new Mock<IResponseWriter>();
         var newManagerHandler = new NewBasicAuthTokenManagerHandler(
             objectStoreMock.Object,
-            callbacksMock.Object,
-            responseWriterMock.Object,
+            roundTripMock.Object,
+            Mock.Of<IResponseWriter>(),
             Mock.Of<ILogger>());
 
         await newManagerHandler.ProcessAsync(new NewBasicAuthTokenManagerRequest());
-
-        responseWriterMock.Verify(w => w.WriteAsync(new BasicAuthTokenManagerResponse("manager-1")), Times.Once);
         manager.Should().NotBeNull();
 
         var tokenValue = await manager!.GetTokenAsync(TestContext.Current.CancellationToken);
         tokenValue.Should().BeAssignableTo<AuthToken>();
         var token = (AuthToken)tokenValue;
 
-        capturedRequest.Should().NotBeNull();
-        var request = capturedRequest!("callback-1");
-        request.Should().BeOfType<BasicAuthTokenProviderRequest>();
-        ((BasicAuthTokenProviderRequest)request).BasicAuthTokenManagerId.Should().Be("manager-1");
+        var request = capturedRequest.Should().BeOfType<BasicAuthTokenProviderRequest>().Subject;
+        request.BasicAuthTokenManagerId.Should().Be("manager-1");
 
+        token.Content["scheme"].Should().Be("basic");
+        token.Content["principal"].Should().Be("neo4j");
+        token.Content["credentials"].Should().Be("pass");
+    }
+
+    [Fact]
+    public void BasicAuthTokenProviderCompleted_fulfils_the_expectation_with_the_converted_token()
+    {
+        var expectationsMock = new Mock<IExpectationStore>();
+        IAuthToken? fulfilledToken = null;
+        expectationsMock
+            .Setup(e => e.Fulfil("callback-1", It.IsAny<IAuthToken>()))
+            .Callback<string, IAuthToken>((_, token) => fulfilledToken = token);
+
+        var handler = new BasicAuthTokenProviderCompletedHandler(expectationsMock.Object);
+        var message = new BasicAuthTokenProviderCompleted
+        {
+            RequestId = "callback-1",
+            Auth = new AuthorizationToken("basic", "neo4j", "pass")
+        };
+
+        handler.ProcessAsync(message);
+
+        fulfilledToken.Should().BeAssignableTo<AuthToken>();
+        var token = (AuthToken)fulfilledToken!;
         token.Content["scheme"].Should().Be("basic");
         token.Content["principal"].Should().Be("neo4j");
         token.Content["credentials"].Should().Be("pass");

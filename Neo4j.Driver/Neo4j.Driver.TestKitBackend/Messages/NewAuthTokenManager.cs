@@ -27,13 +27,13 @@ internal record NewAuthTokenManagerRequest : IProtocolMessage;
 internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRequest>
 {
     private readonly IObjectStore _objectStore;
-    private readonly IReverseRoundTrip _roundTrip;
+    private readonly IOutboundRoundTrip _roundTrip;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewAuthTokenManagerHandler(
         IObjectStore objectStore,
-        IReverseRoundTrip roundTrip,
+        IOutboundRoundTrip roundTrip,
         IResponseWriter responseWriter,
         ILogger logger)
     {

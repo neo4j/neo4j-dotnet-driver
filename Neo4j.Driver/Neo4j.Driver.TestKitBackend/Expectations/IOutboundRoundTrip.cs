@@ -22,7 +22,7 @@ internal interface ICorrelatedRequest : IProtocolMessage
     string Id { get; set; }
 }
 
-internal interface IReverseRoundTrip
+internal interface IOutboundRoundTrip
 {
     Task<T> SendExpectingAsync<T>(IProtocolMessage message, string key);
 

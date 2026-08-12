@@ -23,14 +23,14 @@ using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Expectations;
 
-public class ReverseRoundTripTests
+public class OutboundRoundTripTests
 {
     private record FakePrompt : IProtocolMessage;
 
-    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<ReverseRoundTrip>();
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<OutboundRoundTrip>();
     private readonly IExpectationStore _expectationStore;
 
-    public ReverseRoundTripTests()
+    public OutboundRoundTripTests()
     {
         _expectationStore = _autoMocker.CreateInstance<ExpectationStore>();
         _autoMocker.Use(_expectationStore);
@@ -50,7 +50,7 @@ public class ReverseRoundTripTests
                 return Task.CompletedTask;
             });
 
-        var roundTrip = _autoMocker.CreateInstance<ReverseRoundTrip>();
+        var roundTrip = _autoMocker.CreateInstance<OutboundRoundTrip>();
 
         var value = await roundTrip.SendExpectingAsync<string>(prompt, "key-1");
 
@@ -66,7 +66,7 @@ public class ReverseRoundTripTests
             .Setup(w => w.WriteAsync(prompt))
             .Returns(Task.CompletedTask);
 
-        var roundTrip = _autoMocker.CreateInstance<ReverseRoundTrip>();
+        var roundTrip = _autoMocker.CreateInstance<OutboundRoundTrip>();
 
         var task = roundTrip.SendExpectingAsync<string>(prompt);
         _expectationStore.Fulfil(prompt.Id, "value-1");

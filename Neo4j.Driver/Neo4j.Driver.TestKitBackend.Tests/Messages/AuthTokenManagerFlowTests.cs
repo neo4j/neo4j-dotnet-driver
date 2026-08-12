@@ -42,7 +42,7 @@ public class AuthTokenManagerFlowTests
                 });
 
         ICorrelatedRequest? capturedRequest = null;
-        var roundTripMock = new Mock<IReverseRoundTrip>();
+        var roundTripMock = new Mock<IOutboundRoundTrip>();
         roundTripMock
             .Setup(r => r.SendExpectingAsync<IAuthToken>(It.IsAny<ICorrelatedRequest>()))
             .Callback<ICorrelatedRequest>(request => capturedRequest = request)
@@ -84,7 +84,7 @@ public class AuthTokenManagerFlowTests
                 });
 
         ICorrelatedRequest? capturedRequest = null;
-        var roundTripMock = new Mock<IReverseRoundTrip>();
+        var roundTripMock = new Mock<IOutboundRoundTrip>();
         roundTripMock
             .Setup(r => r.SendExpectingAsync<bool>(It.IsAny<ICorrelatedRequest>()))
             .Callback<ICorrelatedRequest>(request => capturedRequest = request)
@@ -131,7 +131,7 @@ public class AuthTokenManagerFlowTests
                 });
 
         ICorrelatedRequest? capturedRequest = null;
-        var roundTripMock = new Mock<IReverseRoundTrip>();
+        var roundTripMock = new Mock<IOutboundRoundTrip>();
         roundTripMock
             .Setup(r => r.SendExpectingAsync<bool>(It.IsAny<ICorrelatedRequest>()))
             .Callback<ICorrelatedRequest>(request => capturedRequest = request)
@@ -178,7 +178,7 @@ public class AuthTokenManagerFlowTests
                 });
 
         ICorrelatedRequest? capturedRequest = null;
-        var roundTripMock = new Mock<IReverseRoundTrip>();
+        var roundTripMock = new Mock<IOutboundRoundTrip>();
         roundTripMock
             .Setup(r => r.SendExpectingAsync<bool>(It.IsAny<ICorrelatedRequest>()))
             .Callback<ICorrelatedRequest>(request => capturedRequest = request)
