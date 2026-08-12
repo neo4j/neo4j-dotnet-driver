@@ -19,7 +19,6 @@ using Moq;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Cypher;
-using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
@@ -228,90 +227,6 @@ public class RetryableTransactionFlowTests
             PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
 
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
-    }
-
-    private record FakeCallbackRequest(string Id) : ICallbackRequest;
-
-    private record FakeCallbackCompleted : ICallbackResponse
-    {
-        public required string RequestId { get; init; }
-    }
-
-    [Fact]
-    public async Task A_one_shot_callback_fired_during_a_retryable_attempt_does_not_corrupt_the_retry_slot()
-    {
-        // Regression test for the composition of ICallbackExchange's direct write/read with the
-        // retry flow's coordinator slot: a callback exchanged both before the first attempt and
-        // between attempts must not disturb RetryableTry/RetryableDone ordering. FakeCallbackRequest/
-        // Completed stand in for an arbitrary still-on-CallbackExchange family; every real family has
-        // since converted to the expectation model.
-        var writtenMessages = new List<IProtocolMessage>();
-        string? lastRequestId = null;
-        _responseWriterMock
-            .Setup(w => w.WriteAsync(It.IsAny<IProtocolMessage>()))
-            .Callback<IProtocolMessage>(
-                m =>
-                {
-                    writtenMessages.Add(m);
-                    if (m is FakeCallbackRequest request)
-                    {
-                        lastRequestId = request.Id;
-                    }
-                })
-            .Returns(Task.CompletedTask);
-
-        _connectionInputMock.Setup(i => i.ReadRequestAsync()).ReturnsAsync("completion");
-        _serializerMock
-            .Setup(s => s.Deserialize("completion"))
-            .Returns(() => new FakeCallbackCompleted { RequestId = lastRequestId! });
-
-        var callbackExchanger = new CallbackExchanger(
-            _responseWriterMock.Object,
-            _connectionInputMock.Object,
-            _serializerMock.Object);
-
-        var firstTxMock = StoreTx("tx-1");
-        var secondTxMock = StoreTx("tx-2");
-
-        _sessionMock
-            .Setup(
-                s => s.ExecuteWriteAsync(
-                    It.IsAny<Func<IAsyncQueryRunner, Task>>(),
-                    It.IsAny<Action<TransactionConfigBuilder>>()))
-            .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
-                async (work, _) =>
-                {
-                    await callbackExchanger.SendAsync<FakeCallbackCompleted>(id => new FakeCallbackRequest(id));
-
-                    await work(firstTxMock.Object);
-
-                    await callbackExchanger.SendAsync<FakeCallbackCompleted>(id => new FakeCallbackRequest(id));
-
-                    await work(secondTxMock.Object);
-                });
-
-        await WithTimeoutAsync(
-            WriteHandler().ProcessAsync(new SessionWriteTransactionRequest { Session = _sessionHandle }));
-
-        _responseWriterMock.Verify(w => w.WriteAsync(new RetryableTryResponse("tx-1")), Times.Once);
-
-        await WithTimeoutAsync(
-            PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
-
-        _responseWriterMock.Verify(w => w.WriteAsync(new RetryableTryResponse("tx-2")), Times.Once);
-
-        await WithTimeoutAsync(
-            PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
-
-        _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
-
-        writtenMessages.OfType<FakeCallbackRequest>().Count().Should().Be(2);
-        writtenMessages.Select(m => m.GetType()).Should().Equal(
-            typeof(FakeCallbackRequest),
-            typeof(RetryableTryResponse),
-            typeof(FakeCallbackRequest),
-            typeof(RetryableTryResponse),
-            typeof(RetryableDoneResponse));
     }
 
     [Fact]
