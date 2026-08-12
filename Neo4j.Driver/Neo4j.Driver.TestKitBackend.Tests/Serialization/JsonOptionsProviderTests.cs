@@ -16,6 +16,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FluentAssertions;
+using Moq;
+using Neo4j.Driver.TestKitBackend.Messages;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
 
@@ -43,5 +46,79 @@ public class JsonOptionsProviderTests
 
         public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options) =>
             throw new NotSupportedException();
+    }
+
+    public class RealMessageTypesUnderTheStrictBasePreset
+    {
+        private readonly Mock<IObjectStore> _objectStoreMock = new();
+
+        private JsonSerializerOptions RealOptions()
+        {
+            return new JsonOptionsProvider(
+                    [new StoredConverterFactory(_objectStoreMock.Object), new OptionalConverterFactory()])
+                .GetOptions();
+        }
+
+        private SessionRunRequest DeserializeSessionRun(string json)
+        {
+            var session = Mock.Of<IAsyncSession>();
+            _objectStoreMock
+                .Setup(s => s.Get<IAsyncSession>("session-1"))
+                .Returns(new Stored<IAsyncSession>("session-1", session));
+
+            return JsonSerializer.Deserialize<SessionRunRequest>(json, RealOptions())!;
+        }
+
+        [Fact]
+        public void A_Stored_handle_id_resolves_through_the_ObjectStore_using_the_renamed_key()
+        {
+            var request = DeserializeSessionRun("""{"sessionId":"session-1","cypher":"RETURN 1"}""");
+
+            request.Session.Id.Should().Be("session-1");
+        }
+
+        [Fact]
+        public void An_absent_Optional_field_is_not_specified()
+        {
+            var request = DeserializeSessionRun("""{"sessionId":"session-1","cypher":"RETURN 1"}""");
+
+            request.Timeout.IsSpecified(out _).Should().BeFalse();
+        }
+
+        [Fact]
+        public void An_explicit_null_Optional_field_is_specified_as_null()
+        {
+            var request = DeserializeSessionRun(
+                """{"sessionId":"session-1","cypher":"RETURN 1","timeout":null}""");
+
+            request.Timeout.IsSpecified(out var value).Should().BeTrue();
+            value.Should().BeNull();
+        }
+
+        [Fact]
+        public void A_present_numeric_Optional_field_is_specified_with_its_value()
+        {
+            var request = DeserializeSessionRun(
+                """{"sessionId":"session-1","cypher":"RETURN 1","timeout":5000}""");
+
+            request.Timeout.IsSpecified(out var value).Should().BeTrue();
+            value.Should().Be(5000L);
+        }
+
+        [Fact]
+        public void A_missing_required_field_throws()
+        {
+            var read = () => DeserializeSessionRun("""{"sessionId":"session-1"}""");
+
+            read.Should().Throw<JsonException>();
+        }
+
+        [Fact]
+        public void An_explicit_null_for_a_required_non_nullable_field_throws()
+        {
+            var read = () => DeserializeSessionRun("""{"sessionId":"session-1","cypher":null}""");
+
+            read.Should().Throw<JsonException>();
+        }
     }
 }

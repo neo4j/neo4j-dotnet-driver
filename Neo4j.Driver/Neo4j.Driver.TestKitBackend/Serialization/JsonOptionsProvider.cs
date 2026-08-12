@@ -27,10 +27,9 @@ internal class JsonOptionsProvider : IJsonOptionsProvider
 
     public JsonOptionsProvider(IProtocolJsonConverter[] converters)
     {
-        _options = new JsonSerializerOptions
+        _options = new JsonSerializerOptions(JsonSerializerOptions.Strict)
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
             TypeInfoResolver = new DefaultJsonTypeInfoResolver { Modifiers = { BindHandlesToIdMembers } },
         };
 
