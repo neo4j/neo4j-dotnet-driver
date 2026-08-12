@@ -230,12 +230,21 @@ public class RetryableTransactionFlowTests
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
     }
 
+    private record FakeCallbackRequest(string Id) : ICallbackRequest;
+
+    private record FakeCallbackCompleted : ICallbackResponse
+    {
+        public required string RequestId { get; init; }
+    }
+
     [Fact]
     public async Task A_one_shot_callback_fired_during_a_retryable_attempt_does_not_corrupt_the_retry_slot()
     {
         // Regression test for the composition of ICallbackExchange's direct write/read with the
         // retry flow's coordinator slot: a callback exchanged both before the first attempt and
-        // between attempts must not disturb RetryableTry/RetryableDone ordering.
+        // between attempts must not disturb RetryableTry/RetryableDone ordering. FakeCallbackRequest/
+        // Completed stand in for an arbitrary still-on-CallbackExchange family; every real family has
+        // since converted to the expectation model.
         var writtenMessages = new List<IProtocolMessage>();
         string? lastRequestId = null;
         _responseWriterMock
@@ -244,7 +253,7 @@ public class RetryableTransactionFlowTests
                 m =>
                 {
                     writtenMessages.Add(m);
-                    if (m is ClientCertificateProviderRequest request)
+                    if (m is FakeCallbackRequest request)
                     {
                         lastRequestId = request.Id;
                     }
@@ -254,13 +263,7 @@ public class RetryableTransactionFlowTests
         _connectionInputMock.Setup(i => i.ReadRequestAsync()).ReturnsAsync("completion");
         _serializerMock
             .Setup(s => s.Deserialize("completion"))
-            .Returns(
-                () => new ClientCertificateProviderCompleted
-                {
-                    RequestId = lastRequestId!,
-                    HasUpdate = true,
-                    ClientCertificate = new ClientCertificate("cert.pem", "key.pem")
-                });
+            .Returns(() => new FakeCallbackCompleted { RequestId = lastRequestId! });
 
         var callbackExchanger = new CallbackExchanger(
             _responseWriterMock.Object,
@@ -278,13 +281,11 @@ public class RetryableTransactionFlowTests
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 async (work, _) =>
                 {
-                    await callbackExchanger.SendAsync<ClientCertificateProviderCompleted>(
-                        id => new ClientCertificateProviderRequest(id, "provider-1"));
+                    await callbackExchanger.SendAsync<FakeCallbackCompleted>(id => new FakeCallbackRequest(id));
 
                     await work(firstTxMock.Object);
 
-                    await callbackExchanger.SendAsync<ClientCertificateProviderCompleted>(
-                        id => new ClientCertificateProviderRequest(id, "provider-1"));
+                    await callbackExchanger.SendAsync<FakeCallbackCompleted>(id => new FakeCallbackRequest(id));
 
                     await work(secondTxMock.Object);
                 });
@@ -304,11 +305,11 @@ public class RetryableTransactionFlowTests
 
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
 
-        writtenMessages.OfType<ClientCertificateProviderRequest>().Count().Should().Be(2);
+        writtenMessages.OfType<FakeCallbackRequest>().Count().Should().Be(2);
         writtenMessages.Select(m => m.GetType()).Should().Equal(
-            typeof(ClientCertificateProviderRequest),
+            typeof(FakeCallbackRequest),
             typeof(RetryableTryResponse),
-            typeof(ClientCertificateProviderRequest),
+            typeof(FakeCallbackRequest),
             typeof(RetryableTryResponse),
             typeof(RetryableDoneResponse));
     }

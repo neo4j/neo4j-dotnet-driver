@@ -15,10 +15,9 @@
 
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Logging;
-using Neo4j.Driver.TestKitBackend.Certificates;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -30,21 +29,18 @@ internal record ClientCertificateProviderResponse(string Id) : IProtocolMessage;
 internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCertificateProviderRequest>
 {
     private readonly IObjectStore _objectStore;
-    private readonly ICallbackExchanger _callbackExchanger;
-    private readonly ICertificateLoader _certificateLoader;
+    private readonly IOutboundRoundTrip _roundTrip;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewClientCertificateProviderHandler(
         IObjectStore objectStore,
-        ICallbackExchanger callbackExchanger,
-        ICertificateLoader certificateLoader,
+        IOutboundRoundTrip roundTrip,
         IResponseWriter responseWriter,
         ILogger logger)
     {
         _objectStore = objectStore;
-        _callbackExchanger = callbackExchanger;
-        _certificateLoader = certificateLoader;
+        _roundTrip = roundTrip;
         _responseWriter = responseWriter;
         _logger = logger;
     }
@@ -56,19 +52,15 @@ internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCer
         await _responseWriter.WriteAsync(new ClientCertificateProviderResponse(stored.Id));
     }
 
-    private IClientCertificateProvider CreateStoredProvider(string providerId)
+    private IClientCertificateProvider CreateStoredProvider(string storageId)
     {
-        ValueTask<X509Certificate> ProvideFromProvider() => ProvideCertificateAsync(providerId);
+        ValueTask<X509Certificate> ProvideFromProvider() => ProvideCertificateAsync(storageId);
         return new TestKitClientCertificateProvider(ProvideFromProvider);
     }
 
-    private async ValueTask<X509Certificate> ProvideCertificateAsync(string providerId)
+    private async ValueTask<X509Certificate> ProvideCertificateAsync(string storageId)
     {
-        var completion = await _callbackExchanger.SendAsync<ClientCertificateProviderCompleted>(
-            id => new ClientCertificateProviderRequest(id, providerId));
-
-        var certificate = completion.ClientCertificate.Value;
-        return _certificateLoader.Load(certificate.Certfile, certificate.Keyfile, certificate.Password);
+        return await _roundTrip.SendExpectingAsync<X509Certificate>(new ClientCertificateProviderRequest(storageId));
     }
 }
 

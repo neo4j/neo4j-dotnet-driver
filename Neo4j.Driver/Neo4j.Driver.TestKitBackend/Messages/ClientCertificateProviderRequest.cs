@@ -13,16 +13,44 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.TestKitBackend.Continuations;
+using System.Security.Cryptography.X509Certificates;
+using Neo4j.Driver.TestKitBackend.Certificates;
+using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record ClientCertificateProviderRequest(string Id, string ClientCertificateProviderId) : ICallbackRequest;
+internal record ClientCertificateProviderRequest(string ClientCertificateProviderId) : ICorrelatedRequest
+{
+    public string Id { get; set; } = "";
+}
 
-internal record ClientCertificateProviderCompleted : ICallbackResponse
+internal record ClientCertificateProviderCompleted : IProtocolMessage
 {
     public required string RequestId { get; init; }
     public required bool HasUpdate { get; init; }
     public required IWireType<ClientCertificate> ClientCertificate { get; init; }
+}
+
+internal class ClientCertificateProviderCompletedHandler : MessageHandler<ClientCertificateProviderCompleted>
+{
+    private readonly IExpectationStore _expectationStore;
+    private readonly ICertificateLoader _certificateLoader;
+
+    public ClientCertificateProviderCompletedHandler(
+        IExpectationStore expectationStore,
+        ICertificateLoader certificateLoader)
+    {
+        _expectationStore = expectationStore;
+        _certificateLoader = certificateLoader;
+    }
+
+    public override Task ProcessAsync(ClientCertificateProviderCompleted message)
+    {
+        var certificate = message.ClientCertificate.Value;
+        X509Certificate loaded = _certificateLoader.Load(certificate.Certfile, certificate.Keyfile, certificate.Password);
+        _expectationStore.Fulfil(message.RequestId, loaded);
+        return Task.CompletedTask;
+    }
 }

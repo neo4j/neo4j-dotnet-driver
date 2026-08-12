@@ -20,7 +20,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.TestKitBackend.Certificates;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Continuations;
+using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
@@ -29,9 +29,8 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
 public class ClientCertificateProviderFlowTests
 {
-    private readonly Mock<ICallbackExchanger> _callbacksMock = new();
+    private readonly Mock<IOutboundRoundTrip> _roundTripMock = new();
     private readonly Mock<IResponseWriter> _responseWriterMock = new();
-    private readonly Mock<ICertificateLoader> _certificateLoaderMock = new();
 
     private IClientCertificateProvider StoreProvider()
     {
@@ -48,8 +47,7 @@ public class ClientCertificateProviderFlowTests
 
         var newProviderHandler = new NewClientCertificateProviderHandler(
             objectStoreMock.Object,
-            _callbacksMock.Object,
-            _certificateLoaderMock.Object,
+            _roundTripMock.Object,
             _responseWriterMock.Object,
             Mock.Of<ILogger>());
 
@@ -73,44 +71,31 @@ public class ClientCertificateProviderFlowTests
 
     private async Task<(X509Certificate Certificate, ClientCertificateProviderRequest Request)> RoundTripCertificateAsync(
         IClientCertificateProvider provider,
-        ClientCertificate wireCertificate)
+        X509Certificate certificateToReturn)
     {
-        ClientCertificateProviderRequest? request = null;
-        _callbacksMock
-            .Setup(
-                c => c.SendAsync<ClientCertificateProviderCompleted>(It.IsAny<Func<string, ICallbackRequest>>()))
-            .Callback<Func<string, ICallbackRequest>>(f => request = (ClientCertificateProviderRequest)f("callback-1"))
-            .ReturnsAsync(
-                new ClientCertificateProviderCompleted
-                {
-                    RequestId = "callback-1",
-                    HasUpdate = false,
-                    ClientCertificate = wireCertificate
-                });
+        ICorrelatedRequest? capturedRequest = null;
+        _roundTripMock
+            .Setup(r => r.SendExpectingAsync<X509Certificate>(It.IsAny<ICorrelatedRequest>()))
+            .Callback<ICorrelatedRequest>(request => capturedRequest = request)
+            .ReturnsAsync(certificateToReturn);
 
         var certificate = await provider.GetCertificateAsync();
 
-        request.Should().NotBeNull();
-        return (certificate, request!);
+        var request = capturedRequest.Should().BeOfType<ClientCertificateProviderRequest>().Subject;
+        return (certificate, request);
     }
 
     [Fact]
     public async Task The_stored_provider_requests_a_callback_for_its_certificate()
     {
         using var certificate = CreateCertificate();
-        _certificateLoaderMock
-            .Setup(l => l.Load("cert.pem", "key.pem", "secret"))
-            .Returns(certificate);
-
         var provider = StoreProvider();
 
         _responseWriterMock.Verify(
             w => w.WriteAsync(new ClientCertificateProviderResponse("provider-1")),
             Times.Once);
 
-        var (roundTripped, request) = await RoundTripCertificateAsync(
-            provider,
-            new ClientCertificate("cert.pem", "key.pem", "secret"));
+        var (roundTripped, request) = await RoundTripCertificateAsync(provider, certificate);
 
         request.ClientCertificateProviderId.Should().Be("provider-1");
         roundTripped.Should().BeSameAs(certificate);
@@ -121,19 +106,33 @@ public class ClientCertificateProviderFlowTests
     {
         using var firstCertificate = CreateCertificate();
         using var secondCertificate = CreateCertificate();
-        _certificateLoaderMock
-            .Setup(l => l.Load("cert1.pem", "key1.pem", null))
-            .Returns(firstCertificate);
-        _certificateLoaderMock
-            .Setup(l => l.Load("cert2.pem", "key2.pem", null))
-            .Returns(secondCertificate);
-
         var provider = StoreProvider();
 
-        var (first, _) = await RoundTripCertificateAsync(provider, new ClientCertificate("cert1.pem", "key1.pem"));
-        var (second, _) = await RoundTripCertificateAsync(provider, new ClientCertificate("cert2.pem", "key2.pem"));
+        var (first, _) = await RoundTripCertificateAsync(provider, firstCertificate);
+        var (second, _) = await RoundTripCertificateAsync(provider, secondCertificate);
 
         first.Should().BeSameAs(firstCertificate);
         second.Should().BeSameAs(secondCertificate);
+    }
+
+    [Fact]
+    public void ClientCertificateProviderCompleted_fulfils_the_expectation_with_the_loaded_certificate()
+    {
+        var expectationsMock = new Mock<IExpectationStore>();
+        var certificateLoaderMock = new Mock<ICertificateLoader>();
+        using var certificate = CreateCertificate();
+        certificateLoaderMock.Setup(l => l.Load("cert.pem", "key.pem", null)).Returns(certificate);
+
+        var handler = new ClientCertificateProviderCompletedHandler(expectationsMock.Object, certificateLoaderMock.Object);
+        var message = new ClientCertificateProviderCompleted
+        {
+            RequestId = "callback-1",
+            HasUpdate = true,
+            ClientCertificate = new ClientCertificate("cert.pem", "key.pem")
+        };
+
+        handler.ProcessAsync(message);
+
+        expectationsMock.Verify(e => e.Fulfil<X509Certificate>("callback-1", certificate), Times.Once);
     }
 }
