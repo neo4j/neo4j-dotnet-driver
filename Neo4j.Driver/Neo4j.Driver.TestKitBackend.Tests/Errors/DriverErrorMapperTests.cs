@@ -29,7 +29,7 @@ public class DriverErrorMapperTests
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<DriverErrorMapper>();
 
     [Fact]
-    public void Maps_a_driver_exception_registering_it_and_converting_the_gql_cause_chain()
+    public void Maps_a_driver_exception_storing_it_and_converting_the_gql_cause_chain()
     {
         var causeFailureMessage = new FailureMessage
         {
@@ -56,8 +56,8 @@ public class DriverErrorMapperTests
         _autoMocker.GetMock<INativeToCypherMapper>().Setup(m => m.Map("")).Returns(causeDiagnosticRecordValue);
         _autoMocker.GetMock<IExceptionTypeMapper>().Setup(m => m.Map(exception)).Returns("ClientError");
 
-        var registered = new Stored<Exception>("error-1", exception);
-        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register<Exception>(exception)).Returns(registered);
+        var stored = new Stored<Exception>("error-1", exception);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store<Exception>(exception)).Returns(stored);
 
         var mapper = _autoMocker.CreateInstance<DriverErrorMapper>();
 
@@ -91,8 +91,8 @@ public class DriverErrorMapperTests
         Neo4jException exception = new("boom");
         _autoMocker.GetMock<IExceptionTypeMapper>().Setup(m => m.Map(exception)).Returns("Neo4jError");
 
-        var registered = new Stored<Exception>("error-1", exception);
-        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register<Exception>(exception)).Returns(registered);
+        var stored = new Stored<Exception>("error-1", exception);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store<Exception>(exception)).Returns(stored);
 
         var mapper = _autoMocker.CreateInstance<DriverErrorMapper>();
 
@@ -107,8 +107,8 @@ public class DriverErrorMapperTests
         Exception exception = new ArgumentException("encryption and trust cannot both be set");
         _autoMocker.GetMock<IExceptionTypeMapper>().Setup(m => m.Map(exception)).Returns("ArgumentError");
 
-        var registered = new Stored<Exception>("error-1", exception);
-        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register(exception)).Returns(registered);
+        var stored = new Stored<Exception>("error-1", exception);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store(exception)).Returns(stored);
 
         var mapper = _autoMocker.CreateInstance<DriverErrorMapper>();
 
@@ -128,8 +128,8 @@ public class DriverErrorMapperTests
         Exception exception = new TimeZoneNotFoundException("The time zone ID 'Europe/Neo4j' was not found");
         _autoMocker.GetMock<IExceptionTypeMapper>().Setup(m => m.Map(exception)).Returns("TimeZoneNotFoundError");
 
-        var registered = new Stored<Exception>("error-1", exception);
-        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register(exception)).Returns(registered);
+        var stored = new Stored<Exception>("error-1", exception);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store(exception)).Returns(stored);
 
         var mapper = _autoMocker.CreateInstance<DriverErrorMapper>();
 

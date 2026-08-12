@@ -47,8 +47,8 @@ public class SessionRunHandlerTests
                     It.IsAny<Action<TransactionConfigBuilder>>()))
             .ReturnsAsync(cursorMock.Object);
 
-        var registeredCursor = new Stored<IResultCursor>("result-1", cursorMock.Object);
-        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register(cursorMock.Object)).Returns(registeredCursor);
+        var storedCursor = new Stored<IResultCursor>("result-1", cursorMock.Object);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store(cursorMock.Object)).Returns(storedCursor);
 
         var handler = _autoMocker.CreateInstance<SessionRunHandler>();
         var request = new SessionRunRequest
@@ -86,8 +86,8 @@ public class SessionRunHandlerTests
                     It.IsAny<Action<TransactionConfigBuilder>>()))
             .ReturnsAsync(cursorMock.Object);
 
-        var registeredCursor = new Stored<IResultCursor>("result-1", cursorMock.Object);
-        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register(cursorMock.Object)).Returns(registeredCursor);
+        var storedCursor = new Stored<IResultCursor>("result-1", cursorMock.Object);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store(cursorMock.Object)).Returns(storedCursor);
 
         var handler = _autoMocker.CreateInstance<SessionRunHandler>();
         var request = new SessionRunRequest
@@ -129,8 +129,8 @@ public class SessionRunHandlerTests
             .Setup(s => s.RunAsync("RETURN 1 AS n", It.IsAny<IDictionary<string, object>>(), configure))
             .ReturnsAsync(cursorMock.Object);
 
-        var registeredCursor = new Stored<IResultCursor>("result-1", cursorMock.Object);
-        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register(cursorMock.Object)).Returns(registeredCursor);
+        var storedCursor = new Stored<IResultCursor>("result-1", cursorMock.Object);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store(cursorMock.Object)).Returns(storedCursor);
 
         var handler = _autoMocker.CreateInstance<SessionRunHandler>();
         var request = new SessionRunRequest

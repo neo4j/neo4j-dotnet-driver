@@ -28,11 +28,11 @@ public class NewBookmarkManagerHandlerTests
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<NewBookmarkManagerHandler>();
 
     [Fact]
-    public async Task Registers_a_manager_seeded_with_the_initial_bookmarks_and_responds_with_its_id()
+    public async Task Stores_a_manager_seeded_with_the_initial_bookmarks_and_responds_with_its_id()
     {
         IBookmarkManager? manager = null;
         _autoMocker.GetMock<IObjectStore>()
-            .Setup(r => r.Register(It.IsAny<Func<string, IBookmarkManager>>()))
+            .Setup(r => r.Store(It.IsAny<Func<string, IBookmarkManager>>()))
             .Returns<Func<string, IBookmarkManager>>(
                 create =>
                 {

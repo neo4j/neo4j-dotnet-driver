@@ -36,17 +36,17 @@ public class NewDriverHandlerTests
         };
     }
 
-    private void RegisterCreatedDriverAs(string id)
+    private void StoreCreatedDriverAs(string id)
     {
         _autoMocker.GetMock<IObjectStore>()
-            .Setup(r => r.Register(It.IsAny<IDriver>()))
+            .Setup(r => r.Store(It.IsAny<IDriver>()))
             .Returns((IDriver driver) => new Stored<IDriver>(id, driver));
     }
 
     [Fact]
-    public async Task Registers_a_driver_and_responds_with_its_id()
+    public async Task Stores_a_driver_and_responds_with_its_id()
     {
-        RegisterCreatedDriverAs("driver-1");
+        StoreCreatedDriverAs("driver-1");
         var handler = _autoMocker.CreateInstance<NewDriverHandler>();
 
         await handler.ProcessAsync(MinimalRequest());
@@ -58,7 +58,7 @@ public class NewDriverHandlerTests
     [Fact]
     public async Task Applies_config_via_the_config_mapper()
     {
-        RegisterCreatedDriverAs("driver-1");
+        StoreCreatedDriverAs("driver-1");
         var handler = _autoMocker.CreateInstance<NewDriverHandler>();
         var request = MinimalRequest();
 
@@ -73,7 +73,7 @@ public class NewDriverHandlerTests
     {
         IDriver? created = null;
         _autoMocker.GetMock<IObjectStore>()
-            .Setup(r => r.Register(It.IsAny<IDriver>()))
+            .Setup(r => r.Store(It.IsAny<IDriver>()))
             .Callback((IDriver driver) => created = driver)
             .Returns((IDriver driver) => new Stored<IDriver>("driver-1", driver));
 
@@ -91,7 +91,7 @@ public class NewDriverHandlerTests
     {
         IDriver? created = null;
         _autoMocker.GetMock<IObjectStore>()
-            .Setup(r => r.Register(It.IsAny<IDriver>()))
+            .Setup(r => r.Store(It.IsAny<IDriver>()))
             .Callback((IDriver driver) => created = driver)
             .Returns((IDriver driver) => new Stored<IDriver>("driver-1", driver));
 

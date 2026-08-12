@@ -72,9 +72,9 @@ internal class SessionRunHandler : MessageHandler<SessionRunRequest>
             _transactionConfigMapper.Map(message.TxMeta, message.Timeout));
 
         var keys = await cursor.KeysAsync();
-        var registeredResult = _objectStore.Register(cursor);
-        _logger.LogDebug("Query result id '{ResultId}' returned keys: {@keys}", registeredResult.Id, keys);
+        var storedResult = _objectStore.Store(cursor);
+        _logger.LogDebug("Query result id '{ResultId}' returned keys: {@keys}", storedResult.Id, keys);
 
-        await _responseWriter.WriteAsync(new ResultResponse(registeredResult.Id, keys));
+        await _responseWriter.WriteAsync(new ResultResponse(storedResult.Id, keys));
     }
 }

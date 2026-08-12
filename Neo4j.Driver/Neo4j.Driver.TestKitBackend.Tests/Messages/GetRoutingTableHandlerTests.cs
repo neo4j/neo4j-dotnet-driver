@@ -47,7 +47,7 @@ public class GetRoutingTableHandlerTests
         var driverMock = _autoMocker.GetMock<IInternalDriver>();
         driverMock.Setup(d => d.GetRoutingTable(requestedDatabase)).Returns(routingTable);
 
-        var registered = new Stored<IDriver>("driver-1", driverMock.Object);
+        var stored = new Stored<IDriver>("driver-1", driverMock.Object);
 
         IProtocolMessage? captured = null;
         _autoMocker.GetMock<IResponseWriter>()
@@ -56,7 +56,7 @@ public class GetRoutingTableHandlerTests
             .Returns(Task.CompletedTask);
 
         var handler = _autoMocker.CreateInstance<GetRoutingTableHandler>();
-        await handler.ProcessAsync(new GetRoutingTableRequest(registered, requestedDatabase));
+        await handler.ProcessAsync(new GetRoutingTableRequest(stored, requestedDatabase));
 
         return captured;
     }

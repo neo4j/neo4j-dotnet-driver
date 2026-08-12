@@ -31,10 +31,10 @@ public class SessionLastBookmarksHandlerTests
     {
         var sessionMock = _autoMocker.GetMock<IAsyncSession>();
         sessionMock.SetupGet(s => s.LastBookmarks).Returns(Bookmarks.From("bookmark-1", "bookmark-2"));
-        var registered = new Stored<IAsyncSession>("session-1", sessionMock.Object);
+        var stored = new Stored<IAsyncSession>("session-1", sessionMock.Object);
 
         var handler = _autoMocker.CreateInstance<SessionLastBookmarksHandler>();
-        var request = new SessionLastBookmarksRequest(registered);
+        var request = new SessionLastBookmarksRequest(stored);
 
         await handler.ProcessAsync(request);
 
@@ -50,10 +50,10 @@ public class SessionLastBookmarksHandlerTests
     {
         var sessionMock = _autoMocker.GetMock<IAsyncSession>();
         sessionMock.SetupGet(s => s.LastBookmarks).Returns((Bookmarks)null!);
-        var registered = new Stored<IAsyncSession>("session-1", sessionMock.Object);
+        var stored = new Stored<IAsyncSession>("session-1", sessionMock.Object);
 
         var handler = _autoMocker.CreateInstance<SessionLastBookmarksHandler>();
-        var request = new SessionLastBookmarksRequest(registered);
+        var request = new SessionLastBookmarksRequest(stored);
 
         await handler.ProcessAsync(request);
 

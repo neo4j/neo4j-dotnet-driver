@@ -53,7 +53,7 @@ public class RetryableTransactionFlowTests
     [Fact]
     public async Task A_single_successful_attempt_round_trips_RetryableTry_then_RetryableDone()
     {
-        var txMock = RegisterTx("tx-1");
+        var txMock = StoreTx("tx-1");
         _sessionMock
             .Setup(
                 s => s.ExecuteReadAsync(
@@ -81,7 +81,7 @@ public class RetryableTransactionFlowTests
         Action<TransactionConfigBuilder> configure = _ => { };
         _transactionConfigMapperMock.Setup(m => m.Map(txMeta, timeout)).Returns(configure);
 
-        var txMock = RegisterTx("tx-1");
+        var txMock = StoreTx("tx-1");
         _sessionMock
             .Setup(s => s.ExecuteReadAsync(It.IsAny<Func<IAsyncQueryRunner, Task>>(), configure))
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
@@ -99,8 +99,8 @@ public class RetryableTransactionFlowTests
     [Fact]
     public async Task A_write_flow_where_the_driver_retries_round_trips_a_second_RetryableTry_before_RetryableDone()
     {
-        var firstTxMock = RegisterTx("tx-1");
-        var secondTxMock = RegisterTx("tx-2");
+        var firstTxMock = StoreTx("tx-1");
+        var secondTxMock = StoreTx("tx-2");
 
         _sessionMock
             .Setup(
@@ -138,7 +138,7 @@ public class RetryableTransactionFlowTests
         Action<TransactionConfigBuilder> configure = _ => { };
         _transactionConfigMapperMock.Setup(m => m.Map(txMeta, timeout)).Returns(configure);
 
-        var txMock = RegisterTx("tx-1");
+        var txMock = StoreTx("tx-1");
         _sessionMock
             .Setup(s => s.ExecuteWriteAsync(It.IsAny<Func<IAsyncQueryRunner, Task>>(), configure))
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
@@ -165,7 +165,7 @@ public class RetryableTransactionFlowTests
         _driverErrorMapperMock.Setup(m => m.Map(storedException)).Returns(errorResponse);
         _originClassifierMock.Setup(c => c.OriginatesInDriver(storedException)).Returns(true);
 
-        var txMock = RegisterTx("tx-1");
+        var txMock = StoreTx("tx-1");
         _sessionMock
             .Setup(
                 s => s.ExecuteReadAsync(
@@ -192,8 +192,8 @@ public class RetryableTransactionFlowTests
             .Setup(r => r.Get<Exception>("error-1"))
             .Returns(new Stored<Exception>("error-1", storedException));
 
-        var firstTxMock = RegisterTx("tx-1");
-        var secondTxMock = RegisterTx("tx-2");
+        var firstTxMock = StoreTx("tx-1");
+        var secondTxMock = StoreTx("tx-2");
 
         _sessionMock
             .Setup(
@@ -266,8 +266,8 @@ public class RetryableTransactionFlowTests
             _connectionInputMock.Object,
             _serializerMock.Object);
 
-        var firstTxMock = RegisterTx("tx-1");
-        var secondTxMock = RegisterTx("tx-2");
+        var firstTxMock = StoreTx("tx-1");
+        var secondTxMock = StoreTx("tx-2");
 
         _sessionMock
             .Setup(
@@ -315,7 +315,7 @@ public class RetryableTransactionFlowTests
     [Fact]
     public async Task Negative_with_an_empty_errorId_terminates_with_FrontendError()
     {
-        var txMock = RegisterTx("tx-1");
+        var txMock = StoreTx("tx-1");
         _sessionMock
             .Setup(
                 s => s.ExecuteReadAsync(
@@ -336,9 +336,9 @@ public class RetryableTransactionFlowTests
     }
 
     [Fact]
-    public async Task An_unregistered_errorId_does_not_leave_the_response_slot_registered()
+    public async Task An_unstored_errorId_does_not_leave_the_response_slot_registered()
     {
-        var txMock = RegisterTx("tx-1");
+        var txMock = StoreTx("tx-1");
         _sessionMock
             .Setup(
                 s => s.ExecuteReadAsync(
@@ -352,7 +352,7 @@ public class RetryableTransactionFlowTests
 
         _objectStoreMock
             .Setup(r => r.Get<Exception>("bad-id"))
-            .Throws(new TestKitProtocolException("No object is registered with id 'bad-id'."));
+            .Throws(new TestKitProtocolException("No object is stored with id 'bad-id'."));
 
         var act = () => NegativeHandler().ProcessAsync(new RetryableNegativeRequest(_sessionHandle, "bad-id"));
         await act.Should().ThrowAsync<TestKitProtocolException>();
@@ -366,7 +366,7 @@ public class RetryableTransactionFlowTests
     [Fact]
     public async Task A_duplicate_RetryablePositive_does_not_leave_the_response_slot_registered()
     {
-        var txMock = RegisterTx("tx-1");
+        var txMock = StoreTx("tx-1");
         _sessionMock
             .Setup(
                 s => s.ExecuteReadAsync(
@@ -400,7 +400,7 @@ public class RetryableTransactionFlowTests
         _driverErrorMapperMock.Setup(m => m.Map(storedException)).Returns(errorResponse);
         _originClassifierMock.Setup(c => c.OriginatesInDriver(storedException)).Returns(true);
 
-        var txMock = RegisterTx("tx-1");
+        var txMock = StoreTx("tx-1");
         _sessionMock
             .Setup(
                 s => s.ExecuteReadAsync(
@@ -422,11 +422,11 @@ public class RetryableTransactionFlowTests
         act2.Should().NotThrow();
     }
 
-    private Mock<IAsyncTransaction> RegisterTx(string id)
+    private Mock<IAsyncTransaction> StoreTx(string id)
     {
         var txMock = new Mock<IAsyncTransaction>();
         _objectStoreMock
-            .Setup(r => r.Register(txMock.Object))
+            .Setup(r => r.Store(txMock.Object))
             .Returns(new Stored<IAsyncTransaction>(id, txMock.Object));
 
         return txMock;

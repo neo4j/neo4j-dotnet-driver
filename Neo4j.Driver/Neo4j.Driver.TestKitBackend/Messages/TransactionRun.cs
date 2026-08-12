@@ -57,9 +57,9 @@ internal class TransactionRunHandler : MessageHandler<TransactionRunRequest>
         var cursor = await message.Tx.Object.RunAsync(message.Cypher, _cypherToNativeMapper.Map(message.Params));
 
         var keys = await cursor.KeysAsync();
-        var registeredResult = _objectStore.Register(cursor);
-        _logger.LogDebug("Query result id '{ResultId}' returned keys: {@keys}", registeredResult.Id, keys);
+        var storedResult = _objectStore.Store(cursor);
+        _logger.LogDebug("Query result id '{ResultId}' returned keys: {@keys}", storedResult.Id, keys);
 
-        await _responseWriter.WriteAsync(new ResultResponse(registeredResult.Id, keys));
+        await _responseWriter.WriteAsync(new ResultResponse(storedResult.Id, keys));
     }
 }

@@ -51,12 +51,12 @@ internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCer
 
     public override async Task ProcessAsync(NewClientCertificateProviderRequest message)
     {
-        var registered = _objectStore.Register(CreateRegisteredProvider);
-        _logger.LogDebug("Created client certificate provider with id '{Id}'", registered.Id);
-        await _responseWriter.WriteAsync(new ClientCertificateProviderResponse(registered.Id));
+        var stored = _objectStore.Store(CreateStoredProvider);
+        _logger.LogDebug("Created client certificate provider with id '{Id}'", stored.Id);
+        await _responseWriter.WriteAsync(new ClientCertificateProviderResponse(stored.Id));
     }
 
-    private IClientCertificateProvider CreateRegisteredProvider(string providerId)
+    private IClientCertificateProvider CreateStoredProvider(string providerId)
     {
         ValueTask<X509Certificate> ProvideFromProvider() => ProvideCertificateAsync(providerId);
         return new TestKitClientCertificateProvider(ProvideFromProvider);

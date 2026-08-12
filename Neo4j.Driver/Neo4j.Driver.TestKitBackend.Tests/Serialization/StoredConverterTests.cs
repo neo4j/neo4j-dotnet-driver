@@ -32,13 +32,13 @@ public class StoredConverterTests
     [Fact]
     public void Reads_a_wire_id_by_resolving_it_from_the_objectStore()
     {
-        var registered = _objectStore.Register(new Stored());
+        var stored = _objectStore.Store(new Stored());
 
         var request = JsonSerializer.Deserialize<Request>(
-            $$"""{"thingId":"{{registered.Id}}"}""", Options());
+            $$"""{"thingId":"{{stored.Id}}"}""", Options());
 
-        request!.Thing.Object.Should().BeSameAs(registered.Object);
-        request.Thing.Id.Should().Be(registered.Id);
+        request!.Thing.Object.Should().BeSameAs(stored.Object);
+        request.Thing.Id.Should().Be(stored.Id);
     }
 
     [Fact]

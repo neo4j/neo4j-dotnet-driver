@@ -60,7 +60,7 @@ internal class NewSessionHandler : MessageHandler<NewSessionRequest>
     public override async Task ProcessAsync(NewSessionRequest message)
     {
         var session = message.Driver.Object.AsyncSession(builder => _configMapper.Apply(message, builder));
-        var stored = _objectStore.Register(session);
+        var stored = _objectStore.Store(session);
         _logger.LogDebug("Created session with id '{Id}'", stored.Id);
         await _responseWriter.WriteAsync(new SessionResponse(stored.Id));
     }

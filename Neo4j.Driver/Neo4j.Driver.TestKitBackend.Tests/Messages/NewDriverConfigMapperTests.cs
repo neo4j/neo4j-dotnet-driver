@@ -305,7 +305,7 @@ public class NewDriverConfigMapperTests
     }
 
     [Fact]
-    public void Maps_clientCertificateProviderId_to_the_registered_provider()
+    public void Maps_clientCertificateProviderId_to_the_stored_provider()
     {
         var provider = Mock.Of<IClientCertificateProvider>();
         _autoMocker.GetMock<IObjectStore>()

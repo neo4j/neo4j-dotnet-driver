@@ -29,12 +29,12 @@ public class BookmarkManagerFlowTests
     private readonly Mock<ICallbackExchanger> _callbacksMock = new();
     private readonly Mock<IResponseWriter> _responseWriterMock = new();
 
-    private IBookmarkManager RegisterManager(NewBookmarkManagerRequest request)
+    private IBookmarkManager StoreManager(NewBookmarkManagerRequest request)
     {
         IBookmarkManager? manager = null;
         var objectStoreMock = new Mock<IObjectStore>();
         objectStoreMock
-            .Setup(r => r.Register(It.IsAny<Func<string, IBookmarkManager>>()))
+            .Setup(r => r.Store(It.IsAny<Func<string, IBookmarkManager>>()))
             .Returns<Func<string, IBookmarkManager>>(
                 create =>
                 {
@@ -55,9 +55,9 @@ public class BookmarkManagerFlowTests
     }
 
     [Fact]
-    public async Task The_registered_manager_requests_a_supplier_callback_for_extra_bookmarks()
+    public async Task The_stored_manager_requests_a_supplier_callback_for_extra_bookmarks()
     {
-        var manager = RegisterManager(new NewBookmarkManagerRequest { BookmarksSupplierRegistered = true });
+        var manager = StoreManager(new NewBookmarkManagerRequest { BookmarksSupplierRegistered = true });
 
         Func<string, ICallbackRequest>? capturedRequest = null;
         _callbacksMock
@@ -76,9 +76,9 @@ public class BookmarkManagerFlowTests
     }
 
     [Fact]
-    public async Task The_registered_manager_requests_a_consumer_callback_with_the_new_bookmarks()
+    public async Task The_stored_manager_requests_a_consumer_callback_with_the_new_bookmarks()
     {
-        var manager = RegisterManager(new NewBookmarkManagerRequest { BookmarksConsumerRegistered = true });
+        var manager = StoreManager(new NewBookmarkManagerRequest { BookmarksConsumerRegistered = true });
 
         Func<string, ICallbackRequest>? capturedRequest = null;
         _callbacksMock

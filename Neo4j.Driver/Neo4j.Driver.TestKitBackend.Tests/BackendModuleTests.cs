@@ -42,18 +42,18 @@ public class BackendModuleTests
     }
 
     [Fact]
-    public void Json_options_in_a_connection_scope_resolve_handles_registered_through_that_scopes_objectStore()
+    public void Json_options_in_a_connection_scope_resolve_handles_stored_through_that_scopes_objectStore()
     {
         var container = BuildContainer();
         using var scope =
             container.BeginLifetimeScope(b => b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory()));
 
-        var registered = scope.Resolve<IObjectStore>().Register(new Stored());
+        var stored = scope.Resolve<IObjectStore>().Store(new Stored());
         var options = scope.Resolve<IJsonOptionsProvider>().GetOptions();
 
-        var request = JsonSerializer.Deserialize<Request>($$"""{"thingId":"{{registered.Id}}"}""", options);
+        var request = JsonSerializer.Deserialize<Request>($$"""{"thingId":"{{stored.Id}}"}""", options);
 
-        request!.Thing.Object.Should().BeSameAs(registered.Object);
+        request!.Thing.Object.Should().BeSameAs(stored.Object);
     }
 
     [Fact]
@@ -128,7 +128,7 @@ public class BackendModuleTests
     }
 
     [Fact]
-    public void Handles_registered_in_one_connection_scope_do_not_resolve_in_another()
+    public void Handles_stored_in_one_connection_scope_do_not_resolve_in_another()
     {
         var container = BuildContainer();
         Action<ContainerBuilder> withLogging = b =>
@@ -137,10 +137,10 @@ public class BackendModuleTests
         using var scopeA = container.BeginLifetimeScope(withLogging);
         using var scopeB = container.BeginLifetimeScope(withLogging);
 
-        var registered = scopeA.Resolve<IObjectStore>().Register(new Stored());
+        var stored = scopeA.Resolve<IObjectStore>().Store(new Stored());
         var options = scopeB.Resolve<IJsonOptionsProvider>().GetOptions();
 
-        var act = () => JsonSerializer.Deserialize<Request>($$"""{"thingId":"{{registered.Id}}"}""", options);
+        var act = () => JsonSerializer.Deserialize<Request>($$"""{"thingId":"{{stored.Id}}"}""", options);
 
         act.Should().Throw<TestKitProtocolException>();
     }

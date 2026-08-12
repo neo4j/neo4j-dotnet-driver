@@ -30,12 +30,12 @@ internal class ObjectStore : IObjectStore, IAsyncDisposable
         _logger = logger;
     }
 
-    public Stored<T> Register<T>(T obj) where T : notnull
+    public Stored<T> Store<T>(T obj) where T : notnull
     {
-        return Register(_ => obj);
+        return Store(_ => obj);
     }
 
-    public Stored<T> Register<T>(Func<string, T> create) where T : notnull
+    public Stored<T> Store<T>(Func<string, T> create) where T : notnull
     {
         var id = (_nextId++).ToString();
         var obj = create(id);
@@ -47,13 +47,13 @@ internal class ObjectStore : IObjectStore, IAsyncDisposable
     {
         if (!_objects.TryGetValue(id, out var obj))
         {
-            throw new TestKitProtocolException($"No object is registered with id '{id}'.");
+            throw new TestKitProtocolException($"No object is stored with id '{id}'.");
         }
 
         if (obj is not T typed)
         {
             throw new TestKitProtocolException(
-                $"The object registered with id '{id}' is a {obj.GetType().Name}, not a {typeof(T).Name}.");
+                $"The object stored with id '{id}' is a {obj.GetType().Name}, not a {typeof(T).Name}.");
         }
 
         return new Stored<T>(id, typed);
@@ -82,7 +82,7 @@ internal class ObjectStore : IObjectStore, IAsyncDisposable
             }
             catch (Exception exception)
             {
-                _logger.LogError(exception, "Failed to dispose a registered {Type}", obj.GetType().Name);
+                _logger.LogError(exception, "Failed to dispose a stored {Type}", obj.GetType().Name);
             }
         }
 

@@ -42,8 +42,8 @@ public class TransactionRunHandlerTests
             .Setup(t => t.RunAsync("RETURN 1 AS n", It.Is<IDictionary<string, object>>(p => p.Count == 0)))
             .ReturnsAsync(cursorMock.Object);
 
-        var registeredCursor = new Stored<IResultCursor>("result-1", cursorMock.Object);
-        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register(cursorMock.Object)).Returns(registeredCursor);
+        var storedCursor = new Stored<IResultCursor>("result-1", cursorMock.Object);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store(cursorMock.Object)).Returns(storedCursor);
 
         var handler = _autoMocker.CreateInstance<TransactionRunHandler>();
         var request = new TransactionRunRequest
@@ -78,8 +78,8 @@ public class TransactionRunHandlerTests
                 p => p.Count == 1 && Equals(p["p"], 1L))))
             .ReturnsAsync(cursorMock.Object);
 
-        var registeredCursor = new Stored<IResultCursor>("result-1", cursorMock.Object);
-        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register(cursorMock.Object)).Returns(registeredCursor);
+        var storedCursor = new Stored<IResultCursor>("result-1", cursorMock.Object);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store(cursorMock.Object)).Returns(storedCursor);
 
         var handler = _autoMocker.CreateInstance<TransactionRunHandler>();
         var request = new TransactionRunRequest

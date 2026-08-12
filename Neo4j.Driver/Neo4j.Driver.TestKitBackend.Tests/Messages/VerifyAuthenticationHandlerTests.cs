@@ -31,11 +31,11 @@ public class VerifyAuthenticationHandlerTests
     {
         var driverMock = _autoMocker.GetMock<IDriver>();
         driverMock.Setup(d => d.VerifyAuthenticationAsync(It.IsAny<IAuthToken>())).ReturnsAsync(true);
-        var registered = new Stored<IDriver>("driver-1", driverMock.Object);
+        var stored = new Stored<IDriver>("driver-1", driverMock.Object);
 
         var handler = _autoMocker.CreateInstance<VerifyAuthenticationHandler>();
         var request = new VerifyAuthenticationRequest(
-            registered,
+            stored,
             new AuthorizationToken("basic", "neo4j", "secret"));
 
         await handler.ProcessAsync(request);

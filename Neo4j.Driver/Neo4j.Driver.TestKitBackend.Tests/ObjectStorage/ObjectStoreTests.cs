@@ -26,53 +26,53 @@ public class ObjectStoreTests
     private readonly ObjectStore _objectStore = AutoMocker.ForTesting<ObjectStore>().CreateInstance<ObjectStore>();
 
     [Fact]
-    public void Register_returns_a_objectStore_object_carrying_the_registered_object()
+    public void Store_returns_a_objectStore_object_carrying_the_stored_object()
     {
         var stored = new Stored();
 
-        var registered = _objectStore.Register(stored);
+        var result = _objectStore.Store(stored);
 
-        registered.Object.Should().BeSameAs(stored);
-        registered.Id.Should().NotBeNullOrEmpty();
+        result.Object.Should().BeSameAs(stored);
+        result.Id.Should().NotBeNullOrEmpty();
     }
 
     [Fact]
-    public void Register_assigns_distinct_ids()
+    public void Store_assigns_distinct_ids()
     {
-        var first = _objectStore.Register(new Stored());
-        var second = _objectStore.Register(new Stored());
+        var first = _objectStore.Store(new Stored());
+        var second = _objectStore.Store(new Stored());
 
         second.Id.Should().NotBe(first.Id);
     }
 
     [Fact]
-    public void Register_with_a_factory_passes_the_id_the_object_will_be_stored_under()
+    public void Store_with_a_factory_passes_the_id_the_object_will_be_stored_under()
     {
         string? idGivenToFactory = null;
         Stored? created = null;
 
-        var registered = _objectStore.Register(id =>
+        var result = _objectStore.Store(id =>
         {
             idGivenToFactory = id;
             created = new Stored();
             return created;
         });
 
-        idGivenToFactory.Should().Be(registered.Id);
-        registered.Object.Should().BeSameAs(created);
-        _objectStore.Get<Stored>(registered.Id).Object.Should().BeSameAs(created);
+        idGivenToFactory.Should().Be(result.Id);
+        result.Object.Should().BeSameAs(created);
+        _objectStore.Get<Stored>(result.Id).Object.Should().BeSameAs(created);
     }
 
     [Fact]
-    public void Get_returns_the_registered_object_under_its_id()
+    public void Get_returns_the_stored_object_under_its_id()
     {
         var stored = new Stored();
-        var registered = _objectStore.Register(stored);
+        var result = _objectStore.Store(stored);
 
-        var got = _objectStore.Get<Stored>(registered.Id);
+        var got = _objectStore.Get<Stored>(result.Id);
 
         got.Object.Should().BeSameAs(stored);
-        got.Id.Should().Be(registered.Id);
+        got.Id.Should().Be(result.Id);
     }
 
     [Fact]
@@ -86,31 +86,31 @@ public class ObjectStoreTests
     [Fact]
     public void Get_throws_when_the_id_belongs_to_an_object_of_a_different_type()
     {
-        var registered = _objectStore.Register(new Stored());
+        var result = _objectStore.Store(new Stored());
 
-        var get = () => _objectStore.Get<OtherStored>(registered.Id);
+        var get = () => _objectStore.Get<OtherStored>(result.Id);
 
-        get.Should().Throw<TestKitProtocolException>().WithMessage($"*{registered.Id}*");
+        get.Should().Throw<TestKitProtocolException>().WithMessage($"*{result.Id}*");
     }
 
     [Fact]
     public void Remove_makes_the_id_unknown()
     {
-        var registered = _objectStore.Register(new Stored());
+        var result = _objectStore.Store(new Stored());
 
-        _objectStore.Remove(registered.Id);
+        _objectStore.Remove(result.Id);
 
-        var get = () => _objectStore.Get<Stored>(registered.Id);
+        var get = () => _objectStore.Get<Stored>(result.Id);
         get.Should().Throw<TestKitProtocolException>();
     }
 
     [Fact]
-    public async Task DisposeAsync_disposes_every_registered_disposable_object()
+    public async Task DisposeAsync_disposes_every_stored_disposable_object()
     {
         var first = new DisposableStored();
         var second = new DisposableStored();
-        _objectStore.Register(first);
-        _objectStore.Register(second);
+        _objectStore.Store(first);
+        _objectStore.Store(second);
 
         await _objectStore.DisposeAsync();
 
@@ -119,12 +119,12 @@ public class ObjectStoreTests
     }
 
     [Fact]
-    public async Task DisposeAsync_disposes_in_reverse_registration_order()
+    public async Task DisposeAsync_disposes_in_reverse_storage_order()
     {
         var disposalOrder = new List<string>();
-        _objectStore.Register(new SequencedDisposable("first", disposalOrder));
-        _objectStore.Register(new SequencedDisposable("second", disposalOrder));
-        _objectStore.Register(new SequencedDisposable("third", disposalOrder));
+        _objectStore.Store(new SequencedDisposable("first", disposalOrder));
+        _objectStore.Store(new SequencedDisposable("second", disposalOrder));
+        _objectStore.Store(new SequencedDisposable("third", disposalOrder));
 
         await _objectStore.DisposeAsync();
 
@@ -135,16 +135,16 @@ public class ObjectStoreTests
     public async Task DisposeAsync_continues_past_a_throwing_disposal_and_still_clears_the_objectStore()
     {
         var throwing = new ThrowingDisposable();
-        _objectStore.Register(throwing);
+        _objectStore.Store(throwing);
         var second = new DisposableStored();
-        var registeredSecond = _objectStore.Register(second);
+        var storedSecond = _objectStore.Store(second);
 
         var act = () => _objectStore.DisposeAsync().AsTask();
         await act.Should().NotThrowAsync();
 
         second.Disposed.Should().BeTrue();
 
-        var get = () => _objectStore.Get<DisposableStored>(registeredSecond.Id);
+        var get = () => _objectStore.Get<DisposableStored>(storedSecond.Id);
         get.Should().Throw<TestKitProtocolException>();
     }
 
@@ -152,8 +152,8 @@ public class ObjectStoreTests
     public async Task DisposeAsync_does_not_dispose_an_object_that_was_already_removed()
     {
         var stored = new DisposableStored();
-        var registered = _objectStore.Register(stored);
-        _objectStore.Remove(registered.Id);
+        var result = _objectStore.Store(stored);
+        _objectStore.Remove(result.Id);
 
         await _objectStore.DisposeAsync();
 

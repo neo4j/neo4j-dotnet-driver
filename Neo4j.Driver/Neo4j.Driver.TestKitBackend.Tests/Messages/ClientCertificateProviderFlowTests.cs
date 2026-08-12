@@ -33,12 +33,12 @@ public class ClientCertificateProviderFlowTests
     private readonly Mock<IResponseWriter> _responseWriterMock = new();
     private readonly Mock<ICertificateLoader> _certificateLoaderMock = new();
 
-    private IClientCertificateProvider RegisterProvider()
+    private IClientCertificateProvider StoreProvider()
     {
         IClientCertificateProvider? provider = null;
         var objectStoreMock = new Mock<IObjectStore>();
         objectStoreMock
-            .Setup(r => r.Register(It.IsAny<Func<string, IClientCertificateProvider>>()))
+            .Setup(r => r.Store(It.IsAny<Func<string, IClientCertificateProvider>>()))
             .Returns<Func<string, IClientCertificateProvider>>(
                 create =>
                 {
@@ -95,14 +95,14 @@ public class ClientCertificateProviderFlowTests
     }
 
     [Fact]
-    public async Task The_registered_provider_requests_a_callback_for_its_certificate()
+    public async Task The_stored_provider_requests_a_callback_for_its_certificate()
     {
         using var certificate = CreateCertificate();
         _certificateLoaderMock
             .Setup(l => l.Load("cert.pem", "key.pem", "secret"))
             .Returns(certificate);
 
-        var provider = RegisterProvider();
+        var provider = StoreProvider();
 
         _responseWriterMock.Verify(
             w => w.WriteAsync(new ClientCertificateProviderResponse("provider-1")),
@@ -128,7 +128,7 @@ public class ClientCertificateProviderFlowTests
             .Setup(l => l.Load("cert2.pem", "key2.pem", null))
             .Returns(secondCertificate);
 
-        var provider = RegisterProvider();
+        var provider = StoreProvider();
 
         var (first, _) = await RoundTripCertificateAsync(provider, new ClientCertificate("cert1.pem", "key1.pem"));
         var (second, _) = await RoundTripCertificateAsync(provider, new ClientCertificate("cert2.pem", "key2.pem"));

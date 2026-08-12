@@ -75,9 +75,9 @@ internal abstract class RetryableTransactionHandler<T> : BackgroundOperationHand
 
     private async Task RunAttemptAsync(IAsyncQueryRunner runner, string sessionId)
     {
-        var registered = _objectStore.Register((IAsyncTransaction)runner);
+        var stored = _objectStore.Store((IAsyncTransaction)runner);
         var outcomeTask = _coordinator.WaitForOutcomeAsync(sessionId);
-        _coordinator.CompleteNextResponse(new RetryableTryResponse(registered.Id));
+        _coordinator.CompleteNextResponse(new RetryableTryResponse(stored.Id));
         await outcomeTask;
     }
 }

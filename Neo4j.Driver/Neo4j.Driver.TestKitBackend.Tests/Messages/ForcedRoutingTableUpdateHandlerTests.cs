@@ -36,12 +36,12 @@ public class ForcedRoutingTableUpdateHandlerTests
             .Setup(d => d.ForceRoutingTableUpdateAsync("adb", It.IsAny<Bookmarks>()))
             .ReturnsAsync(Mock.Of<IRoutingTable>());
 
-        var registered = new Stored<IDriver>("driver-1", driverMock.Object);
+        var stored = new Stored<IDriver>("driver-1", driverMock.Object);
 
         var handler = _autoMocker.CreateInstance<ForcedRoutingTableUpdateHandler>();
         var request = new ForcedRoutingTableUpdateRequest
         {
-            Driver = registered,
+            Driver = stored,
             Database = "adb",
             Bookmarks = new[] { "bm1" }
         };

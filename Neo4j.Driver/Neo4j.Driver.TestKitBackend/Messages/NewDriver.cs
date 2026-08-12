@@ -87,7 +87,7 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
                 Configure)
             : GraphDatabase.Driver(message.Uri, message.AuthorizationToken?.Value.ToAuthToken(), Configure);
 
-        var stored = _objectStore.Register(driver);
+        var stored = _objectStore.Store(driver);
         _logger.LogDebug("Created driver with id '{Id}'", stored.Id);
         await _responseWriter.WriteAsync(new DriverResponse(stored.Id));
     }

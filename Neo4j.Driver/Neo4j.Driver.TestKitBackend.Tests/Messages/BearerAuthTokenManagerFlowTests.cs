@@ -19,12 +19,13 @@ using Moq;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Services;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Continuations;
+using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Time;
 using Xunit;
 
+using DriverAuthTokenAndExpiration = Neo4j.Driver.AuthTokenAndExpiration;
 using WireAuthTokenAndExpiration = Neo4j.Driver.TestKitBackend.Messages.AuthTokenAndExpiration;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -32,15 +33,15 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 [Collection(FakeSystemClockCollection.Name)]
 public class BearerAuthTokenManagerFlowTests
 {
-    private readonly Mock<ICallbackExchanger> _callbacksMock = new();
+    private readonly Mock<IOutboundRoundTrip> _roundTripMock = new();
     private readonly Mock<IResponseWriter> _responseWriterMock = new();
 
-    private IAuthTokenManager RegisterManager()
+    private IAuthTokenManager StoreManager()
     {
         IAuthTokenManager? manager = null;
         var objectStoreMock = new Mock<IObjectStore>();
         objectStoreMock
-            .Setup(r => r.Register(It.IsAny<Func<string, IAuthTokenManager>>()))
+            .Setup(r => r.Store(It.IsAny<Func<string, IAuthTokenManager>>()))
             .Returns<Func<string, IAuthTokenManager>>(
                 create =>
                 {
@@ -50,7 +51,7 @@ public class BearerAuthTokenManagerFlowTests
 
         var newManagerHandler = new NewBearerAuthTokenManagerHandler(
             objectStoreMock.Object,
-            _callbacksMock.Object,
+            _roundTripMock.Object,
             new CurrentDateTimeProvider(),
             _responseWriterMock.Object,
             Mock.Of<ILogger>());
@@ -63,21 +64,20 @@ public class BearerAuthTokenManagerFlowTests
 
     private void SetupNextToken(string credentials, long? expiresInMs)
     {
-        _callbacksMock
-            .Setup(
-                c => c.SendAsync<BearerAuthTokenProviderCompleted>(It.IsAny<Func<string, ICallbackRequest>>()))
-            .ReturnsAsync(
-                new BearerAuthTokenProviderCompleted
-                {
-                    RequestId = "callback",
-                    Auth = new WireAuthTokenAndExpiration(new AuthorizationToken("bearer", "", credentials), expiresInMs)
-                });
+        var token = new AuthorizationToken("bearer", "", credentials).ToAuthToken();
+        var domainValue = expiresInMs is { } ms
+            ? new DriverAuthTokenAndExpiration(token, DateTimeProvider.StaticInstance.Now().AddMilliseconds(ms))
+            : new DriverAuthTokenAndExpiration(token);
+
+        _roundTripMock
+            .Setup(r => r.SendExpectingAsync<DriverAuthTokenAndExpiration>(It.IsAny<ICorrelatedRequest>()))
+            .ReturnsAsync(domainValue);
     }
 
     [Fact]
-    public async Task The_registered_manager_requests_a_provider_callback_for_its_token()
+    public async Task The_stored_manager_requests_a_provider_callback_for_its_token()
     {
-        var manager = RegisterManager();
+        var manager = StoreManager();
 
         _responseWriterMock.Verify(w => w.WriteAsync(new BearerAuthTokenManagerResponse("manager-1")), Times.Once);
 
@@ -94,38 +94,38 @@ public class BearerAuthTokenManagerFlowTests
     [Fact]
     public async Task A_token_without_expiry_never_expires_so_the_provider_is_not_called_again()
     {
-        var manager = RegisterManager();
+        var manager = StoreManager();
         SetupNextToken("a-token", expiresInMs: null);
 
         await manager.GetTokenAsync(TestContext.Current.CancellationToken);
-        _callbacksMock.Invocations.Clear();
+        _roundTripMock.Invocations.Clear();
 
         var secondTokenValue = await manager.GetTokenAsync(TestContext.Current.CancellationToken);
         secondTokenValue.Should().BeAssignableTo<AuthToken>();
         var secondToken = (AuthToken)secondTokenValue;
 
         secondToken.Content["credentials"].Should().Be("a-token");
-        _callbacksMock.Verify(
-            c => c.SendAsync<BearerAuthTokenProviderCompleted>(It.IsAny<Func<string, ICallbackRequest>>()),
+        _roundTripMock.Verify(
+            r => r.SendExpectingAsync<DriverAuthTokenAndExpiration>(It.IsAny<ICorrelatedRequest>()),
             Times.Never);
     }
 
     [Fact]
     public async Task A_token_with_expiry_beyond_int_MaxValue_milliseconds_stays_valid()
     {
-        var manager = RegisterManager();
+        var manager = StoreManager();
         SetupNextToken("a-token", expiresInMs: (long)int.MaxValue + 10_000);
 
         await manager.GetTokenAsync(TestContext.Current.CancellationToken);
-        _callbacksMock.Invocations.Clear();
+        _roundTripMock.Invocations.Clear();
 
         var secondTokenValue = await manager.GetTokenAsync(TestContext.Current.CancellationToken);
         secondTokenValue.Should().BeAssignableTo<AuthToken>();
         var secondToken = (AuthToken)secondTokenValue;
 
         secondToken.Content["credentials"].Should().Be("a-token");
-        _callbacksMock.Verify(
-            c => c.SendAsync<BearerAuthTokenProviderCompleted>(It.IsAny<Func<string, ICallbackRequest>>()),
+        _roundTripMock.Verify(
+            r => r.SendExpectingAsync<DriverAuthTokenAndExpiration>(It.IsAny<ICorrelatedRequest>()),
             Times.Never);
     }
 
@@ -135,7 +135,7 @@ public class BearerAuthTokenManagerFlowTests
         var original = DateTimeProvider.StaticInstance;
         try
         {
-            var manager = RegisterManager();
+            var manager = StoreManager();
 
             var fakeTime = new FakeTimeService();
             fakeTime.Install();
@@ -156,5 +156,51 @@ public class BearerAuthTokenManagerFlowTests
         {
             DateTimeProvider.StaticInstance = original;
         }
+    }
+
+    [Fact]
+    public void BearerAuthTokenProviderCompleted_fulfils_the_expectation_with_the_converted_token_and_expiry()
+    {
+        var expectationsMock = new Mock<IExpectationStore>();
+        DriverAuthTokenAndExpiration? fulfilled = null;
+        expectationsMock
+            .Setup(e => e.Fulfil("callback-1", It.IsAny<DriverAuthTokenAndExpiration>()))
+            .Callback<string, DriverAuthTokenAndExpiration>((_, value) => fulfilled = value);
+
+        var handler = new BearerAuthTokenProviderCompletedHandler(expectationsMock.Object);
+        var message = new BearerAuthTokenProviderCompleted
+        {
+            RequestId = "callback-1",
+            Auth = new WireAuthTokenAndExpiration(new AuthorizationToken("bearer", "", "a-token"), 60_000)
+        };
+
+        handler.ProcessAsync(message);
+
+        fulfilled.Should().NotBeNull();
+        var token = (AuthToken)fulfilled!.Token;
+        token.Content["credentials"].Should().Be("a-token");
+        fulfilled.Expiry.Should().BeCloseTo(DateTime.UtcNow.AddMilliseconds(60_000), TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public void BearerAuthTokenProviderCompleted_with_no_expiry_fulfils_with_a_never_expiring_token()
+    {
+        var expectationsMock = new Mock<IExpectationStore>();
+        DriverAuthTokenAndExpiration? fulfilled = null;
+        expectationsMock
+            .Setup(e => e.Fulfil("callback-1", It.IsAny<DriverAuthTokenAndExpiration>()))
+            .Callback<string, DriverAuthTokenAndExpiration>((_, value) => fulfilled = value);
+
+        var handler = new BearerAuthTokenProviderCompletedHandler(expectationsMock.Object);
+        var message = new BearerAuthTokenProviderCompleted
+        {
+            RequestId = "callback-1",
+            Auth = new WireAuthTokenAndExpiration(new AuthorizationToken("bearer", "", "a-token"), null)
+        };
+
+        handler.ProcessAsync(message);
+
+        fulfilled.Should().NotBeNull();
+        fulfilled!.Expiry.Should().Be(DateTime.MaxValue);
     }
 }

@@ -28,12 +28,12 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 public class BasicAuthTokenManagerFlowTests
 {
     [Fact]
-    public async Task The_registered_manager_requests_a_provider_callback_for_its_token()
+    public async Task The_stored_manager_requests_a_provider_callback_for_its_token()
     {
         IAuthTokenManager? manager = null;
         var objectStoreMock = new Mock<IObjectStore>();
         objectStoreMock
-            .Setup(r => r.Register(It.IsAny<Func<string, IAuthTokenManager>>()))
+            .Setup(r => r.Store(It.IsAny<Func<string, IAuthTokenManager>>()))
             .Returns<Func<string, IAuthTokenManager>>(
                 create =>
                 {

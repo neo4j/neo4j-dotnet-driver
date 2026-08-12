@@ -97,8 +97,8 @@ The design rests on the following pieces:
 Every object a test creates through the backend, a driver, a session, a transaction, a result, a manager, a stored error, needs to be referred to by later requests without serializing the object itself.
 The object store (`IObjectStore`) exists to solve this, and understanding it is one of the more important parts of implementing this protocol.
 
-`IObjectStore.Register<T>(T obj)` stores an object and returns a `Stored<T>` pairing a freshly generated string id with the object.
-A second overload, `Register<T>(Func<string, T> create)`, exists for objects that need to know their own id while they are still being constructed.
+`IObjectStore.Store<T>(T obj)` stores an object and returns a `Stored<T>` pairing a freshly generated string id with the object.
+A second overload, `Store<T>(Func<string, T> create)`, exists for objects that need to know their own id while they are still being constructed.
 A bookmark manager is the clearest example: its supplier and consumer callbacks must reference the manager's own id, so the manager is built inside the factory function the id is generated for.
 `IObjectStore.Get<T>(string id)` looks an object up by id, throwing `TestKitProtocolException` if the id is unknown or resolves to an object of the wrong type.
 
@@ -108,7 +108,7 @@ A property `Stored<IDriver> Driver` therefore reads its id from the field `drive
 Calling `Get` directly is reserved for the few cases where an id arrives as a plain string rather than through that property-based resolution, such as `RetryableNegative` looking up a stored error by `ErrorId`.
 
 The store is scoped to the connection, so it is disposed automatically when a test's connection closes.
-Disposal walks every registered object in reverse registration order and disposes anything implementing `IAsyncDisposable` or `IDisposable`.
+Disposal walks every stored object in reverse storage order and disposes anything implementing `IAsyncDisposable` or `IDisposable`.
 This is what actually releases drivers, sessions, and other resources at the end of a test.
 Explicit close handlers such as `DriverClose` exist to satisfy testkit's protocol, not to perform the underlying cleanup.
 
@@ -161,17 +161,17 @@ internal class SessionLastBookmarksHandler : MessageHandler<SessionLastBookmarks
 }
 ```
 
-The second one reads a property directly instead of awaiting a driver call, and resolves a `Stored<IAsyncSession>` instead of a `Stored<IDriver>`: the pattern is the same regardless of which registered type or which kind of driver access is involved.
+The second one reads a property directly instead of awaiting a driver call, and resolves a `Stored<IAsyncSession>` instead of a `Stored<IDriver>`: the pattern is the same regardless of which stored type or which kind of driver access is involved.
 No registration step, no envelope wiring, and no manual name mapping are required beyond declaring the `Stored<T>` property; once the file exists and the project builds, testkit can send the request and get the response back.
 
 Both examples resolve an existing handle rather than creating one.
-For a message that creates a driver object and registers it, see `Messages/NewDriver.cs`:
+For a message that creates a driver object and stores it, see `Messages/NewDriver.cs`:
 
 ```csharp
 public override async Task ProcessAsync(NewDriverRequest message)
 {
     var driver = GraphDatabase.Driver(message.Uri, ..., Configure);
-    var stored = _objectStore.Register(driver);
+    var stored = _objectStore.Store(driver);
     await _responseWriter.WriteAsync(new DriverResponse(stored.Id));
 }
 ```

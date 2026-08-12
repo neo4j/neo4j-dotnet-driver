@@ -38,8 +38,8 @@ public class SessionBeginTransactionHandlerTests
             .Setup(s => s.BeginTransactionAsync(It.IsAny<Action<TransactionConfigBuilder>>()))
             .ReturnsAsync(transactionMock.Object);
 
-        var registeredTransaction = new Stored<IAsyncTransaction>("tx-1", transactionMock.Object);
-        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register(transactionMock.Object)).Returns(registeredTransaction);
+        var storedTransaction = new Stored<IAsyncTransaction>("tx-1", transactionMock.Object);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store(transactionMock.Object)).Returns(storedTransaction);
 
         var handler = _autoMocker.CreateInstance<SessionBeginTransactionHandler>();
         var request = new SessionBeginTransactionRequest
@@ -69,8 +69,8 @@ public class SessionBeginTransactionHandlerTests
             .Setup(s => s.BeginTransactionAsync(configure))
             .ReturnsAsync(transactionMock.Object);
 
-        var registeredTransaction = new Stored<IAsyncTransaction>("tx-1", transactionMock.Object);
-        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Register(transactionMock.Object)).Returns(registeredTransaction);
+        var storedTransaction = new Stored<IAsyncTransaction>("tx-1", transactionMock.Object);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store(transactionMock.Object)).Returns(storedTransaction);
 
         var handler = _autoMocker.CreateInstance<SessionBeginTransactionHandler>();
         var request = new SessionBeginTransactionRequest

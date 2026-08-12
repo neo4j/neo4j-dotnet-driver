@@ -58,12 +58,12 @@ internal class SessionBeginTransactionHandler : MessageHandler<SessionBeginTrans
         var transaction = await message.Session.Object.BeginTransactionAsync(
             _transactionConfigMapper.Map(message.TxMeta, message.Timeout));
 
-        var registered = _objectStore.Register(transaction);
+        var stored = _objectStore.Store(transaction);
         _logger.LogDebug(
             "Began transaction with id '{Id}' on session with id '{SessionId}'",
-            registered.Id,
+            stored.Id,
             message.Session.Id);
 
-        await _responseWriter.WriteAsync(new TransactionResponse(registered.Id));
+        await _responseWriter.WriteAsync(new TransactionResponse(stored.Id));
     }
 }

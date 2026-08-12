@@ -81,7 +81,7 @@ internal class StartTestHandler : MessageHandler<StartTestRequest>
 
             var endTestMsg = $"END TEST {message.TestName}";
             var endTestLogger = _createLoggingDisposable("Test closedown", endTestMsg);
-            _objectStore.Register(endTestLogger);
+            _objectStore.Store(endTestLogger);
         }
     }
 }

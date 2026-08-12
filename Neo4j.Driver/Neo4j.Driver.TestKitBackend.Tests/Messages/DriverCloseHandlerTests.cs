@@ -30,10 +30,10 @@ public class DriverCloseHandlerTests
     public async Task Closes_the_driver_and_responds_with_its_id()
     {
         var driverMock = _autoMocker.GetMock<IDriver>();
-        var registered = new Stored<IDriver>("driver-1", driverMock.Object);
+        var stored = new Stored<IDriver>("driver-1", driverMock.Object);
 
         var handler = _autoMocker.CreateInstance<DriverCloseHandler>();
-        var request = new DriverCloseRequest(registered);
+        var request = new DriverCloseRequest(stored);
 
         await handler.ProcessAsync(request);
 

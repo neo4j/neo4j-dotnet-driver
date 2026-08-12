@@ -28,12 +28,12 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 public class AuthTokenManagerFlowTests
 {
     [Fact]
-    public async Task The_registered_manager_requests_a_GetAuth_callback_for_its_token()
+    public async Task The_stored_manager_requests_a_GetAuth_callback_for_its_token()
     {
         IAuthTokenManager? manager = null;
         var objectStoreMock = new Mock<IObjectStore>();
         objectStoreMock
-            .Setup(r => r.Register(It.IsAny<Func<string, IAuthTokenManager>>()))
+            .Setup(r => r.Store(It.IsAny<Func<string, IAuthTokenManager>>()))
             .Returns<Func<string, IAuthTokenManager>>(
                 create =>
                 {
@@ -70,12 +70,12 @@ public class AuthTokenManagerFlowTests
     }
 
     [Fact]
-    public async Task The_registered_manager_requests_a_HandleSecurityException_callback()
+    public async Task The_stored_manager_requests_a_HandleSecurityException_callback()
     {
         IAuthTokenManager? manager = null;
         var objectStoreMock = new Mock<IObjectStore>();
         objectStoreMock
-            .Setup(r => r.Register(It.IsAny<Func<string, IAuthTokenManager>>()))
+            .Setup(r => r.Store(It.IsAny<Func<string, IAuthTokenManager>>()))
             .Returns<Func<string, IAuthTokenManager>>(
                 create =>
                 {
@@ -117,12 +117,12 @@ public class AuthTokenManagerFlowTests
 
     [Fact]
     public async Task
-        The_registered_manager_requests_a_HandleSecurityException_callback_for_a_bearer_token_with_no_principal()
+        The_stored_manager_requests_a_HandleSecurityException_callback_for_a_bearer_token_with_no_principal()
     {
         IAuthTokenManager? manager = null;
         var objectStoreMock = new Mock<IObjectStore>();
         objectStoreMock
-            .Setup(r => r.Register(It.IsAny<Func<string, IAuthTokenManager>>()))
+            .Setup(r => r.Store(It.IsAny<Func<string, IAuthTokenManager>>()))
             .Returns<Func<string, IAuthTokenManager>>(
                 create =>
                 {
@@ -164,12 +164,12 @@ public class AuthTokenManagerFlowTests
 
     [Fact]
     public async Task
-        The_registered_manager_requests_a_HandleSecurityException_callback_for_a_custom_token_with_parameters()
+        The_stored_manager_requests_a_HandleSecurityException_callback_for_a_custom_token_with_parameters()
     {
         IAuthTokenManager? manager = null;
         var objectStoreMock = new Mock<IObjectStore>();
         objectStoreMock
-            .Setup(r => r.Register(It.IsAny<Func<string, IAuthTokenManager>>()))
+            .Setup(r => r.Store(It.IsAny<Func<string, IAuthTokenManager>>()))
             .Returns<Func<string, IAuthTokenManager>>(
                 create =>
                 {

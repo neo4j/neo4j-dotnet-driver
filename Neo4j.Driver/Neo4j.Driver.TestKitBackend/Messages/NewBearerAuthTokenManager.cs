@@ -16,8 +16,8 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.Internal.Services;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using DriverAuthTokenAndExpiration = Neo4j.Driver.AuthTokenAndExpiration;
 
@@ -30,20 +30,20 @@ internal record BearerAuthTokenManagerResponse(string Id) : IProtocolMessage;
 internal class NewBearerAuthTokenManagerHandler : MessageHandler<NewBearerAuthTokenManagerRequest>
 {
     private readonly IObjectStore _objectStore;
-    private readonly ICallbackExchanger _callbackExchanger;
+    private readonly IOutboundRoundTrip _roundTrip;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewBearerAuthTokenManagerHandler(
         IObjectStore objectStore,
-        ICallbackExchanger callbackExchanger,
+        IOutboundRoundTrip roundTrip,
         IDateTimeProvider dateTimeProvider,
         IResponseWriter responseWriter,
         ILogger logger)
     {
         _objectStore = objectStore;
-        _callbackExchanger = callbackExchanger;
+        _roundTrip = roundTrip;
         _dateTimeProvider = dateTimeProvider;
         _responseWriter = responseWriter;
         _logger = logger;
@@ -51,26 +51,20 @@ internal class NewBearerAuthTokenManagerHandler : MessageHandler<NewBearerAuthTo
 
     public override async Task ProcessAsync(NewBearerAuthTokenManagerRequest message)
     {
-        var registered = _objectStore.Register(CreateRegisteredManager);
-        _logger.LogDebug("Created bearer auth token manager with id '{Id}'", registered.Id);
-        await _responseWriter.WriteAsync(new BearerAuthTokenManagerResponse(registered.Id));
+        var stored = _objectStore.Store(CreateStoredManager);
+        _logger.LogDebug("Created bearer auth token manager with id '{Id}'", stored.Id);
+        await _responseWriter.WriteAsync(new BearerAuthTokenManagerResponse(stored.Id));
     }
 
-    private IAuthTokenManager CreateRegisteredManager(string managerId)
+    private IAuthTokenManager CreateStoredManager(string storedObjId)
     {
-        ValueTask<DriverAuthTokenAndExpiration> ProvideFromManager() => ProvideTokenAsync(managerId);
+        ValueTask<DriverAuthTokenAndExpiration> ProvideFromManager() => ProvideTokenAsync(storedObjId);
         return AuthTokenManagers.Bearer(_dateTimeProvider, ProvideFromManager);
     }
 
     private async ValueTask<DriverAuthTokenAndExpiration> ProvideTokenAsync(string managerId)
     {
-        var completion = await _callbackExchanger.SendAsync<BearerAuthTokenProviderCompleted>(
-            id => new BearerAuthTokenProviderRequest(id, managerId));
-
-        var payload = completion.Auth.Value;
-        var token = payload.Auth.Value.ToAuthToken();
-        return payload.ExpiresInMs is {} expiresInMs
-            ? new DriverAuthTokenAndExpiration(token, DateTimeProvider.StaticInstance.Now().AddMilliseconds(expiresInMs))
-            : new DriverAuthTokenAndExpiration(token);
+        var providerRequest = new BearerAuthTokenProviderRequest(managerId);
+        return await _roundTrip.SendExpectingAsync<DriverAuthTokenAndExpiration>(providerRequest);
     }
 }
