@@ -50,29 +50,29 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
         await _responseWriter.WriteAsync(new AuthTokenManagerResponse(stored.Id));
     }
 
-    private IAuthTokenManager CreateStoredManager(string managerId)
+    private IAuthTokenManager CreateStoredManager(string storageId)
     {
-        ValueTask<IAuthToken> GetFromManager() => GetAuthAsync(managerId);
+        ValueTask<IAuthToken> GetFromManager() => GetAuthAsync(storageId);
 
         ValueTask<bool> HandleFromManager(IAuthToken token, SecurityException exception) =>
-            HandleSecurityExceptionAsync(managerId, token, exception);
+            HandleSecurityExceptionAsync(storageId, token, exception);
 
         return new TestKitAuthTokenManager(GetFromManager, HandleFromManager);
     }
 
-    private async ValueTask<IAuthToken> GetAuthAsync(string managerId)
+    private async ValueTask<IAuthToken> GetAuthAsync(string storageId)
     {
-        var authRequest = new AuthTokenManagerGetAuthRequest(managerId);
+        var authRequest = new AuthTokenManagerGetAuthRequest(storageId);
         return await _roundTrip.SendExpectingAsync<IAuthToken>(authRequest);
     }
 
     private async ValueTask<bool> HandleSecurityExceptionAsync(
-        string managerId,
+        string storageId,
         IAuthToken token,
         SecurityException exception)
     {
         var handleSecurityExceptionRequest =
-            new AuthTokenManagerHandleSecurityExceptionRequest(managerId, ToWireToken(token), exception.Code);
+            new AuthTokenManagerHandleSecurityExceptionRequest(storageId, ToWireToken(token), exception.Code);
 
         return await _roundTrip.SendExpectingAsync<bool>(handleSecurityExceptionRequest);
     }

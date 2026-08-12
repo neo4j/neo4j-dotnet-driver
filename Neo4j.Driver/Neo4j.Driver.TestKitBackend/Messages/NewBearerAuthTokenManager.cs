@@ -56,15 +56,15 @@ internal class NewBearerAuthTokenManagerHandler : MessageHandler<NewBearerAuthTo
         await _responseWriter.WriteAsync(new BearerAuthTokenManagerResponse(stored.Id));
     }
 
-    private IAuthTokenManager CreateStoredManager(string storedObjId)
+    private IAuthTokenManager CreateStoredManager(string storageId)
     {
-        ValueTask<DriverAuthTokenAndExpiration> ProvideFromManager() => ProvideTokenAsync(storedObjId);
+        ValueTask<DriverAuthTokenAndExpiration> ProvideFromManager() => ProvideTokenAsync(storageId);
         return AuthTokenManagers.Bearer(_dateTimeProvider, ProvideFromManager);
     }
 
-    private async ValueTask<DriverAuthTokenAndExpiration> ProvideTokenAsync(string managerId)
+    private async ValueTask<DriverAuthTokenAndExpiration> ProvideTokenAsync(string storageId)
     {
-        var providerRequest = new BearerAuthTokenProviderRequest(managerId);
+        var providerRequest = new BearerAuthTokenProviderRequest(storageId);
         return await _roundTrip.SendExpectingAsync<DriverAuthTokenAndExpiration>(providerRequest);
     }
 }

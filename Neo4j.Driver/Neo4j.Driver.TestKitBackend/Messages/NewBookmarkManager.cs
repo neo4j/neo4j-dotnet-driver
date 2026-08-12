@@ -56,10 +56,10 @@ internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequ
         await _responseWriter.WriteAsync(new BookmarkManagerResponse(stored.Id));
     }
 
-    private IBookmarkManager CreateStoredManager(NewBookmarkManagerRequest message, string managerId)
+    private IBookmarkManager CreateStoredManager(NewBookmarkManagerRequest message, string storageId)
     {
-        Task<string[]> SupplyFromManager(CancellationToken _) => SupplyBookmarksAsync(managerId);
-        Task ConsumeFromManager(string[] bookmarks, CancellationToken _) => ConsumeBookmarksAsync(managerId, bookmarks);
+        Task<string[]> SupplyFromManager(CancellationToken _) => SupplyBookmarksAsync(storageId);
+        Task ConsumeFromManager(string[] bookmarks, CancellationToken _) => ConsumeBookmarksAsync(storageId, bookmarks);
 
         Func<CancellationToken, Task<string[]>>? supplier =
             message.BookmarksSupplierRegistered ? SupplyFromManager : null;
@@ -71,13 +71,13 @@ internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequ
             new BookmarkManagerConfig(message.InitialBookmarks, supplier, consumer));
     }
 
-    private async Task<string[]> SupplyBookmarksAsync(string managerId)
+    private async Task<string[]> SupplyBookmarksAsync(string storageId)
     {
-        return await _roundTrip.SendExpectingAsync<string[]>(new BookmarksSupplierRequest(managerId));
+        return await _roundTrip.SendExpectingAsync<string[]>(new BookmarksSupplierRequest(storageId));
     }
 
-    private async Task ConsumeBookmarksAsync(string managerId, string[] bookmarks)
+    private async Task ConsumeBookmarksAsync(string storageId, string[] bookmarks)
     {
-        await _roundTrip.SendExpectingAsync<bool>(new BookmarksConsumerRequest(managerId, bookmarks));
+        await _roundTrip.SendExpectingAsync<bool>(new BookmarksConsumerRequest(storageId, bookmarks));
     }
 }

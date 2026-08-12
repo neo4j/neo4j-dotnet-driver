@@ -51,15 +51,15 @@ internal class NewBasicAuthTokenManagerHandler : MessageHandler<NewBasicAuthToke
         await _responseWriter.WriteAsync(new BasicAuthTokenManagerResponse(stored.Id));
     }
 
-    private IAuthTokenManager CreateStoredManager(string managerId)
+    private IAuthTokenManager CreateStoredManager(string storageId)
     {
-        ValueTask<IAuthToken> ProvideFromManager() => ProvideTokenAsync(managerId);
+        ValueTask<IAuthToken> ProvideFromManager() => ProvideTokenAsync(storageId);
         return AuthTokenManagers.Basic(ProvideFromManager);
     }
 
-    private async ValueTask<IAuthToken> ProvideTokenAsync(string managerId)
+    private async ValueTask<IAuthToken> ProvideTokenAsync(string storageId)
     {
-        var providerRequest = new BasicAuthTokenProviderRequest(managerId);
+        var providerRequest = new BasicAuthTokenProviderRequest(storageId);
         return await _roundTrip.SendExpectingAsync<IAuthToken>(providerRequest);
     }
 }
