@@ -127,6 +127,11 @@ internal class MessageLoop : IMessageLoop
         {
             _logger.LogDebug("A held handler was cancelled because its connection closed");
         }
+        catch (FrontendException exception)
+        {
+            _logger.LogDebug(exception, "Frontend error while handling request");
+            await _responseWriter.WriteAsync(new FrontendErrorResponse { Msg = exception.Message });
+        }
         catch (Exception exception) when (_originClassifier.OriginatesInDriver(exception))
         {
             _logger.LogDebug(exception, "Error while handling request");

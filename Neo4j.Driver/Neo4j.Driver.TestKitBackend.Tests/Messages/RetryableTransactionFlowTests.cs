@@ -17,9 +17,10 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Cypher;
+using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
+using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Serialization;
@@ -30,23 +31,30 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
 public class RetryableTransactionFlowTests
 {
-    private readonly ContinuationCoordinator _coordinator = new();
+    private readonly ExpectationStore _expectationStore = new(Mock.Of<ILogger>());
+    private readonly OutboundRoundTrip _roundTrip;
     private readonly Mock<IObjectStore> _objectStoreMock = new();
     private readonly Mock<ITransactionConfigMapper> _transactionConfigMapperMock = new();
     private readonly Mock<IResponseWriter> _responseWriterMock = new();
-    private readonly Mock<IConnectionInput> _connectionInputMock = new();
-    private readonly Mock<IMessageSerializer> _serializerMock = new();
-    private readonly Mock<IDriverErrorMapper> _driverErrorMapperMock = new();
-    private readonly Mock<IExceptionOriginClassifier> _originClassifierMock = new();
     private readonly Mock<IAsyncSession> _sessionMock = new();
     private readonly Stored<IAsyncSession> _sessionHandle;
 
+    private readonly Lock _writtenLock = new();
+    private readonly List<IProtocolMessage> _written = [];
+    private readonly List<(IProtocolMessage Expected, TaskCompletionSource Signal)> _writeWaiters = [];
+
     public RetryableTransactionFlowTests()
     {
+        _roundTrip = new OutboundRoundTrip(_expectationStore, _responseWriterMock.Object);
         _sessionHandle = new Stored<IAsyncSession>("session-1", _sessionMock.Object);
         _transactionConfigMapperMock
             .Setup(m => m.Map(It.IsAny<Dictionary<string, ICypherValue>?>(), It.IsAny<Optional<long?>>()))
             .Returns((Action<TransactionConfigBuilder>)(_ => { }));
+
+        _responseWriterMock
+            .Setup(w => w.WriteAsync(It.IsAny<IProtocolMessage>()))
+            .Callback<IProtocolMessage>(RecordWrite)
+            .Returns(Task.CompletedTask);
     }
 
     [Fact]
@@ -61,13 +69,14 @@ public class RetryableTransactionFlowTests
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 (work, _) => work(txMock.Object));
 
-        await WithTimeoutAsync(
-            ReadHandler().ProcessAsync(new SessionReadTransactionRequest { Session = _sessionHandle }));
+        var handlerTask = ReadHandler().ProcessAsync(new SessionReadTransactionRequest { Session = _sessionHandle });
 
-        _responseWriterMock.Verify(w => w.WriteAsync(new RetryableTryResponse("tx-1")), Times.Once);
+        await WaitForWriteAsync(new RetryableTryResponse("tx-1"));
 
         await WithTimeoutAsync(
             PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
+
+        await WithTimeoutAsync(handlerTask);
 
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
     }
@@ -86,9 +95,15 @@ public class RetryableTransactionFlowTests
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 (work, _) => work(txMock.Object));
 
+        var handlerTask = ReadHandler().ProcessAsync(
+            new SessionReadTransactionRequest { Session = _sessionHandle, TxMeta = txMeta, Timeout = timeout });
+
+        await WaitForWriteAsync(new RetryableTryResponse("tx-1"));
+
         await WithTimeoutAsync(
-            ReadHandler().ProcessAsync(
-                new SessionReadTransactionRequest { Session = _sessionHandle, TxMeta = txMeta, Timeout = timeout }));
+            PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
+
+        await WithTimeoutAsync(handlerTask);
 
         _sessionMock.Verify(
             s => s.ExecuteReadAsync(It.IsAny<Func<IAsyncQueryRunner, Task>>(), configure),
@@ -113,18 +128,19 @@ public class RetryableTransactionFlowTests
                     await work(secondTxMock.Object);
                 });
 
-        await WithTimeoutAsync(
-            WriteHandler().ProcessAsync(new SessionWriteTransactionRequest { Session = _sessionHandle }));
+        var handlerTask = WriteHandler().ProcessAsync(new SessionWriteTransactionRequest { Session = _sessionHandle });
 
-        _responseWriterMock.Verify(w => w.WriteAsync(new RetryableTryResponse("tx-1")), Times.Once);
+        await WaitForWriteAsync(new RetryableTryResponse("tx-1"));
+
+        await WithTimeoutAsync(
+            PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
+
+        await WaitForWriteAsync(new RetryableTryResponse("tx-2"));
 
         await WithTimeoutAsync(
             PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
 
-        _responseWriterMock.Verify(w => w.WriteAsync(new RetryableTryResponse("tx-2")), Times.Once);
-
-        await WithTimeoutAsync(
-            PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
+        await WithTimeoutAsync(handlerTask);
 
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
     }
@@ -143,9 +159,15 @@ public class RetryableTransactionFlowTests
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 (work, _) => work(txMock.Object));
 
+        var handlerTask = WriteHandler().ProcessAsync(
+            new SessionWriteTransactionRequest { Session = _sessionHandle, TxMeta = txMeta, Timeout = timeout });
+
+        await WaitForWriteAsync(new RetryableTryResponse("tx-1"));
+
         await WithTimeoutAsync(
-            WriteHandler().ProcessAsync(
-                new SessionWriteTransactionRequest { Session = _sessionHandle, TxMeta = txMeta, Timeout = timeout }));
+            PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
+
+        await WithTimeoutAsync(handlerTask);
 
         _sessionMock.Verify(
             s => s.ExecuteWriteAsync(It.IsAny<Func<IAsyncQueryRunner, Task>>(), configure),
@@ -153,16 +175,14 @@ public class RetryableTransactionFlowTests
     }
 
     [Fact]
-    public async Task Negative_with_a_stored_error_the_driver_does_not_retry_terminates_with_DriverError()
+    public async Task Negative_with_a_stored_error_the_driver_does_not_retry_faults_the_handler_with_that_error()
     {
+        // The loop's tracked-task path owns mapping the fault to a DriverError response
+        // (MessageLoopTests); the flow's job is to surface the stored exception unchanged.
         var storedException = new ClientException("Neo.ClientError.Statement.SyntaxError", "bad cypher");
         _objectStoreMock
             .Setup(r => r.Get<Exception>("error-1"))
             .Returns(new Stored<Exception>("error-1", storedException));
-
-        var errorResponse = new DriverErrorResponse { Id = "error-2", ErrorType = "ClientError" };
-        _driverErrorMapperMock.Setup(m => m.Map(storedException)).Returns(errorResponse);
-        _originClassifierMock.Setup(c => c.OriginatesInDriver(storedException)).Returns(true);
 
         var txMock = StoreTx("tx-1");
         _sessionMock
@@ -173,14 +193,15 @@ public class RetryableTransactionFlowTests
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 (work, _) => work(txMock.Object));
 
-        await WithTimeoutAsync(
-            ReadHandler().ProcessAsync(new SessionReadTransactionRequest { Session = _sessionHandle }));
+        var handlerTask = ReadHandler().ProcessAsync(new SessionReadTransactionRequest { Session = _sessionHandle });
+
+        await WaitForWriteAsync(new RetryableTryResponse("tx-1"));
 
         await WithTimeoutAsync(
-            NegativeHandler().ProcessAsync(
-                new RetryableNegativeRequest(_sessionHandle, "error-1")));
+            NegativeHandler().ProcessAsync(new RetryableNegativeRequest(_sessionHandle, "error-1")));
 
-        _responseWriterMock.Verify(w => w.WriteAsync(errorResponse), Times.Once);
+        var act = () => WithTimeoutAsync(handlerTask);
+        (await act.Should().ThrowAsync<ClientException>()).Which.Should().BeSameAs(storedException);
     }
 
     [Fact]
@@ -212,25 +233,25 @@ public class RetryableTransactionFlowTests
                     }
                 });
 
+        var handlerTask = WriteHandler().ProcessAsync(new SessionWriteTransactionRequest { Session = _sessionHandle });
+
+        await WaitForWriteAsync(new RetryableTryResponse("tx-1"));
+
         await WithTimeoutAsync(
-            WriteHandler().ProcessAsync(new SessionWriteTransactionRequest { Session = _sessionHandle }));
+            NegativeHandler().ProcessAsync(new RetryableNegativeRequest(_sessionHandle, "error-1")));
 
-        _responseWriterMock.Verify(w => w.WriteAsync(new RetryableTryResponse("tx-1")), Times.Once);
-
-        await WithTimeoutAsync(
-            NegativeHandler().ProcessAsync(
-                new RetryableNegativeRequest(_sessionHandle, "error-1")));
-
-        _responseWriterMock.Verify(w => w.WriteAsync(new RetryableTryResponse("tx-2")), Times.Once);
+        await WaitForWriteAsync(new RetryableTryResponse("tx-2"));
 
         await WithTimeoutAsync(
             PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
+
+        await WithTimeoutAsync(handlerTask);
 
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
     }
 
     [Fact]
-    public async Task Negative_with_an_empty_errorId_terminates_with_FrontendError()
+    public async Task Negative_with_an_empty_errorId_faults_the_handler_with_FrontendException()
     {
         var txMock = StoreTx("tx-1");
         _sessionMock
@@ -241,19 +262,21 @@ public class RetryableTransactionFlowTests
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 (work, _) => work(txMock.Object));
 
-        await WithTimeoutAsync(
-            ReadHandler().ProcessAsync(new SessionReadTransactionRequest { Session = _sessionHandle }));
+        var handlerTask = ReadHandler().ProcessAsync(new SessionReadTransactionRequest { Session = _sessionHandle });
+
+        await WaitForWriteAsync(new RetryableTryResponse("tx-1"));
 
         await WithTimeoutAsync(
-            NegativeHandler().ProcessAsync(
-                new RetryableNegativeRequest(_sessionHandle, "")));
+            NegativeHandler().ProcessAsync(new RetryableNegativeRequest(_sessionHandle, "")));
 
-        _responseWriterMock.Verify(w => w.WriteAsync(It.IsAny<FrontendErrorResponse>()), Times.Once);
+        var act = () => WithTimeoutAsync(handlerTask);
+        await act.Should().ThrowAsync<FrontendException>();
+
         _objectStoreMock.Verify(r => r.Get<Exception>(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
-    public async Task An_unstored_errorId_does_not_leave_the_response_slot_registered()
+    public async Task An_unstored_errorId_leaves_the_parked_attempt_fulfillable()
     {
         var txMock = StoreTx("tx-1");
         _sessionMock
@@ -264,8 +287,9 @@ public class RetryableTransactionFlowTests
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 (work, _) => work(txMock.Object));
 
-        await WithTimeoutAsync(
-            ReadHandler().ProcessAsync(new SessionReadTransactionRequest { Session = _sessionHandle }));
+        var handlerTask = ReadHandler().ProcessAsync(new SessionReadTransactionRequest { Session = _sessionHandle });
+
+        await WaitForWriteAsync(new RetryableTryResponse("tx-1"));
 
         _objectStoreMock
             .Setup(r => r.Get<Exception>("bad-id"))
@@ -274,14 +298,16 @@ public class RetryableTransactionFlowTests
         var act = () => NegativeHandler().ProcessAsync(new RetryableNegativeRequest(_sessionHandle, "bad-id"));
         await act.Should().ThrowAsync<TestKitProtocolException>();
 
-        // Action, not Func<Task<T>>: asserting on the latter awaits the deliberately
-        // never-completed task instead of just checking the synchronous registration.
-        Action act2 = () => { _coordinator.WaitForNextResponseAsync(); };
-        act2.Should().NotThrow();
+        await WithTimeoutAsync(
+            PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
+
+        await WithTimeoutAsync(handlerTask);
+
+        _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
     }
 
     [Fact]
-    public async Task A_duplicate_RetryablePositive_does_not_leave_the_response_slot_registered()
+    public async Task A_duplicate_RetryablePositive_fails_loudly_on_the_unknown_key()
     {
         var txMock = StoreTx("tx-1");
         _sessionMock
@@ -292,31 +318,27 @@ public class RetryableTransactionFlowTests
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 (work, _) => work(txMock.Object));
 
-        await WithTimeoutAsync(
-            ReadHandler().ProcessAsync(new SessionReadTransactionRequest { Session = _sessionHandle }));
+        var handlerTask = ReadHandler().ProcessAsync(new SessionReadTransactionRequest { Session = _sessionHandle });
+
+        await WaitForWriteAsync(new RetryableTryResponse("tx-1"));
 
         await WithTimeoutAsync(
             PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle)));
 
-        var act = () => PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle));
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        await WithTimeoutAsync(handlerTask);
 
-        Action act2 = () => { _coordinator.WaitForNextResponseAsync(); };
-        act2.Should().NotThrow();
+        var act = () => PositiveHandler().ProcessAsync(new RetryablePositiveRequest(_sessionHandle));
+        (await act.Should().ThrowAsync<TestKitProtocolException>()).WithMessage("*session-1*");
     }
 
     [Fact]
-    public async Task A_duplicate_RetryableNegative_does_not_leave_the_response_slot_registered()
+    public async Task A_duplicate_RetryableNegative_fails_loudly_on_the_unknown_key()
     {
         var storedException = new ClientException("Neo.ClientError.Statement.SyntaxError", "bad cypher");
         _objectStoreMock
             .Setup(r => r.Get<Exception>("error-1"))
             .Returns(new Stored<Exception>("error-1", storedException));
 
-        var errorResponse = new DriverErrorResponse { Id = "error-2", ErrorType = "ClientError" };
-        _driverErrorMapperMock.Setup(m => m.Map(storedException)).Returns(errorResponse);
-        _originClassifierMock.Setup(c => c.OriginatesInDriver(storedException)).Returns(true);
-
         var txMock = StoreTx("tx-1");
         _sessionMock
             .Setup(
@@ -326,17 +348,18 @@ public class RetryableTransactionFlowTests
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 (work, _) => work(txMock.Object));
 
-        await WithTimeoutAsync(
-            ReadHandler().ProcessAsync(new SessionReadTransactionRequest { Session = _sessionHandle }));
+        var handlerTask = ReadHandler().ProcessAsync(new SessionReadTransactionRequest { Session = _sessionHandle });
+
+        await WaitForWriteAsync(new RetryableTryResponse("tx-1"));
 
         await WithTimeoutAsync(
             NegativeHandler().ProcessAsync(new RetryableNegativeRequest(_sessionHandle, "error-1")));
 
-        var act = () => NegativeHandler().ProcessAsync(new RetryableNegativeRequest(_sessionHandle, "error-1"));
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        var faulted = () => WithTimeoutAsync(handlerTask);
+        await faulted.Should().ThrowAsync<ClientException>();
 
-        Action act2 = () => { _coordinator.WaitForNextResponseAsync(); };
-        act2.Should().NotThrow();
+        var act = () => NegativeHandler().ProcessAsync(new RetryableNegativeRequest(_sessionHandle, "error-1"));
+        (await act.Should().ThrowAsync<TestKitProtocolException>()).WithMessage("*session-1*");
     }
 
     private Mock<IAsyncTransaction> StoreTx(string id)
@@ -353,34 +376,57 @@ public class RetryableTransactionFlowTests
     {
         return new SessionReadTransactionHandler(
             _objectStoreMock.Object,
-            _coordinator,
+            _roundTrip,
             _transactionConfigMapperMock.Object,
-            _responseWriterMock.Object,
-            _driverErrorMapperMock.Object,
-            _originClassifierMock.Object,
-            Mock.Of<ILogger>());
+            _responseWriterMock.Object);
     }
 
     private SessionWriteTransactionHandler WriteHandler()
     {
         return new SessionWriteTransactionHandler(
             _objectStoreMock.Object,
-            _coordinator,
+            _roundTrip,
             _transactionConfigMapperMock.Object,
-            _responseWriterMock.Object,
-            _driverErrorMapperMock.Object,
-            _originClassifierMock.Object,
-            Mock.Of<ILogger>());
+            _responseWriterMock.Object);
     }
 
     private RetryablePositiveHandler PositiveHandler()
     {
-        return new RetryablePositiveHandler(_coordinator, _responseWriterMock.Object);
+        return new RetryablePositiveHandler(_expectationStore);
     }
 
     private RetryableNegativeHandler NegativeHandler()
     {
-        return new RetryableNegativeHandler(_objectStoreMock.Object, _coordinator, _responseWriterMock.Object);
+        return new RetryableNegativeHandler(_objectStoreMock.Object, _expectationStore);
+    }
+
+    private void RecordWrite(IProtocolMessage message)
+    {
+        lock (_writtenLock)
+        {
+            _written.Add(message);
+            foreach (var (expected, signal) in _writeWaiters.Where(waiter => waiter.Expected.Equals(message)))
+            {
+                signal.TrySetResult();
+            }
+        }
+    }
+
+    private Task WaitForWriteAsync(IProtocolMessage expected)
+    {
+        TaskCompletionSource signal;
+        lock (_writtenLock)
+        {
+            if (_written.Contains(expected))
+            {
+                return Task.CompletedTask;
+            }
+
+            signal = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            _writeWaiters.Add((expected, signal));
+        }
+
+        return WithTimeoutAsync(signal.Task);
     }
 
     private static async Task WithTimeoutAsync(Task task)

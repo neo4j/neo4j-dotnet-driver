@@ -228,6 +228,38 @@ public class MessageLoopTests
     }
 
     [Fact]
+    public async Task Reports_FrontendError_for_a_frontend_exception_and_continues_the_loop()
+    {
+        const string failingJson = """{"name":"RetryableNegative","data":{}}""";
+        const string goodJson = """{"name":"GetFeatures","data":{}}""";
+        var failingMessage = Mock.Of<IProtocolMessage>();
+        var goodMessage = Mock.Of<IProtocolMessage>();
+        var exception = new FrontendException("Error from client in retryable tx");
+
+        _autoMocker.GetMock<IConnectionInput>()
+            .SetupSequence(i => i.ReadRequestAsync())
+            .ReturnsAsync(failingJson)
+            .ReturnsAsync(goodJson)
+            .ReturnsAsync((string?)null);
+
+        _autoMocker.GetMock<IMessageSerializer>().Setup(s => s.Deserialize(failingJson)).Returns(failingMessage);
+        _autoMocker.GetMock<IMessageSerializer>().Setup(s => s.Deserialize(goodJson)).Returns(goodMessage);
+        _autoMocker.GetMock<IMessageDispatcher>().Setup(d => d.DispatchAsync(failingMessage)).ThrowsAsync(exception);
+
+        var loop = _autoMocker.CreateInstance<MessageLoop>();
+
+        await loop.RunAsync("testkit-1");
+
+        _autoMocker.GetMock<IResponseWriter>()
+            .Verify(
+                w => w.WriteAsync(It.Is<FrontendErrorResponse>(e => e.Msg == "Error from client in retryable tx")),
+                Times.Once);
+
+        _autoMocker.GetMock<IDriverErrorMapper>().Verify(m => m.Map(It.IsAny<Exception>()), Times.Never);
+        _autoMocker.GetMock<IMessageDispatcher>().Verify(d => d.DispatchAsync(goodMessage), Times.Once);
+    }
+
+    [Fact]
     public async Task Reports_a_bare_BackendError_when_the_exception_does_not_originate_in_the_driver()
     {
         const string failingJson = """{"name":"NewDriver","data":{}}""";
