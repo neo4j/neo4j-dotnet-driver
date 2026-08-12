@@ -17,7 +17,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Continuations;
+using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
@@ -26,7 +26,7 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
 public class BookmarkManagerFlowTests
 {
-    private readonly Mock<ICallbackExchanger> _callbacksMock = new();
+    private readonly Mock<IOutboundRoundTrip> _roundTripMock = new();
     private readonly Mock<IResponseWriter> _responseWriterMock = new();
 
     private IBookmarkManager StoreManager(NewBookmarkManagerRequest request)
@@ -44,7 +44,7 @@ public class BookmarkManagerFlowTests
 
         var handler = new NewBookmarkManagerHandler(
             objectStoreMock.Object,
-            _callbacksMock.Object,
+            _roundTripMock.Object,
             _responseWriterMock.Object,
             Mock.Of<ILogger>());
 
@@ -59,19 +59,16 @@ public class BookmarkManagerFlowTests
     {
         var manager = StoreManager(new NewBookmarkManagerRequest { BookmarksSupplierRegistered = true });
 
-        Func<string, ICallbackRequest>? capturedRequest = null;
-        _callbacksMock
-            .Setup(c => c.SendAsync<BookmarksSupplierCompleted>(It.IsAny<Func<string, ICallbackRequest>>()))
-            .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
-            .ReturnsAsync(
-                new BookmarksSupplierCompleted { RequestId = "callback-1", Bookmarks = ["bm:s1", "bm:s2"] });
+        ICorrelatedRequest? capturedRequest = null;
+        _roundTripMock
+            .Setup(r => r.SendExpectingAsync<string[]>(It.IsAny<ICorrelatedRequest>()))
+            .Callback<ICorrelatedRequest>(request => capturedRequest = request)
+            .ReturnsAsync(["bm:s1", "bm:s2"]);
 
         var bookmarks = await manager.GetBookmarksAsync(TestContext.Current.CancellationToken);
 
-        capturedRequest.Should().NotBeNull();
-        var request = capturedRequest!("callback-1");
-        request.Should().BeOfType<BookmarksSupplierRequest>();
-        ((BookmarksSupplierRequest)request).BookmarkManagerId.Should().Be("bm-1");
+        var request = capturedRequest.Should().BeOfType<BookmarksSupplierRequest>().Subject;
+        request.BookmarkManagerId.Should().Be("bm-1");
         bookmarks.Should().BeEquivalentTo("bm:s1", "bm:s2");
     }
 
@@ -80,19 +77,40 @@ public class BookmarkManagerFlowTests
     {
         var manager = StoreManager(new NewBookmarkManagerRequest { BookmarksConsumerRegistered = true });
 
-        Func<string, ICallbackRequest>? capturedRequest = null;
-        _callbacksMock
-            .Setup(c => c.SendAsync<BookmarksConsumerCompleted>(It.IsAny<Func<string, ICallbackRequest>>()))
-            .Callback<Func<string, ICallbackRequest>>(f => capturedRequest = f)
-            .ReturnsAsync(new BookmarksConsumerCompleted { RequestId = "callback-1" });
+        ICorrelatedRequest? capturedRequest = null;
+        _roundTripMock
+            .Setup(r => r.SendExpectingAsync<bool>(It.IsAny<ICorrelatedRequest>()))
+            .Callback<ICorrelatedRequest>(request => capturedRequest = request)
+            .ReturnsAsync(true);
 
         await manager.UpdateBookmarksAsync([], ["bm:new1", "bm:new2"], TestContext.Current.CancellationToken);
 
-        capturedRequest.Should().NotBeNull();
-        var request = capturedRequest!("callback-1");
-        request.Should().BeOfType<BookmarksConsumerRequest>();
-        var consumerRequest = (BookmarksConsumerRequest)request;
-        consumerRequest.BookmarkManagerId.Should().Be("bm-1");
-        consumerRequest.Bookmarks.Should().BeEquivalentTo("bm:new1", "bm:new2");
+        var request = capturedRequest.Should().BeOfType<BookmarksConsumerRequest>().Subject;
+        request.BookmarkManagerId.Should().Be("bm-1");
+        request.Bookmarks.Should().BeEquivalentTo("bm:new1", "bm:new2");
+    }
+
+    [Fact]
+    public void BookmarksSupplierCompleted_fulfils_the_expectation_with_the_bookmarks()
+    {
+        var expectationsMock = new Mock<IExpectationStore>();
+        var handler = new BookmarksSupplierCompletedHandler(expectationsMock.Object);
+        var message = new BookmarksSupplierCompleted { RequestId = "callback-1", Bookmarks = ["bm:1", "bm:2"] };
+
+        handler.ProcessAsync(message);
+
+        expectationsMock.Verify(e => e.Fulfil("callback-1", message.Bookmarks), Times.Once);
+    }
+
+    [Fact]
+    public void BookmarksConsumerCompleted_fulfils_the_expectation()
+    {
+        var expectationsMock = new Mock<IExpectationStore>();
+        var handler = new BookmarksConsumerCompletedHandler(expectationsMock.Object);
+        var message = new BookmarksConsumerCompleted { RequestId = "callback-1" };
+
+        handler.ProcessAsync(message);
+
+        expectationsMock.Verify(e => e.Fulfil("callback-1", true), Times.Once);
     }
 }

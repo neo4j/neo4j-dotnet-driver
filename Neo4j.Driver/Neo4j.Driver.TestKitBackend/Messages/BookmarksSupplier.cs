@@ -13,14 +13,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.TestKitBackend.Continuations;
+using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Expectations;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record BookmarksSupplierRequest(string Id, string BookmarkManagerId) : ICallbackRequest;
+internal record BookmarksSupplierRequest(string BookmarkManagerId) : ICorrelatedRequest
+{
+    public string Id { get; set; } = "";
+}
 
-internal record BookmarksSupplierCompleted : ICallbackResponse
+internal record BookmarksSupplierCompleted : IProtocolMessage
 {
     public required string RequestId { get; init; }
     public required string[] Bookmarks { get; init; }
+}
+
+internal class BookmarksSupplierCompletedHandler : MessageHandler<BookmarksSupplierCompleted>
+{
+    private readonly IExpectationStore _expectationStore;
+
+    public BookmarksSupplierCompletedHandler(IExpectationStore expectationStore)
+    {
+        _expectationStore = expectationStore;
+    }
+
+    public override Task ProcessAsync(BookmarksSupplierCompleted message)
+    {
+        _expectationStore.Fulfil(message.RequestId, message.Bookmarks);
+        return Task.CompletedTask;
+    }
 }

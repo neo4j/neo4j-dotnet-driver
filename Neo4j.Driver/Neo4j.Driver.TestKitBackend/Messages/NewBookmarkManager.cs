@@ -15,8 +15,8 @@
 
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
-using Neo4j.Driver.TestKitBackend.Continuations;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -33,18 +33,18 @@ internal record BookmarkManagerResponse(string Id) : IProtocolMessage;
 internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequest>
 {
     private readonly IObjectStore _objectStore;
-    private readonly ICallbackExchanger _callbackExchanger;
+    private readonly IOutboundRoundTrip _roundTrip;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
     public NewBookmarkManagerHandler(
         IObjectStore objectStore,
-        ICallbackExchanger callbackExchanger,
+        IOutboundRoundTrip roundTrip,
         IResponseWriter responseWriter,
         ILogger logger)
     {
         _objectStore = objectStore;
-        _callbackExchanger = callbackExchanger;
+        _roundTrip = roundTrip;
         _responseWriter = responseWriter;
         _logger = logger;
     }
@@ -73,15 +73,11 @@ internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequ
 
     private async Task<string[]> SupplyBookmarksAsync(string managerId)
     {
-        var completion = await _callbackExchanger.SendAsync<BookmarksSupplierCompleted>(
-            id => new BookmarksSupplierRequest(id, managerId));
-
-        return completion.Bookmarks;
+        return await _roundTrip.SendExpectingAsync<string[]>(new BookmarksSupplierRequest(managerId));
     }
 
     private async Task ConsumeBookmarksAsync(string managerId, string[] bookmarks)
     {
-        await _callbackExchanger.SendAsync<BookmarksConsumerCompleted>(
-            id => new BookmarksConsumerRequest(id, managerId, bookmarks));
+        await _roundTrip.SendExpectingAsync<bool>(new BookmarksConsumerRequest(managerId, bookmarks));
     }
 }

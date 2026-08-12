@@ -244,7 +244,7 @@ public class RetryableTransactionFlowTests
                 m =>
                 {
                     writtenMessages.Add(m);
-                    if (m is BookmarksSupplierRequest request)
+                    if (m is ClientCertificateProviderRequest request)
                     {
                         lastRequestId = request.Id;
                     }
@@ -255,10 +255,11 @@ public class RetryableTransactionFlowTests
         _serializerMock
             .Setup(s => s.Deserialize("completion"))
             .Returns(
-                () => new BookmarksSupplierCompleted
+                () => new ClientCertificateProviderCompleted
                 {
                     RequestId = lastRequestId!,
-                    Bookmarks = ["bm1"]
+                    HasUpdate = true,
+                    ClientCertificate = new ClientCertificate("cert.pem", "key.pem")
                 });
 
         var callbackExchanger = new CallbackExchanger(
@@ -277,13 +278,13 @@ public class RetryableTransactionFlowTests
             .Returns<Func<IAsyncQueryRunner, Task>, Action<TransactionConfigBuilder>>(
                 async (work, _) =>
                 {
-                    await callbackExchanger.SendAsync<BookmarksSupplierCompleted>(
-                        id => new BookmarksSupplierRequest(id, "manager-1"));
+                    await callbackExchanger.SendAsync<ClientCertificateProviderCompleted>(
+                        id => new ClientCertificateProviderRequest(id, "provider-1"));
 
                     await work(firstTxMock.Object);
 
-                    await callbackExchanger.SendAsync<BookmarksSupplierCompleted>(
-                        id => new BookmarksSupplierRequest(id, "manager-1"));
+                    await callbackExchanger.SendAsync<ClientCertificateProviderCompleted>(
+                        id => new ClientCertificateProviderRequest(id, "provider-1"));
 
                     await work(secondTxMock.Object);
                 });
@@ -303,11 +304,11 @@ public class RetryableTransactionFlowTests
 
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
 
-        writtenMessages.OfType<BookmarksSupplierRequest>().Count().Should().Be(2);
+        writtenMessages.OfType<ClientCertificateProviderRequest>().Count().Should().Be(2);
         writtenMessages.Select(m => m.GetType()).Should().Equal(
-            typeof(BookmarksSupplierRequest),
+            typeof(ClientCertificateProviderRequest),
             typeof(RetryableTryResponse),
-            typeof(BookmarksSupplierRequest),
+            typeof(ClientCertificateProviderRequest),
             typeof(RetryableTryResponse),
             typeof(RetryableDoneResponse));
     }
