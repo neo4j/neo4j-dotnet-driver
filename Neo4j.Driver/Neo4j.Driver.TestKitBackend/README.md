@@ -92,9 +92,9 @@ The design rests on the following pieces:
   Everything sent to or received from testkit takes the form `{"name": "<Type>", "data": {...}}`.
   For an incoming request, the name is looked up in a name-to-type map built by reflection.
   For an outgoing response, the type name has its `Request` or `Response` suffix stripped to produce the name testkit expects; for example, `DriverResponse` becomes `"Driver"`, which also avoids any collision with the driver's own `Driver` type.
-- **Handles are resolved during deserialization, not by hand.**
-  A request property of type `Stored<IDriver>` resolves its driver from the per-connection object store while the request is being deserialized, so the handler only needs to read `.Object`.
-  Responses work in the opposite direction: they carry a plain `string Id` copied from the handle, since an outgoing message never needs the live object itself.
+- **Handles are declared by shape and resolved during deserialization.**
+  A message declares what it needs from the per-connection object store: a plain `string DriverId` property binds the wire field directly, a `[StoredObject] IDriver Driver` property resolves the stored object, and a message that needs both declares both, fed from the one wire field.
+  Responses carry a plain `string Id`, since an outgoing message never needs the live object itself.
   See [The object store](#the-object-store) below.
 - **`Optional<T>` exists for the rare field where absence, a present null, and a present value are three distinct meanings**, as with `timeout` and `trustedCertificates`.
   Everywhere else, absence collapses to null, so a plain `T?` is the correct and simpler choice.
@@ -104,15 +104,21 @@ The design rests on the following pieces:
 Every object a test creates through the backend, a driver, a session, a transaction, a result, a manager, a stored error, needs to be referred to by later requests without serializing the object itself.
 The object store (`IObjectStore`) exists to solve this, and understanding it is one of the more important parts of implementing this protocol.
 
-`IObjectStore.Store<T>(T obj)` stores an object and returns a `Stored<T>` pairing a freshly generated string id with the object.
+`IObjectStore.Store<T>(T obj)` stores an object and returns the freshly generated string id it is stored under.
 A second overload, `Store<T>(Func<string, T> create)`, exists for objects that need to know their own id while they are still being constructed.
 A bookmark manager is the clearest example: its supplier and consumer callbacks must reference the manager's own id, so the manager is built inside the factory function the id is generated for.
 `IObjectStore.Get<T>(string id)` looks an object up by id, throwing `TestKitProtocolException` if the id is unknown or resolves to an object of the wrong type.
 
 Most handlers never call `Get` directly.
-A request property declared as `Stored<T>` is resolved automatically during deserialization, and the naming follows one fixed rule: `JsonOptionsProvider.BindHandlesToIdMembers` appends `Id` to the camelCased property name to get the field it reads from testkit's request.
-A property `Stored<IDriver> Driver` therefore reads its id from the field `driverId`, calls `IObjectStore.Get<IDriver>` with that id, and hands the handler an already-resolved object; the handler never sees the id itself unless it also asks for it through `.Id`.
-Calling `Get` directly is reserved for the few cases where an id arrives as a plain string rather than through that property-based resolution, such as `RetryableNegative` looking up a stored error by `ErrorId`.
+A request declares the shape it needs from a wire field such as `driverId`, and the same field serves all three shapes:
+
+- `public required string DriverId { get; init; }` binds the field as a plain string, with no store lookup.
+- `[StoredObject] public required IDriver Driver { get; init; }` resolves the object behind the id: the envelope converter rewrites the data document before binding, renaming `driverId` to `driver`, and a property converter exchanges the id for the live object through the store.
+- Declaring both properties makes the converter duplicate the field rather than rename it, so the one wire field feeds the pair.
+
+The wire field name is the camelCased property name plus `Id`; the attribute takes an optional argument for a field that breaks the convention.
+An id property exists only when the handler consumes the id as protocol data — echoing it in a response, removing it from the store, keying an expectation — never to feed a log line; the connection's `Request:` and `Response:` logs already carry every id.
+Calling `Get` directly is reserved for ids that arrive outside the property convention, such as `RetryableNegative` looking up a stored error by `ErrorId`.
 
 The store is scoped to the connection, so it is disposed automatically when a test's connection closes.
 Disposal walks every stored object in reverse storage order and disposes anything implementing `IAsyncDisposable` or `IDisposable`.
@@ -125,51 +131,68 @@ Explicit close handlers such as `DriverClose` exist to satisfy testkit's protoco
 Both are fully self-contained (the request, the response, and the handler all live in one file, with nothing borrowed from elsewhere), and each resolves an existing handle, reads something off the object behind it, and responds:
 
 ```csharp
-internal record CheckMultiDBSupportRequest(Stored<IDriver> Driver) : IProtocolMessage;
+internal record CheckMultiDBSupportRequest : IProtocolMessage
+{
+    [StoredObject]
+    public required IDriver Driver { get; init; }
+    public required string DriverId { get; init; }
+}
 
 internal record MultiDBSupportResponse(string Id, bool Available) : IProtocolMessage;
 
 internal class CheckMultiDBSupportHandler : MessageHandler<CheckMultiDBSupportRequest>
 {
     private readonly IResponseWriter _responseWriter;
+    private readonly ILogger _logger;
 
-    public CheckMultiDBSupportHandler(IResponseWriter responseWriter)
+    public CheckMultiDBSupportHandler(IResponseWriter responseWriter, ILogger logger)
     {
         _responseWriter = responseWriter;
+        _logger = logger;
     }
 
     public override async Task ProcessAsync(CheckMultiDBSupportRequest message)
     {
-        var available = await message.Driver.Object.SupportsMultiDbAsync();
-        await _responseWriter.WriteAsync(new MultiDBSupportResponse(message.Driver.Id, available));
+        var available = await message.Driver.SupportsMultiDbAsync();
+        _logger.LogDebug("Checked multi-db support for driver with id '{Id}': {Available}", message.DriverId, available);
+        await _responseWriter.WriteAsync(new MultiDBSupportResponse(message.DriverId, available));
     }
 }
 ```
 
 ```csharp
-internal record SessionLastBookmarksRequest(Stored<IAsyncSession> Session) : IProtocolMessage;
+internal record SessionLastBookmarksRequest : IProtocolMessage
+{
+    [StoredObject]
+    public required IAsyncSession Session { get; init; }
+}
 
 internal record BookmarksResponse(string[] Bookmarks) : IProtocolMessage;
 
 internal class SessionLastBookmarksHandler : MessageHandler<SessionLastBookmarksRequest>
 {
     private readonly IResponseWriter _responseWriter;
+    private readonly ILogger _logger;
 
-    public SessionLastBookmarksHandler(IResponseWriter responseWriter)
+    public SessionLastBookmarksHandler(IResponseWriter responseWriter, ILogger logger)
     {
         _responseWriter = responseWriter;
+        _logger = logger;
     }
 
     public override async Task ProcessAsync(SessionLastBookmarksRequest message)
     {
-        var bookmarks = message.Session.Object.LastBookmarks.Values;
+        var bookmarks = message.Session.LastBookmarks?.Values ?? [];
+        _logger.LogDebug("Got {Count} last bookmark(s)", bookmarks.Length);
+
         await _responseWriter.WriteAsync(new BookmarksResponse(bookmarks));
     }
 }
 ```
 
-The second one reads a property directly instead of awaiting a driver call, and resolves a `Stored<IAsyncSession>` instead of a `Stored<IDriver>`: the pattern is the same regardless of which stored type or which kind of driver access is involved.
-No registration step, no envelope wiring, and no manual name mapping are required beyond declaring the `Stored<T>` property; once the file exists and the project builds, testkit can send the request and get the response back.
+The first declares both shapes — the resolved driver for the call, and the id because the response echoes it as protocol data.
+The second declares only the object, because nothing in its handler consumes the id.
+No registration step, no envelope wiring, and no manual name mapping are required; once the file exists and the project builds, testkit can send the request and get the response back.
 
 Both examples resolve an existing handle rather than creating one.
 For a message that creates a driver object and stores it, see `Messages/NewDriver.cs`:
@@ -178,15 +201,16 @@ For a message that creates a driver object and stores it, see `Messages/NewDrive
 public override async Task ProcessAsync(NewDriverRequest message)
 {
     var driver = GraphDatabase.Driver(message.Uri, ..., Configure);
-    var stored = _objectStore.Store(driver);
-    await _responseWriter.WriteAsync(new DriverResponse(stored.Id));
+    var id = _objectStore.Store(driver);
+    _logger.LogDebug("Created driver with id '{Id}'", id);
+    await _responseWriter.WriteAsync(new DriverResponse(id));
 }
 ```
 
 Before considering a new handler complete, verify the following:
 
-- If the request needs a handle to an existing object, such as a driver or a session, declare that property as `Stored<T>` rather than a bare `string` identifier.
-  The conversion is then handled automatically.
+- If the request refers to a stored object, declare the shape the handler actually consumes: a plain `string XxxId` when only the id matters, a `[StoredObject]` property when only the object does, and both when the id is also protocol data.
+  Never declare an id property just to log it.
 - If a field must distinguish an absent value from a present null value, use `Optional<T>`.
   Otherwise, use `T?`.
 - Let exceptions from driver calls propagate out of the handler.
@@ -316,24 +340,25 @@ sequenceDiagram
 
 ## Adding a type with its own envelope
 
-A few values need the same `{"name": ..., "data": ...}` envelope as a message, without being a message themselves: `AuthorizationToken` and `ClientCertificate` are the current examples.
-These implement `IWireType<T>`, a self-referential interface where `T` is the type itself:
+A few values cross the wire in the same `{"name": ..., "data": ...}` envelope as a message, without being messages themselves: `AuthorizationToken`, `ClientCertificate`, and `AuthTokenAndExpiration` are the current examples.
+Enveloping is a property of the type, declared once with `[ProtocolEnvelope]`:
 
 ```csharp
+[ProtocolEnvelope]
 internal record ClientCertificate(
     string Certfile,
     string Keyfile,
-    string? Password = null) : IWireType<ClientCertificate>;
+    string? Password = null);
 ```
 
-The property that holds one has to be declared as `IWireType<ClientCertificate>`, not as `ClientCertificate` directly, so the generic converter recognises it and applies the envelope:
+Any property whose type carries the attribute is enveloped automatically, in both directions, wherever it appears — including nested inside another enveloped type:
 
 ```csharp
-public required IWireType<AuthorizationToken>? AuthorizationToken { get; init; }
+public AuthorizationToken? AuthorizationToken { get; init; }
 ```
 
-The envelope name defaults to the type's own name, with any trailing `Request` or `Response` stripped by the same rule messages use.
-Adding a new one of these means declaring the record as `IWireType<TheNewType>` and giving the containing property that same interface type; nothing else needs registering.
+The envelope name defaults to the type's own name, with any trailing `Request` or `Response` stripped by the same rule messages use; the attribute takes an optional argument to override it.
+Adding a new one of these means putting the attribute on the record; nothing else needs registering.
 
 This differs from Cypher types, which share a single property across many possible shapes (`ICypherValue`) rather than each getting a dedicated property of its own, covered next.
 
