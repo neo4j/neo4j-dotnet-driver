@@ -109,7 +109,10 @@ internal class MessageLoop : IMessageLoop
             }
             catch (Exception exception)
             {
-                _logger.LogError(exception, "A handler task failed while connection {ConnectionId} was closing", connectionId);
+                _logger.LogDebug(
+                    "A handler task failed while connection {ConnectionId} was closing: {ExceptionType}",
+                    connectionId,
+                    exception.GetType().Name);
             }
 
             _logger.LogDebug("Closing connection {ConnectionId}", connectionId);
@@ -129,12 +132,12 @@ internal class MessageLoop : IMessageLoop
         }
         catch (FrontendException exception)
         {
-            _logger.LogDebug(exception, "Frontend error while handling request");
+            _logger.LogDebug("Frontend error while handling request: {Message}", exception.Message);
             await _responseWriter.WriteAsync(new FrontendErrorResponse { Msg = exception.Message });
         }
         catch (Exception exception) when (_originClassifier.OriginatesInDriver(exception))
         {
-            _logger.LogDebug(exception, "Error while handling request");
+            _logger.LogDebug("Driver error while handling request: {ExceptionType}", exception.GetType().Name);
             var response = _driverErrorMapper.Map(exception);
             await _responseWriter.WriteAsync(response);
         }

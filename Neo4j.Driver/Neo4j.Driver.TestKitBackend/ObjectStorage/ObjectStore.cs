@@ -82,7 +82,10 @@ internal class ObjectStore : IObjectStore, IAsyncDisposable
             }
             catch (Exception exception)
             {
-                _logger.LogError(exception, "Failed to dispose a stored {Type}", obj.GetType().Name);
+                _logger.LogDebug(
+                    "Failed to dispose a stored {Type}: {ExceptionType}",
+                    obj.GetType().Name,
+                    exception.GetType().Name);
             }
         }
 
