@@ -30,11 +30,10 @@ public class SessionCloseHandlerTests
     public async Task Closes_the_session_removes_it_from_the_objectStore_and_responds_with_its_id()
     {
         var sessionMock = _autoMocker.GetMock<IAsyncSession>();
-        var stored = new Stored<IAsyncSession>("session-1", sessionMock.Object);
-        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Get<IAsyncSession>("session-1")).Returns(stored);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Get<IAsyncSession>("session-1")).Returns(sessionMock.Object);
 
         var handler = _autoMocker.CreateInstance<SessionCloseHandler>();
-        var request = new SessionCloseRequest(stored);
+        var request = new SessionCloseRequest { Session = sessionMock.Object, SessionId = "session-1" };
 
         await handler.ProcessAsync(request);
 

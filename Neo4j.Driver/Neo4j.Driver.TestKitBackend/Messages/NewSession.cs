@@ -17,12 +17,14 @@ using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record NewSessionRequest : IProtocolMessage
 {
-    public required Stored<IDriver> Driver { get; init; }
+    [StoredObject]
+    public required IDriver Driver { get; init; }
     public required string AccessMode { get; init; }
     public string[]? Bookmarks { get; init; }
     public string? Database { get; init; }
@@ -31,7 +33,8 @@ internal record NewSessionRequest : IProtocolMessage
     public string? NotificationsMinSeverity { get; init; }
     public string[]? NotificationsDisabledCategories { get; init; }
     public bool? DisableAutoCommitRetries { get; init; }
-    public string? BookmarkManagerId { get; init; }
+    [StoredObject]
+    public IBookmarkManager? BookmarkManager { get; init; }
     public AuthorizationToken? AuthorizationToken { get; init; }
 }
 
@@ -58,9 +61,9 @@ internal class NewSessionHandler : MessageHandler<NewSessionRequest>
 
     public override async Task ProcessAsync(NewSessionRequest message)
     {
-        var session = message.Driver.Object.AsyncSession(builder => _configMapper.Apply(message, builder));
-        var stored = _objectStore.Store(session);
-        _logger.LogDebug("Created session with id '{Id}'", stored.Id);
-        await _responseWriter.WriteAsync(new SessionResponse(stored.Id));
+        var session = message.Driver.AsyncSession(builder => _configMapper.Apply(message, builder));
+        var id = _objectStore.Store(session);
+        _logger.LogDebug("Created session with id '{Id}'", id);
+        await _responseWriter.WriteAsync(new SessionResponse(id));
     }
 }

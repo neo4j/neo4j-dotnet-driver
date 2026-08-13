@@ -16,13 +16,17 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record VerifyAuthenticationRequest(
-    Stored<IDriver> Driver,
-    AuthorizationToken AuthorizationToken) : IProtocolMessage;
+internal record VerifyAuthenticationRequest : IProtocolMessage
+{
+    [StoredObject]
+    public required IDriver Driver { get; init; }
+    public required string DriverId { get; init; }
+    public required AuthorizationToken AuthorizationToken { get; init; }
+}
 
 internal record DriverIsAuthenticatedResponse(string Id, bool Authenticated) : IProtocolMessage;
 
@@ -40,13 +44,13 @@ internal class VerifyAuthenticationHandler : MessageHandler<VerifyAuthentication
     public override async Task ProcessAsync(VerifyAuthenticationRequest message)
     {
         var authenticated =
-            await message.Driver.Object.VerifyAuthenticationAsync(message.AuthorizationToken.ToAuthToken());
+            await message.Driver.VerifyAuthenticationAsync(message.AuthorizationToken.ToAuthToken());
 
         _logger.LogDebug(
             "Verified authentication for driver with id '{Id}': {Authenticated}",
-            message.Driver.Id,
+            message.DriverId,
             authenticated);
 
-        await _responseWriter.WriteAsync(new DriverIsAuthenticatedResponse(message.Driver.Id, authenticated));
+        await _responseWriter.WriteAsync(new DriverIsAuthenticatedResponse(message.DriverId, authenticated));
     }
 }

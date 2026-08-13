@@ -85,7 +85,7 @@ public class ExecuteQueryConfigMapperTests
         var bookmarkManagerMock = new Mock<IBookmarkManager>();
         _autoMocker.GetMock<IObjectStore>()
             .Setup(r => r.Get<IBookmarkManager>("bm-1"))
-            .Returns(new Stored<IBookmarkManager>("bm-1", bookmarkManagerMock.Object));
+            .Returns(bookmarkManagerMock.Object);
 
         var config = Map(new ExecuteQueryConfig { BookmarkManagerId = "bm-1" });
 

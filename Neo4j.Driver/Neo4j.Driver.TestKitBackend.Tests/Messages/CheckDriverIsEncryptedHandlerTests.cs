@@ -17,7 +17,6 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -31,10 +30,9 @@ public class CheckDriverIsEncryptedHandlerTests
     {
         var driverMock = _autoMocker.GetMock<IDriver>();
         driverMock.SetupGet(d => d.Encrypted).Returns(true);
-        var stored = new Stored<IDriver>("driver-1", driverMock.Object);
 
         var handler = _autoMocker.CreateInstance<CheckDriverIsEncryptedHandler>();
-        var request = new CheckDriverIsEncryptedRequest(stored);
+        var request = new CheckDriverIsEncryptedRequest { Driver = driverMock.Object };
 
         await handler.ProcessAsync(request);
 

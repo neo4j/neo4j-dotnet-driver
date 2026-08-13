@@ -15,7 +15,6 @@
 
 using System.Reflection;
 using System.Runtime.ExceptionServices;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
@@ -33,16 +32,9 @@ internal class NewSessionConfigMapper : INewSessionConfigMapper
         nameof(NewSessionRequest.AuthorizationToken),
         nameof(NewSessionRequest.NotificationsMinSeverity),
         nameof(NewSessionRequest.NotificationsDisabledCategories),
-        nameof(NewSessionRequest.BookmarkManagerId),
+        nameof(NewSessionRequest.BookmarkManager),
         nameof(NewSessionRequest.Driver)
     ];
-
-    private readonly IObjectStore _objectStore;
-
-    public NewSessionConfigMapper(IObjectStore objectStore)
-    {
-        _objectStore = objectStore;
-    }
 
     public void Apply(NewSessionRequest request, ISessionConfigBuilder builder)
     {
@@ -54,11 +46,11 @@ internal class NewSessionConfigMapper : INewSessionConfigMapper
         ApplyRemainingProperties(request, builder);
     }
 
-    private void ApplyBookmarkManager(NewSessionRequest request, ISessionConfigBuilder builder)
+    private static void ApplyBookmarkManager(NewSessionRequest request, ISessionConfigBuilder builder)
     {
-        if (request.BookmarkManagerId is { } bookmarkManagerId)
+        if (request.BookmarkManager is { } bookmarkManager)
         {
-            builder.WithBookmarkManager(_objectStore.Get<IBookmarkManager>(bookmarkManagerId).Object);
+            builder.WithBookmarkManager(bookmarkManager);
         }
     }
 

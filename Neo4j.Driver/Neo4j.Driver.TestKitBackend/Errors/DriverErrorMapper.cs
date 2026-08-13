@@ -42,14 +42,14 @@ internal class DriverErrorMapper : IDriverErrorMapper
 
     public DriverErrorResponse Map(Exception exception)
     {
-        var stored = _objectStore.Store(exception);
+        var errorId = _objectStore.Store(exception);
         var errorType = _exceptionTypeMapper.Map(exception);
 
         return exception switch
         {
             Neo4jException nex => new DriverErrorResponse
             {
-                Id = stored.Id,
+                Id = errorId,
                 ErrorType = errorType,
                 Msg = nex.Message,
                 Code = nex.Code ?? errorType,
@@ -64,7 +64,7 @@ internal class DriverErrorMapper : IDriverErrorMapper
             },
             _ => new DriverErrorResponse
             {
-                Id = stored.Id,
+                Id = errorId,
                 ErrorType = errorType,
                 Msg = exception.Message,
                 Code = errorType,

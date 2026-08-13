@@ -82,12 +82,12 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
         var driver = message.AuthTokenManagerId is not null
             ? GraphDatabase.Driver(
                 message.Uri,
-                _objectStore.Get<IAuthTokenManager>(message.AuthTokenManagerId).Object,
+                _objectStore.Get<IAuthTokenManager>(message.AuthTokenManagerId),
                 Configure)
             : GraphDatabase.Driver(message.Uri, message.AuthorizationToken?.ToAuthToken(), Configure);
 
-        var stored = _objectStore.Store(driver);
-        _logger.LogDebug("Created driver with id '{Id}'", stored.Id);
-        await _responseWriter.WriteAsync(new DriverResponse(stored.Id));
+        var id = _objectStore.Store(driver);
+        _logger.LogDebug("Created driver with id '{Id}'", id);
+        await _responseWriter.WriteAsync(new DriverResponse(id));
     }
 }

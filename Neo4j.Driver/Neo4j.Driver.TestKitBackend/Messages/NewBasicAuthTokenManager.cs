@@ -46,15 +46,11 @@ internal class NewBasicAuthTokenManagerHandler : MessageHandler<NewBasicAuthToke
 
     public override async Task ProcessAsync(NewBasicAuthTokenManagerRequest message)
     {
-        var stored = _objectStore.Store(CreateStoredManager);
-        _logger.LogDebug("Created basic auth token manager with id '{Id}'", stored.Id);
-        await _responseWriter.WriteAsync(new BasicAuthTokenManagerResponse(stored.Id));
-    }
+        var id = _objectStore.Store(storageId => 
+            AuthTokenManagers.Basic(() => ProvideTokenAsync(storageId)));
 
-    private IAuthTokenManager CreateStoredManager(string storageId)
-    {
-        ValueTask<IAuthToken> ProvideFromManager() => ProvideTokenAsync(storageId);
-        return AuthTokenManagers.Basic(ProvideFromManager);
+        _logger.LogDebug("Created basic auth token manager with id '{Id}'", id);
+        await _responseWriter.WriteAsync(new BasicAuthTokenManagerResponse(id));
     }
 
     private async ValueTask<IAuthToken> ProvideTokenAsync(string storageId)

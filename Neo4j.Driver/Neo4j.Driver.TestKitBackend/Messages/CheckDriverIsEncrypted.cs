@@ -16,11 +16,15 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record CheckDriverIsEncryptedRequest(Stored<IDriver> Driver) : IProtocolMessage;
+internal record CheckDriverIsEncryptedRequest : IProtocolMessage
+{
+    [StoredObject]
+    public required IDriver Driver { get; init; }
+}
 
 internal record DriverIsEncryptedResponse(bool Encrypted) : IProtocolMessage;
 
@@ -37,8 +41,8 @@ internal class CheckDriverIsEncryptedHandler : MessageHandler<CheckDriverIsEncry
 
     public override async Task ProcessAsync(CheckDriverIsEncryptedRequest message)
     {
-        var encrypted = message.Driver.Object.Encrypted;
-        _logger.LogDebug("Checked encryption for driver with id '{Id}': {Encrypted}", message.Driver.Id, encrypted);
+        var encrypted = message.Driver.Encrypted;
+        _logger.LogDebug("Checked encryption: {Encrypted}", encrypted);
         await _responseWriter.WriteAsync(new DriverIsEncryptedResponse(encrypted));
     }
 }

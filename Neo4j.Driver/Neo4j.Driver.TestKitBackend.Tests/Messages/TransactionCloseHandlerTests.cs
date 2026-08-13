@@ -17,7 +17,6 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -32,7 +31,7 @@ public class TransactionCloseHandlerTests
         var txMock = _autoMocker.GetMock<IAsyncTransaction>();
 
         var handler = _autoMocker.CreateInstance<TransactionCloseHandler>();
-        var request = new TransactionCloseRequest(new Stored<IAsyncTransaction>("tx-1", txMock.Object));
+        var request = new TransactionCloseRequest { Tx = txMock.Object, TxId = "tx-1" };
 
         await handler.ProcessAsync(request);
 

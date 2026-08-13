@@ -16,11 +16,15 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record SessionLastBookmarksRequest(Stored<IAsyncSession> Session) : IProtocolMessage;
+internal record SessionLastBookmarksRequest : IProtocolMessage
+{
+    [StoredObject]
+    public required IAsyncSession Session { get; init; }
+}
 
 internal record BookmarksResponse(string[] Bookmarks) : IProtocolMessage;
 
@@ -37,11 +41,8 @@ internal class SessionLastBookmarksHandler : MessageHandler<SessionLastBookmarks
 
     public override async Task ProcessAsync(SessionLastBookmarksRequest message)
     {
-        var bookmarks = message.Session.Object.LastBookmarks?.Values ?? [];
-        _logger.LogDebug(
-            "Got {Count} last bookmark(s) for session with id '{Id}'",
-            bookmarks.Length,
-            message.Session.Id);
+        var bookmarks = message.Session.LastBookmarks?.Values ?? [];
+        _logger.LogDebug("Got {Count} last bookmark(s)", bookmarks.Length);
 
         await _responseWriter.WriteAsync(new BookmarksResponse(bookmarks));
     }

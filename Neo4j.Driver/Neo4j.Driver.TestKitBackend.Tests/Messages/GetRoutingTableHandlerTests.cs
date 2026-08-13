@@ -22,7 +22,6 @@ using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -47,7 +46,6 @@ public class GetRoutingTableHandlerTests
         var driverMock = _autoMocker.GetMock<IInternalDriver>();
         driverMock.Setup(d => d.GetRoutingTable(requestedDatabase)).Returns(routingTable);
 
-        var stored = new Stored<IDriver>("driver-1", driverMock.Object);
 
         IProtocolMessage? captured = null;
         _autoMocker.GetMock<IResponseWriter>()
@@ -56,7 +54,7 @@ public class GetRoutingTableHandlerTests
             .Returns(Task.CompletedTask);
 
         var handler = _autoMocker.CreateInstance<GetRoutingTableHandler>();
-        await handler.ProcessAsync(new GetRoutingTableRequest(stored, requestedDatabase));
+        await handler.ProcessAsync(new GetRoutingTableRequest { Driver = driverMock.Object, Database = requestedDatabase });
 
         return captured;
     }

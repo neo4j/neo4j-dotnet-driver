@@ -17,7 +17,6 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -32,7 +31,7 @@ public class TransactionCommitHandlerTests
         var txMock = _autoMocker.GetMock<IAsyncTransaction>();
 
         var handler = _autoMocker.CreateInstance<TransactionCommitHandler>();
-        var request = new TransactionCommitRequest(new Stored<IAsyncTransaction>("tx-1", txMock.Object));
+        var request = new TransactionCommitRequest { Tx = txMock.Object, TxId = "tx-1" };
 
         await handler.ProcessAsync(request);
 

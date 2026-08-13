@@ -16,11 +16,15 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record GetServerInfoRequest(Stored<IDriver> Driver) : IProtocolMessage;
+internal record GetServerInfoRequest : IProtocolMessage
+{
+    [StoredObject]
+    public required IDriver Driver { get; init; }
+}
 
 internal record ServerInfoResponse(string Address, string Agent, string ProtocolVersion) : IProtocolMessage;
 
@@ -37,8 +41,8 @@ internal class GetServerInfoHandler : MessageHandler<GetServerInfoRequest>
 
     public override async Task ProcessAsync(GetServerInfoRequest message)
     {
-        var info = await message.Driver.Object.GetServerInfoAsync();
-        _logger.LogDebug("Got server info for driver with id '{Id}'", message.Driver.Id);
+        var info = await message.Driver.GetServerInfoAsync();
+        _logger.LogDebug("Got server info");
         await _responseWriter.WriteAsync(new ServerInfoResponse(info.Address, info.Agent, info.ProtocolVersion));
     }
 }

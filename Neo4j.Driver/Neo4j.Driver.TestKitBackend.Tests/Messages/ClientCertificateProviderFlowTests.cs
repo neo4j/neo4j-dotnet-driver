@@ -42,7 +42,7 @@ public class ClientCertificateProviderFlowTests
                 create =>
                 {
                     provider = create("provider-1");
-                    return new Stored<IClientCertificateProvider>("provider-1", provider);
+                    return "provider-1";
                 });
 
         var newProviderHandler = new NewClientCertificateProviderHandler(

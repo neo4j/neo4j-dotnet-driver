@@ -47,13 +47,12 @@ public class SessionRunHandlerTests
                     It.IsAny<Action<TransactionConfigBuilder>>()))
             .ReturnsAsync(cursorMock.Object);
 
-        var storedCursor = new Stored<IResultCursor>("result-1", cursorMock.Object);
-        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store(cursorMock.Object)).Returns(storedCursor);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store(cursorMock.Object)).Returns("result-1");
 
         var handler = _autoMocker.CreateInstance<SessionRunHandler>();
         var request = new SessionRunRequest
         {
-            Session = new Stored<IAsyncSession>("session-1", sessionMock.Object),
+            Session = sessionMock.Object,
             Cypher = "RETURN 1 AS n"
         };
 
@@ -86,13 +85,12 @@ public class SessionRunHandlerTests
                     It.IsAny<Action<TransactionConfigBuilder>>()))
             .ReturnsAsync(cursorMock.Object);
 
-        var storedCursor = new Stored<IResultCursor>("result-1", cursorMock.Object);
-        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store(cursorMock.Object)).Returns(storedCursor);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store(cursorMock.Object)).Returns("result-1");
 
         var handler = _autoMocker.CreateInstance<SessionRunHandler>();
         var request = new SessionRunRequest
         {
-            Session = new Stored<IAsyncSession>("session-1", sessionMock.Object),
+            Session = sessionMock.Object,
             Cypher = "RETURN $p AS n",
             Params = parameters
         };
@@ -129,13 +127,12 @@ public class SessionRunHandlerTests
             .Setup(s => s.RunAsync("RETURN 1 AS n", It.IsAny<IDictionary<string, object>>(), configure))
             .ReturnsAsync(cursorMock.Object);
 
-        var storedCursor = new Stored<IResultCursor>("result-1", cursorMock.Object);
-        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store(cursorMock.Object)).Returns(storedCursor);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store(cursorMock.Object)).Returns("result-1");
 
         var handler = _autoMocker.CreateInstance<SessionRunHandler>();
         var request = new SessionRunRequest
         {
-            Session = new Stored<IAsyncSession>("session-1", sessionMock.Object),
+            Session = sessionMock.Object,
             Cypher = "RETURN 1 AS n",
             TxMeta = txMeta,
             Timeout = timeout

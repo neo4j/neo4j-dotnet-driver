@@ -17,7 +17,6 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -31,12 +30,14 @@ public class VerifyAuthenticationHandlerTests
     {
         var driverMock = _autoMocker.GetMock<IDriver>();
         driverMock.Setup(d => d.VerifyAuthenticationAsync(It.IsAny<IAuthToken>())).ReturnsAsync(true);
-        var stored = new Stored<IDriver>("driver-1", driverMock.Object);
 
         var handler = _autoMocker.CreateInstance<VerifyAuthenticationHandler>();
-        var request = new VerifyAuthenticationRequest(
-            stored,
-            new AuthorizationToken { Scheme = "basic", Principal = "neo4j", Credentials = "secret" });
+        var request = new VerifyAuthenticationRequest
+        {
+            Driver = driverMock.Object,
+            DriverId = "driver-1",
+            AuthorizationToken = new AuthorizationToken { Scheme = "basic", Principal = "neo4j", Credentials = "secret" }
+        };
 
         await handler.ProcessAsync(request);
 

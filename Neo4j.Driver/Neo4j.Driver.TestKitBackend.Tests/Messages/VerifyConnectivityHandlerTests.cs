@@ -30,11 +30,10 @@ public class VerifyConnectivityHandlerTests
     public async Task Verifies_connectivity_on_the_stored_driver_and_responds_with_its_id()
     {
         var driverMock = _autoMocker.GetMock<IDriver>();
-        var stored = new Stored<IDriver>("driver-1", driverMock.Object);
-        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Get<IDriver>("driver-1")).Returns(stored);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Get<IDriver>("driver-1")).Returns(driverMock.Object);
 
         var handler = _autoMocker.CreateInstance<VerifyConnectivityHandler>();
-        var request = new VerifyConnectivityRequest(stored);
+        var request = new VerifyConnectivityRequest { Driver = driverMock.Object, DriverId = "driver-1" };
 
         await handler.ProcessAsync(request);
 

@@ -16,11 +16,16 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record GetRoutingTableRequest(Stored<IDriver> Driver, string? Database = null) : IProtocolMessage;
+internal record GetRoutingTableRequest : IProtocolMessage
+{
+    [StoredObject]
+    public required IDriver Driver { get; init; }
+    public string? Database { get; init; }
+}
 
 internal record RoutingTableResponse(
     string? Database,
@@ -42,11 +47,8 @@ internal class GetRoutingTableHandler : MessageHandler<GetRoutingTableRequest>
 
     public override async Task ProcessAsync(GetRoutingTableRequest message)
     {
-        var routingTable = ((Internal.IInternalDriver)message.Driver.Object).GetRoutingTable(message.Database);
-        _logger.LogDebug(
-            "Fetched routing table for driver with id '{Id}', database '{Database}'",
-            message.Driver.Id,
-            message.Database);
+        var routingTable = ((Internal.IInternalDriver)message.Driver).GetRoutingTable(message.Database);
+        _logger.LogDebug("Fetched routing table for database '{Database}'", message.Database);
 
         // No cached table - testkit expects an empty RoutingTable here, not an error.
         await _responseWriter.WriteAsync(

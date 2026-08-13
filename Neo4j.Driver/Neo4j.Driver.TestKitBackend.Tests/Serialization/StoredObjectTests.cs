@@ -36,7 +36,6 @@ public class StoredObjectTests
     {
         [StoredObject]
         public required IFakeThing Thing { get; init; }
-
         public required string ThingId { get; init; }
     }
 
@@ -70,7 +69,7 @@ public class StoredObjectTests
     {
         _objectStoreMock
             .Setup(s => s.Get<IFakeThing>(id))
-            .Returns(new Stored<IFakeThing>(id, _thing));
+            .Returns(_thing);
     }
 
     [Fact]

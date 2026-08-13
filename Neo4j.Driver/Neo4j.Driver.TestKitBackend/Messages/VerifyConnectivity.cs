@@ -16,11 +16,16 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record VerifyConnectivityRequest(Stored<IDriver> Driver) : IProtocolMessage;
+internal record VerifyConnectivityRequest : IProtocolMessage
+{
+    [StoredObject]
+    public required IDriver Driver { get; init; }
+    public required string DriverId { get; init; }
+}
 
 internal class VerifyConnectivityHandler : MessageHandler<VerifyConnectivityRequest>
 {
@@ -35,8 +40,8 @@ internal class VerifyConnectivityHandler : MessageHandler<VerifyConnectivityRequ
 
     public override async Task ProcessAsync(VerifyConnectivityRequest message)
     {
-        await message.Driver.Object.VerifyConnectivityAsync();
-        _logger.LogDebug("Verified connectivity for driver with id '{Id}'", message.Driver.Id);
-        await _responseWriter.WriteAsync(new DriverResponse(message.Driver.Id));
+        await message.Driver.VerifyConnectivityAsync();
+        _logger.LogDebug("Verified connectivity for driver with id '{Id}'", message.DriverId);
+        await _responseWriter.WriteAsync(new DriverResponse(message.DriverId));
     }
 }

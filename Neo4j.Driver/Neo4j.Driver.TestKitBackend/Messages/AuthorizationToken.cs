@@ -34,7 +34,6 @@ internal record AuthorizationToken
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public Dictionary<string, object>? Parameters { get; init; }
-
     public IAuthToken ToAuthToken()
     {
         if (Scheme == "kerberos")

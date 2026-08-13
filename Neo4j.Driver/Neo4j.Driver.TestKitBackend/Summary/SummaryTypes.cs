@@ -40,7 +40,6 @@ internal record SummaryServerInfoResponse
 {
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public required string? Address { get; init; }
-
     public required string? Agent { get; init; }
     public required string? ProtocolVersion { get; init; }
 }

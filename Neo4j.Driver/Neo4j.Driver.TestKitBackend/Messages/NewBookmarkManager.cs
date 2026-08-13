@@ -51,9 +51,9 @@ internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequ
 
     public override async Task ProcessAsync(NewBookmarkManagerRequest message)
     {
-        var stored = _objectStore.Store(id => CreateStoredManager(message, id));
-        _logger.LogDebug("Created bookmark manager with id '{Id}'", stored.Id);
-        await _responseWriter.WriteAsync(new BookmarkManagerResponse(stored.Id));
+        var id = _objectStore.Store(newId => CreateStoredManager(message, newId));
+        _logger.LogDebug("Created bookmark manager with id '{Id}'", id);
+        await _responseWriter.WriteAsync(new BookmarkManagerResponse(id));
     }
 
     private IBookmarkManager CreateStoredManager(NewBookmarkManagerRequest message, string storageId)

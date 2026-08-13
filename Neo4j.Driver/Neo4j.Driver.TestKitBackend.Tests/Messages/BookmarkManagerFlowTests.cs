@@ -39,7 +39,7 @@ public class BookmarkManagerFlowTests
                 create =>
                 {
                     manager = create("bm-1");
-                    return new Stored<IBookmarkManager>("bm-1", manager);
+                    return "bm-1";
                 });
 
         var handler = new NewBookmarkManagerHandler(

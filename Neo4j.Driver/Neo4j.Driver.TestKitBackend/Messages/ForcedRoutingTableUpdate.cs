@@ -16,13 +16,15 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record ForcedRoutingTableUpdateRequest : IProtocolMessage
 {
-    public required Stored<IDriver> Driver { get; init; }
+    [StoredObject]
+    public required IDriver Driver { get; init; }
+    public required string DriverId { get; init; }
     public string? Database { get; init; }
     public string[]? Bookmarks { get; init; }
 }
@@ -40,14 +42,14 @@ internal class ForcedRoutingTableUpdateHandler : MessageHandler<ForcedRoutingTab
 
     public override async Task ProcessAsync(ForcedRoutingTableUpdateRequest message)
     {
-        var driver = (Internal.IInternalDriver)message.Driver.Object;
+        var driver = (Internal.IInternalDriver)message.Driver;
         var bookmarks = message.Bookmarks is { } bm ? Bookmarks.From(bm) : Bookmarks.Empty;
         await driver.ForceRoutingTableUpdateAsync(message.Database, bookmarks);
         _logger.LogDebug(
             "Forced routing table update for driver with id '{Id}', database '{Database}'",
-            message.Driver.Id,
+            message.DriverId,
             message.Database);
 
-        await _responseWriter.WriteAsync(new DriverResponse(message.Driver.Id));
+        await _responseWriter.WriteAsync(new DriverResponse(message.DriverId));
     }
 }

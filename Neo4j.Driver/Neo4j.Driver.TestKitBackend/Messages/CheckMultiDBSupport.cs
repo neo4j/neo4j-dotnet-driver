@@ -16,11 +16,16 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record CheckMultiDBSupportRequest(Stored<IDriver> Driver) : IProtocolMessage;
+internal record CheckMultiDBSupportRequest : IProtocolMessage
+{
+    [StoredObject]
+    public required IDriver Driver { get; init; }
+    public required string DriverId { get; init; }
+}
 
 internal record MultiDBSupportResponse(string Id, bool Available) : IProtocolMessage;
 
@@ -37,8 +42,8 @@ internal class CheckMultiDBSupportHandler : MessageHandler<CheckMultiDBSupportRe
 
     public override async Task ProcessAsync(CheckMultiDBSupportRequest message)
     {
-        var available = await message.Driver.Object.SupportsMultiDbAsync();
-        _logger.LogDebug("Checked multi-db support for driver with id '{Id}': {Available}", message.Driver.Id, available);
-        await _responseWriter.WriteAsync(new MultiDBSupportResponse(message.Driver.Id, available));
+        var available = await message.Driver.SupportsMultiDbAsync();
+        _logger.LogDebug("Checked multi-db support for driver with id '{Id}': {Available}", message.DriverId, available);
+        await _responseWriter.WriteAsync(new MultiDBSupportResponse(message.DriverId, available));
     }
 }

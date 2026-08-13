@@ -33,7 +33,7 @@ internal class StoredObjectConverter<T> : JsonConverter<T> where T : notnull
         var id = reader.GetString()
             ?? throw new TestKitProtocolException($"A stored {typeof(T).Name} id must be a string, not null.");
 
-        return _objectStore.Get<T>(id).Object;
+        return _objectStore.Get<T>(id);
     }
 
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)

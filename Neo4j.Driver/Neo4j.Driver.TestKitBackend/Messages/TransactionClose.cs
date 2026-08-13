@@ -16,11 +16,16 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record TransactionCloseRequest(Stored<IAsyncTransaction> Tx) : IProtocolMessage;
+internal record TransactionCloseRequest : IProtocolMessage
+{
+    [StoredObject]
+    public required IAsyncTransaction Tx { get; init; }
+    public required string TxId { get; init; }
+}
 
 internal class TransactionCloseHandler : MessageHandler<TransactionCloseRequest>
 {
@@ -35,8 +40,8 @@ internal class TransactionCloseHandler : MessageHandler<TransactionCloseRequest>
 
     public override async Task ProcessAsync(TransactionCloseRequest message)
     {
-        await message.Tx.Object.DisposeAsync();
-        _logger.LogDebug("Closed transaction with id '{Id}'", message.Tx.Id);
-        await _responseWriter.WriteAsync(new TransactionResponse(message.Tx.Id));
+        await message.Tx.DisposeAsync();
+        _logger.LogDebug("Closed transaction with id '{Id}'", message.TxId);
+        await _responseWriter.WriteAsync(new TransactionResponse(message.TxId));
     }
 }

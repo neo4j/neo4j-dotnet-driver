@@ -16,11 +16,16 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record TransactionCommitRequest(Stored<IAsyncTransaction> Tx) : IProtocolMessage;
+internal record TransactionCommitRequest : IProtocolMessage
+{
+    [StoredObject]
+    public required IAsyncTransaction Tx { get; init; }
+    public required string TxId { get; init; }
+}
 
 internal class TransactionCommitHandler : MessageHandler<TransactionCommitRequest>
 {
@@ -35,8 +40,8 @@ internal class TransactionCommitHandler : MessageHandler<TransactionCommitReques
 
     public override async Task ProcessAsync(TransactionCommitRequest message)
     {
-        await message.Tx.Object.CommitAsync();
-        _logger.LogDebug("Committed transaction with id '{Id}'", message.Tx.Id);
-        await _responseWriter.WriteAsync(new TransactionResponse(message.Tx.Id));
+        await message.Tx.CommitAsync();
+        _logger.LogDebug("Committed transaction with id '{Id}'", message.TxId);
+        await _responseWriter.WriteAsync(new TransactionResponse(message.TxId));
     }
 }

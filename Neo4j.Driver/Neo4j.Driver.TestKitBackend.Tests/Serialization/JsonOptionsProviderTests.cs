@@ -54,9 +54,7 @@ public class JsonOptionsProviderTests
 
         private JsonSerializerOptions RealOptions()
         {
-            return new JsonOptionsProvider(
-                    [new StoredConverterFactory(_objectStoreMock.Object), new OptionalConverterFactory()],
-                    _objectStoreMock.Object)
+            return new JsonOptionsProvider([new OptionalConverterFactory()], _objectStoreMock.Object)
                 .GetOptions();
         }
 
@@ -65,23 +63,23 @@ public class JsonOptionsProviderTests
             var session = Mock.Of<IAsyncSession>();
             _objectStoreMock
                 .Setup(s => s.Get<IAsyncSession>("session-1"))
-                .Returns(new Stored<IAsyncSession>("session-1", session));
+                .Returns(session);
 
             return JsonSerializer.Deserialize<SessionRunRequest>(json, RealOptions())!;
         }
 
         [Fact]
-        public void A_Stored_handle_id_resolves_through_the_ObjectStore_using_the_renamed_key()
+        public void A_stored_object_property_resolves_through_the_scopes_ObjectStore()
         {
-            var request = DeserializeSessionRun("""{"sessionId":"session-1","cypher":"RETURN 1"}""");
+            var request = DeserializeSessionRun("""{"session":"session-1","cypher":"RETURN 1"}""");
 
-            request.Session.Id.Should().Be("session-1");
+            request.Session.Should().NotBeNull();
         }
 
         [Fact]
         public void An_absent_Optional_field_is_not_specified()
         {
-            var request = DeserializeSessionRun("""{"sessionId":"session-1","cypher":"RETURN 1"}""");
+            var request = DeserializeSessionRun("""{"session":"session-1","cypher":"RETURN 1"}""");
 
             request.Timeout.IsSpecified(out _).Should().BeFalse();
         }
@@ -90,7 +88,7 @@ public class JsonOptionsProviderTests
         public void An_explicit_null_Optional_field_is_specified_as_null()
         {
             var request = DeserializeSessionRun(
-                """{"sessionId":"session-1","cypher":"RETURN 1","timeout":null}""");
+                """{"session":"session-1","cypher":"RETURN 1","timeout":null}""");
 
             request.Timeout.IsSpecified(out var value).Should().BeTrue();
             value.Should().BeNull();
@@ -100,7 +98,7 @@ public class JsonOptionsProviderTests
         public void A_present_numeric_Optional_field_is_specified_with_its_value()
         {
             var request = DeserializeSessionRun(
-                """{"sessionId":"session-1","cypher":"RETURN 1","timeout":5000}""");
+                """{"session":"session-1","cypher":"RETURN 1","timeout":5000}""");
 
             request.Timeout.IsSpecified(out var value).Should().BeTrue();
             value.Should().Be(5000L);
@@ -109,7 +107,7 @@ public class JsonOptionsProviderTests
         [Fact]
         public void A_missing_required_field_throws()
         {
-            var read = () => DeserializeSessionRun("""{"sessionId":"session-1"}""");
+            var read = () => DeserializeSessionRun("""{"session":"session-1"}""");
 
             read.Should().Throw<JsonException>();
         }
@@ -117,7 +115,7 @@ public class JsonOptionsProviderTests
         [Fact]
         public void An_explicit_null_for_a_required_non_nullable_field_throws()
         {
-            var read = () => DeserializeSessionRun("""{"sessionId":"session-1","cypher":null}""");
+            var read = () => DeserializeSessionRun("""{"session":"session-1","cypher":null}""");
 
             read.Should().Throw<JsonException>();
         }

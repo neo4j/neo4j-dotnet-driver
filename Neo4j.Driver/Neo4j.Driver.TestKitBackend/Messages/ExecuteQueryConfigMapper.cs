@@ -42,7 +42,7 @@ internal class ExecuteQueryConfigMapper : IExecuteQueryConfigMapper
         {
             null => (default(IBookmarkManager), true),
             "-1" => (default(IBookmarkManager), false),
-            var id => (_objectStore.Get<IBookmarkManager>(id).Object, true)
+            var id => (_objectStore.Get<IBookmarkManager>(id), true)
         };
 
         var transactionConfig = new TransactionConfig(

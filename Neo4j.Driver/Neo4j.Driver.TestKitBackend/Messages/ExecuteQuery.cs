@@ -20,8 +20,8 @@ using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Summary;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
@@ -31,10 +31,8 @@ internal record ExecuteQueryConfig
     public string? Database { get; init; }
     public string? ImpersonatedUser { get; init; }
 
-    // testkit sends the disable sentinel as the JSON number -1, and a real id as a JSON string.
     [JsonConverter(typeof(BookmarkManagerIdConverter))]
     public string? BookmarkManagerId { get; init; }
-
     public Dictionary<string, ICypherValue>? TxMeta { get; init; }
     public long? Timeout { get; init; }
     public AuthorizationToken? AuthorizationToken { get; init; }
@@ -57,7 +55,8 @@ internal class BookmarkManagerIdConverter : JsonConverter<string>
 
 internal record ExecuteQueryRequest : IProtocolMessage
 {
-    public required Stored<IDriver> Driver { get; init; }
+    [StoredObject]
+    public required IDriver Driver { get; init; }
     public required string Cypher { get; init; }
     public Dictionary<string, ICypherValue>? Params { get; init; }
     public required ExecuteQueryConfig Config { get; init; }
@@ -95,12 +94,9 @@ internal class ExecuteQueryHandler : MessageHandler<ExecuteQueryRequest>
 
     public override async Task ProcessAsync(ExecuteQueryRequest message)
     {
-        _logger.LogDebug(
-            "Executing query '{Cypher}' on driver with id '{DriverId}'",
-            message.Cypher,
-            message.Driver.Id);
+        _logger.LogDebug("Executing query '{Cypher}'", message.Cypher);
 
-        var eagerResult = await message.Driver.Object
+        var eagerResult = await message.Driver
             .ExecutableQuery(message.Cypher)
             .WithParameters(_cypherToNativeMapper.Map(message.Params))
             .WithConfig(_configMapper.Map(message.Config))

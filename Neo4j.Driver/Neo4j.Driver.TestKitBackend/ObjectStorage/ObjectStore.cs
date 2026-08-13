@@ -30,20 +30,19 @@ internal class ObjectStore : IObjectStore, IAsyncDisposable
         _logger = logger;
     }
 
-    public Stored<T> Store<T>(T obj) where T : notnull
+    public string Store<T>(T obj) where T : notnull
     {
         return Store(_ => obj);
     }
 
-    public Stored<T> Store<T>(Func<string, T> create) where T : notnull
+    public string Store<T>(Func<string, T> create) where T : notnull
     {
         var id = (_nextId++).ToString();
-        var obj = create(id);
-        _objects[id] = obj;
-        return new Stored<T>(id, obj);
+        _objects[id] = create(id);
+        return id;
     }
 
-    public Stored<T> Get<T>(string id) where T : notnull
+    public T Get<T>(string id) where T : notnull
     {
         if (!_objects.TryGetValue(id, out var obj))
         {
@@ -56,7 +55,7 @@ internal class ObjectStore : IObjectStore, IAsyncDisposable
                 $"The object stored with id '{id}' is a {obj.GetType().Name}, not a {typeof(T).Name}.");
         }
 
-        return new Stored<T>(id, typed);
+        return typed;
     }
 
     public void Remove(string id)

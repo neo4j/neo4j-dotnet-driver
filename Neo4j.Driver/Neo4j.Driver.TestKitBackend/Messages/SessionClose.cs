@@ -17,10 +17,16 @@ using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record SessionCloseRequest(Stored<IAsyncSession> Session) : IProtocolMessage;
+internal record SessionCloseRequest : IProtocolMessage
+{
+    [StoredObject]
+    public required IAsyncSession Session { get; init; }
+    public required string SessionId { get; init; }
+}
 
 internal class SessionCloseHandler : MessageHandler<SessionCloseRequest>
 {
@@ -37,9 +43,9 @@ internal class SessionCloseHandler : MessageHandler<SessionCloseRequest>
 
     public override async Task ProcessAsync(SessionCloseRequest message)
     {
-        await message.Session.Object.CloseAsync();
-        _objectStore.Remove(message.Session.Id);
-        _logger.LogDebug("Closed session with id '{Id}'", message.Session.Id);
-        await _responseWriter.WriteAsync(new SessionResponse(message.Session.Id));
+        await message.Session.CloseAsync();
+        _objectStore.Remove(message.SessionId);
+        _logger.LogDebug("Closed session with id '{Id}'", message.SessionId);
+        await _responseWriter.WriteAsync(new SessionResponse(message.SessionId));
     }
 }

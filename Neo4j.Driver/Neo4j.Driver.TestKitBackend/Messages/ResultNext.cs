@@ -16,11 +16,15 @@
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record ResultNextRequest(Stored<IResultCursor> Result) : IProtocolMessage;
+internal record ResultNextRequest : IProtocolMessage
+{
+    [StoredObject]
+    public required IResultCursor Result { get; init; }
+}
 
 internal record RecordResponse(IReadOnlyList<ICypherValue> Values) : IProtocolMessage;
 
@@ -39,7 +43,7 @@ internal class ResultNextHandler : MessageHandler<ResultNextRequest>
 
     public override async Task ProcessAsync(ResultNextRequest message)
     {
-        var cursor = message.Result.Object;
+        var cursor = message.Result;
         if (!await cursor.FetchAsync())
         {
             await _responseWriter.WriteAsync(new NullRecordResponse());

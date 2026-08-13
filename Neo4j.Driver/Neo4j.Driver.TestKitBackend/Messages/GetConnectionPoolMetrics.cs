@@ -16,11 +16,16 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record GetConnectionPoolMetricsRequest(Stored<IDriver> Driver, string Address) : IProtocolMessage;
+internal record GetConnectionPoolMetricsRequest : IProtocolMessage
+{
+    [StoredObject]
+    public required IDriver Driver { get; init; }
+    public required string Address { get; init; }
+}
 
 internal record ConnectionPoolMetricsResponse(int InUse, int Idle) : IProtocolMessage;
 
@@ -37,16 +42,13 @@ internal class GetConnectionPoolMetricsHandler : MessageHandler<GetConnectionPoo
 
     public override async Task ProcessAsync(GetConnectionPoolMetricsRequest message)
     {
-        var driver = (Internal.Driver)message.Driver.Object;
+        var driver = (Internal.Driver)message.Driver;
         var metrics = driver.Context.Metrics.ConnectionPoolMetrics
             .Where(x => x.Value.Id.Contains(message.Address, StringComparison.OrdinalIgnoreCase))
             .Select(x => x.Value)
             .First();
 
-        _logger.LogDebug(
-            "Fetched connection pool metrics for driver with id '{Id}', address '{Address}'",
-            message.Driver.Id,
-            message.Address);
+        _logger.LogDebug("Fetched connection pool metrics for address '{Address}'", message.Address);
 
         await _responseWriter.WriteAsync(new ConnectionPoolMetricsResponse(metrics.InUse, metrics.Idle));
     }

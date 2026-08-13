@@ -47,9 +47,9 @@ internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCer
 
     public override async Task ProcessAsync(NewClientCertificateProviderRequest message)
     {
-        var stored = _objectStore.Store(CreateStoredProvider);
-        _logger.LogDebug("Created client certificate provider with id '{Id}'", stored.Id);
-        await _responseWriter.WriteAsync(new ClientCertificateProviderResponse(stored.Id));
+        var id = _objectStore.Store(CreateStoredProvider);
+        _logger.LogDebug("Created client certificate provider with id '{Id}'", id);
+        await _responseWriter.WriteAsync(new ClientCertificateProviderResponse(id));
     }
 
     private IClientCertificateProvider CreateStoredProvider(string storageId)

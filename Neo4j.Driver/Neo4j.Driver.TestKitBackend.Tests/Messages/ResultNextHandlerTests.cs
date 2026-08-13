@@ -18,7 +18,6 @@ using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -29,7 +28,7 @@ public class ResultNextHandlerTests
 
     private ResultNextRequest RequestFor(IResultCursor cursor)
     {
-        return new ResultNextRequest(new Stored<IResultCursor>("result-1", cursor));
+        return new ResultNextRequest { Result = cursor };
     }
 
     [Fact]

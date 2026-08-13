@@ -51,9 +51,9 @@ internal class NewBearerAuthTokenManagerHandler : MessageHandler<NewBearerAuthTo
 
     public override async Task ProcessAsync(NewBearerAuthTokenManagerRequest message)
     {
-        var stored = _objectStore.Store(CreateStoredManager);
-        _logger.LogDebug("Created bearer auth token manager with id '{Id}'", stored.Id);
-        await _responseWriter.WriteAsync(new BearerAuthTokenManagerResponse(stored.Id));
+        var id = _objectStore.Store(CreateStoredManager);
+        _logger.LogDebug("Created bearer auth token manager with id '{Id}'", id);
+        await _responseWriter.WriteAsync(new BearerAuthTokenManagerResponse(id));
     }
 
     private IAuthTokenManager CreateStoredManager(string storageId)

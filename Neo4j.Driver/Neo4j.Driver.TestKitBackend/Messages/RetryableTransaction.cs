@@ -19,13 +19,16 @@ using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.Serialization;
 using Neo4j.Driver.TestKitBackend.Types;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal interface IRetryableTransactionRequest
 {
-    Stored<IAsyncSession> Session { get; }
+    IAsyncSession Session { get; }
+
+    string SessionId { get; }
 
     Dictionary<string, ICypherValue>? TxMeta { get; }
 
@@ -34,7 +37,9 @@ internal interface IRetryableTransactionRequest
 
 internal record SessionReadTransactionRequest : IProtocolMessage, IRetryableTransactionRequest
 {
-    public required Stored<IAsyncSession> Session { get; init; }
+    [StoredObject]
+    public required IAsyncSession Session { get; init; }
+    public required string SessionId { get; init; }
 
     public Dictionary<string, ICypherValue>? TxMeta { get; init; }
 
@@ -44,7 +49,9 @@ internal record SessionReadTransactionRequest : IProtocolMessage, IRetryableTran
 
 internal record SessionWriteTransactionRequest : IProtocolMessage, IRetryableTransactionRequest
 {
-    public required Stored<IAsyncSession> Session { get; init; }
+    [StoredObject]
+    public required IAsyncSession Session { get; init; }
+    public required string SessionId { get; init; }
 
     public Dictionary<string, ICypherValue>? TxMeta { get; init; }
 
@@ -56,9 +63,9 @@ internal record RetryableTryResponse(string Id) : IProtocolMessage;
 
 internal record RetryableDoneResponse : IProtocolMessage;
 
-internal record RetryablePositiveRequest(Stored<IAsyncSession> Session) : IProtocolMessage;
+internal record RetryablePositiveRequest(string SessionId) : IProtocolMessage;
 
-internal record RetryableNegativeRequest(Stored<IAsyncSession> Session, string ErrorId) : IProtocolMessage;
+internal record RetryableNegativeRequest(string SessionId, string ErrorId) : IProtocolMessage;
 
 internal enum RetryableOutcome
 {
@@ -92,10 +99,10 @@ internal abstract class RetryableTransactionHandler<T> : MessageHandler<T>
 
     public override async Task ProcessAsync(T message)
     {
-        var sessionId = message.Session.Id;
+        var sessionId = message.SessionId;
 
         await ExecuteTransactionAsync(
-            message.Session.Object,
+            message.Session,
             runner => RunAttemptAsync(runner, sessionId),
             _transactionConfigMapper.Map(message.TxMeta, message.Timeout));
 
@@ -104,8 +111,8 @@ internal abstract class RetryableTransactionHandler<T> : MessageHandler<T>
 
     private async Task RunAttemptAsync(IAsyncQueryRunner runner, string sessionId)
     {
-        var stored = _objectStore.Store((IAsyncTransaction)runner);
-        await _roundTrip.SendExpectingAsync<RetryableOutcome>(new RetryableTryResponse(stored.Id), sessionId);
+        var id = _objectStore.Store((IAsyncTransaction)runner);
+        await _roundTrip.SendExpectingAsync<RetryableOutcome>(new RetryableTryResponse(id), sessionId);
     }
 }
 
@@ -160,7 +167,7 @@ internal class RetryablePositiveHandler : MessageHandler<RetryablePositiveReques
 
     public override Task ProcessAsync(RetryablePositiveRequest message)
     {
-        _expectationStore.Fulfil(message.Session.Id, RetryableOutcome.Positive);
+        _expectationStore.Fulfil(message.SessionId, RetryableOutcome.Positive);
         return Task.CompletedTask;
     }
 }
@@ -180,9 +187,9 @@ internal class RetryableNegativeHandler : MessageHandler<RetryableNegativeReques
     {
         var exception = message.ErrorId == ""
             ? new FrontendException("Error from client in retryable tx")
-            : _objectStore.Get<Exception>(message.ErrorId).Object;
+            : _objectStore.Get<Exception>(message.ErrorId);
 
-        _expectationStore.Fail(message.Session.Id, exception);
+        _expectationStore.Fail(message.SessionId, exception);
         return Task.CompletedTask;
     }
 }

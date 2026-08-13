@@ -34,7 +34,7 @@ internal class JsonOptionsProvider : IJsonOptionsProvider
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             TypeInfoResolver = new DefaultJsonTypeInfoResolver
             {
-                Modifiers = { BindHandlesToIdMembers, AttachProtocolEnvelopeConverters, AttachStoredObjectConverters }
+                Modifiers = { AttachProtocolEnvelopeConverters, AttachStoredObjectConverters }
             },
         };
 
@@ -45,20 +45,6 @@ internal class JsonOptionsProvider : IJsonOptionsProvider
     }
 
     public JsonSerializerOptions GetOptions() => _options;
-
-    private static void BindHandlesToIdMembers(JsonTypeInfo typeInfo)
-    {
-        foreach (var property in typeInfo.Properties)
-        {
-            var isStored = property.PropertyType.IsGenericType &&
-                property.PropertyType.GetGenericTypeDefinition() == typeof(Stored<>);
-
-            if (isStored)
-            {
-                property.Name += "Id";
-            }
-        }
-    }
 
     private static void AttachProtocolEnvelopeConverters(JsonTypeInfo typeInfo)
     {

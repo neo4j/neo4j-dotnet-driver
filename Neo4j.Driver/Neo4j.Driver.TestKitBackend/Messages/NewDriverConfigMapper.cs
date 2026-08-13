@@ -95,7 +95,7 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
 
         if (request.ClientCertificateProviderId is { } providerId)
         {
-            builder.WithClientCertificateProvider(_objectStore.Get<IClientCertificateProvider>(providerId).Object);
+            builder.WithClientCertificateProvider(_objectStore.Get<IClientCertificateProvider>(providerId));
         }
     }
 

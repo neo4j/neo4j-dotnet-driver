@@ -45,19 +45,13 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
 
     public override async Task ProcessAsync(NewAuthTokenManagerRequest message)
     {
-        var stored = _objectStore.Store(CreateStoredManager);
-        _logger.LogDebug("Created auth token manager with id '{Id}'", stored.Id);
-        await _responseWriter.WriteAsync(new AuthTokenManagerResponse(stored.Id));
-    }
+        var id = _objectStore.Store<IAuthTokenManager>(storageId =>
+            new TestKitAuthTokenManager(
+                () => GetAuthAsync(storageId),
+                (token, exception) => HandleSecurityExceptionAsync(storageId, token, exception)));
 
-    private IAuthTokenManager CreateStoredManager(string storageId)
-    {
-        ValueTask<IAuthToken> GetFromManager() => GetAuthAsync(storageId);
-
-        ValueTask<bool> HandleFromManager(IAuthToken token, SecurityException exception) =>
-            HandleSecurityExceptionAsync(storageId, token, exception);
-
-        return new TestKitAuthTokenManager(GetFromManager, HandleFromManager);
+        _logger.LogDebug("Created auth token manager with id '{Id}'", id);
+        await _responseWriter.WriteAsync(new AuthTokenManagerResponse(id));
     }
 
     private async ValueTask<IAuthToken> GetAuthAsync(string storageId)

@@ -45,7 +45,7 @@ public class NewDriverHandlerTests
     {
         _autoMocker.GetMock<IObjectStore>()
             .Setup(r => r.Store(It.IsAny<IDriver>()))
-            .Returns((IDriver driver) => new Stored<IDriver>(id, driver));
+            .Returns(id);
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public class NewDriverHandlerTests
         _autoMocker.GetMock<IObjectStore>()
             .Setup(r => r.Store(It.IsAny<IDriver>()))
             .Callback((IDriver driver) => created = driver)
-            .Returns((IDriver driver) => new Stored<IDriver>("driver-1", driver));
+            .Returns((IDriver driver) => "driver-1");
 
         var neo4JLogger = Mock.Of<INeo4jLogger>();
         _autoMocker.Use(neo4JLogger);
@@ -98,7 +98,7 @@ public class NewDriverHandlerTests
         _autoMocker.GetMock<IObjectStore>()
             .Setup(r => r.Store(It.IsAny<IDriver>()))
             .Callback((IDriver driver) => created = driver)
-            .Returns((IDriver driver) => new Stored<IDriver>("driver-1", driver));
+            .Returns((IDriver driver) => "driver-1");
 
         var handler = _autoMocker.CreateInstance<NewDriverHandler>();
 

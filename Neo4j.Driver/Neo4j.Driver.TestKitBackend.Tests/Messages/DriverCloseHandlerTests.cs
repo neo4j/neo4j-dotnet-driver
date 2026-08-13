@@ -17,7 +17,6 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -30,10 +29,9 @@ public class DriverCloseHandlerTests
     public async Task Closes_the_driver_and_responds_with_its_id()
     {
         var driverMock = _autoMocker.GetMock<IDriver>();
-        var stored = new Stored<IDriver>("driver-1", driverMock.Object);
 
         var handler = _autoMocker.CreateInstance<DriverCloseHandler>();
-        var request = new DriverCloseRequest(stored);
+        var request = new DriverCloseRequest { Driver = driverMock.Object, DriverId = "driver-1" };
 
         await handler.ProcessAsync(request);
 

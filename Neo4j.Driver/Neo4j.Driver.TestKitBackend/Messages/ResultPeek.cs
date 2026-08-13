@@ -16,11 +16,15 @@
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record ResultPeekRequest(Stored<IResultCursor> Result) : IProtocolMessage;
+internal record ResultPeekRequest : IProtocolMessage
+{
+    [StoredObject]
+    public required IResultCursor Result { get; init; }
+}
 
 internal class ResultPeekHandler : MessageHandler<ResultPeekRequest>
 {
@@ -35,7 +39,7 @@ internal class ResultPeekHandler : MessageHandler<ResultPeekRequest>
 
     public override async Task ProcessAsync(ResultPeekRequest message)
     {
-        var record = await message.Result.Object.PeekAsync();
+        var record = await message.Result.PeekAsync();
         if (record is null)
         {
             await _responseWriter.WriteAsync(new NullRecordResponse());

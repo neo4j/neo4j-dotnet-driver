@@ -19,12 +19,14 @@ using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Types;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record SessionRunRequest : IProtocolMessage
 {
-    public required Stored<IAsyncSession> Session { get; init; }
+    [StoredObject]
+    public required IAsyncSession Session { get; init; }
     public required string Cypher { get; init; }
 
     public Dictionary<string, ICypherValue>? Params { get; init; }
@@ -61,20 +63,17 @@ internal class SessionRunHandler : MessageHandler<SessionRunRequest>
 
     public override async Task ProcessAsync(SessionRunRequest message)
     {
-        _logger.LogDebug(
-            "Running query '{Cypher}' on session with id '{SessionId}'",
-            message.Cypher,
-            message.Session.Id);
+        _logger.LogDebug("Running query '{Cypher}' on session", message.Cypher);
 
-        var cursor = await message.Session.Object.RunAsync(
+        var cursor = await message.Session.RunAsync(
             message.Cypher,
             _cypherToNativeMapper.Map(message.Params),
             _transactionConfigMapper.Map(message.TxMeta, message.Timeout));
 
         var keys = await cursor.KeysAsync();
-        var storedResult = _objectStore.Store(cursor);
-        _logger.LogDebug("Query result id '{ResultId}' returned keys: {@keys}", storedResult.Id, keys);
+        var resultId = _objectStore.Store(cursor);
+        _logger.LogDebug("Query result id '{ResultId}' returned keys: {@keys}", resultId, keys);
 
-        await _responseWriter.WriteAsync(new ResultResponse(storedResult.Id, keys));
+        await _responseWriter.WriteAsync(new ResultResponse(resultId, keys));
     }
 }

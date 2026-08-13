@@ -38,7 +38,7 @@ public class NewSessionConfigMapperTests
     {
         return new NewSessionRequest
         {
-            Driver = new Stored<IDriver>("driver-1", Mock.Of<IDriver>()),
+            Driver = Mock.Of<IDriver>(),
             AccessMode = "r"
         };
     }
@@ -80,9 +80,9 @@ public class NewSessionConfigMapperTests
         var manager = Mock.Of<IBookmarkManager>();
         _autoMocker.GetMock<IObjectStore>()
             .Setup(r => r.Get<IBookmarkManager>("bm-1"))
-            .Returns(new Stored<IBookmarkManager>("bm-1", manager));
+            .Returns(manager);
 
-        Apply(MinimalRequest() with { BookmarkManagerId = "bm-1" });
+        Apply(MinimalRequest() with { BookmarkManager = manager });
 
         _builder.Verify(b => b.WithBookmarkManager(manager), Times.Once);
     }

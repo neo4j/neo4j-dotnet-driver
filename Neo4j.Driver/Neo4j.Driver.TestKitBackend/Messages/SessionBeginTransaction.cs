@@ -19,12 +19,14 @@ using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Types;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record SessionBeginTransactionRequest : IProtocolMessage
 {
-    public required Stored<IAsyncSession> Session { get; init; }
+    [StoredObject]
+    public required IAsyncSession Session { get; init; }
 
     public Dictionary<string, ICypherValue>? TxMeta { get; init; }
 
@@ -55,15 +57,12 @@ internal class SessionBeginTransactionHandler : MessageHandler<SessionBeginTrans
 
     public override async Task ProcessAsync(SessionBeginTransactionRequest message)
     {
-        var transaction = await message.Session.Object.BeginTransactionAsync(
+        var transaction = await message.Session.BeginTransactionAsync(
             _transactionConfigMapper.Map(message.TxMeta, message.Timeout));
 
-        var stored = _objectStore.Store(transaction);
-        _logger.LogDebug(
-            "Began transaction with id '{Id}' on session with id '{SessionId}'",
-            stored.Id,
-            message.Session.Id);
+        var id = _objectStore.Store(transaction);
+        _logger.LogDebug("Began transaction with id '{Id}'", id);
 
-        await _responseWriter.WriteAsync(new TransactionResponse(stored.Id));
+        await _responseWriter.WriteAsync(new TransactionResponse(id));
     }
 }

@@ -48,12 +48,13 @@ public class BackendModuleTests
         using var scope =
             container.BeginLifetimeScope(b => b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory()));
 
-        var stored = scope.Resolve<IObjectStore>().Store(new Stored());
+        var thing = new Thing();
+        var id = scope.Resolve<IObjectStore>().Store(thing);
         var options = scope.Resolve<IJsonOptionsProvider>().GetOptions();
 
-        var request = JsonSerializer.Deserialize<Request>($$"""{"thingId":"{{stored.Id}}"}""", options);
+        var request = JsonSerializer.Deserialize<Request>($$"""{"thing":"{{id}}"}""", options);
 
-        request!.Thing.Object.Should().BeSameAs(stored.Object);
+        request!.Thing.Should().BeSameAs(thing);
     }
 
     [Fact]
@@ -137,10 +138,10 @@ public class BackendModuleTests
         using var scopeA = container.BeginLifetimeScope(withLogging);
         using var scopeB = container.BeginLifetimeScope(withLogging);
 
-        var stored = scopeA.Resolve<IObjectStore>().Store(new Stored());
+        var id = scopeA.Resolve<IObjectStore>().Store(new Thing());
         var options = scopeB.Resolve<IJsonOptionsProvider>().GetOptions();
 
-        var act = () => JsonSerializer.Deserialize<Request>($$"""{"thingId":"{{stored.Id}}"}""", options);
+        var act = () => JsonSerializer.Deserialize<Request>($$"""{"thing":"{{id}}"}""", options);
 
         act.Should().Throw<TestKitProtocolException>();
     }
@@ -189,8 +190,9 @@ public class BackendModuleTests
 
     private record Request
     {
-        public Stored<Stored> Thing { get; init; } = null!;
+        [StoredObject]
+        public Thing Thing { get; init; } = null!;
     }
 
-    private class Stored;
+    private class Thing;
 }

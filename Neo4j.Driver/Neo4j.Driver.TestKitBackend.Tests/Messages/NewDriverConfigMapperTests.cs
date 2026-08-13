@@ -310,7 +310,7 @@ public class NewDriverConfigMapperTests
         var provider = Mock.Of<IClientCertificateProvider>();
         _autoMocker.GetMock<IObjectStore>()
             .Setup(r => r.Get<IClientCertificateProvider>("provider-1"))
-            .Returns(new Stored<IClientCertificateProvider>("provider-1", provider));
+            .Returns(provider);
 
         Apply(MinimalRequest() with { ClientCertificateProviderId = "provider-1" });
 

@@ -46,7 +46,7 @@ public class BearerAuthTokenManagerFlowTests
                 create =>
                 {
                     manager = create("manager-1");
-                    return new Stored<IAuthTokenManager>("manager-1", manager);
+                    return "manager-1";
                 });
 
         var newManagerHandler = new NewBearerAuthTokenManagerHandler(

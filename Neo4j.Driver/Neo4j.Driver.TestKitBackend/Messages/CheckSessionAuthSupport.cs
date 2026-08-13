@@ -16,11 +16,16 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record CheckSessionAuthSupportRequest(Stored<IDriver> Driver) : IProtocolMessage;
+internal record CheckSessionAuthSupportRequest : IProtocolMessage
+{
+    [StoredObject]
+    public required IDriver Driver { get; init; }
+    public required string DriverId { get; init; }
+}
 
 internal record SessionAuthSupportResponse(string Id, bool Available) : IProtocolMessage;
 
@@ -37,12 +42,12 @@ internal class CheckSessionAuthSupportHandler : MessageHandler<CheckSessionAuthS
 
     public override async Task ProcessAsync(CheckSessionAuthSupportRequest message)
     {
-        var available = await message.Driver.Object.SupportsSessionAuthAsync();
+        var available = await message.Driver.SupportsSessionAuthAsync();
         _logger.LogDebug(
             "Checked session-auth support for driver with id '{Id}': {Available}",
-            message.Driver.Id,
+            message.DriverId,
             available);
 
-        await _responseWriter.WriteAsync(new SessionAuthSupportResponse(message.Driver.Id, available));
+        await _responseWriter.WriteAsync(new SessionAuthSupportResponse(message.DriverId, available));
     }
 }

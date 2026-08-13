@@ -26,14 +26,14 @@ public class ObjectStoreTests
     private readonly ObjectStore _objectStore = AutoMocker.ForTesting<ObjectStore>().CreateInstance<ObjectStore>();
 
     [Fact]
-    public void Store_returns_a_objectStore_object_carrying_the_stored_object()
+    public void Store_returns_the_id_the_object_is_stored_under()
     {
         var stored = new Stored();
 
-        var result = _objectStore.Store(stored);
+        var id = _objectStore.Store(stored);
 
-        result.Object.Should().BeSameAs(stored);
-        result.Id.Should().NotBeNullOrEmpty();
+        id.Should().NotBeNullOrEmpty();
+        _objectStore.Get<Stored>(id).Should().BeSameAs(stored);
     }
 
     [Fact]
@@ -42,7 +42,7 @@ public class ObjectStoreTests
         var first = _objectStore.Store(new Stored());
         var second = _objectStore.Store(new Stored());
 
-        second.Id.Should().NotBe(first.Id);
+        second.Should().NotBe(first);
     }
 
     [Fact]
@@ -51,28 +51,24 @@ public class ObjectStoreTests
         string? idGivenToFactory = null;
         Stored? created = null;
 
-        var result = _objectStore.Store(id =>
+        var storedId = _objectStore.Store(id =>
         {
             idGivenToFactory = id;
             created = new Stored();
             return created;
         });
 
-        idGivenToFactory.Should().Be(result.Id);
-        result.Object.Should().BeSameAs(created);
-        _objectStore.Get<Stored>(result.Id).Object.Should().BeSameAs(created);
+        idGivenToFactory.Should().Be(storedId);
+        _objectStore.Get<Stored>(storedId).Should().BeSameAs(created);
     }
 
     [Fact]
     public void Get_returns_the_stored_object_under_its_id()
     {
         var stored = new Stored();
-        var result = _objectStore.Store(stored);
+        var id = _objectStore.Store(stored);
 
-        var got = _objectStore.Get<Stored>(result.Id);
-
-        got.Object.Should().BeSameAs(stored);
-        got.Id.Should().Be(result.Id);
+        _objectStore.Get<Stored>(id).Should().BeSameAs(stored);
     }
 
     [Fact]
@@ -86,21 +82,21 @@ public class ObjectStoreTests
     [Fact]
     public void Get_throws_when_the_id_belongs_to_an_object_of_a_different_type()
     {
-        var result = _objectStore.Store(new Stored());
+        var id = _objectStore.Store(new Stored());
 
-        var get = () => _objectStore.Get<OtherStored>(result.Id);
+        var get = () => _objectStore.Get<OtherStored>(id);
 
-        get.Should().Throw<TestKitProtocolException>().WithMessage($"*{result.Id}*");
+        get.Should().Throw<TestKitProtocolException>().WithMessage($"*{id}*");
     }
 
     [Fact]
     public void Remove_makes_the_id_unknown()
     {
-        var result = _objectStore.Store(new Stored());
+        var id = _objectStore.Store(new Stored());
 
-        _objectStore.Remove(result.Id);
+        _objectStore.Remove(id);
 
-        var get = () => _objectStore.Get<Stored>(result.Id);
+        var get = () => _objectStore.Get<Stored>(id);
         get.Should().Throw<TestKitProtocolException>();
     }
 
@@ -137,14 +133,14 @@ public class ObjectStoreTests
         var throwing = new ThrowingDisposable();
         _objectStore.Store(throwing);
         var second = new DisposableStored();
-        var storedSecond = _objectStore.Store(second);
+        var secondId = _objectStore.Store(second);
 
         var act = () => _objectStore.DisposeAsync().AsTask();
         await act.Should().NotThrowAsync();
 
         second.Disposed.Should().BeTrue();
 
-        var get = () => _objectStore.Get<DisposableStored>(storedSecond.Id);
+        var get = () => _objectStore.Get<DisposableStored>(secondId);
         get.Should().Throw<TestKitProtocolException>();
     }
 
@@ -152,8 +148,8 @@ public class ObjectStoreTests
     public async Task DisposeAsync_does_not_dispose_an_object_that_was_already_removed()
     {
         var stored = new DisposableStored();
-        var result = _objectStore.Store(stored);
-        _objectStore.Remove(result.Id);
+        var id = _objectStore.Store(stored);
+        _objectStore.Remove(id);
 
         await _objectStore.DisposeAsync();
 

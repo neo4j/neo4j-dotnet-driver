@@ -17,11 +17,11 @@ namespace Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 internal interface IObjectStore
 {
-    Stored<T> Store<T>(T obj) where T : notnull;
+    string Store<T>(T obj) where T : notnull;
 
-    Stored<T> Store<T>(Func<string, T> create) where T : notnull;
+    string Store<T>(Func<string, T> create) where T : notnull;
 
-    Stored<T> Get<T>(string id) where T : notnull;
+    T Get<T>(string id) where T : notnull;
 
     void Remove(string id);
 }

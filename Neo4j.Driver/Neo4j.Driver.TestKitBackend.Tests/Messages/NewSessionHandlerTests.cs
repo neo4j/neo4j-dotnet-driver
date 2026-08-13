@@ -33,13 +33,12 @@ public class NewSessionHandlerTests
         var driverMock = _autoMocker.GetMock<IDriver>();
         driverMock.Setup(d => d.AsyncSession(It.IsAny<Action<SessionConfigBuilder>>())).Returns(sessionMock.Object);
 
-        var storedSession = new Stored<IAsyncSession>("session-1", sessionMock.Object);
-        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store(sessionMock.Object)).Returns(storedSession);
+        _autoMocker.GetMock<IObjectStore>().Setup(r => r.Store(sessionMock.Object)).Returns("session-1");
 
         var handler = _autoMocker.CreateInstance<NewSessionHandler>();
         var request = new NewSessionRequest
         {
-            Driver = new Stored<IDriver>("driver-1", driverMock.Object),
+            Driver = driverMock.Object,
             AccessMode = "r"
         };
 

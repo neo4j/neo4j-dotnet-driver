@@ -15,12 +15,16 @@
 
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Summary;
+using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record ResultConsumeRequest(Stored<IResultCursor> Result) : IProtocolMessage;
+internal record ResultConsumeRequest : IProtocolMessage
+{
+    [StoredObject]
+    public required IResultCursor Result { get; init; }
+}
 
 internal record SummaryResponse(
     SummaryQueryResponse Query,
@@ -48,7 +52,7 @@ internal class ResultConsumeHandler : MessageHandler<ResultConsumeRequest>
 
     public override async Task ProcessAsync(ResultConsumeRequest message)
     {
-        var summary = await message.Result.Object.ConsumeAsync();
+        var summary = await message.Result.ConsumeAsync();
         await _responseWriter.WriteAsync(_summaryMapper.Map(summary));
     }
 }
