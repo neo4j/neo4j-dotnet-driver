@@ -18,6 +18,7 @@ using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
+[ProtocolEnvelope]
 internal record AuthorizationToken(
     string Scheme,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -28,7 +29,6 @@ internal record AuthorizationToken(
     string? Realm = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     Dictionary<string, object>? Parameters = null)
-    : IWireType<AuthorizationToken>
 {
     public IAuthToken ToAuthToken()
     {

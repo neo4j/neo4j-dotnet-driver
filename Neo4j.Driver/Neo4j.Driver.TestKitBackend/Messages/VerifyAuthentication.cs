@@ -17,13 +17,12 @@ using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
-using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record VerifyAuthenticationRequest(
     Stored<IDriver> Driver,
-    IWireType<AuthorizationToken> AuthorizationToken) : IProtocolMessage;
+    AuthorizationToken AuthorizationToken) : IProtocolMessage;
 
 internal record DriverIsAuthenticatedResponse(string Id, bool Authenticated) : IProtocolMessage;
 
@@ -41,7 +40,7 @@ internal class VerifyAuthenticationHandler : MessageHandler<VerifyAuthentication
     public override async Task ProcessAsync(VerifyAuthenticationRequest message)
     {
         var authenticated =
-            await message.Driver.Object.VerifyAuthenticationAsync(message.AuthorizationToken.Value.ToAuthToken());
+            await message.Driver.Object.VerifyAuthenticationAsync(message.AuthorizationToken.ToAuthToken());
 
         _logger.LogDebug(
             "Verified authentication for driver with id '{Id}': {Authenticated}",

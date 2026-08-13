@@ -30,7 +30,10 @@ internal class JsonOptionsProvider : IJsonOptionsProvider
         _options = new JsonSerializerOptions(JsonSerializerOptions.Strict)
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            TypeInfoResolver = new DefaultJsonTypeInfoResolver { Modifiers = { BindHandlesToIdMembers } },
+            TypeInfoResolver = new DefaultJsonTypeInfoResolver
+            {
+                Modifiers = { BindHandlesToIdMembers, AttachProtocolEnvelopeConverters }
+            },
         };
 
         foreach (var converter in converters)
@@ -53,5 +56,36 @@ internal class JsonOptionsProvider : IJsonOptionsProvider
                 property.Name += "Id";
             }
         }
+    }
+
+    private static void AttachProtocolEnvelopeConverters(JsonTypeInfo typeInfo)
+    {
+        foreach (var property in typeInfo.Properties)
+        {
+            var attribute = property.PropertyType
+                .GetCustomAttributes(typeof(ProtocolEnvelopeAttribute), inherit: false)
+                .Cast<ProtocolEnvelopeAttribute>()
+                .FirstOrDefault();
+
+            if (attribute is null)
+            {
+                continue;
+            }
+
+            var expectedName = attribute.Name ?? StripEnvelopeSuffix(property.PropertyType.Name);
+            property.CustomConverter = (JsonConverter)Activator.CreateInstance(
+                typeof(ProtocolEnvelopeConverter<>).MakeGenericType(property.PropertyType),
+                expectedName)!;
+        }
+    }
+
+    private static string StripEnvelopeSuffix(string name)
+    {
+        if (name.EndsWith("Request", StringComparison.Ordinal))
+        {
+            return name[..^"Request".Length];
+        }
+
+        return name.EndsWith("Response", StringComparison.Ordinal) ? name[..^"Response".Length] : name;
     }
 }

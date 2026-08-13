@@ -21,7 +21,6 @@ using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
-using Neo4j.Driver.TestKitBackend.Serialization;
 using Neo4j.Driver.TestKitBackend.Summary;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -38,7 +37,7 @@ internal record ExecuteQueryConfig
 
     public Dictionary<string, ICypherValue>? TxMeta { get; init; }
     public long? Timeout { get; init; }
-    public IWireType<AuthorizationToken>? AuthorizationToken { get; init; }
+    public AuthorizationToken? AuthorizationToken { get; init; }
 }
 
 internal class BookmarkManagerIdConverter : JsonConverter<string>

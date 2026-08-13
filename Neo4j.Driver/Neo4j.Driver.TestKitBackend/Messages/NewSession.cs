@@ -17,7 +17,6 @@ using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
-using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
@@ -33,7 +32,7 @@ internal record NewSessionRequest : IProtocolMessage
     public string[]? NotificationsDisabledCategories { get; init; }
     public bool? DisableAutoCommitRetries { get; init; }
     public string? BookmarkManagerId { get; init; }
-    public IWireType<AuthorizationToken>? AuthorizationToken { get; init; }
+    public AuthorizationToken? AuthorizationToken { get; init; }
 }
 
 internal record SessionResponse(string Id) : IProtocolMessage;

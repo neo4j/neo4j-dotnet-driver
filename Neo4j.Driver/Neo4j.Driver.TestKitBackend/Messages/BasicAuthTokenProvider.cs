@@ -15,7 +15,6 @@
 
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Expectations;
-using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
@@ -27,7 +26,7 @@ internal record BasicAuthTokenProviderRequest(string BasicAuthTokenManagerId) : 
 internal record BasicAuthTokenProviderCompleted : IProtocolMessage
 {
     public required string RequestId { get; init; }
-    public required IWireType<AuthorizationToken> Auth { get; init; }
+    public required AuthorizationToken Auth { get; init; }
 }
 
 internal class BasicAuthTokenProviderCompletedHandler : MessageHandler<BasicAuthTokenProviderCompleted>
@@ -41,7 +40,7 @@ internal class BasicAuthTokenProviderCompletedHandler : MessageHandler<BasicAuth
 
     public override Task ProcessAsync(BasicAuthTokenProviderCompleted message)
     {
-        _expectationStore.Fulfil(message.RequestId, message.Auth.Value.ToAuthToken());
+        _expectationStore.Fulfil(message.RequestId, message.Auth.ToAuthToken());
         return Task.CompletedTask;
     }
 }

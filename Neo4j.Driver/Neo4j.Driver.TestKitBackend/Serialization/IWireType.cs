@@ -29,7 +29,3 @@ internal interface IWireType
     }
 }
 
-internal interface IWireType<T> : IWireType where T : IWireType<T>
-{
-    T Value => (T)this;
-}

@@ -157,9 +157,9 @@ public class AuthTokenManagerFlowTests
         handled.Should().BeTrue();
 
         var request = capturedRequest.Should().BeOfType<AuthTokenManagerHandleSecurityExceptionRequest>().Subject;
-        request.Auth.Value.Scheme.Should().Be("bearer");
-        request.Auth.Value.Credentials.Should().Be("token-value");
-        request.Auth.Value.Principal.Should().BeNull();
+        request.Auth.Scheme.Should().Be("bearer");
+        request.Auth.Credentials.Should().Be("token-value");
+        request.Auth.Principal.Should().BeNull();
     }
 
     [Fact]
@@ -205,11 +205,11 @@ public class AuthTokenManagerFlowTests
         handled.Should().BeTrue();
 
         var request = capturedRequest.Should().BeOfType<AuthTokenManagerHandleSecurityExceptionRequest>().Subject;
-        request.Auth.Value.Scheme.Should().Be("custom-scheme");
-        request.Auth.Value.Principal.Should().Be("neo4j");
-        request.Auth.Value.Credentials.Should().Be("pass");
-        request.Auth.Value.Realm.Should().Be("realm1");
-        request.Auth.Value.Parameters.Should().BeEquivalentTo(parameters);
+        request.Auth.Scheme.Should().Be("custom-scheme");
+        request.Auth.Principal.Should().Be("neo4j");
+        request.Auth.Credentials.Should().Be("pass");
+        request.Auth.Realm.Should().Be("realm1");
+        request.Auth.Parameters.Should().BeEquivalentTo(parameters);
     }
 
     [Fact]

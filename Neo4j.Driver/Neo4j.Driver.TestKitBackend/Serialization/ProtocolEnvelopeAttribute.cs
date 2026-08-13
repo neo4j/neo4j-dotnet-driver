@@ -13,12 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.TestKitBackend.Serialization;
+namespace Neo4j.Driver.TestKitBackend.Serialization;
 
-namespace Neo4j.Driver.TestKitBackend.Messages;
+[AttributeUsage(AttributeTargets.Class)]
+internal class ProtocolEnvelopeAttribute : Attribute
+{
+    public ProtocolEnvelopeAttribute(string? name = null)
+    {
+        Name = name;
+    }
 
-[ProtocolEnvelope]
-internal record ClientCertificate(
-    string Certfile,
-    string Keyfile,
-    string? Password = null);
+    public string? Name { get; }
+}

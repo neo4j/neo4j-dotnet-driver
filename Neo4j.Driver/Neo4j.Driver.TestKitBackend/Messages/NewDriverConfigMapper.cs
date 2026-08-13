@@ -86,7 +86,7 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
 
     private void ApplyClientCertificate(NewDriverRequest request, IConfigBuilder builder)
     {
-        if (request.ClientCertificate is { Value: var certificate })
+        if (request.ClientCertificate is { } certificate)
         {
             builder.WithClientCertificateProvider(
                 ClientCertificateProviders.Static(

@@ -17,7 +17,6 @@ using System.Security.Cryptography.X509Certificates;
 using Neo4j.Driver.TestKitBackend.Certificates;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Expectations;
-using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
@@ -30,7 +29,7 @@ internal record ClientCertificateProviderCompleted : IProtocolMessage
 {
     public required string RequestId { get; init; }
     public required bool HasUpdate { get; init; }
-    public required IWireType<ClientCertificate> ClientCertificate { get; init; }
+    public required ClientCertificate ClientCertificate { get; init; }
 }
 
 internal class ClientCertificateProviderCompletedHandler : MessageHandler<ClientCertificateProviderCompleted>
@@ -48,7 +47,7 @@ internal class ClientCertificateProviderCompletedHandler : MessageHandler<Client
 
     public override Task ProcessAsync(ClientCertificateProviderCompleted message)
     {
-        var certificate = message.ClientCertificate.Value;
+        var certificate = message.ClientCertificate;
         X509Certificate loaded = _certificateLoader.Load(certificate.Certfile, certificate.Keyfile, certificate.Password);
         _expectationStore.Fulfil(message.RequestId, loaded);
         return Task.CompletedTask;

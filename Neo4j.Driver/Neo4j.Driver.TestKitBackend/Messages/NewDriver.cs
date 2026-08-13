@@ -17,7 +17,6 @@ using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
-using Neo4j.Driver.TestKitBackend.Serialization;
 using Neo4j.Driver.TestKitBackend.Types;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -25,7 +24,7 @@ namespace Neo4j.Driver.TestKitBackend.Messages;
 internal record NewDriverRequest : IProtocolMessage
 {
     public string Uri { get; init; } = "";
-    public IWireType<AuthorizationToken>? AuthorizationToken { get; init; }
+    public AuthorizationToken? AuthorizationToken { get; init; }
     public string? AuthTokenManagerId { get; init; }
     public string? UserAgent { get; init; }
     public bool ResolverRegistered { get; init; }
@@ -37,7 +36,7 @@ internal record NewDriverRequest : IProtocolMessage
     public int? MaxConnectionPoolSize { get; init; }
     public long? ConnectionAcquisitionTimeoutMs { get; init; }
     public long? MaxConnectionLifetimeMs { get; init; }
-    public IWireType<ClientCertificate>? ClientCertificate { get; init; }
+    public ClientCertificate? ClientCertificate { get; init; }
     public string? ClientCertificateProviderId { get; init; }
     public string? NotificationsMinSeverity { get; init; }
     public string[]? NotificationsDisabledCategories { get; init; }
@@ -85,7 +84,7 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
                 message.Uri,
                 _objectStore.Get<IAuthTokenManager>(message.AuthTokenManagerId).Object,
                 Configure)
-            : GraphDatabase.Driver(message.Uri, message.AuthorizationToken?.Value.ToAuthToken(), Configure);
+            : GraphDatabase.Driver(message.Uri, message.AuthorizationToken?.ToAuthToken(), Configure);
 
         var stored = _objectStore.Store(driver);
         _logger.LogDebug("Created driver with id '{Id}'", stored.Id);

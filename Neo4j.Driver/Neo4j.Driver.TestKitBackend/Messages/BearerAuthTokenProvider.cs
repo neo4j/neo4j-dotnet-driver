@@ -27,14 +27,15 @@ internal record BearerAuthTokenProviderRequest(string BearerAuthTokenManagerId) 
 }
 
 // Testkit's token-plus-expiry payload; expiresInMs null/absent = the token never expires.
+[ProtocolEnvelope]
 internal record AuthTokenAndExpiration(
-    IWireType<AuthorizationToken> Auth,
-    long? ExpiresInMs = null) : IWireType<AuthTokenAndExpiration>;
+    AuthorizationToken Auth,
+    long? ExpiresInMs = null);
 
 internal record BearerAuthTokenProviderCompleted : IProtocolMessage
 {
     public required string RequestId { get; init; }
-    public required IWireType<AuthTokenAndExpiration> Auth { get; init; }
+    public required AuthTokenAndExpiration Auth { get; init; }
 }
 
 internal class BearerAuthTokenProviderCompletedHandler : MessageHandler<BearerAuthTokenProviderCompleted>
@@ -48,8 +49,8 @@ internal class BearerAuthTokenProviderCompletedHandler : MessageHandler<BearerAu
 
     public override Task ProcessAsync(BearerAuthTokenProviderCompleted message)
     {
-        var payload = message.Auth.Value;
-        var token = payload.Auth.Value.ToAuthToken();
+        var payload = message.Auth;
+        var token = payload.Auth.ToAuthToken();
         var domainValue = payload.ExpiresInMs is { } expiresInMs
             ? new DriverAuthTokenAndExpiration(token, DateTimeProvider.StaticInstance.Now().AddMilliseconds(expiresInMs))
             : new DriverAuthTokenAndExpiration(token);

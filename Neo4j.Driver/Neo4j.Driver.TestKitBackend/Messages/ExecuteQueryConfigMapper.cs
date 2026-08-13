@@ -56,6 +56,6 @@ internal class ExecuteQueryConfigMapper : IExecuteQueryConfigMapper
             bookmarkManager,
             enableBookmarkManager,
             transactionConfig,
-            config.AuthorizationToken?.Value.ToAuthToken());
+            config.AuthorizationToken?.ToAuthToken());
     }
 }

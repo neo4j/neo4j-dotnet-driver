@@ -79,7 +79,7 @@ internal class NewSessionConfigMapper : INewSessionConfigMapper
     {
         if (request.AuthorizationToken is { } token)
         {
-            builder.WithAuthToken(token.Value.ToAuthToken());
+            builder.WithAuthToken(token.ToAuthToken());
         }
     }
 

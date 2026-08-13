@@ -15,13 +15,12 @@
 
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Expectations;
-using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record AuthTokenManagerHandleSecurityExceptionRequest(
     string AuthTokenManagerId,
-    IWireType<AuthorizationToken> Auth,
+    AuthorizationToken Auth,
     string ErrorCode) : ICorrelatedRequest
 {
     public string Id { get; set; } = "";
