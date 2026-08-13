@@ -11,7 +11,6 @@ The [testkit](https://github.com/neo4j/testkit) repository itself is the source 
 Where this README and testkit's own source disagree, testkit wins.
 
 This document is written to help you make a change: what file to add, which convention to follow, and what to check before calling it done.
-It explains the underlying design only as far as making a correct change requires; the rest lives in commit history and design discussion, not here.
 
 A legacy implementation of this backend exists at `Neo4j.Driver.Tests.TestBackend.Legacy`.
 It is retained only as a reference for prior behaviour, and should not be extended further.
@@ -71,12 +70,20 @@ The design rests on the following pieces:
   A handler is a class deriving from `MessageHandler<TRequest>`.
   The request record, the response record, and the handler all live together in one file under `Messages/`.
   There is no separate DTO layer and no hand-written converter: the public properties of the record are exactly what testkit sends or receives.
+- **The read loop dispatches every message on its own task.**
+  The connection's read loop reads continuously; each incoming message is dispatched to its handler on a task of its own, so a handler that is still awaiting something never blocks the next message from being read and dispatched.
+  This is what allows a handler to wait, mid-method, for a message that has not arrived yet; see [Handlers that await a reply from testkit](#handlers-that-await-a-reply-from-testkit).
+- **Error classification lives in the read loop, not in handlers.**
+  A handler lets exceptions propagate.
+  The loop catches whatever a handler throws and writes the correct error frame: `FrontendException` becomes `FrontendError`, an exception originating in the driver becomes `DriverError`, and anything else becomes `BackendError`.
+  A handler only catches an exception when it needs to react to the failure itself.
 - **Dispatch is a dictionary lookup, not reflection.**
   `MessageDispatcher` resolves handlers through Autofac's `IIndex<Type, IMessageHandler>`, keyed by each handler's `IMessageHandler<T>` type argument at registration time.
   There is no `MakeGenericType` call and no `MethodInfo.Invoke` on the hot path.
 - **Responses are produced through `IResponseWriter`.**
   A handler does not return its response; instead, it writes the response directly (`await _responseWriter.WriteAsync(new SomeResponse(...))`).
-  This design allows a single handler to send zero, one, or many response frames, which is what the result-streaming and callback flows described below depend on.
+  This allows a single handler to send zero, one, or many response frames, which is what the result-streaming and multi-exchange flows depend on.
+  Writes are serialized internally, so concurrent handlers cannot interleave partial frames.
 - **Handler registration follows a convention rather than explicit configuration.**
   `BackendModule` scans the assembly for concrete, non-generic, non-nested classes and registers each one with Autofac, keying any class that implements `IMessageHandler` by its message type.
   Adding a new message therefore means adding a file, not editing a registration list.
@@ -182,104 +189,130 @@ Before considering a new handler complete, verify the following:
   The conversion is then handled automatically.
 - If a field must distinguish an absent value from a present null value, use `Optional<T>`.
   Otherwise, use `T?`.
-- If the message is part of a flow that already has an established shape, such as a callback or a retryable transaction, consult the relevant section below before introducing a new pattern.
+- Let exceptions from driver calls propagate out of the handler.
+  The read loop classifies them and writes the correct error frame; a local catch is only warranted when the handler must react to the failure itself.
+- If the message is part of a flow that already has an established shape, such as a callback or a retryable transaction, consult [Handlers that await a reply from testkit](#handlers-that-await-a-reply-from-testkit) before introducing a new pattern.
 - Add a unit test under `Neo4j.Driver.TestKitBackend.Tests` for any handler logic beyond a straight pass-through.
   Verify the change against a real testkit stub test as well (see [Verifying a change](#verifying-a-change)) before considering it complete.
   A passing unit test suite alone has previously missed genuine format bugs, because it asserts against the mapper's C# output rather than the JSON actually sent to testkit.
 
-## Callback and multi-response flows
+## Handlers that await a reply from testkit
 
 Some operations do not take the form of a single request and a single response.
-A bookmark manager, an auth token provider, and a custom address resolver all follow the same pattern: the driver calls into backend code mid-operation, the backend must ask testkit for an answer over the same connection, and the original driver call resumes once testkit replies.
-Retryable transactions follow a related shape: `SessionReadTransaction` and `SessionWriteTransaction` return control to testkit, which later sends `RetryablePositive` or `RetryableNegative` to report the outcome of the retry attempt.
+A bookmark manager, an auth token provider, a client certificate provider, and a custom address resolver all follow the same pattern: the driver calls into backend code mid-operation, the backend must ask testkit for an answer over the same connection, and the original driver call resumes once testkit replies.
+Retryable transactions follow the same shape in the other direction: the backend tells testkit a transaction attempt is ready (`RetryableTry`), and testkit later reports the outcome of the attempt (`RetryablePositive` or `RetryableNegative`).
 
-Two primitives implement these flows.
-Which one applies depends on where the driver call actually runs.
+One mechanism implements all of these flows: a handler that needs a future value awaits an expectation, and the ordinary handler of the later message fulfils it.
 
-**`ICallbackExchanger` is for driver callbacks that can block their calling thread while waiting for a reply.**
-Its `SendAsync<TResponse>` method writes a callback request tagged with a freshly generated `RequestId`, then reads the next incoming line directly off the connection, rejecting it if its type or `RequestId` does not match what was expected.
-A bookmark manager's supplier uses it this way:
+- `IOutboundRoundTrip.SendExpectingAsync<T>(message, key)` registers an expectation under a string key, writes `message` to testkit, and returns a task that completes when some other handler fulfils that key with a `T`.
+  The awaiting method simply awaits the call and carries on; its state lives in its own locals.
+- `IExpectationStore` is the keyed rendezvous underneath: `Fulfil(key, value)` completes the pending await with a value, and `Fail(key, exception)` completes it by throwing that exception at the await site.
+  Fulfilling handlers take `IExpectationStore` directly; awaiting code always goes through `IOutboundRoundTrip`.
+
+Because every message runs on its own task, the awaiting handler parks harmlessly while the read loop keeps dispatching whatever testkit sends next, including the very message that will fulfil the expectation.
+
+### Callback flows: correlation by request id
+
+Driver callbacks correlate request and reply with a generated id.
+The outbound record implements `ICorrelatedRequest`, which exposes a settable `Id`; the `SendExpectingAsync<T>(ICorrelatedRequest)` overload stamps a fresh id onto the message, sends it, and expects on that id.
+Testkit echoes the id back as `requestId` in its completion message, and the completion's handler fulfils the expectation.
+Both ends live in one file, so the whole exchange is visible in one place.
+`Messages/BookmarksSupplier.cs` is a complete example:
 
 ```csharp
-private async Task<string[]> SupplyBookmarksAsync(string managerId)
+internal record BookmarksSupplierRequest(string BookmarkManagerId) : ICorrelatedRequest
 {
-    var completion = await _callbackExchanger.SendAsync<BookmarksSupplierCompleted>(
-        id => new BookmarksSupplierRequest(id, managerId));
+    public string Id { get; set; } = "";
+}
 
-    return completion.Bookmarks;
+internal record BookmarksSupplierCompleted : IProtocolMessage
+{
+    public required string RequestId { get; init; }
+    public required string[] Bookmarks { get; init; }
+}
+
+internal class BookmarksSupplierCompletedHandler : MessageHandler<BookmarksSupplierCompleted>
+{
+    private readonly IExpectationStore _expectationStore;
+
+    public BookmarksSupplierCompletedHandler(IExpectationStore expectationStore)
+    {
+        _expectationStore = expectationStore;
+    }
+
+    public override Task ProcessAsync(BookmarksSupplierCompleted message)
+    {
+        _expectationStore.Fulfil(message.RequestId, message.Bookmarks);
+        return Task.CompletedTask;
+    }
 }
 ```
 
-`BookmarksSupplierRequest` (`Messages/BookmarksSupplier.cs`) is what this sends to testkit, and `BookmarksSupplierCompleted` is the matching reply, correlated by `RequestId`.
-Both records carry data only; `ICallbackExchanger` performs the actual waiting and matching.
+The awaiting side, inside the bookmark manager built by `Messages/NewBookmarkManager.cs`, is one line:
 
-**`IContinuationCoordinator` is for driver calls that run on a background task, leaving the connection's main read loop free to accept the next request.**
-`BackgroundOperationHandler<T>` is the base class that arranges this.
-It starts the driver operation with `Task.Run`, and immediately awaits `WaitForNextResponseAsync()` so the connection can accept whatever testkit sends next.
-When the background operation finishes, it calls `CompleteNextResponse` with the result, which is what the earlier `await` resolves to, and which is then written back to testkit as the response.
+```csharp
+private async Task<string[]> SupplyBookmarksAsync(string storageId)
+{
+    return await _roundTrip.SendExpectingAsync<string[]>(new BookmarksSupplierRequest(storageId));
+}
+```
+
+The type parameter of `SendExpectingAsync<T>` is the domain value the awaiting code needs, not the wire message.
+The fulfilling handler owns the conversion from wire shape to domain value: the bookmarks handler above passes the array straight through, the client certificate handler loads an `X509Certificate` from the file paths testkit sent, and the auth token handlers convert wire tokens into `IAuthToken` values.
+A completion whose wire shape carries no data at all fulfils with a placeholder value (`BookmarksConsumerCompleted` fulfils with `true`), since the arrival of the message is itself the information.
+
+### The retryable transaction flow: correlation by session id
+
+When the protocol already carries a natural correlation key, pass it to `SendExpectingAsync` explicitly instead of using `ICorrelatedRequest`.
+The retryable transaction flow (`Messages/RetryableTransaction.cs`) keys on the session id.
+Each transaction attempt stores the transaction, tells testkit it is ready, and awaits the outcome:
+
+```csharp
+private async Task RunAttemptAsync(IAsyncQueryRunner runner, string sessionId)
+{
+    var stored = _objectStore.Store((IAsyncTransaction)runner);
+    await _roundTrip.SendExpectingAsync<RetryableOutcome>(new RetryableTryResponse(stored.Id), sessionId);
+}
+```
+
+`RetryablePositive` fulfils that expectation.
+`RetryableNegative` fails it with the stored error, so the parked `await` throws inside the driver's retry logic, and the driver decides for itself whether to retry the transaction function or surface the error:
+
+```csharp
+public override Task ProcessAsync(RetryablePositiveRequest message)
+{
+    _expectationStore.Fulfil(message.Session.Id, RetryableOutcome.Positive);
+    return Task.CompletedTask;
+}
+```
 
 ```mermaid
 sequenceDiagram
     participant TK as testkit
-    participant H as BackgroundOperationHandler
-    participant CC as ContinuationCoordinator
-    participant BG as Background task
+    participant Loop as Read loop
+    participant STH as SessionReadTransaction handler
+    participant ES as ExpectationStore
+    participant RPH as RetryablePositive handler
 
-    TK->>H: request
-    H->>CC: WaitForNextResponseAsync()
-    H->>BG: Task.Run(driver call)
-    Note over H,CC: main read loop is now free
-    BG->>CC: CompleteNextResponse(result)
-    CC->>H: resolves the awaited Task
-    H->>TK: response
+    TK->>Loop: SessionReadTransaction
+    Loop->>STH: dispatch (tracked task)
+    STH->>ES: expect(sessionId)
+    STH->>TK: RetryableTry
+    Note over STH: parked awaiting the outcome
+    TK->>Loop: RetryablePositive
+    Loop->>RPH: dispatch (tracked task)
+    RPH->>ES: Fulfil(sessionId, Positive)
+    ES->>STH: resumes the awaited Task
+    STH->>TK: RetryableDone
 ```
 
-A minimal subclass only has to implement `ExecuteAsync`, returning the response to send back or throwing on failure.
-This example is illustrative rather than a real file (the only current subclass is the retryable transaction handler below, which layers extra machinery on top), but it shows the shape any new one would take:
+### Rules for these flows
 
-```csharp
-internal class SlowLookupHandler : BackgroundOperationHandler<SlowLookupRequest>
-{
-    public SlowLookupHandler(
-        IContinuationCoordinator coordinator,
-        IResponseWriter responseWriter,
-        IDriverErrorMapper driverErrorMapper,
-        ILogger logger)
-        : base(coordinator, responseWriter, driverErrorMapper, logger)
-    {
-    }
-
-    protected override async Task<IProtocolMessage> ExecuteAsync(SlowLookupRequest message)
-    {
-        var info = await message.Driver.Object.GetServerInfoAsync();
-
-        // A normal return value here is enough: it becomes the response the base
-        // class writes back. There is no need to catch exceptions from the driver
-        // call above either, since the base class's background loop already catches
-        // exceptions, and maps each to the right *ErrorResponse before writing it 
-        // back. Only add a local catch if this handler needs to react to the failure
-        // itself before it is reported to testkit.
-        return new SlowLookupResponse(info.Address);
-    }
-}
-```
-
-The coordinator also exposes a second, unrelated pair of methods, `WaitForOutcomeAsync` and `CompleteOutcome`/`FailOutcome`, keyed by session id rather than by request.
-These exist specifically for the retryable transaction flow.
-`RetryablePositive` and `RetryableNegative` are themselves background operations, so they resolve through `WaitForNextResponseAsync`/`CompleteNextResponse` like any other; inside that background operation, they additionally call `CompleteOutcome` or `FailOutcome` to unblock the transaction body that is waiting on `WaitForOutcomeAsync` for that same session:
-
-```csharp
-public override async Task ProcessAsync(RetryablePositiveRequest message)
-{
-    var sessionId = message.Session.Id;
-    var responseTask = _coordinator.WaitForNextResponseAsync();
-    _coordinator.CompleteOutcome(sessionId);
-    await _responseWriter.WriteAsync(await responseTask);
-}
-```
-
-According to testkit's own protocol definitions, none of the `*Completed` callback replies, nor `RetryablePositive`, nor `RetryableNegative`, produces a response frame of its own.
-When adding a new message to one of these flows, its handler should resolve a pending continuation instead of writing a response, and must not write one.
+- According to testkit's own protocol definitions, none of the `*Completed` callback replies, nor `RetryablePositive`, nor `RetryableNegative`, produces a response frame of its own.
+  A fulfilling handler fulfils or fails an expectation, and writes nothing.
+- Expectations are one-shot and fail loudly.
+  Fulfilling an unknown or already-consumed key throws `TestKitProtocolException` naming the key, so a duplicate or misdirected completion surfaces as a diagnosable error instead of a hang.
+- When the connection closes, every outstanding expectation is cancelled, and any parked handler ends with it.
 
 ## Adding a type with its own envelope
 
@@ -355,8 +388,8 @@ These issues recur often enough, or fail silently enough, to warrant stating dir
 - Field names are camelCase everywhere except `utc_offset_s` and `timezone_id`, which testkit sends verbatim.
 - `CypherFloat` encodes its non-finite values, `"+Infinity"`, `"-Infinity"`, and `"NaN"`, as JSON strings.
   `CypherBytes` and `CypherVector` use lowercase, space-separated hexadecimal.
-- An empty `RetryableNegative.ErrorId` means there is nothing to look up, so respond with `FrontendError` directly.
+- An empty `RetryableNegative.ErrorId` means there is no stored error to look up: the handler fails the expectation with a `FrontendException`, which testkit sees as a `FrontendError` frame.
 - Testkit deserializes recursively by `name`.
   Reusing a protocol type name for a different shape, even in an unrelated message, will misdirect that deserialization.
-- A failed request ends the connection: `BackendErrorResponse` goes out and the socket closes, with testkit opening a fresh connection for the next test.
-  Per-request recovery is not part of the design. If an unexpected exception is thrown, the test fails.
+- A handler failure does not end the connection: the read loop writes the classified error frame and keeps serving requests.
+  What does end the connection is a frame that cannot be deserialized at all; `BackendErrorResponse` goes out, the socket closes, and testkit opens a fresh connection for the next test.
