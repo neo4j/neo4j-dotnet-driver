@@ -15,7 +15,9 @@
 
 using System.Text.Json;
 using FluentAssertions;
+using Moq;
 using Neo4j.Driver.TestKitBackend.Messages;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
 
@@ -48,7 +50,7 @@ public class ProtocolEnvelopeTests
 
     private static JsonSerializerOptions RealOptions()
     {
-        return new JsonOptionsProvider([]).GetOptions();
+        return new JsonOptionsProvider([], Mock.Of<IObjectStore>()).GetOptions();
     }
 
     private const string AuthEnvelope =

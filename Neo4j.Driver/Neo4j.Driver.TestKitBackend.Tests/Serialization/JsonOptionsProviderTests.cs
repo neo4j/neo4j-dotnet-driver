@@ -30,7 +30,7 @@ public class JsonOptionsProviderTests
     public void GetOptions_applies_the_conventions_and_adds_the_injected_converters()
     {
         var converter = new SampleConverter();
-        var provider = new JsonOptionsProvider([converter]);
+        var provider = new JsonOptionsProvider([converter], Mock.Of<IObjectStore>());
 
         var options = provider.GetOptions();
 
@@ -55,7 +55,8 @@ public class JsonOptionsProviderTests
         private JsonSerializerOptions RealOptions()
         {
             return new JsonOptionsProvider(
-                    [new StoredConverterFactory(_objectStoreMock.Object), new OptionalConverterFactory()])
+                    [new StoredConverterFactory(_objectStoreMock.Object), new OptionalConverterFactory()],
+                    _objectStoreMock.Object)
                 .GetOptions();
         }
 

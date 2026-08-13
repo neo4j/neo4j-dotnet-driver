@@ -15,6 +15,7 @@
 
 using System.Text.Json;
 using FluentAssertions;
+using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Serialization;
@@ -27,7 +28,7 @@ public class StoredConverterTests
     private readonly ObjectStore _objectStore = AutoMocker.ForTesting<ObjectStore>().CreateInstance<ObjectStore>();
 
     private JsonSerializerOptions Options() =>
-        new JsonOptionsProvider([new StoredConverterFactory(_objectStore)]).GetOptions();
+        new JsonOptionsProvider([new StoredConverterFactory(_objectStore)], Mock.Of<IObjectStore>()).GetOptions();
 
     [Fact]
     public void Reads_a_wire_id_by_resolving_it_from_the_objectStore()

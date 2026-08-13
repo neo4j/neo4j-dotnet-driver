@@ -13,22 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.TestKitBackend.Dispatch;
-
 namespace Neo4j.Driver.TestKitBackend.Serialization;
 
-internal class EnvelopeConverter : WireTypeUnionConverter<IProtocolMessage>
+[AttributeUsage(AttributeTargets.Property)]
+internal class StoredObjectAttribute : Attribute
 {
-    private readonly IStoredObjectFieldTransformer _storedObjectFieldTransformer;
-
-    public EnvelopeConverter(IMessageTypeMap messageTypeMap, IStoredObjectFieldTransformer storedObjectFieldTransformer)
-        : base(messageTypeMap)
+    public StoredObjectAttribute(string? idFieldName = null)
     {
-        _storedObjectFieldTransformer = storedObjectFieldTransformer;
+        IdFieldName = idFieldName;
     }
 
-    protected override string TransformData(string dataJson, Type concreteType)
-    {
-        return _storedObjectFieldTransformer.Transform(dataJson, concreteType);
-    }
+    public string? IdFieldName { get; }
 }

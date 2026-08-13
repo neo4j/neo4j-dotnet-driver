@@ -30,6 +30,7 @@ public class EnvelopeConverterTests
 
     public EnvelopeConverterTests()
     {
+        _autoMocker.Use<IStoredObjectFieldTransformer>(new StoredObjectFieldTransformer());
         _autoMocker.GetMock<IMessageTypeMap>()
             .Setup(m => m.GetTypeByName("Sample"))
             .Returns(typeof(SampleRequest));

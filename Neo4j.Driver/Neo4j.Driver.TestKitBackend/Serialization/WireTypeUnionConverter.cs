@@ -50,6 +50,8 @@ internal abstract class WireTypeUnionConverter<TUnion> : JsonConverter<TUnion>, 
             ? dataElement.GetRawText()
             : "{}";
 
+        dataJson = TransformData(dataJson, concreteType);
+
         object? data;
         try
         {
@@ -66,6 +68,11 @@ internal abstract class WireTypeUnionConverter<TUnion> : JsonConverter<TUnion>, 
         }
 
         return (TUnion)data;
+    }
+
+    protected virtual string TransformData(string dataJson, Type concreteType)
+    {
+        return dataJson;
     }
 
     public override void Write(Utf8JsonWriter writer, TUnion value, JsonSerializerOptions options)

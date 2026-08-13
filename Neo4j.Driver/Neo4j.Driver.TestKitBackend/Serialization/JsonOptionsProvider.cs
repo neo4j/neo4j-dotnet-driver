@@ -24,15 +24,17 @@ namespace Neo4j.Driver.TestKitBackend.Serialization;
 internal class JsonOptionsProvider : IJsonOptionsProvider
 {
     private readonly JsonSerializerOptions _options;
+    private readonly IObjectStore _objectStore;
 
-    public JsonOptionsProvider(IProtocolJsonConverter[] converters)
+    public JsonOptionsProvider(IProtocolJsonConverter[] converters, IObjectStore objectStore)
     {
+        _objectStore = objectStore;
         _options = new JsonSerializerOptions(JsonSerializerOptions.Strict)
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             TypeInfoResolver = new DefaultJsonTypeInfoResolver
             {
-                Modifiers = { BindHandlesToIdMembers, AttachProtocolEnvelopeConverters }
+                Modifiers = { BindHandlesToIdMembers, AttachProtocolEnvelopeConverters, AttachStoredObjectConverters }
             },
         };
 
@@ -76,6 +78,23 @@ internal class JsonOptionsProvider : IJsonOptionsProvider
             property.CustomConverter = (JsonConverter)Activator.CreateInstance(
                 typeof(ProtocolEnvelopeConverter<>).MakeGenericType(property.PropertyType),
                 expectedName)!;
+        }
+    }
+
+    private void AttachStoredObjectConverters(JsonTypeInfo typeInfo)
+    {
+        foreach (var property in typeInfo.Properties)
+        {
+            var isStoredObject = property.AttributeProvider?
+                .GetCustomAttributes(typeof(StoredObjectAttribute), inherit: false)
+                .Length > 0;
+
+            if (isStoredObject)
+            {
+                property.CustomConverter = (JsonConverter)Activator.CreateInstance(
+                    typeof(StoredObjectConverter<>).MakeGenericType(property.PropertyType),
+                    _objectStore)!;
+            }
         }
     }
 
