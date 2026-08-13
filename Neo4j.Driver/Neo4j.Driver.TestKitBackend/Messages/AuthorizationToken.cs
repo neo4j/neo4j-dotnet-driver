@@ -19,17 +19,22 @@ using Neo4j.Driver.TestKitBackend.Serialization;
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 [ProtocolEnvelope]
-internal record AuthorizationToken(
-    string Scheme,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    string? Principal,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    string? Credentials,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    string? Realm = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    Dictionary<string, object>? Parameters = null)
+internal record AuthorizationToken
 {
+    public required string Scheme { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public required string? Principal { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public required string? Credentials { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Realm { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, object>? Parameters { get; init; }
+
     public IAuthToken ToAuthToken()
     {
         if (Scheme == "kerberos")

@@ -18,11 +18,11 @@ using Neo4j.Driver.TestKitBackend.Expectations;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record AuthTokenManagerHandleSecurityExceptionRequest(
-    string AuthTokenManagerId,
-    AuthorizationToken Auth,
-    string ErrorCode) : ICorrelatedRequest
+internal record AuthTokenManagerHandleSecurityExceptionRequest : ICorrelatedRequest
 {
+    public required string AuthTokenManagerId { get; init; }
+    public required AuthorizationToken Auth { get; init; }
+    public required string ErrorCode { get; init; }
     public string Id { get; set; } = "";
 }
 

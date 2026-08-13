@@ -36,23 +36,30 @@ internal record SummaryCountersResponse(
     int SystemUpdates,
     bool ContainsSystemUpdates);
 
-internal record SummaryServerInfoResponse(
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Address,
-    string? Agent,
-    string? ProtocolVersion);
+internal record SummaryServerInfoResponse
+{
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public required string? Address { get; init; }
+
+    public required string? Agent { get; init; }
+    public required string? ProtocolVersion { get; init; }
+}
 
 internal record SummaryPositionResponse(int Column, int Offset, int Line);
 
-internal record SummaryNotificationResponse(
-    string RawCategory,
-    string Category,
-    string RawSeverityLevel,
-    string SeverityLevel,
-    string? Description,
-    string? Code,
-    string? Title,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    SummaryPositionResponse? Position);
+internal record SummaryNotificationResponse
+{
+    public required string RawCategory { get; init; }
+    public required string Category { get; init; }
+    public required string RawSeverityLevel { get; init; }
+    public required string SeverityLevel { get; init; }
+    public required string? Description { get; init; }
+    public required string? Code { get; init; }
+    public required string? Title { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public required SummaryPositionResponse? Position { get; init; }
+}
 
 internal record SummaryPlanResponse(
     IDictionary<string, object> Args,

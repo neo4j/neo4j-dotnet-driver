@@ -52,7 +52,12 @@ public class NewDriverRequestTests
         message.Should().BeOfType<NewDriverRequest>();
         var request = (NewDriverRequest)message;
         request.Uri.Should().Be("bolt://127.0.0.1:9010");
-        request.AuthorizationToken.Should().Be(new AuthorizationToken("basic", "", ""));
+        request.AuthorizationToken.Should().Be(new AuthorizationToken
+        {
+            Scheme = "basic",
+            Principal = "",
+            Credentials = ""
+        });
     }
 
     [Fact]
@@ -81,7 +86,13 @@ public class NewDriverRequestTests
         message.Should().BeOfType<NewDriverRequest>();
         var request = (NewDriverRequest)message;
         request.Uri.Should().Be("neo4j://localhost:7687");
-        request.AuthorizationToken.Should().Be(new AuthorizationToken("basic", "neo4j", "secret", "myrealm"));
+        request.AuthorizationToken.Should().Be(new AuthorizationToken
+        {
+            Scheme = "basic",
+            Principal = "neo4j",
+            Credentials = "secret",
+            Realm = "myrealm"
+        });
         request.AuthTokenManagerId.Should().BeNull();
         request.UserAgent.Should().Be("custom-agent");
         request.ResolverRegistered.Should().BeTrue();

@@ -13,29 +13,55 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Cypher;
 
-internal record CypherDateTime(
-    int Year,
-    int Month,
-    int Day,
-    int Hour,
-    int Minute,
-    int Second,
-    int Nanosecond,
-    [property: JsonPropertyName("utc_offset_s")] int? UtcOffsetS = null,
-    [property: JsonPropertyName("timezone_id")] string? TimezoneId = null) : ICypherValue
+internal record CypherDateTime : ICypherValue
 {
-    internal CypherDateTime(ZonedDateTime zdt, int offsetSeconds, string? timezoneId = null)
-        : this(zdt.Year, zdt.Month, zdt.Day, zdt.Hour, zdt.Minute, zdt.Second, zdt.Nanosecond, offsetSeconds, timezoneId)
+    public required int Year { get; init; }
+    public required int Month { get; init; }
+    public required int Day { get; init; }
+    public required int Hour { get; init; }
+    public required int Minute { get; init; }
+    public required int Second { get; init; }
+    public required int Nanosecond { get; init; }
+
+    [JsonPropertyName("utc_offset_s")]
+    public int? UtcOffsetS { get; init; }
+
+    [JsonPropertyName("timezone_id")]
+    public string? TimezoneId { get; init; }
+
+    public CypherDateTime()
     {
     }
 
-    internal CypherDateTime(LocalDateTime ldt)
-        : this(ldt.Year, ldt.Month, ldt.Day, ldt.Hour, ldt.Minute, ldt.Second, ldt.Nanosecond)
+    [SetsRequiredMembers]
+    internal CypherDateTime(ZonedDateTime zdt, int offsetSeconds, string? timezoneId = null)
     {
+        Year = zdt.Year;
+        Month = zdt.Month;
+        Day = zdt.Day;
+        Hour = zdt.Hour;
+        Minute = zdt.Minute;
+        Second = zdt.Second;
+        Nanosecond = zdt.Nanosecond;
+        UtcOffsetS = offsetSeconds;
+        TimezoneId = timezoneId;
+    }
+
+    [SetsRequiredMembers]
+    internal CypherDateTime(LocalDateTime ldt)
+    {
+        Year = ldt.Year;
+        Month = ldt.Month;
+        Day = ldt.Day;
+        Hour = ldt.Hour;
+        Minute = ldt.Minute;
+        Second = ldt.Second;
+        Nanosecond = ldt.Nanosecond;
     }
 
     internal LocalDateTime ToLocalDateTime()

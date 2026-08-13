@@ -48,7 +48,7 @@ public class CypherFloatTests
         double value,
         string expectedJsonValue)
     {
-        var json = JsonSerializer.Serialize<ICypherValue>(new CypherFloat(value), Options());
+        var json = JsonSerializer.Serialize<ICypherValue>(new CypherFloat { Value = value }, Options());
 
         var expected = """{"name":"CypherFloat","data":{"value":""" + expectedJsonValue + "}}";
         json.Should().Be(expected);

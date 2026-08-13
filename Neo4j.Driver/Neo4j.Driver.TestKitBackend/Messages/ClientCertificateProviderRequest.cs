@@ -20,8 +20,9 @@ using Neo4j.Driver.TestKitBackend.Expectations;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record ClientCertificateProviderRequest(string ClientCertificateProviderId) : ICorrelatedRequest
+internal record ClientCertificateProviderRequest : ICorrelatedRequest
 {
+    public required string ClientCertificateProviderId { get; init; }
     public string Id { get; set; } = "";
 }
 

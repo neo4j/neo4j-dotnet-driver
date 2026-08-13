@@ -77,13 +77,23 @@ public class SummaryMapperTests
 
         var result = _mapper.Map(summary.Object);
 
-        result.ServerInfo.Should().Be(new SummaryServerInfoResponse(null, "Neo4j/5.20.0", "5.4"));
+        result.ServerInfo.Should().Be(new SummaryServerInfoResponse
+        {
+            Address = null,
+            Agent = "Neo4j/5.20.0",
+            ProtocolVersion = "5.4"
+        });
     }
 
     [Fact]
     public void Server_info_omits_the_address_from_the_wire_instead_of_sending_null()
     {
-        var serverInfo = new SummaryServerInfoResponse(null, "Neo4j/5.20.0", "5.4");
+        var serverInfo = new SummaryServerInfoResponse
+        {
+            Address = null,
+            Agent = "Neo4j/5.20.0",
+            ProtocolVersion = "5.4"
+        };
 
         var json = JsonSerializer.Serialize(
             serverInfo,
@@ -172,29 +182,33 @@ public class SummaryMapperTests
         var result = _mapper.Map(summary.Object);
 
         result.Notifications.Should().Equal(
-            new SummaryNotificationResponse(
-                "HINT",
-                "HINT",
-                "WARNING",
-                "WARNING",
-                "a hint",
-                "Neo.ClientNotification.Some.Hint",
-                "A hint",
-                null));
+            new SummaryNotificationResponse
+            {
+                RawCategory = "HINT",
+                Category = "HINT",
+                RawSeverityLevel = "WARNING",
+                SeverityLevel = "WARNING",
+                Description = "a hint",
+                Code = "Neo.ClientNotification.Some.Hint",
+                Title = "A hint",
+                Position = null
+            });
     }
 
     [Fact]
     public void A_notification_without_a_position_omits_it_from_the_wire_instead_of_sending_null()
     {
-        var notification = new SummaryNotificationResponse(
-            "HINT",
-            "HINT",
-            "WARNING",
-            "WARNING",
-            "a hint",
-            "Neo.ClientNotification.Some.Hint",
-            "A hint",
-            null);
+        var notification = new SummaryNotificationResponse
+        {
+            RawCategory = "HINT",
+            Category = "HINT",
+            RawSeverityLevel = "WARNING",
+            SeverityLevel = "WARNING",
+            Description = "a hint",
+            Code = "Neo.ClientNotification.Some.Hint",
+            Title = "A hint",
+            Position = null
+        };
 
         var json = JsonSerializer.Serialize(notification, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 

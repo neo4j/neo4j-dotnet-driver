@@ -64,7 +64,12 @@ public class BearerAuthTokenManagerFlowTests
 
     private void SetupNextToken(string credentials, long? expiresInMs)
     {
-        var token = new AuthorizationToken("bearer", "", credentials).ToAuthToken();
+        var token = new AuthorizationToken
+        {
+            Scheme = "bearer",
+            Principal = "",
+            Credentials = credentials
+        }.ToAuthToken();
         var domainValue = expiresInMs is { } ms
             ? new DriverAuthTokenAndExpiration(token, DateTimeProvider.StaticInstance.Now().AddMilliseconds(ms))
             : new DriverAuthTokenAndExpiration(token);
@@ -171,7 +176,12 @@ public class BearerAuthTokenManagerFlowTests
         var message = new BearerAuthTokenProviderCompleted
         {
             RequestId = "callback-1",
-            Auth = new WireAuthTokenAndExpiration(new AuthorizationToken("bearer", "", "a-token"), 60_000)
+            Auth = new WireAuthTokenAndExpiration(new AuthorizationToken
+            {
+                Scheme = "bearer",
+                Principal = "",
+                Credentials = "a-token"
+            }, 60_000)
         };
 
         handler.ProcessAsync(message);
@@ -195,7 +205,12 @@ public class BearerAuthTokenManagerFlowTests
         var message = new BearerAuthTokenProviderCompleted
         {
             RequestId = "callback-1",
-            Auth = new WireAuthTokenAndExpiration(new AuthorizationToken("bearer", "", "a-token"), null)
+            Auth = new WireAuthTokenAndExpiration(new AuthorizationToken
+            {
+                Scheme = "bearer",
+                Principal = "",
+                Credentials = "a-token"
+            }, null)
         };
 
         handler.ProcessAsync(message);

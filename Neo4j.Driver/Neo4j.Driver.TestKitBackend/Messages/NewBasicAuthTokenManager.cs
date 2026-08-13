@@ -59,7 +59,7 @@ internal class NewBasicAuthTokenManagerHandler : MessageHandler<NewBasicAuthToke
 
     private async ValueTask<IAuthToken> ProvideTokenAsync(string storageId)
     {
-        var providerRequest = new BasicAuthTokenProviderRequest(storageId);
+        var providerRequest = new BasicAuthTokenProviderRequest { BasicAuthTokenManagerId = storageId };
         return await _roundTrip.SendExpectingAsync<IAuthToken>(providerRequest);
     }
 }

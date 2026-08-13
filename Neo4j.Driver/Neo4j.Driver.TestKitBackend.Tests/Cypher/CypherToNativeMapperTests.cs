@@ -46,7 +46,7 @@ public class CypherToNativeMapperTests
     [Fact]
     public void Maps_cypher_float_to_double()
     {
-        _mapper.Map(new CypherFloat(1.5)).Should().Be(1.5);
+        _mapper.Map(new CypherFloat { Value = 1.5 }).Should().Be(1.5);
     }
 
     [Fact]
@@ -102,7 +102,17 @@ public class CypherToNativeMapperTests
     {
         var expected = new ZonedDateTime(2022, 6, 7, 11, 52, 5, 0, Zone.Of(7200));
 
-        _mapper.Map(new CypherDateTime(2022, 6, 7, 11, 52, 5, 0, 7200)).Should().Be(expected);
+        _mapper.Map(new CypherDateTime
+        {
+            Year = 2022,
+            Month = 6,
+            Day = 7,
+            Hour = 11,
+            Minute = 52,
+            Second = 5,
+            Nanosecond = 0,
+            UtcOffsetS = 7200
+        }).Should().Be(expected);
     }
 
     [Fact]
@@ -110,7 +120,18 @@ public class CypherToNativeMapperTests
     {
         var expected = new ZonedDateTime(2022, 6, 7, 11, 52, 5, 0, Zone.Of("Europe/Stockholm"));
 
-        _mapper.Map(new CypherDateTime(2022, 6, 7, 11, 52, 5, 0, 7200, "Europe/Stockholm")).Should().Be(expected);
+        _mapper.Map(new CypherDateTime
+        {
+            Year = 2022,
+            Month = 6,
+            Day = 7,
+            Hour = 11,
+            Minute = 52,
+            Second = 5,
+            Nanosecond = 0,
+            UtcOffsetS = 7200,
+            TimezoneId = "Europe/Stockholm"
+        }).Should().Be(expected);
     }
 
     [Fact]
@@ -118,7 +139,16 @@ public class CypherToNativeMapperTests
     {
         var expected = new LocalDateTime(2022, 6, 7, 11, 52, 5, 0);
 
-        _mapper.Map(new CypherDateTime(2022, 6, 7, 11, 52, 5, 0)).Should().Be(expected);
+        _mapper.Map(new CypherDateTime
+        {
+            Year = 2022,
+            Month = 6,
+            Day = 7,
+            Hour = 11,
+            Minute = 52,
+            Second = 5,
+            Nanosecond = 0
+        }).Should().Be(expected);
     }
 
     [Fact]
@@ -130,13 +160,26 @@ public class CypherToNativeMapperTests
     [Fact]
     public void Maps_cypher_time_without_offset_to_local_time()
     {
-        _mapper.Map(new CypherTime(11, 52, 5, 0)).Should().Be(new LocalTime(11, 52, 5, 0));
+        _mapper.Map(new CypherTime
+        {
+            Hour = 11,
+            Minute = 52,
+            Second = 5,
+            Nanosecond = 0
+        }).Should().Be(new LocalTime(11, 52, 5, 0));
     }
 
     [Fact]
     public void Maps_cypher_time_with_offset_to_offset_time()
     {
-        _mapper.Map(new CypherTime(11, 52, 5, 0, 7200)).Should().Be(new OffsetTime(11, 52, 5, 0, 7200));
+        _mapper.Map(new CypherTime
+        {
+            Hour = 11,
+            Minute = 52,
+            Second = 5,
+            Nanosecond = 0,
+            UtcOffsetS = 7200
+        }).Should().Be(new OffsetTime(11, 52, 5, 0, 7200));
     }
 
     [Fact]

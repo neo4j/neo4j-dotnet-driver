@@ -50,7 +50,7 @@ public class NativeToCypherMapperTests
     [Fact]
     public void Maps_double_to_cypher_float()
     {
-        _mapper.Map(1.5).Should().Be(new CypherFloat(1.5));
+        _mapper.Map(1.5).Should().Be(new CypherFloat { Value = 1.5 });
     }
 
     [Fact]
@@ -136,7 +136,17 @@ public class NativeToCypherMapperTests
     {
         var zonedDateTime = new ZonedDateTime(2022, 6, 7, 11, 52, 5, 0, Zone.Of(7200));
 
-        _mapper.Map(zonedDateTime).Should().Be(new CypherDateTime(2022, 6, 7, 11, 52, 5, 0, 7200));
+        _mapper.Map(zonedDateTime).Should().Be(new CypherDateTime
+        {
+            Year = 2022,
+            Month = 6,
+            Day = 7,
+            Hour = 11,
+            Minute = 52,
+            Second = 5,
+            Nanosecond = 0,
+            UtcOffsetS = 7200
+        });
     }
 
     [Fact]
@@ -144,7 +154,18 @@ public class NativeToCypherMapperTests
     {
         var zonedDateTime = new ZonedDateTime(2022, 6, 7, 11, 52, 5, 0, Zone.Of("Europe/Stockholm"));
 
-        _mapper.Map(zonedDateTime).Should().Be(new CypherDateTime(2022, 6, 7, 11, 52, 5, 0, 7200, "Europe/Stockholm"));
+        _mapper.Map(zonedDateTime).Should().Be(new CypherDateTime
+        {
+            Year = 2022,
+            Month = 6,
+            Day = 7,
+            Hour = 11,
+            Minute = 52,
+            Second = 5,
+            Nanosecond = 0,
+            UtcOffsetS = 7200,
+            TimezoneId = "Europe/Stockholm"
+        });
     }
 
     [Fact]
@@ -152,7 +173,16 @@ public class NativeToCypherMapperTests
     {
         var localDateTime = new LocalDateTime(2022, 6, 7, 11, 52, 5, 0);
 
-        _mapper.Map(localDateTime).Should().Be(new CypherDateTime(2022, 6, 7, 11, 52, 5, 0));
+        _mapper.Map(localDateTime).Should().Be(new CypherDateTime
+        {
+            Year = 2022,
+            Month = 6,
+            Day = 7,
+            Hour = 11,
+            Minute = 52,
+            Second = 5,
+            Nanosecond = 0
+        });
     }
 
     [Fact]
@@ -168,7 +198,7 @@ public class NativeToCypherMapperTests
     {
         var time = new LocalTime(11, 52, 5, 0);
 
-        _mapper.Map(time).Should().Be(new CypherTime(11, 52, 5, 0));
+        _mapper.Map(time).Should().Be(new CypherTime { Hour = 11, Minute = 52, Second = 5, Nanosecond = 0 });
     }
 
     [Fact]
@@ -176,7 +206,14 @@ public class NativeToCypherMapperTests
     {
         var time = new OffsetTime(11, 52, 5, 0, 7200);
 
-        _mapper.Map(time).Should().Be(new CypherTime(11, 52, 5, 0, 7200));
+        _mapper.Map(time).Should().Be(new CypherTime
+        {
+            Hour = 11,
+            Minute = 52,
+            Second = 5,
+            Nanosecond = 0,
+            UtcOffsetS = 7200
+        });
     }
 
     [Fact]

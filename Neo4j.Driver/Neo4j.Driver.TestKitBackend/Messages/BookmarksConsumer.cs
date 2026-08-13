@@ -18,8 +18,10 @@ using Neo4j.Driver.TestKitBackend.Expectations;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record BookmarksConsumerRequest(string BookmarkManagerId, string[] Bookmarks) : ICorrelatedRequest
+internal record BookmarksConsumerRequest : ICorrelatedRequest
 {
+    public required string BookmarkManagerId { get; init; }
+    public required string[] Bookmarks { get; init; }
     public string Id { get; set; } = "";
 }
 

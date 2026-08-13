@@ -62,7 +62,7 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
 
     private async ValueTask<IAuthToken> GetAuthAsync(string storageId)
     {
-        var authRequest = new AuthTokenManagerGetAuthRequest(storageId);
+        var authRequest = new AuthTokenManagerGetAuthRequest { AuthTokenManagerId = storageId };
         return await _roundTrip.SendExpectingAsync<IAuthToken>(authRequest);
     }
 
@@ -71,8 +71,12 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
         IAuthToken token,
         SecurityException exception)
     {
-        var handleSecurityExceptionRequest =
-            new AuthTokenManagerHandleSecurityExceptionRequest(storageId, ToWireToken(token), exception.Code);
+        var handleSecurityExceptionRequest = new AuthTokenManagerHandleSecurityExceptionRequest
+        {
+            AuthTokenManagerId = storageId,
+            Auth = ToWireToken(token),
+            ErrorCode = exception.Code
+        };
 
         return await _roundTrip.SendExpectingAsync<bool>(handleSecurityExceptionRequest);
     }
@@ -80,12 +84,16 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
     private static AuthorizationToken ToWireToken(IAuthToken token)
     {
         var content = ((AuthToken)token).Content;
-        return new AuthorizationToken(
-            (string)content["scheme"],
-            content.TryGetValue("principal", out var principal) ? (string)principal : null,
-            content.TryGetValue("credentials", out var credentials) ? (string)credentials : null,
-            content.TryGetValue("realm", out var realm) ? (string)realm : null,
-            content.TryGetValue("parameters", out var parameters) ? (Dictionary<string, object>)parameters : null);
+        return new AuthorizationToken
+        {
+            Scheme = (string)content["scheme"],
+            Principal = content.TryGetValue("principal", out var principal) ? (string)principal : null,
+            Credentials = content.TryGetValue("credentials", out var credentials) ? (string)credentials : null,
+            Realm = content.TryGetValue("realm", out var realm) ? (string)realm : null,
+            Parameters = content.TryGetValue("parameters", out var parameters)
+                ? (Dictionary<string, object>)parameters
+                : null
+        };
     }
 }
 

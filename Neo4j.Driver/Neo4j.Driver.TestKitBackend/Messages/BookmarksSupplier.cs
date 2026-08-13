@@ -18,8 +18,9 @@ using Neo4j.Driver.TestKitBackend.Expectations;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record BookmarksSupplierRequest(string BookmarkManagerId) : ICorrelatedRequest
+internal record BookmarksSupplierRequest : ICorrelatedRequest
 {
+    public required string BookmarkManagerId { get; init; }
     public string Id { get; set; } = "";
 }
 

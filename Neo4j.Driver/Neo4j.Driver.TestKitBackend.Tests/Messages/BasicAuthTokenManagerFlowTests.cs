@@ -46,7 +46,12 @@ public class BasicAuthTokenManagerFlowTests
         roundTripMock
             .Setup(r => r.SendExpectingAsync<IAuthToken>(It.IsAny<ICorrelatedRequest>()))
             .Callback<ICorrelatedRequest>(request => capturedRequest = request)
-            .ReturnsAsync(new AuthorizationToken("basic", "neo4j", "pass").ToAuthToken());
+            .ReturnsAsync(new AuthorizationToken
+            {
+                Scheme = "basic",
+                Principal = "neo4j",
+                Credentials = "pass"
+            }.ToAuthToken());
 
         var newManagerHandler = new NewBasicAuthTokenManagerHandler(
             objectStoreMock.Object,
@@ -82,7 +87,7 @@ public class BasicAuthTokenManagerFlowTests
         var message = new BasicAuthTokenProviderCompleted
         {
             RequestId = "callback-1",
-            Auth = new AuthorizationToken("basic", "neo4j", "pass")
+            Auth = new AuthorizationToken { Scheme = "basic", Principal = "neo4j", Credentials = "pass" }
         };
 
         handler.ProcessAsync(message);

@@ -31,7 +31,7 @@ internal class NativeToCypherMapper : INativeToCypherMapper
             null => new CypherNull(),
             bool b => new CypherBool(b),
             long l => new CypherInt(l),
-            double d => new CypherFloat(d),
+            double d => new CypherFloat { Value = d },
             string s => new CypherString(s),
             List<object> list => new CypherList([..list.Select(Map)]),
             Dictionary<string, object> map => new CypherMap(map.ToDictionary(kv => kv.Key, kv => Map(kv.Value))),

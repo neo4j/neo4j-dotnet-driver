@@ -140,7 +140,12 @@ public class NewSessionConfigMapperTests
     [Fact]
     public void Maps_the_authorization_token_via_the_special_case()
     {
-        Apply(MinimalRequest() with { AuthorizationToken = new AuthorizationToken("basic", "neo4j", "secret") });
+        Apply(MinimalRequest() with { AuthorizationToken = new AuthorizationToken
+        {
+            Scheme = "basic",
+            Principal = "neo4j",
+            Credentials = "secret" }
+        });
 
         _builder.Verify(b => b.WithAuthToken(It.IsAny<IAuthToken>()), Times.Once);
     }

@@ -32,7 +32,12 @@ public class NewDriverHandlerTests
         return new NewDriverRequest
         {
             Uri = "bolt://localhost:7687",
-            AuthorizationToken = new AuthorizationToken("basic", "neo4j", "secret")
+            AuthorizationToken = new AuthorizationToken
+            {
+                Scheme = "basic",
+                Principal = "neo4j",
+                Credentials = "secret"
+            }
         };
     }
 

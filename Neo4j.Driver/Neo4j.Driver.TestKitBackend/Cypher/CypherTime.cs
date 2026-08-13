@@ -13,27 +13,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Cypher;
 
-internal record CypherTime(
-    int Hour,
-    int Minute,
-    int Second,
-    int Nanosecond,
-
-    [property: JsonPropertyName("utc_offset_s")] 
-    int? UtcOffsetS = null) : ICypherValue
+internal record CypherTime : ICypherValue
 {
-    internal CypherTime(LocalTime time)
-        : this(time.Hour, time.Minute, time.Second, time.Nanosecond)
+    public required int Hour { get; init; }
+    public required int Minute { get; init; }
+    public required int Second { get; init; }
+    public required int Nanosecond { get; init; }
+
+    [JsonPropertyName("utc_offset_s")]
+    public int? UtcOffsetS { get; init; }
+
+    public CypherTime()
     {
     }
 
-    internal CypherTime(OffsetTime time)
-        : this(time.Hour, time.Minute, time.Second, time.Nanosecond, time.OffsetSeconds)
+    [SetsRequiredMembers]
+    internal CypherTime(LocalTime time)
     {
+        Hour = time.Hour;
+        Minute = time.Minute;
+        Second = time.Second;
+        Nanosecond = time.Nanosecond;
+    }
+
+    [SetsRequiredMembers]
+    internal CypherTime(OffsetTime time)
+    {
+        Hour = time.Hour;
+        Minute = time.Minute;
+        Second = time.Second;
+        Nanosecond = time.Nanosecond;
+        UtcOffsetS = time.OffsetSeconds;
     }
 
     internal LocalTime ToLocalTime()

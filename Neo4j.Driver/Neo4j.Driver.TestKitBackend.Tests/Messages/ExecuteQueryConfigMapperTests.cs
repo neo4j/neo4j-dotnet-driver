@@ -129,7 +129,7 @@ public class ExecuteQueryConfigMapperTests
     public void Maps_the_authorization_token()
     {
         var config = Map(
-            new ExecuteQueryConfig { AuthorizationToken = new AuthorizationToken("basic", "neo4j", "pass") });
+            new ExecuteQueryConfig { AuthorizationToken = new AuthorizationToken { Scheme = "basic", Principal = "neo4j", Credentials = "pass" } });
 
         config.AuthToken.Should().BeAssignableTo<AuthToken>();
         var token = (AuthToken)config.AuthToken;

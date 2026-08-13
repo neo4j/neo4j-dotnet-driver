@@ -61,7 +61,12 @@ public class ProtocolEnvelopeTests
             $$"""{"auth":{{AuthEnvelope}}}""",
             RealOptions())!;
 
-        container.Auth.Should().Be(new AuthorizationToken("basic", "neo4j", "pass"));
+        container.Auth.Should().Be(new AuthorizationToken
+        {
+            Scheme = "basic",
+            Principal = "neo4j",
+            Credentials = "pass"
+        });
     }
 
     [Fact]
@@ -71,7 +76,12 @@ public class ProtocolEnvelopeTests
             $$"""{"auth":{{AuthEnvelope}},"tag":"t1"}""",
             RealOptions())!;
 
-        container.Auth.Should().Be(new AuthorizationToken("basic", "neo4j", "pass"));
+        container.Auth.Should().Be(new AuthorizationToken
+        {
+            Scheme = "basic",
+            Principal = "neo4j",
+            Credentials = "pass"
+        });
         container.Tag.Should().Be("t1");
     }
 
@@ -106,7 +116,7 @@ public class ProtocolEnvelopeTests
     [Fact]
     public void A_property_of_an_enveloped_type_serializes_with_the_envelope_shape()
     {
-        var container = new InitPropertyContainer { Auth = new AuthorizationToken("basic", "neo4j", "pass") };
+        var container = new InitPropertyContainer { Auth = new AuthorizationToken { Scheme = "basic", Principal = "neo4j", Credentials = "pass" } };
 
         var json = JsonSerializer.Serialize(container, RealOptions());
 
@@ -125,7 +135,12 @@ public class ProtocolEnvelopeTests
             RealOptions())!;
 
         container.Bundle.Should().NotBeNull();
-        container.Bundle!.Auth.Should().Be(new AuthorizationToken("basic", "neo4j", "pass"));
+        container.Bundle!.Auth.Should().Be(new AuthorizationToken
+        {
+            Scheme = "basic",
+            Principal = "neo4j",
+            Credentials = "pass"
+        });
         container.Bundle.Label.Should().Be("L");
     }
 }

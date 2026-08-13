@@ -29,7 +29,7 @@ public class AuthorizationTokenTests
     [Fact]
     public void A_null_principal_or_credentials_is_omitted_from_the_wire_rather_than_written_as_null()
     {
-        var token = new AuthorizationToken("bearer", null, "token-value");
+        var token = new AuthorizationToken { Scheme = "bearer", Principal = null, Credentials = "token-value" };
 
         var json = JsonSerializer.Serialize(token, Options);
 
@@ -40,21 +40,33 @@ public class AuthorizationTokenTests
     [Fact]
     public void Basic_scheme_maps_to_a_basic_auth_token()
     {
-        var token = new AuthorizationToken("basic", "neo4j", "secret", "myrealm");
+        var token = new AuthorizationToken
+        {
+            Scheme = "basic",
+            Principal = "neo4j",
+            Credentials = "secret",
+            Realm = "myrealm"
+        };
         token.ToAuthToken().Should().Be(AuthTokens.Basic("neo4j", "secret", "myrealm"));
     }
 
     [Fact]
     public void Kerberos_scheme_maps_to_a_dedicated_kerberos_auth_token()
     {
-        var token = new AuthorizationToken("kerberos", "", "a-ticket");
+        var token = new AuthorizationToken { Scheme = "kerberos", Principal = "", Credentials = "a-ticket" };
         token.ToAuthToken().Should().Be(AuthTokens.Kerberos("a-ticket"));
     }
 
     [Fact]
     public void Custom_scheme_without_parameters_omits_the_parameters_key()
     {
-        var token = new AuthorizationToken("wild-scheme", "principal", "credentials", "realm");
+        var token = new AuthorizationToken
+        {
+            Scheme = "wild-scheme",
+            Principal = "principal",
+            Credentials = "credentials",
+            Realm = "realm"
+        };
 
         token.ToAuthToken().Should().Be(AuthTokens.Custom("principal", "credentials", "realm", "wild-scheme"));
     }
@@ -62,8 +74,12 @@ public class AuthorizationTokenTests
     [Fact]
     public void Custom_scheme_with_parameters_passes_them_through_untouched()
     {
-        var token = new AuthorizationToken("wild-scheme", "principal", "credentials", "realm")
+        var token = new AuthorizationToken
         {
+            Scheme = "wild-scheme",
+            Principal = "principal",
+            Credentials = "credentials",
+            Realm = "realm",
             Parameters = new Dictionary<string, object> { ["sky?"] = "no" }
         };
 

@@ -42,7 +42,7 @@ public class ResultConsumeHandlerTests
             null,
             [],
             null,
-            new SummaryServerInfoResponse(null, null, null),
+            new SummaryServerInfoResponse { Address = null, Agent = null, ProtocolVersion = null },
             new SummaryCountersResponse(false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false),
             0,
             0,

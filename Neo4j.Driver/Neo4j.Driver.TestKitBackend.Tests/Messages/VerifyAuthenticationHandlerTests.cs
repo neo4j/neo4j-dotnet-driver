@@ -36,7 +36,7 @@ public class VerifyAuthenticationHandlerTests
         var handler = _autoMocker.CreateInstance<VerifyAuthenticationHandler>();
         var request = new VerifyAuthenticationRequest(
             stored,
-            new AuthorizationToken("basic", "neo4j", "secret"));
+            new AuthorizationToken { Scheme = "basic", Principal = "neo4j", Credentials = "secret" });
 
         await handler.ProcessAsync(request);
 

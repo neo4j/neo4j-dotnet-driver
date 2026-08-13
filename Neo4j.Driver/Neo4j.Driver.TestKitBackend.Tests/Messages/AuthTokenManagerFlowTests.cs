@@ -46,7 +46,12 @@ public class AuthTokenManagerFlowTests
         roundTripMock
             .Setup(r => r.SendExpectingAsync<IAuthToken>(It.IsAny<ICorrelatedRequest>()))
             .Callback<ICorrelatedRequest>(request => capturedRequest = request)
-            .ReturnsAsync(new AuthorizationToken("basic", "neo4j", "pass").ToAuthToken());
+            .ReturnsAsync(new AuthorizationToken
+            {
+                Scheme = "basic",
+                Principal = "neo4j",
+                Credentials = "pass"
+            }.ToAuthToken());
 
         var newManagerHandler = new NewAuthTokenManagerHandler(
             objectStoreMock.Object,
@@ -112,7 +117,12 @@ public class AuthTokenManagerFlowTests
         var request = capturedRequest.Should().BeOfType<AuthTokenManagerHandleSecurityExceptionRequest>().Subject;
         request.AuthTokenManagerId.Should().Be("manager-1");
         request.ErrorCode.Should().Be("Neo.ClientError.Security.TokenExpired");
-        request.Auth.Should().Be(new AuthorizationToken("basic", "neo4j", "pass"));
+        request.Auth.Should().Be(new AuthorizationToken
+        {
+            Scheme = "basic",
+            Principal = "neo4j",
+            Credentials = "pass"
+        });
     }
 
     [Fact]
@@ -225,7 +235,7 @@ public class AuthTokenManagerFlowTests
         var message = new AuthTokenManagerGetAuthCompleted
         {
             RequestId = "callback-1",
-            Auth = new AuthorizationToken("basic", "neo4j", "pass")
+            Auth = new AuthorizationToken { Scheme = "basic", Principal = "neo4j", Credentials = "pass" }
         };
 
         handler.ProcessAsync(message);

@@ -75,7 +75,12 @@ internal class SummaryMapper : ISummaryMapper
     private static SummaryServerInfoResponse MapServerInfo(IServerInfo server)
     {
         // passing a null address because driver does not resolve it to an IP yet
-        return new SummaryServerInfoResponse(null, server.Agent, server.ProtocolVersion);
+        return new SummaryServerInfoResponse
+        {
+            Address = null,
+            Agent = server.Agent,
+            ProtocolVersion = server.ProtocolVersion
+        };
     }
 
     private static SummaryCountersResponse MapCounters(ICounters counters)
@@ -109,15 +114,17 @@ internal class SummaryMapper : ISummaryMapper
 
     private static SummaryNotificationResponse MapNotification(INotification notification)
     {
-        return new SummaryNotificationResponse(
-            notification.RawCategory ?? "",
-            notification.Category.ToString().ToUpperInvariant(),
-            notification.RawSeverityLevel ?? "",
-            notification.SeverityLevel.ToString().ToUpperInvariant(),
-            notification.Description,
-            notification.Code,
-            notification.Title,
-            MapPosition(notification.Position));
+        return new SummaryNotificationResponse
+        {
+            RawCategory = notification.RawCategory ?? "",
+            Category = notification.Category.ToString().ToUpperInvariant(),
+            RawSeverityLevel = notification.RawSeverityLevel ?? "",
+            SeverityLevel = notification.SeverityLevel.ToString().ToUpperInvariant(),
+            Description = notification.Description,
+            Code = notification.Code,
+            Title = notification.Title,
+            Position = MapPosition(notification.Position)
+        };
     }
 
     private SummaryPlanResponse MapPlan(IPlan plan)

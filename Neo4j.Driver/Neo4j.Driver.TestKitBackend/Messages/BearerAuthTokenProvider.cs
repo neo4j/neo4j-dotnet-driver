@@ -21,8 +21,9 @@ using DriverAuthTokenAndExpiration = Neo4j.Driver.AuthTokenAndExpiration;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record BearerAuthTokenProviderRequest(string BearerAuthTokenManagerId) : ICorrelatedRequest
+internal record BearerAuthTokenProviderRequest : ICorrelatedRequest
 {
+    public required string BearerAuthTokenManagerId { get; init; }
     public string Id { get; set; } = "";
 }
 
