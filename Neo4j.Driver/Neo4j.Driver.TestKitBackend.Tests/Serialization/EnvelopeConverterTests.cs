@@ -16,9 +16,11 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FluentAssertions;
+using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
 
@@ -165,6 +167,26 @@ public class EnvelopeConverterTests
     }
 
     [Fact]
+    public void Wraps_a_non_JsonException_deserialization_failure_with_the_wire_type_name()
+    {
+        _autoMocker.GetMock<IMessageTypeMap>()
+            .Setup(m => m.GetTypeByName("Malformed"))
+            .Returns(typeof(MalformedRequest));
+
+        var options = new JsonOptionsProvider(
+            [_autoMocker.CreateInstance<EnvelopeConverter>()],
+            Mock.Of<IObjectStore>()).GetOptions();
+
+        const string json = """{"name":"Malformed","data":{"value":"x"}}""";
+
+        var deserialize = () => JsonSerializer.Deserialize<IProtocolMessage>(json, options);
+
+        deserialize.Should().Throw<TestKitProtocolException>()
+            .WithMessage("*Malformed*")
+            .Which.InnerException.Should().NotBeNull();
+    }
+
+    [Fact]
     public void Writes_the_outbound_wire_name_and_camelCase_data()
     {
         var json = JsonSerializer.Serialize<IProtocolMessage>(new SampleResponse { Value = "x" }, Options());
@@ -247,5 +269,20 @@ public class EnvelopeConverterTests
     private record SampleListEnvelope : IProtocolMessage
     {
         public IReadOnlyList<SampleResponse> Items { get; init; } = [];
+    }
+
+    private record MalformedRequest : IProtocolMessage
+    {
+        public string Value { get; }
+
+        public MalformedRequest(string value)
+        {
+            Value = value;
+        }
+
+        public MalformedRequest(string value, string extra)
+        {
+            Value = value;
+        }
     }
 }

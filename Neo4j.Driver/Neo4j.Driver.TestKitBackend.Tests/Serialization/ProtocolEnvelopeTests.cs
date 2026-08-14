@@ -48,6 +48,27 @@ public class ProtocolEnvelopeTests
         public InnerBundle? Bundle { get; init; }
     }
 
+    [ProtocolEnvelope]
+    private record MalformedEnvelope
+    {
+        public string Value { get; }
+
+        public MalformedEnvelope(string value)
+        {
+            Value = value;
+        }
+
+        public MalformedEnvelope(string value, string extra)
+        {
+            Value = value;
+        }
+    }
+
+    private record MalformedContainer
+    {
+        public MalformedEnvelope? Malformed { get; init; }
+    }
+
     private static JsonSerializerOptions RealOptions()
     {
         return new JsonOptionsProvider([], Mock.Of<IObjectStore>()).GetOptions();
@@ -123,6 +144,18 @@ public class ProtocolEnvelopeTests
         var json = JsonSerializer.Serialize(container, RealOptions());
 
         json.Should().Be($$"""{"auth":{{AuthEnvelope}}}""");
+    }
+
+    [Fact]
+    public void Wraps_a_non_JsonException_deserialization_failure_with_the_envelope_name()
+    {
+        var act = () => JsonSerializer.Deserialize<MalformedContainer>(
+            """{"malformed":{"name":"MalformedEnvelope","data":{"value":"x"}}}""",
+            RealOptions());
+
+        act.Should().Throw<TestKitProtocolException>()
+            .WithMessage("*MalformedEnvelope*")
+            .Which.InnerException.Should().NotBeNull();
     }
 
     [Fact]

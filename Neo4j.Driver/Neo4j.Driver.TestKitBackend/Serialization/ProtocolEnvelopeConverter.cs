@@ -56,7 +56,11 @@ internal class ProtocolEnvelopeConverter<T> : JsonConverter<T>
         {
             return JsonSerializer.Deserialize<T>(dataJson, options);
         }
-        catch (JsonException ex)
+        catch (TestKitProtocolException)
+        {
+            throw;
+        }
+        catch (Exception ex)
         {
             throw new TestKitProtocolException($"Failed to deserialize the data of protocol envelope \"{name}\".", ex);
         }

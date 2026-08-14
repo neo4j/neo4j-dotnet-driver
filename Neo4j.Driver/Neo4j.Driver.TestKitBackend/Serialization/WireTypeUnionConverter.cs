@@ -57,7 +57,11 @@ internal abstract class WireTypeUnionConverter<TUnion> : JsonConverter<TUnion>, 
         {
             data = JsonSerializer.Deserialize(dataJson, concreteType, options);
         }
-        catch (JsonException ex)
+        catch (TestKitProtocolException)
+        {
+            throw;
+        }
+        catch (Exception ex)
         {
             throw new TestKitProtocolException($"Failed to deserialize the data of wire type \"{name}\".", ex);
         }
