@@ -95,4 +95,34 @@ public class ObjectJsonConverterTests
 
         json.Should().Be("""{"EstimatedRows":12,"Details":["n","m"]}""");
     }
+
+    [Fact]
+    public void Writes_a_map_containing_a_float_value()
+    {
+        var value = new Dictionary<string, object> { ["Cost"] = 1.5f };
+
+        var json = JsonSerializer.Serialize<object?>(value, Options());
+
+        json.Should().Be("""{"Cost":1.5}""");
+    }
+
+    [Fact]
+    public void Writes_a_map_containing_a_decimal_value()
+    {
+        var value = new Dictionary<string, object> { ["Cost"] = 1.5m };
+
+        var json = JsonSerializer.Serialize<object?>(value, Options());
+
+        json.Should().Be("""{"Cost":1.5}""");
+    }
+
+    [Fact]
+    public void Writes_a_map_containing_a_string_keyed_dictionary_value()
+    {
+        var value = new Dictionary<string, object> { ["Labels"] = new Dictionary<string, string> { ["a"] = "b" } };
+
+        var json = JsonSerializer.Serialize<object?>(value, Options());
+
+        json.Should().Be("""{"Labels":{"a":"b"}}""");
+    }
 }

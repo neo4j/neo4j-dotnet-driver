@@ -111,7 +111,8 @@ internal class ObjectJsonConverter : JsonConverter<object?>, IProtocolJsonConver
                 break;
 
             default:
-                throw new NotSupportedException($"Cannot write untyped value of type '{value.GetType().Name}'.");
+                JsonSerializer.Serialize(writer, value, value.GetType(), options);
+                break;
         }
     }
 }
