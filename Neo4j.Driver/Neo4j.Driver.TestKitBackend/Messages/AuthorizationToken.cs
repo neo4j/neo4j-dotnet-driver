@@ -24,10 +24,10 @@ internal record AuthorizationToken
     public required string Scheme { get; init; }
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public required string? Principal { get; init; }
+    public string? Principal { get; init; }
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public required string? Credentials { get; init; }
+    public string? Credentials { get; init; }
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Realm { get; init; }

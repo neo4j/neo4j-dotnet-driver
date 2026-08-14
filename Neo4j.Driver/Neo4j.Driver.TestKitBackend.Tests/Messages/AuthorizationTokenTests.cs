@@ -15,8 +15,11 @@
 
 using System.Text.Json;
 using FluentAssertions;
+using Moq;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.TestKitBackend.Messages;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -35,6 +38,23 @@ public class AuthorizationTokenTests
 
         json.Should().NotContain("principal");
         json.Should().Contain("\"credentials\":\"token-value\"");
+    }
+
+    [Fact]
+    public void Wire_data_without_principal_deserializes_with_a_null_principal()
+    {
+        var realOptions = new JsonOptionsProvider([], Mock.Of<IObjectStore>()).GetOptions();
+
+        var token = JsonSerializer.Deserialize<AuthorizationToken>(
+            """{"scheme":"kerberos","credentials":"QmFuYW5hIQ=="}""",
+            realOptions)!;
+
+        token.Should().Be(new AuthorizationToken
+        {
+            Scheme = "kerberos",
+            Principal = null,
+            Credentials = "QmFuYW5hIQ=="
+        });
     }
 
     [Fact]
