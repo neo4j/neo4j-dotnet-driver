@@ -44,9 +44,13 @@ internal class GetConnectionPoolMetricsHandler : MessageHandler<GetConnectionPoo
     {
         var driver = (Internal.Driver)message.Driver;
         var metrics = driver.Context.Metrics.ConnectionPoolMetrics
-            .Where(x => x.Value.Id.Contains(message.Address, StringComparison.OrdinalIgnoreCase))
             .Select(x => x.Value)
-            .First();
+            .FirstOrDefault(m => m.Id.Contains(message.Address, StringComparison.OrdinalIgnoreCase));
+
+        if (metrics is null)
+        {
+            throw new TestKitProtocolException($"No connection pool matches address '{message.Address}'.");
+        }
 
         _logger.LogDebug("Fetched connection pool metrics for address '{Address}'", message.Address);
 
