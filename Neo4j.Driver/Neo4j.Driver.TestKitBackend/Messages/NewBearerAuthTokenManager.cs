@@ -64,7 +64,7 @@ internal class NewBearerAuthTokenManagerHandler : MessageHandler<NewBearerAuthTo
 
     private async ValueTask<DriverAuthTokenAndExpiration> ProvideTokenAsync(string storageId)
     {
-        var providerRequest = new BearerAuthTokenProviderRequest { BearerAuthTokenManagerId = storageId };
+        var providerRequest = new BearerAuthTokenProviderRequest(storageId);
         return await _roundTrip.SendExpectingAsync<DriverAuthTokenAndExpiration>(providerRequest);
     }
 }

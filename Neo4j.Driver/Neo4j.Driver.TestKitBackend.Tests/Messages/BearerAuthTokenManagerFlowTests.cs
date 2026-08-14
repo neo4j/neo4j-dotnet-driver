@@ -19,6 +19,7 @@ using Moq;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Services;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
@@ -75,7 +76,7 @@ public class BearerAuthTokenManagerFlowTests
             : new DriverAuthTokenAndExpiration(token);
 
         _roundTripMock
-            .Setup(r => r.SendExpectingAsync<DriverAuthTokenAndExpiration>(It.IsAny<ICorrelatedRequest>()))
+            .Setup(r => r.SendExpectingAsync<DriverAuthTokenAndExpiration>(It.IsAny<IProtocolMessage>()))
             .ReturnsAsync(domainValue);
     }
 
@@ -111,7 +112,7 @@ public class BearerAuthTokenManagerFlowTests
 
         secondToken.Content["credentials"].Should().Be("a-token");
         _roundTripMock.Verify(
-            r => r.SendExpectingAsync<DriverAuthTokenAndExpiration>(It.IsAny<ICorrelatedRequest>()),
+            r => r.SendExpectingAsync<DriverAuthTokenAndExpiration>(It.IsAny<IProtocolMessage>()),
             Times.Never);
     }
 
@@ -130,7 +131,7 @@ public class BearerAuthTokenManagerFlowTests
 
         secondToken.Content["credentials"].Should().Be("a-token");
         _roundTripMock.Verify(
-            r => r.SendExpectingAsync<DriverAuthTokenAndExpiration>(It.IsAny<ICorrelatedRequest>()),
+            r => r.SendExpectingAsync<DriverAuthTokenAndExpiration>(It.IsAny<IProtocolMessage>()),
             Times.Never);
     }
 

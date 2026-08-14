@@ -21,13 +21,8 @@ using DriverAuthTokenAndExpiration = Neo4j.Driver.AuthTokenAndExpiration;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record BearerAuthTokenProviderRequest : ICorrelatedRequest
-{
-    public required string BearerAuthTokenManagerId { get; init; }
-    public string Id { get; set; } = "";
-}
+internal record BearerAuthTokenProviderRequest(string BearerAuthTokenManagerId) : IProtocolMessage;
 
-// Testkit's token-plus-expiry payload; expiresInMs null/absent = the token never expires.
 [ProtocolEnvelope]
 internal record AuthTokenAndExpiration(
     AuthorizationToken Auth,

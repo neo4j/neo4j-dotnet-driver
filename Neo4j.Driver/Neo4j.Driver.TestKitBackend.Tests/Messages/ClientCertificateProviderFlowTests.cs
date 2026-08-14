@@ -20,6 +20,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.TestKitBackend.Certificates;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
@@ -73,10 +74,10 @@ public class ClientCertificateProviderFlowTests
         IClientCertificateProvider provider,
         X509Certificate certificateToReturn)
     {
-        ICorrelatedRequest? capturedRequest = null;
+        IProtocolMessage? capturedRequest = null;
         _roundTripMock
-            .Setup(r => r.SendExpectingAsync<X509Certificate>(It.IsAny<ICorrelatedRequest>()))
-            .Callback<ICorrelatedRequest>(request => capturedRequest = request)
+            .Setup(r => r.SendExpectingAsync<X509Certificate>(It.IsAny<IProtocolMessage>()))
+            .Callback<IProtocolMessage>(request => capturedRequest = request)
             .ReturnsAsync(certificateToReturn);
 
         var certificate = await provider.GetCertificateAsync();

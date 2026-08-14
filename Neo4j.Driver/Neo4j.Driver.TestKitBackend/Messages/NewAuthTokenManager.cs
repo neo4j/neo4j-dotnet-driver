@@ -56,7 +56,7 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
 
     private async ValueTask<IAuthToken> GetAuthAsync(string storageId)
     {
-        var authRequest = new AuthTokenManagerGetAuthRequest { AuthTokenManagerId = storageId };
+        var authRequest = new AuthTokenManagerGetAuthRequest(storageId);
         return await _roundTrip.SendExpectingAsync<IAuthToken>(authRequest);
     }
 
@@ -65,12 +65,10 @@ internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRe
         IAuthToken token,
         SecurityException exception)
     {
-        var handleSecurityExceptionRequest = new AuthTokenManagerHandleSecurityExceptionRequest
-        {
-            AuthTokenManagerId = storageId,
-            Auth = ToWireToken(token),
-            ErrorCode = exception.Code
-        };
+        var handleSecurityExceptionRequest = new AuthTokenManagerHandleSecurityExceptionRequest(
+            storageId,
+            ToWireToken(token),
+            exception.Code);
 
         return await _roundTrip.SendExpectingAsync<bool>(handleSecurityExceptionRequest);
     }

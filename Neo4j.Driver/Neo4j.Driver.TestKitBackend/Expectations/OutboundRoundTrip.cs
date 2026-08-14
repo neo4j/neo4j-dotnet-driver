@@ -37,9 +37,9 @@ internal class OutboundRoundTrip : IOutboundRoundTrip
         return await value;
     }
 
-    public Task<T> SendExpectingAsync<T>(ICorrelatedRequest message)
+    public Task<T> SendExpectingAsync<T>(IProtocolMessage message)
     {
-        message.Id = Guid.NewGuid().ToString();
-        return SendExpectingAsync<T>(message, message.Id);
+        var wrapper = new CorrelatedRequestWrapper(message, Guid.NewGuid().ToString());
+        return SendExpectingAsync<T>(wrapper, wrapper.Id);
     }
 }

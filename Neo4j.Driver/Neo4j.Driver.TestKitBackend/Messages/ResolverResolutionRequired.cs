@@ -19,11 +19,7 @@ using Neo4j.Driver.TestKitBackend.Expectations;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record ResolverResolutionRequired : ICorrelatedRequest
-{
-    public required string Address { get; init; }
-    public string Id { get; set; } = "";
-}
+internal record ResolverResolutionRequired(string Address) : IProtocolMessage;
 
 internal record ResolverResolutionCompleted : IProtocolMessage
 {
@@ -58,7 +54,7 @@ internal class TestKitServerAddressResolver : IServerAddressResolver
 
     public ISet<ServerAddress> Resolve(ServerAddress address)
     {
-        var resolutionRequest = new ResolverResolutionRequired { Address = $"{address.Host}:{address.Port}" };
+        var resolutionRequest = new ResolverResolutionRequired($"{address.Host}:{address.Port}");
         var addresses = _roundTrip
             .SendExpectingAsync<string[]>(resolutionRequest)
             .GetAwaiter()

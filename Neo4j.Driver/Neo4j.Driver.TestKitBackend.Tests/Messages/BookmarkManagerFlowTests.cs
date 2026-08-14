@@ -17,6 +17,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
@@ -59,10 +60,10 @@ public class BookmarkManagerFlowTests
     {
         var manager = StoreManager(new NewBookmarkManagerRequest { BookmarksSupplierRegistered = true });
 
-        ICorrelatedRequest? capturedRequest = null;
+        IProtocolMessage? capturedRequest = null;
         _roundTripMock
-            .Setup(r => r.SendExpectingAsync<string[]>(It.IsAny<ICorrelatedRequest>()))
-            .Callback<ICorrelatedRequest>(request => capturedRequest = request)
+            .Setup(r => r.SendExpectingAsync<string[]>(It.IsAny<IProtocolMessage>()))
+            .Callback<IProtocolMessage>(request => capturedRequest = request)
             .ReturnsAsync(["bm:s1", "bm:s2"]);
 
         var bookmarks = await manager.GetBookmarksAsync(TestContext.Current.CancellationToken);
@@ -77,10 +78,10 @@ public class BookmarkManagerFlowTests
     {
         var manager = StoreManager(new NewBookmarkManagerRequest { BookmarksConsumerRegistered = true });
 
-        ICorrelatedRequest? capturedRequest = null;
+        IProtocolMessage? capturedRequest = null;
         _roundTripMock
-            .Setup(r => r.SendExpectingAsync<bool>(It.IsAny<ICorrelatedRequest>()))
-            .Callback<ICorrelatedRequest>(request => capturedRequest = request)
+            .Setup(r => r.SendExpectingAsync<bool>(It.IsAny<IProtocolMessage>()))
+            .Callback<IProtocolMessage>(request => capturedRequest = request)
             .ReturnsAsync(true);
 
         await manager.UpdateBookmarksAsync([], ["bm:new1", "bm:new2"], TestContext.Current.CancellationToken);

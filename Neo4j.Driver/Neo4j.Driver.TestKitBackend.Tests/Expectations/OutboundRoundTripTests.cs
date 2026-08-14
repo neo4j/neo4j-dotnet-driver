@@ -44,8 +44,6 @@ public class OutboundRoundTripTests
             .Setup(w => w.WriteAsync(prompt))
             .Returns(() =>
             {
-                // If the expectation weren't already registered at this point, this would throw
-                // TestKitProtocolException for an unknown key instead of succeeding.
                 _expectationStore.Fulfil("key-1", "value-1");
                 return Task.CompletedTask;
             });
@@ -59,25 +57,26 @@ public class OutboundRoundTripTests
     }
 
     [Fact]
-    public async Task The_correlated_overload_stamps_a_fresh_id_on_the_message_and_expects_on_it()
+    public async Task The_correlating_overload_wraps_the_message_and_expects_on_the_wrappers_id()
     {
-        var prompt = new FakeCorrelatedPrompt();
+        var prompt = new FakePrompt();
+        CorrelatedRequestWrapper? written = null;
         _autoMocker.GetMock<IResponseWriter>()
-            .Setup(w => w.WriteAsync(prompt))
+            .Setup(w => w.WriteAsync(It.IsAny<IProtocolMessage>()))
+            .Callback<IProtocolMessage>(m => written = m as CorrelatedRequestWrapper)
             .Returns(Task.CompletedTask);
 
         var roundTrip = _autoMocker.CreateInstance<OutboundRoundTrip>();
 
         var task = roundTrip.SendExpectingAsync<string>(prompt);
-        _expectationStore.Fulfil(prompt.Id, "value-1");
+
+        written.Should().NotBeNull();
+        written!.Inner.Should().BeSameAs(prompt);
+        written.Id.Should().NotBeNullOrEmpty();
+
+        _expectationStore.Fulfil(written.Id, "value-1");
         var value = await task;
 
         value.Should().Be("value-1");
-        prompt.Id.Should().NotBeNullOrEmpty();
-    }
-
-    private record FakeCorrelatedPrompt : ICorrelatedRequest
-    {
-        public string Id { get; set; } = "";
     }
 }

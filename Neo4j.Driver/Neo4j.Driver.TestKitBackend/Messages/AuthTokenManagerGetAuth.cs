@@ -18,11 +18,7 @@ using Neo4j.Driver.TestKitBackend.Expectations;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
-internal record AuthTokenManagerGetAuthRequest : ICorrelatedRequest
-{
-    public required string AuthTokenManagerId { get; init; }
-    public string Id { get; set; } = "";
-}
+internal record AuthTokenManagerGetAuthRequest(string AuthTokenManagerId) : IProtocolMessage;
 
 internal record AuthTokenManagerGetAuthCompleted : IProtocolMessage
 {

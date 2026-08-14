@@ -17,9 +17,7 @@ using Neo4j.Driver.TestKitBackend.Dispatch;
 
 namespace Neo4j.Driver.TestKitBackend.Expectations;
 
-internal interface IOutboundRoundTrip
+internal record CorrelatedRequestWrapper(IProtocolMessage Inner, string Id) : IProtocolMessage
 {
-    Task<T> SendExpectingAsync<T>(IProtocolMessage message, string key);
-
-    Task<T> SendExpectingAsync<T>(IProtocolMessage message);
+    public string OutboundTypeName => Inner.OutboundTypeName;
 }

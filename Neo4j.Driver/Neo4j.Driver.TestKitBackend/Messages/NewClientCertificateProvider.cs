@@ -61,7 +61,7 @@ internal class NewClientCertificateProviderHandler : MessageHandler<NewClientCer
     private async ValueTask<X509Certificate> ProvideCertificateAsync(string storageId)
     {
         return await _roundTrip.SendExpectingAsync<X509Certificate>(
-            new ClientCertificateProviderRequest { ClientCertificateProviderId = storageId });
+            new ClientCertificateProviderRequest(storageId));
     }
 }
 

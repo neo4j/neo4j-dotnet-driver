@@ -18,6 +18,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
@@ -41,11 +42,11 @@ public class BasicAuthTokenManagerFlowTests
                     return "manager-1";
                 });
 
-        ICorrelatedRequest? capturedRequest = null;
+        IProtocolMessage? capturedRequest = null;
         var roundTripMock = new Mock<IOutboundRoundTrip>();
         roundTripMock
-            .Setup(r => r.SendExpectingAsync<IAuthToken>(It.IsAny<ICorrelatedRequest>()))
-            .Callback<ICorrelatedRequest>(request => capturedRequest = request)
+            .Setup(r => r.SendExpectingAsync<IAuthToken>(It.IsAny<IProtocolMessage>()))
+            .Callback<IProtocolMessage>(request => capturedRequest = request)
             .ReturnsAsync(new AuthorizationToken
             {
                 Scheme = "basic",

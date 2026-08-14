@@ -15,6 +15,7 @@
 
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Xunit;
@@ -26,11 +27,11 @@ public class ResolverFlowTests
     [Fact]
     public void Resolve_requests_a_callback_with_the_asked_address_and_parses_the_reply()
     {
-        ICorrelatedRequest? capturedRequest = null;
+        IProtocolMessage? capturedRequest = null;
         var roundTripMock = new Mock<IOutboundRoundTrip>();
         roundTripMock
-            .Setup(r => r.SendExpectingAsync<string[]>(It.IsAny<ICorrelatedRequest>()))
-            .Callback<ICorrelatedRequest>(request => capturedRequest = request)
+            .Setup(r => r.SendExpectingAsync<string[]>(It.IsAny<IProtocolMessage>()))
+            .Callback<IProtocolMessage>(request => capturedRequest = request)
             .ReturnsAsync(["hosta:9002", "hostb:9003"]);
 
         var resolver = new TestKitServerAddressResolver(roundTripMock.Object);

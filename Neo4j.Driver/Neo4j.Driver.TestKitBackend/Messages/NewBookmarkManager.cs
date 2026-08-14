@@ -73,13 +73,11 @@ internal class NewBookmarkManagerHandler : MessageHandler<NewBookmarkManagerRequ
 
     private async Task<string[]> SupplyBookmarksAsync(string storageId)
     {
-        return await _roundTrip.SendExpectingAsync<string[]>(
-            new BookmarksSupplierRequest { BookmarkManagerId = storageId });
+        return await _roundTrip.SendExpectingAsync<string[]>(new BookmarksSupplierRequest(storageId));
     }
 
     private async Task ConsumeBookmarksAsync(string storageId, string[] bookmarks)
     {
-        await _roundTrip.SendExpectingAsync<bool>(
-            new BookmarksConsumerRequest { BookmarkManagerId = storageId, Bookmarks = bookmarks });
+        await _roundTrip.SendExpectingAsync<bool>(new BookmarksConsumerRequest(storageId, bookmarks));
     }
 }
