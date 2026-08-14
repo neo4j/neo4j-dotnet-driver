@@ -399,6 +399,67 @@ public class MessageLoopTests
         _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(It.IsAny<IProtocolMessage>()), Times.Never);
     }
 
+    [Fact]
+    public async Task RunAsync_completes_when_input_reaches_eof()
+    {
+        _autoMocker.GetMock<IConnectionInput>()
+            .Setup(i => i.ReadRequestAsync())
+            .ReturnsAsync((string?)null);
+
+        var loop = _autoMocker.CreateInstance<MessageLoop>();
+
+        var run = Task.Run(() => loop.RunAsync("testkit-1"), TestContext.Current.CancellationToken);
+        var completed = await Task.WhenAny(
+            run,
+            Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
+
+        completed.Should().BeSameAs(run);
+        await run;
+    }
+
+    [Fact]
+    public async Task Eof_after_messages_cancels_outstanding_expectations_and_unwinds_held_handlers()
+    {
+        const string holdingJson = """{"name":"SessionReadTransaction","data":{}}""";
+        var holdingMessage = Mock.Of<IProtocolMessage>();
+        var expectations = _autoMocker.CreateInstance<ExpectationStore>();
+        _autoMocker.Use<IExpectationStore>(expectations);
+        var unwound = false;
+        var readCount = 0;
+
+        _autoMocker.GetMock<IConnectionInput>()
+            .Setup(i => i.ReadRequestAsync())
+            .ReturnsAsync(() => readCount++ == 0 ? holdingJson : null);
+
+        _autoMocker.GetMock<IMessageSerializer>().Setup(s => s.Deserialize(holdingJson)).Returns(holdingMessage);
+        _autoMocker.GetMock<IMessageDispatcher>()
+            .Setup(d => d.DispatchAsync(holdingMessage))
+            .Returns(async () =>
+            {
+                try
+                {
+                    await expectations.Expect<string>("key-1");
+                }
+                finally
+                {
+                    unwound = true;
+                }
+            });
+
+        var loop = _autoMocker.CreateInstance<MessageLoop>();
+
+        var run = Task.Run(() => loop.RunAsync("testkit-1"), TestContext.Current.CancellationToken);
+        var completed = await Task.WhenAny(
+            run,
+            Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken));
+
+        completed.Should().BeSameAs(run);
+        await run;
+
+        unwound.Should().BeTrue();
+        _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(It.IsAny<IProtocolMessage>()), Times.Never);
+    }
+
     private static async Task WithTimeoutAsync(Task task)
     {
         var completed = await Task.WhenAny(

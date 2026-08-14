@@ -58,16 +58,12 @@ internal class MessageLoop : IMessageLoop
         var handlerTasks = new List<Task>();
         try
         {
-            bool readSuccess;
-            string? json = null;
-
-            do
+            while (true)
             {
-                readSuccess = false;
+                string? json;
                 try
                 {
                     json = await _input.ReadRequestAsync();
-                    readSuccess = true;
                 }
                 catch (IOException)
                 {
@@ -76,24 +72,27 @@ internal class MessageLoop : IMessageLoop
                     // It's caused when testkit drops the connection (maybe we failed a test)
                     // and it doesn't represent an error - it's just the completion of the test.
                     _logger.LogDebug("Connection {ConnectionId} ended by testkit", connectionId);
+                    break;
                 }
                 catch (Exception exception)
                 {
-                    // Log the error but don't throw since an exception in a test is sent to 
-                    // testkit as a BackEndErrorResponse and we can't do that because the connection
-                    // is dead. Log the error and continue reading.
+                    // Log the error but don't rethrow: an exception in a test is normally sent
+                    // to testkit as a BackendErrorResponse, but we can't write one here because
+                    // the connection is dead. There's nothing left to read from, so the loop ends.
                     _logger.LogError(exception, "Connection {ConnectionId} failed while reading", connectionId);
+                    break;
                 }
 
-                if (!readSuccess || json is null)
+                if (json is null)
                 {
-                    continue;
+                    _logger.LogDebug("Connection {ConnectionId} ended by testkit (EOF)", connectionId);
+                    break;
                 }
 
                 _logger.LogDebug("Request: {Request}", json);
                 var message = _serializer.Deserialize(json);
                 handlerTasks.Add(DispatchTrackedAsync(message));
-            } while (readSuccess);
+            }
         }
         catch (Exception exception)
         {
