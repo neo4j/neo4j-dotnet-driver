@@ -22,6 +22,7 @@ namespace Neo4j.Driver.TestKitBackend.ObjectStorage;
 internal class ObjectStore : IObjectStore, IAsyncDisposable
 {
     private readonly OrderedDictionary<string, object> _objects = [];
+    private readonly Lock _lock = new();
     private readonly ILogger _logger;
     private int _nextId;
 
@@ -37,16 +38,23 @@ internal class ObjectStore : IObjectStore, IAsyncDisposable
 
     public string Store<T>(Func<string, T> create) where T : notnull
     {
-        var id = (_nextId++).ToString();
-        _objects[id] = create(id);
-        return id;
+        lock (_lock)
+        {
+            var id = (_nextId++).ToString();
+            _objects[id] = create(id);
+            return id;
+        }
     }
 
     public T Get<T>(string id) where T : notnull
     {
-        if (!_objects.TryGetValue(id, out var obj))
+        object obj;
+        lock (_lock)
         {
-            throw new TestKitProtocolException($"No object is stored with id '{id}'.");
+            if (!_objects.TryGetValue(id, out obj!))
+            {
+                throw new TestKitProtocolException($"No object is stored with id '{id}'.");
+            }
         }
 
         if (obj is not T typed)
@@ -60,14 +68,26 @@ internal class ObjectStore : IObjectStore, IAsyncDisposable
 
     public void Remove(string id)
     {
-        _objects.Remove(id);
+        lock (_lock)
+        {
+            _objects.Remove(id);
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
-        for (var i = _objects.Count - 1; i >= 0; i--)
+        List<object> toDispose;
+        lock (_lock)
         {
-            var obj = _objects.GetAt(i).Value;
+            toDispose = new List<object>(_objects.Count);
+            for (var i = _objects.Count - 1; i >= 0; i--)
+            {
+                toDispose.Add(_objects.GetAt(i).Value);
+            }
+        }
+
+        foreach (var obj in toDispose)
+        {
             try
             {
                 if (obj is IAsyncDisposable asyncDisposable)
@@ -88,6 +108,9 @@ internal class ObjectStore : IObjectStore, IAsyncDisposable
             }
         }
 
-        _objects.Clear();
+        lock (_lock)
+        {
+            _objects.Clear();
+        }
     }
 }

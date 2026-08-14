@@ -101,6 +101,56 @@ public class ObjectStoreTests
     }
 
     [Fact]
+    public async Task Store_is_safe_under_concurrent_access()
+    {
+        const int workerCount = 8;
+        const int storesPerWorker = 2000;
+
+        var preStored = Enumerable.Range(0, 100).Select(_ => _objectStore.Store(new Stored())).ToArray();
+
+        var storeTasks = Enumerable.Range(0, workerCount)
+            .Select(
+                _ => Task.Run(
+                    () =>
+                    {
+                        var ids = new string[storesPerWorker];
+                        for (var i = 0; i < storesPerWorker; i++)
+                        {
+                            ids[i] = _objectStore.Store(new Stored());
+                        }
+
+                        return ids;
+                    },
+                    TestContext.Current.CancellationToken))
+            .ToArray();
+
+        var getTask = Task.Run(
+            () =>
+            {
+                for (var i = 0; i < storesPerWorker; i++)
+                {
+                    foreach (var id in preStored)
+                    {
+                        _objectStore.Get<Stored>(id);
+                    }
+                }
+            },
+            TestContext.Current.CancellationToken);
+
+        await Task.WhenAll(storeTasks.Cast<Task>().Append(getTask));
+
+        var allIds = storeTasks.SelectMany(t => t.Result).ToArray();
+
+        allIds.Should().HaveCount(workerCount * storesPerWorker);
+        allIds.Should().OnlyHaveUniqueItems();
+
+        foreach (var id in allIds)
+        {
+            _objectStore.Get<Stored>(id);
+        }
+    }
+
+    [Fact]
     public async Task DisposeAsync_disposes_every_stored_disposable_object()
     {
         var first = new DisposableStored();
