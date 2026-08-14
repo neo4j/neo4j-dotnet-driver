@@ -52,9 +52,31 @@ public class MessageTypeMapTests
         result.Should().BeSameAs(typeof(FirstSampleRequest));
     }
 
+    [Fact]
+    public void Construction_names_both_colliding_types_when_two_messages_share_a_wire_name()
+    {
+        _autoMocker.GetMock<IProtocolMessageTypesProvider>()
+            .Setup(p => p.GetTypes())
+            .Returns(new[] { typeof(ConflictRequest), typeof(OtherConflict) });
+
+        var construct = () => Subject();
+
+        var exception = construct.Should().Throw<TestKitProtocolException>().Which;
+        exception.Message.Should().Contain("Conflict");
+        exception.Message.Should().Contain(typeof(ConflictRequest).FullName!);
+        exception.Message.Should().Contain(typeof(OtherConflict).FullName!);
+    }
+
     private record FirstSampleRequest : IProtocolMessage;
 
     private record SecondSampleRequest : IProtocolMessage;
+
+    private record ConflictRequest : IProtocolMessage;
+
+    private record OtherConflict : IProtocolMessage
+    {
+        public string InboundTypeName => "Conflict";
+    }
 
     private class NotAMessage;
 }

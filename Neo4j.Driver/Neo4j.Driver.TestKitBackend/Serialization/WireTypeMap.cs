@@ -21,7 +21,20 @@ internal abstract class WireTypeMap : IWireTypeResolver
 
     protected WireTypeMap(IEnumerable<Type> types, IWireTypeNameProvider wireTypeNameProvider)
     {
-        _byName = types.ToDictionary(wireTypeNameProvider.GetInboundTypeName);
+        var byName = new Dictionary<string, Type>();
+        foreach (var type in types)
+        {
+            var name = wireTypeNameProvider.GetInboundTypeName(type);
+            if (byName.TryGetValue(name, out var existing))
+            {
+                throw new TestKitProtocolException(
+                    $"Wire name '{name}' is claimed by both {existing.FullName} and {type.FullName}");
+            }
+
+            byName[name] = type;
+        }
+
+        _byName = byName;
     }
 
     public Type GetTypeByName(string name)
