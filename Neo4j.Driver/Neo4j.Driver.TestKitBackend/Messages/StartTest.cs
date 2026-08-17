@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Logging;
@@ -32,7 +33,7 @@ internal record SkipTestResponse(string Reason) : IProtocolMessage;
 
 internal interface ISkipPolicy
 {
-    bool TryGetSkipReason(string testName, out string reason);
+    bool TryGetSkipReason(string testName, [NotNullWhen(true)] out string? reason);
 }
 
 internal class StartTestHandler : MessageHandler<StartTestRequest>
