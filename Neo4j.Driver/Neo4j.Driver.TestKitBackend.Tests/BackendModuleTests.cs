@@ -24,6 +24,7 @@ using Moq;
 using Neo4j.Driver.Internal.Services;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Logging;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Serialization;
@@ -115,6 +116,78 @@ public class BackendModuleTests
 
         factory.Verify(f => f.CreateLogger(typeof(NewDriverHandler).FullName!));
         factory.Verify(f => f.CreateLogger(typeof(ResponseWriter).FullName!));
+    }
+
+    [Fact]
+    public async Task A_stored_logging_disposable_logs_exactly_once_when_the_scope_closes()
+    {
+        var container = BuildContainer();
+        var loggerFactory = new CountingLoggerFactory();
+        var scope = container.BeginLifetimeScope(b => b.RegisterInstance<ILoggerFactory>(loggerFactory));
+
+        var creator = scope.Resolve<LoggingDisposableCreator>();
+        var endTestLogger = creator("Test closedown", "END TEST marker");
+        scope.Resolve<IObjectStore>().Store(endTestLogger);
+
+        await scope.DisposeAsync();
+
+        loggerFactory.MessageCount("END TEST marker").Should().Be(1);
+    }
+
+    private class CountingLoggerFactory : ILoggerFactory
+    {
+        private readonly List<string> _messages = [];
+
+        public int MessageCount(string message)
+        {
+            return _messages.Count(m => m == message);
+        }
+
+        public ILogger CreateLogger(string categoryName)
+        {
+            return new CountingLogger(_messages);
+        }
+
+        public void AddProvider(ILoggerProvider provider)
+        {
+        }
+
+        public void Dispose()
+        {
+        }
+
+        private class CountingLogger : ILogger
+        {
+            private readonly List<string> _messages;
+
+            public CountingLogger(List<string> messages)
+            {
+                _messages = messages;
+            }
+
+            public void Log<TState>(
+                LogLevel logLevel,
+                EventId eventId,
+                TState state,
+                Exception? exception,
+                Func<TState, Exception?, string> formatter)
+            {
+                lock (_messages)
+                {
+                    _messages.Add(formatter(state, exception));
+                }
+            }
+
+            public bool IsEnabled(LogLevel logLevel)
+            {
+                return true;
+            }
+
+            public IDisposable? BeginScope<TState>(TState state) where TState : notnull
+            {
+                return null;
+            }
+        }
     }
 
     [Fact]
