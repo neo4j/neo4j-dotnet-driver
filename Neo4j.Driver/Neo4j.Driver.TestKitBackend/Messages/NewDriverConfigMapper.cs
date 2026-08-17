@@ -50,17 +50,20 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
     private readonly IObjectStore _objectStore;
     private readonly IServerAddressResolver _resolver;
     private readonly IConfiguration _configuration;
+    private readonly INotificationsMapper _notificationsMapper;
 
     public NewDriverConfigMapper(
         ICertificateLoader certificateLoader,
         IObjectStore objectStore,
         IServerAddressResolver resolver,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        INotificationsMapper notificationsMapper)
     {
         _certificateLoader = certificateLoader;
         _objectStore = objectStore;
         _resolver = resolver;
         _configuration = configuration;
+        _notificationsMapper = notificationsMapper;
     }
 
     public void Apply(NewDriverRequest request, IConfigBuilder builder)
@@ -161,28 +164,13 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
         return $"{caPath}{certificateFileName}";
     }
 
-    private static void ApplyNotifications(NewDriverRequest request, IConfigBuilder builder)
+    private void ApplyNotifications(NewDriverRequest request, IConfigBuilder builder)
     {
-        if (request.NotificationsMinSeverity is null && request.NotificationsDisabledCategories is null)
-        {
-            return;
-        }
-
-        if (request.NotificationsMinSeverity == "OFF")
-        {
-            builder.WithNotificationsDisabled();
-            return;
-        }
-
-        var severity = request.NotificationsMinSeverity is { } minSeverity
-            ? Enum.Parse<Severity>(minSeverity, true)
-            : (Severity?)null;
-
-        var categories = request.NotificationsDisabledCategories
-            ?.Select(c => Enum.Parse<Category>(c, true))
-            .ToArray();
-
-        builder.WithNotifications(severity, categories);
+        _notificationsMapper.Apply(
+            request.NotificationsMinSeverity,
+            request.NotificationsDisabledCategories,
+            () => builder.WithNotificationsDisabled(),
+            (severity, categories) => builder.WithNotifications(severity, categories));
     }
 
     private static void ApplyRemainingProperties(NewDriverRequest request, IConfigBuilder builder)

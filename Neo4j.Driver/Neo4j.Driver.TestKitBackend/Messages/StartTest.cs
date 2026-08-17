@@ -64,18 +64,15 @@ internal class StartTestHandler : MessageHandler<StartTestRequest>
     {
         _loggingContext.Set("test", message.TestName);
 
-        IProtocolMessage response;
         if (_skipPolicy.TryGetSkipReason(message.TestName, out var reason))
         {
             _logger.LogDebug("Skipping test '{TestName}': {Reason}", message.TestName, reason);
-            response = new SkipTestResponse(reason);
-            await _responseWriter.WriteAsync(response);
+            await _responseWriter.WriteAsync(new SkipTestResponse(reason));
         }
         else
         {
             _logger.LogDebug("Accepting test '{TestName}'", message.TestName);
-            response = new RunTestResponse();
-            await _responseWriter.WriteAsync(response);
+            await _responseWriter.WriteAsync(new RunTestResponse());
 
             _logger.LogDebug("START TEST {TestName}", message.TestName);
 

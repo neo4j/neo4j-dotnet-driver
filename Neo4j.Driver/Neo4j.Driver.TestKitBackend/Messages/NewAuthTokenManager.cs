@@ -24,6 +24,8 @@ namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal record NewAuthTokenManagerRequest : IProtocolMessage;
 
+internal record AuthTokenManagerResponse(string Id) : IProtocolMessage;
+
 internal class NewAuthTokenManagerHandler : MessageHandler<NewAuthTokenManagerRequest>
 {
     private readonly IObjectStore _objectStore;

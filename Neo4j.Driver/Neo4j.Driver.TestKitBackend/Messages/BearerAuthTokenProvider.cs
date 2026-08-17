@@ -37,10 +37,14 @@ internal record BearerAuthTokenProviderCompleted : IProtocolMessage
 internal class BearerAuthTokenProviderCompletedHandler : MessageHandler<BearerAuthTokenProviderCompleted>
 {
     private readonly IExpectationStore _expectationStore;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public BearerAuthTokenProviderCompletedHandler(IExpectationStore expectationStore)
+    public BearerAuthTokenProviderCompletedHandler(
+        IExpectationStore expectationStore,
+        IDateTimeProvider dateTimeProvider)
     {
         _expectationStore = expectationStore;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public override Task ProcessAsync(BearerAuthTokenProviderCompleted message)
@@ -48,7 +52,7 @@ internal class BearerAuthTokenProviderCompletedHandler : MessageHandler<BearerAu
         var payload = message.Auth;
         var token = payload.Auth.ToAuthToken();
         var domainValue = payload.ExpiresInMs is { } expiresInMs
-            ? new DriverAuthTokenAndExpiration(token, DateTimeProvider.StaticInstance.Now().AddMilliseconds(expiresInMs))
+            ? new DriverAuthTokenAndExpiration(token, _dateTimeProvider.Now().AddMilliseconds(expiresInMs))
             : new DriverAuthTokenAndExpiration(token);
 
         _expectationStore.Fulfil(message.RequestId, domainValue);

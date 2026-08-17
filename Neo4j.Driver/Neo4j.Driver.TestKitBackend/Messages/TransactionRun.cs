@@ -57,7 +57,7 @@ internal class TransactionRunHandler : MessageHandler<TransactionRunRequest>
 
         var keys = await cursor.KeysAsync();
         var resultId = _objectStore.Store(cursor);
-        _logger.LogDebug("Query result id '{ResultId}' returned keys: {@keys}", resultId, keys);
+        _logger.LogDebug("Query result id '{ResultId}' returned keys: {Keys}", resultId, keys);
 
         await _responseWriter.WriteAsync(new ResultResponse(resultId, keys));
     }

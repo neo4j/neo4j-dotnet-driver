@@ -173,7 +173,7 @@ public class BearerAuthTokenManagerFlowTests
             .Setup(e => e.Fulfil("callback-1", It.IsAny<DriverAuthTokenAndExpiration>()))
             .Callback<string, DriverAuthTokenAndExpiration>((_, value) => fulfilled = value);
 
-        var handler = new BearerAuthTokenProviderCompletedHandler(expectationsMock.Object);
+        var handler = new BearerAuthTokenProviderCompletedHandler(expectationsMock.Object, new CurrentDateTimeProvider());
         var message = new BearerAuthTokenProviderCompleted
         {
             RequestId = "callback-1",
@@ -202,7 +202,7 @@ public class BearerAuthTokenManagerFlowTests
             .Setup(e => e.Fulfil("callback-1", It.IsAny<DriverAuthTokenAndExpiration>()))
             .Callback<string, DriverAuthTokenAndExpiration>((_, value) => fulfilled = value);
 
-        var handler = new BearerAuthTokenProviderCompletedHandler(expectationsMock.Object);
+        var handler = new BearerAuthTokenProviderCompletedHandler(expectationsMock.Object, new CurrentDateTimeProvider());
         var message = new BearerAuthTokenProviderCompleted
         {
             RequestId = "callback-1",

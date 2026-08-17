@@ -31,6 +31,7 @@ public class NewSessionConfigMapperTests
     public NewSessionConfigMapperTests()
     {
         _autoMocker = AutoMocker.ForTesting<NewSessionConfigMapper>();
+        _autoMocker.Use<INotificationsMapper>(new NotificationsMapper());
         _builder = _autoMocker.GetMock<ISessionConfigBuilder>();
     }
 

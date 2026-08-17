@@ -83,7 +83,7 @@ internal class ExpectationStore : IExpectationStore, IDisposable
 
         foreach (var (key, source) in outstanding)
         {
-            _logger.LogWarning(
+            _logger.LogDebug(
                 "An expectation for key '{Key}' was still outstanding when the connection closed",
                 key);
 

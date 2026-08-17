@@ -43,6 +43,21 @@ public class TruncatingTextFormatterTests
     }
 
     [Fact]
+    public void Truncating_mid_surrogate_pair_does_not_leave_a_lone_surrogate()
+    {
+        const int maxLength = 20;
+        var payload = new string('x', maxLength - 1) + "😀" + new string('y', 100);
+        var formatter = new TruncatingTextFormatter(OutputTemplate, maxLength);
+        var output = new StringWriter();
+
+        formatter.Format(EventWithMessage(payload), output);
+
+        var result = output.ToString();
+        var truncated = result[..result.IndexOf("\\TRUNCATED", StringComparison.Ordinal)];
+        char.IsHighSurrogate(truncated[^1]).Should().BeFalse();
+    }
+
+    [Fact]
     public void Passes_rendered_output_within_the_limit_through_unchanged()
     {
         var formatter = new TruncatingTextFormatter(OutputTemplate, maxLength: 2048);

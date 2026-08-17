@@ -45,7 +45,7 @@ internal class EncryptionManager
                 return CreateFromConfig(level, trustManager, neo4JLogger);
             }
 
-            if (IsCustomized(level, trustManager))
+            if (DiffersFromDefaultConfig(level, trustManager))
             {
                 throw new ArgumentException(
                     "The uri scheme and driver configuration specify conflicting encryption and trust settings. " +
@@ -62,7 +62,7 @@ internal class EncryptionManager
         return Neo4jUri.ParseUriSchemeToEncryptionManager(uri, neo4JLogger);
     }
 
-    private static bool IsCustomized(EncryptionLevel? level, TrustManager trustManager)
+    private static bool DiffersFromDefaultConfig(EncryptionLevel? level, TrustManager trustManager)
     {
         return ParseEncrypted(level) || !IsDefaultTrust(trustManager);
     }

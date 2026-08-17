@@ -25,8 +25,6 @@ internal record AuthTokenManagerCloseRequest : IProtocolMessage
     public required string Id { get; init; }
 }
 
-internal record AuthTokenManagerResponse(string Id) : IProtocolMessage;
-
 internal class AuthTokenManagerCloseHandler : MessageHandler<AuthTokenManagerCloseRequest>
 {
     private readonly IObjectStore _objectStore;

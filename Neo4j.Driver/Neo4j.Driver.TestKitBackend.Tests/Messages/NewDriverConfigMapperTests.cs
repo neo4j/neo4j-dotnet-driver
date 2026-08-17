@@ -36,6 +36,7 @@ public class NewDriverConfigMapperTests
     public NewDriverConfigMapperTests()
     {
         _autoMocker = AutoMocker.ForTesting<NewDriverConfigMapper>();
+        _autoMocker.Use<INotificationsMapper>(new NotificationsMapper());
         _builder = _autoMocker.GetMock<IConfigBuilder>();
     }
 

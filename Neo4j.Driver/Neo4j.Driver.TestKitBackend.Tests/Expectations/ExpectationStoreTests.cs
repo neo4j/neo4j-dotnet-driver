@@ -126,14 +126,14 @@ public class ExpectationStoreTests
     }
 
     [Fact]
-    public void Disposing_with_an_outstanding_expectation_logs_a_warning_naming_the_key()
+    public void Disposing_with_an_outstanding_expectation_logs_a_debug_message_naming_the_key()
     {
         _store.Expect<string>("key-1");
 
         _store.Dispose();
 
         var entry = _logger.Entries.Should().ContainSingle().Subject;
-        entry.Level.Should().Be(LogLevel.Warning);
+        entry.Level.Should().Be(LogLevel.Debug);
         entry.Message.Should().Contain("key-1");
     }
 

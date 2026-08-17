@@ -36,6 +36,13 @@ internal class NewSessionConfigMapper : INewSessionConfigMapper
         nameof(NewSessionRequest.Driver)
     ];
 
+    private readonly INotificationsMapper _notificationsMapper;
+
+    public NewSessionConfigMapper(INotificationsMapper notificationsMapper)
+    {
+        _notificationsMapper = notificationsMapper;
+    }
+
     public void Apply(NewSessionRequest request, ISessionConfigBuilder builder)
     {
         ApplyAccessMode(request, builder);
@@ -75,28 +82,13 @@ internal class NewSessionConfigMapper : INewSessionConfigMapper
         }
     }
 
-    private static void ApplyNotifications(NewSessionRequest request, ISessionConfigBuilder builder)
+    private void ApplyNotifications(NewSessionRequest request, ISessionConfigBuilder builder)
     {
-        if (request.NotificationsMinSeverity is null && request.NotificationsDisabledCategories is null)
-        {
-            return;
-        }
-
-        if (request.NotificationsMinSeverity == "OFF")
-        {
-            builder.WithNotificationsDisabled();
-            return;
-        }
-
-        var severity = request.NotificationsMinSeverity is { } minSeverity
-            ? Enum.Parse<Severity>(minSeverity, true)
-            : (Severity?)null;
-
-        var categories = request.NotificationsDisabledCategories
-            ?.Select(c => Enum.Parse<Category>(c, true))
-            .ToArray();
-
-        builder.WithNotifications(severity, categories);
+        _notificationsMapper.Apply(
+            request.NotificationsMinSeverity,
+            request.NotificationsDisabledCategories,
+            () => builder.WithNotificationsDisabled(),
+            (severity, categories) => builder.WithNotifications(severity, categories));
     }
 
     private static void ApplyRemainingProperties(NewSessionRequest request, ISessionConfigBuilder builder)

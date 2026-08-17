@@ -42,9 +42,10 @@ public class TruncatingTextFormatter : ITextFormatter
             return;
         }
 
-        output.Write(rendered[.._maxLength]);
+        var cutLength = char.IsHighSurrogate(rendered[_maxLength - 1]) ? _maxLength - 1 : _maxLength;
+        output.Write(rendered[..cutLength]);
 
-        var remaining = rendered.Length - _maxLength;
+        var remaining = rendered.Length - cutLength;
         output.Write($"\\TRUNCATED ({remaining} chars remaining)");
         output.Write(Environment.NewLine);
     }

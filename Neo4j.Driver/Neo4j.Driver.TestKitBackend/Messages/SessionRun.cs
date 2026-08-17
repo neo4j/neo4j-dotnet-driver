@@ -37,7 +37,7 @@ internal record SessionRunRequest : IProtocolMessage
     public Optional<long?> Timeout { get; init; }
 }
 
-internal record ResultResponse(string Id, string[]? Keys) : IProtocolMessage;
+internal record ResultResponse(string Id, string[] Keys) : IProtocolMessage;
 
 internal class SessionRunHandler : MessageHandler<SessionRunRequest>
 {
@@ -72,7 +72,7 @@ internal class SessionRunHandler : MessageHandler<SessionRunRequest>
 
         var keys = await cursor.KeysAsync();
         var resultId = _objectStore.Store(cursor);
-        _logger.LogDebug("Query result id '{ResultId}' returned keys: {@keys}", resultId, keys);
+        _logger.LogDebug("Query result id '{ResultId}' returned keys: {Keys}", resultId, keys);
 
         await _responseWriter.WriteAsync(new ResultResponse(resultId, keys));
     }
