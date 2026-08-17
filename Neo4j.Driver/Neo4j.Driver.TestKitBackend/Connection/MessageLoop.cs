@@ -90,8 +90,7 @@ internal class MessageLoop : IMessageLoop
                 }
 
                 _logger.LogDebug("Request: {Request}", json);
-                var message = _serializer.Deserialize(json);
-                handlerTasks.Add(DispatchTrackedAsync(message));
+                handlerTasks.Add(DispatchTrackedAsync(json));
             }
         }
         catch (Exception exception)
@@ -118,11 +117,12 @@ internal class MessageLoop : IMessageLoop
         }
     }
 
-    private async Task DispatchTrackedAsync(IProtocolMessage message)
+    private async Task DispatchTrackedAsync(string json)
     {
         await Task.Yield();
         try
         {
+            var message = _serializer.Deserialize(json);
             await _dispatcher.DispatchAsync(message);
         }
         catch (OperationCanceledException)

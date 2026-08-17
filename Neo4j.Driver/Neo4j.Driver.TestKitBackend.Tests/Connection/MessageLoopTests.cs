@@ -74,7 +74,7 @@ public class MessageLoopTests
     }
 
     [Fact]
-    public async Task Reports_BackendError_for_a_failed_request_and_ends_the_loop()
+    public async Task Malformed_message_reports_BackendError_and_the_loop_continues()
     {
         const string badJson = """{"name":"Bogus","data":{}}""";
         const string goodJson = """{"name":"GetFeatures","data":{}}""";
@@ -95,15 +95,14 @@ public class MessageLoopTests
 
         var loop = _autoMocker.CreateInstance<MessageLoop>();
 
-        await loop.RunAsync("testkit-1");
+        await WithTimeoutAsync(loop.RunAsync("testkit-1"));
 
         _autoMocker.GetMock<IResponseWriter>()
             .Verify(
                 w => w.WriteAsync(It.Is<BackendErrorResponse>(e => e.Msg == "unknown message name 'Bogus'")),
                 Times.Once);
 
-        _autoMocker.GetMock<IMessageDispatcher>().Verify(d => d.DispatchAsync(goodMessage), Times.Never);
-        _autoMocker.GetMock<IConnectionInput>().Verify(i => i.ReadRequestAsync(), Times.Once);
+        _autoMocker.GetMock<IMessageDispatcher>().Verify(d => d.DispatchAsync(goodMessage), Times.Once);
     }
 
     [Fact]
