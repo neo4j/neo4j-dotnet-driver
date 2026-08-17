@@ -38,15 +38,6 @@ internal class SubstringSkipPolicy : ISkipPolicy
             "routers after the first router failure during RT discovery (reproduced on v4x3/v5x0). " +
             "Tracked as DRIVERS-515."),
 
-        ("test_should_retry_write_until_success_with_leader_shutdown_during_tx_using_tx_function",
-            "Test failing requires investigation"),
-
-        ("test_should_echo_relationship",
-            "Backend does not yet support serializing relationships"),
-
-        ("test_should_echo_path",
-            "Backend does not yet support serializing paths"),
-
         ("test_summary.TestSummary.test_protocol_version_information", "Server not responding with 5.0"),
 
         ("stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_nested",

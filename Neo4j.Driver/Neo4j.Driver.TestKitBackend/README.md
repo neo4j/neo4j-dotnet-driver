@@ -20,16 +20,16 @@ Do not add new features there.
 ## Running the backend
 
 The backend takes no command-line arguments.
-Configuration comes from `appsettings*.json` and the `ASPNETCORE_ENVIRONMENT` variable, which also selects the logging sink:
+Configuration comes from `appsettings*.json` and the `ASPNETCORE_ENVIRONMENT` variable:
 
-- `dev` logs to the console.
+- By default (no `ASPNETCORE_ENVIRONMENT` set) the backend logs to the console.
 - `ci` logs to the console with the test name attached to each line, used by the `testkit/Dockerfile` build.
   Testkit captures the container's stdout into `artifacts/driver_backend/out.log`, which is what CI collects.
 
 ```bash
 dotnet publish Neo4j.Driver/Neo4j.Driver.TestKitBackend/Neo4j.Driver.TestKitBackend.csproj \
   --configuration CI --output ./bin/Publish
-ASPNETCORE_ENVIRONMENT=dev dotnet bin/Publish/Neo4j.Driver.TestKitBackend.dll
+dotnet bin/Publish/Neo4j.Driver.TestKitBackend.dll
 ```
 
 It listens on `0.0.0.0:9876` by default (also configurable via `appsettings.json`).
@@ -252,7 +252,7 @@ sequenceDiagram
     H->>TK: {"name": "Driver", "data": {"id": "0"}}
 ```
 
-The real `Messages/NewDriver.cs` is this plus configuration: the request record carries every config field testkit can send, and a mapper translates them onto the driver's `ConfigBuilder`.
+The real `Messages/NewDriver.cs` is this plus configuration: the request record carries every config field testkit can send, and a mapper translates them onto the backend's `IConfigBuilder` adapter, which wraps the driver's `ConfigBuilder`.
 The structure is identical.
 
 ### Walkthrough: VerifyConnectivity
