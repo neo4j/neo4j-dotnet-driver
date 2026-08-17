@@ -351,7 +351,7 @@ public class NewDriverConfigMapperTests
         var mapper = _autoMocker.CreateInstance<NewDriverConfigMapper>();
 
         var exception = Record.Exception(
-            () => mapper.Apply(MinimalRequest() with { FetchSize = -5 }, Config.Builder));
+            () => mapper.Apply(MinimalRequest() with { FetchSize = -5 }, new ConfigBuilderAdapter(Config.Builder)));
 
         exception.Should().BeOfType<ArgumentOutOfRangeException>();
         new ExceptionOriginClassifier().OriginatesInDriver(exception!).Should().BeTrue();

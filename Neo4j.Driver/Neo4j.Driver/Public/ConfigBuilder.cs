@@ -24,35 +24,8 @@ using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver;
 
-// Lets driver-config mapping (e.g. the testkit backend's NewDriver -> ConfigBuilder mapper) be
-// unit-tested against a mock instead of executing ConfigBuilder's real side effects (TLS
-// negotiation setup, certificate file loading). Kept internal and separate from ConfigBuilder's
-// public With* methods, which stay sealed/non-virtual for every other consumer of the driver.
-internal interface IConfigBuilder
-{
-    IConfigBuilder WithUserAgent(string userAgent);
-    IConfigBuilder WithMaxConnectionPoolSize(int size);
-    IConfigBuilder WithFetchSize(long size);
-    IConfigBuilder WithDisableAutoCommitRetries(bool disable);
-    IConfigBuilder WithConnectionTimeout(TimeSpan timeSpan);
-    IConfigBuilder WithConnectionAcquisitionTimeout(TimeSpan timeSpan);
-    IConfigBuilder WithMaxConnectionLifetime(TimeSpan timeSpan);
-    IConfigBuilder WithMaxTransactionRetryTime(TimeSpan time);
-    IConfigBuilder WithConnectionLivenessCheckTimeout(TimeSpan timeout);
-    IConfigBuilder WithEncryptionLevel(EncryptionLevel level);
-    IConfigBuilder WithTelemetryDisabled();
-    IConfigBuilder WithCertificateTrustRule(
-        CertificateTrustRule certificateTrustRule,
-        IReadOnlyList<string> trustedCaCertificateFileNames);
-
-    IConfigBuilder WithNotificationsDisabled();
-    IConfigBuilder WithNotifications(Severity? minimumSeverity, Category[] disabledCategories);
-    IConfigBuilder WithClientCertificateProvider(IClientCertificateProvider clientCertificateProvider);
-    IConfigBuilder WithResolver(IServerAddressResolver resolver);
-}
-
 /// <summary>Provides a way to generate a <see cref="Config"/> instance fluently.</summary>
-public sealed class ConfigBuilder : IConfigBuilder
+public sealed class ConfigBuilder
 {
     private readonly Config _config;
 
@@ -642,40 +615,4 @@ public sealed class ConfigBuilder : IConfigBuilder
         _config.TlsNegotiator = new T();
         return this;
     }
-
-    IConfigBuilder IConfigBuilder.WithUserAgent(string userAgent) => WithUserAgent(userAgent);
-    IConfigBuilder IConfigBuilder.WithMaxConnectionPoolSize(int size) => WithMaxConnectionPoolSize(size);
-    IConfigBuilder IConfigBuilder.WithFetchSize(long size) => WithFetchSize(size);
-
-    IConfigBuilder IConfigBuilder.WithDisableAutoCommitRetries(bool disable) =>
-        WithDisableAutoCommitRetries(disable);
-
-    IConfigBuilder IConfigBuilder.WithConnectionTimeout(TimeSpan timeSpan) => WithConnectionTimeout(timeSpan);
-
-    IConfigBuilder IConfigBuilder.WithConnectionAcquisitionTimeout(TimeSpan timeSpan) =>
-        WithConnectionAcquisitionTimeout(timeSpan);
-
-    IConfigBuilder IConfigBuilder.WithMaxConnectionLifetime(TimeSpan timeSpan) => WithMaxConnectionLifetime(timeSpan);
-    IConfigBuilder IConfigBuilder.WithMaxTransactionRetryTime(TimeSpan time) => WithMaxTransactionRetryTime(time);
-
-    IConfigBuilder IConfigBuilder.WithConnectionLivenessCheckTimeout(TimeSpan timeout) =>
-        WithConnectionLivenessCheckTimeout(timeout);
-
-    IConfigBuilder IConfigBuilder.WithEncryptionLevel(EncryptionLevel level) => WithEncryptionLevel(level);
-    IConfigBuilder IConfigBuilder.WithTelemetryDisabled() => WithTelemetryDisabled();
-
-    IConfigBuilder IConfigBuilder.WithCertificateTrustRule(
-        CertificateTrustRule certificateTrustRule,
-        IReadOnlyList<string> trustedCaCertificateFileNames) =>
-        WithCertificateTrustRule(certificateTrustRule, trustedCaCertificateFileNames);
-
-    IConfigBuilder IConfigBuilder.WithNotificationsDisabled() => WithNotificationsDisabled();
-
-    IConfigBuilder IConfigBuilder.WithNotifications(Severity? minimumSeverity, Category[] disabledCategories) =>
-        WithNotifications(minimumSeverity, disabledCategories);
-
-    IConfigBuilder IConfigBuilder.WithClientCertificateProvider(IClientCertificateProvider clientCertificateProvider) =>
-        WithClientCertificateProvider(clientCertificateProvider);
-
-    IConfigBuilder IConfigBuilder.WithResolver(IServerAddressResolver resolver) => WithResolver(resolver);
 }

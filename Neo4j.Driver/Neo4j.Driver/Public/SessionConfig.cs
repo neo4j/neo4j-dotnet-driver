@@ -171,26 +171,8 @@ public sealed class SessionConfig
     }
 }
 
-// Lets session-config mapping (e.g. the testkit backend's NewSession -> SessionConfigBuilder
-// mapper) be unit-tested against a mock instead of executing SessionConfigBuilder's real side
-// effects. Kept internal and separate from SessionConfigBuilder's public With* methods, which stay
-// sealed/non-virtual for every other consumer of the driver.
-internal interface ISessionConfigBuilder
-{
-    ISessionConfigBuilder WithDatabase(string database);
-    ISessionConfigBuilder WithDefaultAccessMode(AccessMode defaultAccessMode);
-    ISessionConfigBuilder WithAuthToken(IAuthToken authToken);
-    ISessionConfigBuilder WithBookmarks(params Bookmarks[] bookmarks);
-    ISessionConfigBuilder WithFetchSize(long size);
-    ISessionConfigBuilder WithImpersonatedUser(string impersonatedUser);
-    ISessionConfigBuilder WithNotificationsDisabled();
-    ISessionConfigBuilder WithNotifications(Severity? minimumSeverity, Category[] disabledCategories);
-    ISessionConfigBuilder WithDisableAutoCommitRetries(bool disable);
-    ISessionConfigBuilder WithBookmarkManager(IBookmarkManager bookmarkManager);
-}
-
 /// <summary>The builder to build a <see cref="SessionConfig"/>.</summary>
-public sealed class SessionConfigBuilder : ISessionConfigBuilder
+public sealed class SessionConfigBuilder
 {
     private readonly SessionConfig _config;
 
@@ -417,29 +399,4 @@ public sealed class SessionConfigBuilder : ISessionConfigBuilder
         _config.DisableAutoCommitRetries = disable;
         return this;
     }
-
-    ISessionConfigBuilder ISessionConfigBuilder.WithDatabase(string database) => WithDatabase(database);
-
-    ISessionConfigBuilder ISessionConfigBuilder.WithDefaultAccessMode(AccessMode defaultAccessMode) =>
-        WithDefaultAccessMode(defaultAccessMode);
-
-    ISessionConfigBuilder ISessionConfigBuilder.WithAuthToken(IAuthToken authToken) => WithAuthToken(authToken);
-    ISessionConfigBuilder ISessionConfigBuilder.WithBookmarks(params Bookmarks[] bookmarks) => WithBookmarks(bookmarks);
-    ISessionConfigBuilder ISessionConfigBuilder.WithFetchSize(long size) => WithFetchSize(size);
-
-    ISessionConfigBuilder ISessionConfigBuilder.WithImpersonatedUser(string impersonatedUser) =>
-        WithImpersonatedUser(impersonatedUser);
-
-    ISessionConfigBuilder ISessionConfigBuilder.WithNotificationsDisabled() => WithNotificationsDisabled();
-
-    ISessionConfigBuilder ISessionConfigBuilder.WithNotifications(
-        Severity? minimumSeverity,
-        Category[] disabledCategories) =>
-        WithNotifications(minimumSeverity, disabledCategories);
-
-    ISessionConfigBuilder ISessionConfigBuilder.WithDisableAutoCommitRetries(bool disable) =>
-        WithDisableAutoCommitRetries(disable);
-
-    ISessionConfigBuilder ISessionConfigBuilder.WithBookmarkManager(IBookmarkManager bookmarkManager) =>
-        WithBookmarkManager(bookmarkManager);
 }

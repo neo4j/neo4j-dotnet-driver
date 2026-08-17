@@ -74,7 +74,7 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
     {
         void Configure(ConfigBuilder builder)
         {
-            _configMapper.Apply(message, builder);
+            _configMapper.Apply(message, new ConfigBuilderAdapter(builder));
             builder.WithLogger(_neo4JLogger);
             builder.WithMetricsEnabled(true);
         }
