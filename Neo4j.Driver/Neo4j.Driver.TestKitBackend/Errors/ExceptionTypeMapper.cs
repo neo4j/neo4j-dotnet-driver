@@ -31,8 +31,16 @@ internal class ExceptionTypeMapper : IExceptionTypeMapper
             ReauthException => "UnsupportedFeatureException",
             TokenExpiredException => "ClientError",
             TransientException => "DriverError",
+            TimeoutException => "DriverError",
             AuthorizationException => "AuthorizationExpired",
             UnknownSecurityException => "OtherSecurityException",
+            TransactionClosedException => "ClientError",
+            TransactionNestingException => nameof(TransactionNestingException),
+            NotSupportedException => nameof(NotSupportedException),
+            StatementArgumentException => "ArgumentError",
+            UnsupportedFeatureException => nameof(UnsupportedFeatureException),
+            ObjectDisposedException => nameof(ObjectDisposedException),
+            ArgumentException => "ArgumentError",
             InvalidOperationException => nameof(InvalidOperationException),
             _ => exception.GetType().Name.Replace("Exception", "Error")
         };

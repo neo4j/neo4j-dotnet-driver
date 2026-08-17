@@ -69,7 +69,7 @@ public class ExceptionTypeMapperTests
     [Fact]
     public void Falls_back_to_the_type_name_with_an_Error_suffix_for_an_unmapped_exception()
     {
-        _mapper.Map(new NotSupportedException("boom")).Should().Be("NotSupportedError");
+        _mapper.Map(new FormatException("boom")).Should().Be("FormatError");
     }
 
     [Fact]
@@ -112,5 +112,25 @@ public class ExceptionTypeMapperTests
     public void Maps_ServiceUnavailableException_to_ServiceUnavailableError()
     {
         _mapper.Map(new ServiceUnavailableException("boom")).Should().Be("ServiceUnavailableError");
+    }
+
+    public static IEnumerable<object[]> LegacyDivergentMappings()
+    {
+        yield return [new TimeoutException("boom"), "DriverError"];
+        yield return [new TransactionClosedException("boom"), "ClientError"];
+        yield return [new TransactionNestingException("boom"), "TransactionNestingException"];
+        yield return [new NotSupportedException("boom"), "NotSupportedException"];
+        yield return [new StatementArgumentException("boom"), "ArgumentError"];
+        yield return [new UnsupportedFeatureException("boom"), "UnsupportedFeatureException"];
+        yield return [new ObjectDisposedException("boom"), "ObjectDisposedException"];
+        yield return [new ArgumentNullException("boom"), "ArgumentError"];
+        yield return [new ArgumentOutOfRangeException("boom"), "ArgumentError"];
+    }
+
+    [Theory]
+    [MemberData(nameof(LegacyDivergentMappings))]
+    public void Matches_the_legacy_errorType_name_for_a_divergent_exception_type(Exception exception, string expected)
+    {
+        _mapper.Map(exception).Should().Be(expected);
     }
 }
