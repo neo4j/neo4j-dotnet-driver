@@ -16,7 +16,6 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -30,13 +29,11 @@ internal record TransactionRollbackRequest : IProtocolMessage
 
 internal class TransactionRollbackHandler : MessageHandler<TransactionRollbackRequest>
 {
-    private readonly IObjectStore _objectStore;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
 
-    public TransactionRollbackHandler(IObjectStore objectStore, IResponseWriter responseWriter, ILogger logger)
+    public TransactionRollbackHandler(IResponseWriter responseWriter, ILogger logger)
     {
-        _objectStore = objectStore;
         _responseWriter = responseWriter;
         _logger = logger;
     }
@@ -44,7 +41,6 @@ internal class TransactionRollbackHandler : MessageHandler<TransactionRollbackRe
     public override async Task ProcessAsync(TransactionRollbackRequest message)
     {
         await message.Tx.RollbackAsync();
-        _objectStore.Remove(message.TxId);
         _logger.LogDebug("Rolled back transaction with id '{Id}'", message.TxId);
         await _responseWriter.WriteAsync(new TransactionResponse(message.TxId));
     }

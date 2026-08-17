@@ -112,14 +112,7 @@ internal abstract class RetryableTransactionHandler<T> : MessageHandler<T>
     private async Task RunAttemptAsync(IAsyncQueryRunner runner, string sessionId)
     {
         var id = _objectStore.Store((IAsyncTransaction)runner);
-        try
-        {
-            await _roundTrip.SendExpectingAsync<RetryableOutcome>(new RetryableTryResponse(id), sessionId);
-        }
-        finally
-        {
-            _objectStore.Remove(id);
-        }
+        await _roundTrip.SendExpectingAsync<RetryableOutcome>(new RetryableTryResponse(id), sessionId);
     }
 }
 

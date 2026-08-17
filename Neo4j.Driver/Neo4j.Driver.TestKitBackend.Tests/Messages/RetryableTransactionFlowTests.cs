@@ -77,7 +77,6 @@ public class RetryableTransactionFlowTests
         await WithTimeoutAsync(handlerTask);
 
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
-        _objectStoreMock.Verify(o => o.Remove("tx-1"), Times.Once);
     }
 
     [Fact]
@@ -247,8 +246,6 @@ public class RetryableTransactionFlowTests
         await WithTimeoutAsync(handlerTask);
 
         _responseWriterMock.Verify(w => w.WriteAsync(new RetryableDoneResponse()), Times.Once);
-        _objectStoreMock.Verify(o => o.Remove("tx-1"), Times.Once);
-        _objectStoreMock.Verify(o => o.Remove("tx-2"), Times.Once);
     }
 
     [Fact]
