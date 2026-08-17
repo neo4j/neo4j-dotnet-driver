@@ -612,5 +612,7 @@ These issues recur often enough, or fail silently enough, to warrant stating dir
 - An empty `RetryableNegative.ErrorId` means there is no stored error to look up: the handler fails the expectation with a `FrontendException`, which testkit sees as a `FrontendError` frame.
 - Testkit deserializes recursively by `name`.
   Reusing a protocol type name for a different shape, even in an unrelated message, will misdirect that deserialization.
+- `[StoredObject]` and `[ProtocolEnvelope]` only take effect on a property whose declared type is directly the attributed type.
+  Wrap that type in a collection, an `Optional<T>`, or any other composite, and the property no longer matches, so the attribute is silently ignored; the failure surfaces later as an opaque `JsonSerializerOptions.Strict` binding error rather than anything naming the attribute.
 - A handler failure does not end the connection: the read loop writes the classified error frame and keeps serving requests.
   What does end the connection is a frame that cannot be deserialized at all; `BackendErrorResponse` goes out, the socket closes, and testkit opens a fresh connection for the next test.
