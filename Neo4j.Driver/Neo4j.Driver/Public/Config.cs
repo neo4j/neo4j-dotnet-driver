@@ -20,6 +20,7 @@ using System.IO.Pipelines;
 using System.Reflection;
 using System.Security.Authentication;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Util;
@@ -258,6 +259,8 @@ public class Config
     public ITlsNegotiator TlsNegotiator { get; internal set; }
 
     internal IReadOnlyList<IPropertyEncryptionProfile> Preview_PropertyEncryptionProfiles { get; set; } = [];
+
+    internal ICryptoRandomProvider MockCryptoRandomProvider { get; set; }
 }
 
 /// <summary>The configuration for the driver's underlying message reading from the network.</summary>

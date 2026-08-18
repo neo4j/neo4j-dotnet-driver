@@ -122,4 +122,16 @@ public class RootContainerFactoryTests
         registry.Get("a").Should().BeSameAs(a);
         registry.Get("b").Should().BeSameAs(b);
     }
+
+    [Fact]
+    public void Build_ResolvesTheMockCryptoRandomProviderInstance_WhenConfigured()
+    {
+        var mockProvider = Mock.Of<ICryptoRandomProvider>();
+        var config = Config.Builder.WithMockCryptoRandomProvider(mockProvider).Build();
+        var context = new DriverContext(new("bolt://localhost"), null, config);
+
+        var scope = RootContainerFactory.Build(context);
+
+        scope.Resolve<ICryptoRandomProvider>().Should().BeSameAs(mockProvider);
+    }
 }

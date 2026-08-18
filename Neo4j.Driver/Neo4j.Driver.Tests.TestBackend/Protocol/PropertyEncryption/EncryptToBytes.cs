@@ -32,8 +32,20 @@ internal class EncryptToBytes : ProtocolObject
 
     public override async Task Process()
     {
-        var driver = ObjManager.GetObject<NewDriver>(data.driverId).Driver;
+        var newDriver = ObjManager.GetObject<NewDriver>(data.driverId);
+        var driver = newDriver.Driver;
         var value = CypherToNative.Convert(data.value);
+
+        if (data.mockRandomBytes != null)
+        {
+            if (newDriver.MockRandom == null)
+            {
+                throw new InvalidOperationException(
+                    "mockRandomBytes provided but the driver was not created with mockRandom.");
+            }
+
+            newDriver.MockRandom.ProvideBytes((byte[])CypherToNative.Convert(data.mockRandomBytes));
+        }
 
         IEncryptRequestKeyStep keyStep = driver.PropertyEncryption().EncryptRequest().FromValue(value);
 
@@ -62,6 +74,11 @@ internal class EncryptToBytes : ProtocolObject
             : keyStep.UsingKeyId(data.keyId);
 
         EncryptedBytes = await executeStep.EncryptToBytesAsync();
+
+        if (data.mockRandomBytes != null)
+        {
+            newDriver.MockRandom.EnsureAllBytesConsumed();
+        }
     }
 
     public override string Respond()
@@ -83,5 +100,8 @@ internal class EncryptToBytes : ProtocolObject
         public string profileName { get; set; }
         public string keyAlias { get; set; }
         public string keyId { get; set; }
+
+        [JsonConverter(typeof(SingleCypherValueConverter))]
+        public CypherToNativeObject mockRandomBytes { get; set; }
     }
 }

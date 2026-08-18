@@ -24,6 +24,7 @@ internal static class SupportedFeatures
         FeaturesList = new List<string>
         {
             // keep this list sorted alphabetically
+            "Backend:MockRandom",
             "Backend:MockTime",
             "ConfHint:connection.recv_timeout_seconds",
             "AuthorizationExpiredTreatment",

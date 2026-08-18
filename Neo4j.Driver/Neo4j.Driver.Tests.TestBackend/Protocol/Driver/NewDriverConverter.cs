@@ -54,6 +54,7 @@ internal class NewDriverConverter : JsonConverter<NewDriver.NewDriverType>
         newDriverRequest.clientCertificate = jsonObj["clientCertificate"]?.ToObject<ClientCertificate>();
         newDriverRequest.clientCertificateProviderId = jsonObj["clientCertificateProviderId"]?.Value<string>();
         newDriverRequest.disableAutoCommitRetries = jsonObj["disableAutoCommitRetries"]?.Value<bool?>();
+        newDriverRequest.mockRandom = jsonObj["mockRandom"]?.Value<bool>() ?? false;
 
         if (jsonObj.TryGetValue("trustedCertificates", out var token))
         {
