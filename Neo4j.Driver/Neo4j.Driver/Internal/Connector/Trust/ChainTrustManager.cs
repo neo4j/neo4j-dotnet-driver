@@ -47,6 +47,11 @@ internal class ChainTrustManager : TrustManager
         X509Chain chain,
         SslPolicyErrors sslPolicyErrors)
     {
+        if (HasNoCertificate(uri, certificate, sslPolicyErrors))
+        {
+            return false;
+        }
+
         if (_verifyHostname)
         {
             if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))

@@ -41,6 +41,17 @@ public abstract class TrustManager
 {
     internal INeo4jLogger Neo4JLogger { get; set; }
 
+    internal bool HasNoCertificate(Uri uri, X509Certificate2 certificate, SslPolicyErrors sslPolicyErrors)
+    {
+        if (certificate != null && !sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable))
+        {
+            return false;
+        }
+
+        Neo4JLogger.Error(null, $"{GetType().Name}: No certificate presented by '{uri}'.");
+        return true;
+    }
+
     /// <summary>Returns whether the endpoint should be trusted or not.</summary>
     /// <param name="uri">The uri towards which we're establishing connection</param>
     /// <param name="certificate">The certificate presented by the other endpoint</param>
