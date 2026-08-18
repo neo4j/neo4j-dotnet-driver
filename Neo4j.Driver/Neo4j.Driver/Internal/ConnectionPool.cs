@@ -51,9 +51,6 @@ internal sealed class ConnectionPool : IConnectionPool
     private readonly object _poolSizeSync = new();
 
     private readonly Uri _uri;
-    private int _connectionsWithSsrDisabled;
-
-    private int _connectionsWithSsrEnabled;
 
     private int _poolSize;
 
@@ -116,9 +113,9 @@ internal sealed class ConnectionPool : IConnectionPool
     internal int PoolSize => Interlocked.CompareExchange(ref _poolSize, -1, -1);
     public int NumberOfInUseConnections => _inUseConnections.Count;
     public int NumberOfIdleConnections => _idleConnections.Count;
-    public int NumberOfConnectionsWithSsrEnabled => _connectionsWithSsrEnabled;
-    public int NumberOfConnectionsWithSsrDisabled => _connectionsWithSsrDisabled;
-    public int TotalNumberOfConnections => _connectionsWithSsrDisabled + _connectionsWithSsrEnabled;
+    public int NumberOfConnectionsWithSsrEnabled => _inUseConnections.Concat(_idleConnections).Count(c => c.SsrEnabled);
+    public int NumberOfConnectionsWithSsrDisabled => _inUseConnections.Concat(_idleConnections).Count(c => !c.SsrEnabled);
+    public int TotalNumberOfConnections => _inUseConnections.Count + _idleConnections.Count;
 
     public ConnectionPoolStatus Status
     {
@@ -399,15 +396,6 @@ internal sealed class ConnectionPool : IConnectionPool
             return;
         }
 
-        if (conn.SsrEnabled)
-        {
-            Interlocked.Decrement(ref _connectionsWithSsrEnabled);
-        }
-        else
-        {
-            Interlocked.Decrement(ref _connectionsWithSsrDisabled);
-        }
-
         _poolMetricsListener?.ConnectionClosing();
         try
         {
@@ -536,14 +524,6 @@ internal sealed class ConnectionPool : IConnectionPool
     private async ValueTask AddConnectionAsync(IPooledConnection connection)
     {
         _inUseConnections.TryAdd(connection);
-        if (connection.SsrEnabled)
-        {
-            Interlocked.Increment(ref _connectionsWithSsrEnabled);
-        }
-        else
-        {
-            Interlocked.Increment(ref _connectionsWithSsrDisabled);
-        }
 
         if (!IsClosed)
         {

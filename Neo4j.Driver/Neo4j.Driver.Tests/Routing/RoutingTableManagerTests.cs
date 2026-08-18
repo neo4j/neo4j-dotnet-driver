@@ -1039,6 +1039,47 @@ public static class RoutingTableManagerTests
         }
 
         [Fact]
+        public async Task ShouldReuseExistingRoutingTableWhenDatabaseCameFromHomeDbCache()
+        {
+            var cachedHomeDbTable =
+                new RoutingTable("db_alice", new[] { server01 }, new[] { server02 }, new[] { server03 }, 1000);
+
+            var discovery = new Mock<IDiscovery>();
+
+            var poolManager = new Mock<IClusterConnectionPoolManager>();
+            poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), It.IsAny<SessionConfig>()))
+                .ReturnsAsync(Mock.Of<IConnection>);
+
+            var initialAddressProvider = new Mock<IInitialServerAddressProvider>();
+            initialAddressProvider.Setup(x => x.Get()).Returns(new HashSet<Uri> { server01 });
+
+            var manager = new RoutingTableManager(
+                initialAddressProvider.Object,
+                discovery.Object,
+                poolManager.Object,
+                Mock.Of<INeo4jLogger>(),
+                TimeSpan.MaxValue,
+                cachedHomeDbTable);
+
+            var result = await manager.EnsureRoutingTableForModeAsync(
+                AccessMode.Read,
+                "db_alice",
+                true,
+                null,
+                Bookmarks.Empty);
+
+            result.Should().Be(cachedHomeDbTable);
+            discovery.Verify(
+                x => x.DiscoverAsync(
+                    It.IsAny<IConnection>(),
+                    It.IsAny<string>(),
+                    It.IsAny<SessionConfig>(),
+                    It.IsAny<Bookmarks>(),
+                    It.IsAny<IHomeDbCache>()),
+                Times.Never);
+        }
+
+        [Fact]
         public async Task ShouldPassBookmarkDownToDiscovery()
         {
             var bookmark = Bookmarks.From("bookmark-1", "bookmark-2");

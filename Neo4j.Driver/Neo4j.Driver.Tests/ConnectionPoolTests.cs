@@ -220,6 +220,32 @@ public class ConnectionPoolTests
         }
 
         [Fact]
+        public async Task ShouldNotDriftSsrCountWhenConnectionFailsBeforeBeingAddedToPool()
+        {
+            var connectionMock = new Mock<IPooledConnection>();
+            connectionMock.Setup(x => x.SsrEnabled).Returns(false);
+            connectionMock
+                .Setup(x => x.InitAsync(It.IsAny<SessionConfig>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new ServiceUnavailableException("failed to init"));
+
+            var factoryMock = new Mock<IPooledConnectionFactory>();
+            factoryMock
+                .Setup(x => x.Create(It.IsAny<Uri>(), It.IsAny<IConnectionReleaseManager>(), It.IsAny<IAuthToken>()))
+                .Returns(connectionMock.Object);
+
+            var pool = new ConnectionPool(
+                factoryMock.Object,
+                driverContext: TestDriverContext.MockContext,
+                validator: new TestConnectionValidator());
+
+            var act = () => pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
+
+            await act.Should().ThrowAsync<ServiceUnavailableException>();
+
+            pool.NumberOfConnectionsWithSsrDisabled.Should().Be(0);
+        }
+
+        [Fact]
         public async Task ShouldAcquireFreshConnectionWhenIdleConnectionLivenessProbeHangs()
         {
             var deadConnection = new Mock<IPooledConnection>();
