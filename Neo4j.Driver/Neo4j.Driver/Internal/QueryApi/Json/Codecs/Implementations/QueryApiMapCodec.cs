@@ -25,8 +25,13 @@ using static Neo4j.Driver.Internal.QueryApi.QueryApiCodecHelper;
 namespace Neo4j.Driver.Internal.QueryApi;
 
 [AutoRegister]
-internal class QueryApiMapCodec : IQueryApiTypeCodec
+internal class QueryApiMapCodec : IQueryApiContainerCodec
 {
+    public IEnumerable<object?> GetChildValues(object value)
+    {
+        return ((IDictionary<string, object?>)value).Values;
+    }
+
     public bool CanRead(string typeName)
     {
         ArgumentNullException.ThrowIfNull(typeName);

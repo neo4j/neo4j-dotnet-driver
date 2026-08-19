@@ -37,6 +37,14 @@ public class QueryApiMapCodecTests
     public void CanWrite_CorrectTypes() => CanWrite(_subject, typeof(IDictionary<string, object?>));
 
     [Fact]
+    public void GetChildValues_ReturnsMapValues()
+    {
+        var map = new Dictionary<string, object?> { ["a"] = 1L, ["b"] = "hi" };
+
+        _subject.GetChildValues(map).Should().BeEquivalentTo(new object?[] { 1L, "hi" });
+    }
+
+    [Fact]
     public void Write_EmptyMap_ReturnsTypedEnvelopeWithEmptyObject()
     {
         var encoder = Mock.Of<IJsonValueEncoder>();

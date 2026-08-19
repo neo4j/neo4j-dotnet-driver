@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Json;
@@ -27,8 +28,13 @@ using static Neo4j.Driver.Internal.QueryApi.QueryApiCodecHelper;
 namespace Neo4j.Driver.Internal.QueryApi;
 
 [AutoRegister]
-internal class QueryApiListCodec : IQueryApiTypeCodec
+internal class QueryApiListCodec : IQueryApiContainerCodec
 {
+    public IEnumerable<object?> GetChildValues(object value)
+    {
+        return ((IEnumerable)value).Cast<object?>();
+    }
+
     public bool CanRead(string typeName)
     {
         ArgumentNullException.ThrowIfNull(typeName);

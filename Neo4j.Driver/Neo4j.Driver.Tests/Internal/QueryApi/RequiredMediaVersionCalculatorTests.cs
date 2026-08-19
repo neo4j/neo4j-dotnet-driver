@@ -33,10 +33,13 @@ public class RequiredMediaVersionCalculatorTests
     private static IRequiredMediaVersionCalculator Calculator()
     {
         return new RequiredMediaVersionCalculator(
-        [
-            new FakeCodec(ClassicValue1_0, QueryApiMediaVersion.V1_0),
-            new FakeCodec(ValueThatRequires1_1, QueryApiMediaVersion.V1_1)
-        ]);
+            new QueryApiWriteCodecSelector(
+            [
+                new FakeCodec(ClassicValue1_0, QueryApiMediaVersion.V1_0),
+                new FakeCodec(ValueThatRequires1_1, QueryApiMediaVersion.V1_1),
+                new QueryApiListCodec(),
+                new QueryApiMapCodec()
+            ]));
     }
 
     [Fact]
@@ -101,6 +104,26 @@ public class RequiredMediaVersionCalculatorTests
         };
 
         Calculator().Calculate([deeplyNested]).Should().Be(QueryApiMediaVersion.V1_0);
+    }
+
+    [Fact]
+    public void VectorValue_ReturnsV1_1()
+    {
+        var calculator = new RequiredMediaVersionCalculator(
+            new QueryApiWriteCodecSelector([new QueryApiVectorCodec()]));
+        var vector = Vector.Create(new sbyte[] { 1, -2, 127 });
+
+        calculator.Calculate([vector]).Should().Be(QueryApiMediaVersion.V1_1);
+    }
+
+    [Fact]
+    public void VectorNestedInList_ReturnsV1_1()
+    {
+        var calculator = new RequiredMediaVersionCalculator(
+            new QueryApiWriteCodecSelector([new QueryApiListCodec(), new QueryApiVectorCodec()]));
+        var vector = Vector.Create(new sbyte[] { 1, -2, 127 });
+
+        calculator.Calculate([new List<object?> { vector }]).Should().Be(QueryApiMediaVersion.V1_1);
     }
 
     private sealed class FakeCodec : IQueryApiTypeCodec

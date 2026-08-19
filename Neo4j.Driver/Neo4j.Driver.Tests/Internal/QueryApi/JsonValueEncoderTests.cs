@@ -35,12 +35,17 @@ public class JsonValueEncoderTests
         return codec;
     }
 
+    private static JsonValueEncoder Subject(params IQueryApiTypeCodec[] codecs)
+    {
+        return new JsonValueEncoder(new QueryApiWriteCodecSelector(codecs));
+    }
+
     [Fact]
     public void Encode_ReturnsNodeFromMatchingCodec()
     {
         var value = new object();
         var codec = Codec(value, canWrite: true);
-        var subject = new JsonValueEncoder([codec.Object]);
+        var subject = Subject(codec.Object);
 
         subject.Encode(value);
 
@@ -48,17 +53,16 @@ public class JsonValueEncoderTests
     }
 
     [Fact]
-    public void Encode_SelectsFirstCodec_WhenSeveralCanWrite()
+    public void Encode_Throws_WhenSeveralNonContainerCodecsCanWrite()
     {
         var value = new object();
         var first = Codec(value, canWrite: true);
         var second = Codec(value, canWrite: true);
-        var subject = new JsonValueEncoder([first.Object, second.Object]);
+        var subject = Subject(first.Object, second.Object);
 
-        subject.Encode(value);
+        var act = () => subject.Encode(value);
 
-        first.Verify(c => c.CanWrite(value));
-        second.Verify(c => c.CanWrite(value), Times.Never);
+        act.Should().Throw<NotSupportedException>();
     }
 
     [Fact]
@@ -67,7 +71,7 @@ public class JsonValueEncoderTests
         var value = new object();
         var skipped = Codec(value, canWrite: false);
         var chosen = Codec(value, canWrite: true);
-        var subject = new JsonValueEncoder([skipped.Object, chosen.Object]);
+        var subject = Subject(skipped.Object, chosen.Object);
 
         subject.Encode(value);
 
@@ -76,10 +80,21 @@ public class JsonValueEncoderTests
     }
 
     [Fact]
+    public void Encode_Vector_UsesVectorCodec_NotListCodec()
+    {
+        var vector = Vector.Create(new sbyte[] { 1, -2, 127 });
+        var subject = Subject(new QueryApiListCodec(), new QueryApiVectorCodec());
+
+        var node = subject.Encode(vector);
+
+        node!["$type"]!.GetValue<string>().Should().Be("Vector");
+    }
+
+    [Fact]
     public void Encode_Throws_WhenNoCodecCanWriteValue()
     {
         var value = new object();
-        var subject = new JsonValueEncoder([Codec(value, canWrite: false).Object]);
+        var subject = Subject(Codec(value, canWrite: false).Object);
 
         var act = () => subject.Encode(value);
 
@@ -89,7 +104,7 @@ public class JsonValueEncoderTests
     [Fact]
     public void Encode_Throws_WhenNoCodecsExist()
     {
-        var subject = new JsonValueEncoder([]);
+        var subject = Subject();
 
         var act = () => subject.Encode(new object());
 

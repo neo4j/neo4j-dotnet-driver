@@ -15,7 +15,6 @@
 
 #nullable enable
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal.DependencyInjection;
@@ -25,41 +24,30 @@ namespace Neo4j.Driver.Internal.QueryApi;
 [AutoRegister]
 internal class RequiredMediaVersionCalculator : IRequiredMediaVersionCalculator
 {
-    private readonly IEnumerable<IQueryApiTypeCodec> _codecs;
+    private readonly IQueryApiWriteCodecSelector _selector;
 
-    public RequiredMediaVersionCalculator(IEnumerable<IQueryApiTypeCodec> codecs)
+    public RequiredMediaVersionCalculator(IQueryApiWriteCodecSelector selector)
     {
-        _codecs = codecs;
+        _selector = selector;
     }
 
     public QueryApiMediaVersion Calculate(IEnumerable<object?> values)
     {
-        var version = QueryApiMediaVersion.V1_0;
-        foreach (var value in values)
+        return values.Aggregate(QueryApiMediaVersion.V1_0, (current, value) =>
         {
             var required = RequiredVersionFor(value);
-            if (required > version)
-            {
-                version = required;
-            }
-        }
-
-        return version;
+            return required > current ? required : current;
+        });
     }
 
     private QueryApiMediaVersion RequiredVersionFor(object? value)
     {
-        if (value is IDictionary<string, object?> map)
+        var codec = _selector.Select(value);
+        if (codec is IQueryApiContainerCodec container)
         {
-            return Calculate(map.Values);
+            return Calculate(container.GetChildValues(value!));
         }
 
-        if (value is IEnumerable enumerable and not string and not IDictionary and not byte[])
-        {
-            return Calculate(enumerable.Cast<object?>());
-        }
-
-        var codec = _codecs.FirstOrDefault(c => c.CanWrite(value));
-        return codec?.RequiredVersion ?? QueryApiMediaVersion.V1_0;
+        return codec.RequiredVersion;
     }
 }

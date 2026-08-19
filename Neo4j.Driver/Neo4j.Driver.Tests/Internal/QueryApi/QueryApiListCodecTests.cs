@@ -38,6 +38,14 @@ public class QueryApiListCodecTests
     public void CanWrite_CorrectTypes() => CanWrite(_subject, typeof(List<object?>), typeof(object[]));
 
     [Fact]
+    public void GetChildValues_ReturnsListItems_InOrder()
+    {
+        var list = new List<object?> { 1L, "hello", null };
+
+        _subject.GetChildValues(list).Should().ContainInOrder(1L, "hello", null);
+    }
+
+    [Fact]
     public void Write_EmptyList_ReturnsTypedEnvelopeWithEmptyArray()
     {
         var encoder = Mock.Of<IJsonValueEncoder>();
