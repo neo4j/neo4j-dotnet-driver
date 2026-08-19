@@ -28,7 +28,7 @@ internal class MockCryptoRandomProvider : ICryptoRandomProvider, IMockCryptoRand
     {
         if (_bytes.Count != 0)
         {
-            throw new InvalidOperationException(
+            throw new ArgumentException(
                 $"Mock random bytes provided while {_bytes.Count} unconsumed bytes remain.");
         }
 
@@ -39,7 +39,7 @@ internal class MockCryptoRandomProvider : ICryptoRandomProvider, IMockCryptoRand
     {
         if (buffer.Length > _bytes.Count)
         {
-            throw new InvalidOperationException(
+            throw new ArgumentException(
                 $"{buffer.Length} mock random bytes requested but only {_bytes.Count} remain.");
         }
 
@@ -51,7 +51,7 @@ internal class MockCryptoRandomProvider : ICryptoRandomProvider, IMockCryptoRand
     {
         if (_bytes.Count != 0)
         {
-            throw new InvalidOperationException(
+            throw new ArgumentException(
                 $"{_bytes.Count} mock random bytes remain unconsumed.");
         }
     }

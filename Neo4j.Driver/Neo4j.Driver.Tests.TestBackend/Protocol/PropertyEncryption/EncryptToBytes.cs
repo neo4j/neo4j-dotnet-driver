@@ -40,7 +40,7 @@ internal class EncryptToBytes : ProtocolObject
         {
             if (newDriver.MockRandom == null)
             {
-                throw new InvalidOperationException(
+                throw new ArgumentException(
                     "mockRandomBytes provided but the driver was not created with mockRandom.");
             }
 

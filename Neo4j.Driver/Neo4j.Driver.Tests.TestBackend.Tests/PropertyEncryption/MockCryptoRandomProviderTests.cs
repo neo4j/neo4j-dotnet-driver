@@ -43,7 +43,7 @@ public class MockCryptoRandomProviderTests
 
         var act = () => provider.Fill(new byte[2]);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*2*requested*1*remain*");
+        act.Should().Throw<ArgumentException>().WithMessage("*2*requested*1*remain*");
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public class MockCryptoRandomProviderTests
 
         var act = () => provider.Fill(new byte[1]);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<ArgumentException>();
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public class MockCryptoRandomProviderTests
 
         var act = () => provider.EnsureAllBytesConsumed();
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*2*remain*");
+        act.Should().Throw<ArgumentException>().WithMessage("*2*remain*");
     }
 
     [Fact]
@@ -89,7 +89,7 @@ public class MockCryptoRandomProviderTests
 
         var act = () => provider.ProvideBytes([9]);
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*2*remain*");
+        act.Should().Throw<ArgumentException>().WithMessage("*2*remain*");
     }
 
     [Fact]
