@@ -36,7 +36,7 @@ internal class NewDriver : ProtocolObject
     public IDriver Driver { get; set; }
 
     [JsonIgnore]
-    public MockCryptoRandomProvider MockRandom { get; private set; }
+    public FixedIvProvider FixedIvProvider { get; } = new();
 
     [JsonIgnore]
     private Controller Control { get; set; }
@@ -44,11 +44,6 @@ internal class NewDriver : ProtocolObject
     public override Task Process(Controller controller)
     {
         Control = controller;
-
-        if (data.mockRandom)
-        {
-            MockRandom = new MockCryptoRandomProvider();
-        }
 
         if (data.authorizationToken != null)
         {
@@ -222,10 +217,7 @@ internal class NewDriver : ProtocolObject
             configBuilder.WithPropertyEncryptionProfiles(profiles);
         }
 
-        if (MockRandom != null)
-        {
-            configBuilder.WithMockCryptoRandomProvider(MockRandom);
-        }
+        configBuilder.WithMockIvProvider(FixedIvProvider);
 
         var logger = new SimpleNeo4JLogger();
         configBuilder.WithLogger(logger);
@@ -275,7 +267,6 @@ internal class NewDriver : ProtocolObject
         public int? livenessCheckTimeoutMs { get; set; }
         public bool? disableAutoCommitRetries { get; set; }
         public PropertyEncryptionProfileType[] propertyEncryptionProfiles { get; set; }
-        public bool mockRandom { get; set; }
     }
 
     public class PropertyEncryptionProfileType

@@ -38,7 +38,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
 
     public EnvelopeEncryptionEngineTests()
     {
-        Fixture.Inject<ICryptoRandomProvider>(new SequentialRandom());
+        Fixture.Inject(Mock.Of<IIvProvider>(p => p.GetIv() == Iv));
     }
 
     private static IEnvelopeEncryptionProfile Profile()

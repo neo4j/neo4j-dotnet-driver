@@ -330,10 +330,10 @@ public sealed class ConfigBuilder
         return this;
     }
 
-    internal ConfigBuilder WithMockCryptoRandomProvider(ICryptoRandomProvider provider)
+    internal ConfigBuilder WithMockIvProvider(IIvProvider provider)
     {
         ArgumentNullException.ThrowIfNull(provider);
-        _config.MockCryptoRandomProvider = provider;
+        _config.MockIvProvider = provider;
         return this;
     }
 

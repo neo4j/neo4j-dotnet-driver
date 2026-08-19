@@ -26,8 +26,6 @@ namespace Neo4j.Driver.Internal.Encryption;
 [DriverAutoRegister(singleton: true)]
 internal class EnvelopeEncryptionEngine : IEncryptionEngine
 {
-    private const int IvLength = 12;
-
     private static readonly int AadProtocolMajor = BoltValueSerializationSchemeVersion.Latest.Major;
     private static readonly int AadProtocolMinor = BoltValueSerializationSchemeVersion.Latest.Minor;
 
@@ -37,7 +35,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
     private readonly IEncryptedValueBytesCodec _encryptedValueBytesCodec;
     private readonly IEnvelopeDataKeyProvider _envelopeDataKeyProvider;
     private readonly IBaselineCompatibilityGuard _baselineCompatibilityGuard;
-    private readonly ICryptoRandomProvider _randomProvider;
+    private readonly IIvProvider _ivProvider;
     private readonly IEnvelopeMetadataExtractor _envelopeMetadataExtractor;
     private readonly IEnvelopeMetadataBuilder _envelopeMetadataBuilder;
 
@@ -48,7 +46,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         IEncryptedValueBytesCodec encryptedValueBytesCodec,
         IEnvelopeDataKeyProvider envelopeDataKeyProvider,
         IBaselineCompatibilityGuard baselineCompatibilityGuard,
-        ICryptoRandomProvider randomProvider,
+        IIvProvider ivProvider,
         IEnvelopeMetadataExtractor envelopeMetadataExtractor,
         IEnvelopeMetadataBuilder envelopeMetadataBuilder)
     {
@@ -58,7 +56,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         _encryptedValueBytesCodec = encryptedValueBytesCodec;
         _envelopeDataKeyProvider = envelopeDataKeyProvider;
         _baselineCompatibilityGuard = baselineCompatibilityGuard;
-        _randomProvider = randomProvider;
+        _ivProvider = ivProvider;
         _envelopeMetadataExtractor = envelopeMetadataExtractor;
         _envelopeMetadataBuilder = envelopeMetadataBuilder;
     }
@@ -111,8 +109,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         var (keyId, dataKey) = await _envelopeDataKeyProvider.GetDataKeyAsync(profile, keyRef, cancellationToken)
             .ConfigureAwait(false);
 
-        var iv = new byte[IvLength];
-        _randomProvider.Fill(iv);
+        var iv = _ivProvider.GetIv();
 
         aad ??= [];
         var cipherResult = _aeadCipher.Encrypt(dataKey, iv, plaintext, aad);

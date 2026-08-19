@@ -260,7 +260,7 @@ public class Config
 
     internal IReadOnlyList<IPropertyEncryptionProfile> Preview_PropertyEncryptionProfiles { get; set; } = [];
 
-    internal ICryptoRandomProvider MockCryptoRandomProvider { get; set; }
+    internal IIvProvider MockIvProvider { get; set; }
 }
 
 /// <summary>The configuration for the driver's underlying message reading from the network.</summary>

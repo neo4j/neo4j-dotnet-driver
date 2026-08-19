@@ -124,14 +124,15 @@ public class RootContainerFactoryTests
     }
 
     [Fact]
-    public void Build_ResolvesTheMockCryptoRandomProviderInstance_WhenConfigured()
+    public void Build_ResolvesTheMockIvProviderInstance_WhenConfigured()
     {
-        var mockProvider = Mock.Of<ICryptoRandomProvider>();
-        var config = Config.Builder.WithMockCryptoRandomProvider(mockProvider).Build();
+        var mockProvider = Mock.Of<IIvProvider>();
+        var config = Config.Builder.WithMockIvProvider(mockProvider).Build();
         var context = new DriverContext(new("bolt://localhost"), null, config);
 
         var scope = RootContainerFactory.Build(context);
 
-        scope.Resolve<ICryptoRandomProvider>().Should().BeSameAs(mockProvider);
+        scope.Resolve<IIvProvider>().Should().BeSameAs(mockProvider);
     }
+
 }

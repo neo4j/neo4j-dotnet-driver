@@ -13,12 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
+#nullable enable
 
-namespace Neo4j.Driver.Tests.TestBackend.PropertyEncryption;
+using FluentAssertions;
+using Neo4j.Driver.Internal.Encryption;
+using Xunit;
+using static Neo4j.Driver.Tests.Internal.Encryption.EncryptionTestHelpers;
 
-internal interface IMockCryptoRandomProvider
+namespace Neo4j.Driver.Tests.Internal.Encryption;
+
+public class IvProviderTests
 {
-    void ProvideBytes(IEnumerable<byte> bytes);
-    void EnsureAllBytesConsumed();
+    [Fact]
+    public void GetIv_ReturnsTwelveBytesDrawnFromTheRandomProvider()
+    {
+        var provider = new IvProvider(new SequentialRandom());
+
+        provider.GetIv().Should().Equal(Sequence(12));
+    }
 }

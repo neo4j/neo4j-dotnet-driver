@@ -28,8 +28,12 @@ internal static class RootContainerFactory
         container.RegisterInstance(context);
         container.RegisterInstance(context.Neo4JLogger);
         container.RegisterInstance(DateTimeProvider.Instance);
-        container.RegisterInstance(context.Config.MockCryptoRandomProvider ?? (ICryptoRandomProvider)new CryptoRandomProvider());
         container.RegisterModule<LoggingModule>();
+
+        if (context.Config.MockIvProvider != null)
+        {
+            container.RegisterInstance(context.Config.MockIvProvider);
+        }
 
         foreach (var profile in context.Config.Preview_PropertyEncryptionProfiles)
         {
