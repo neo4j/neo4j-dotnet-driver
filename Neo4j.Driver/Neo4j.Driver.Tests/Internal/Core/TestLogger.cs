@@ -16,7 +16,6 @@
 #nullable enable
 
 using System;
-using System.Text.RegularExpressions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Util;
 using Xunit;
@@ -26,7 +25,6 @@ namespace Neo4j.Driver.Tests.Internal.Core;
 internal class TestLogger(Type subjectType) : ILogger
 {
     private readonly string _prefix = $"[{subjectType.Name}]";
-    private static readonly Regex Placeholders = new(@"\{[^}]+\}"); // {...}
     private string _scopePrefix = "";
 
     private void WriteFormatted(string level, string messageTemplate, object?[] args, Exception? exception = null)
@@ -36,7 +34,7 @@ internal class TestLogger(Type subjectType) : ILogger
             return;
 
         var index = 0;
-        var indexed = Placeholders.Replace(messageTemplate, _ => $"{{{index++}}}");
+        var indexed = LogParams.PlaceholderRegex.Replace(messageTemplate, _ => $"{{{index++}}}");
         try
         {
             var message = args.Length > 0

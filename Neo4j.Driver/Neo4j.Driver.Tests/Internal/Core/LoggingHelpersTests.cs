@@ -40,6 +40,18 @@ public class LoggingHelpersTests
     }
 
     [Fact]
+    public void TryBuildScopePrefix_WithBracesInContextValue_PassesThemThroughRaw()
+    {
+        // Escaping for String.Format is LegacyLoggerAdapter's job, not the prefix builder's.
+        var state = new[] { new KeyValuePair<string, object?>("db", "{graph}") };
+
+        var result = LoggingHelpers.TryBuildScopePrefix(state, out var prefix);
+
+        result.Should().BeTrue();
+        prefix.Should().Be("[db:{graph}] ");
+    }
+
+    [Fact]
     public void TryBuildScopePrefix_WithNonContextState_ReturnsFalse()
     {
         var result = LoggingHelpers.TryBuildScopePrefix("not a context", out var prefix);
@@ -61,15 +73,38 @@ public class LoggingHelpersTests
     }
 
     [Fact]
-    public void ExtractFormatAndArguments_WithNoOriginalFormatKey_DefaultsToEmptyString()
+    public void ExtractFormatAndArguments_WithPlainKeyValuePairState_ReturnsFalse()
     {
         var state = new[] { new KeyValuePair<string, object>("key", "value") };
 
         var result = LoggingHelpers.ExtractFormatAndArguments(state, out var format, out var args);
 
+        result.Should().BeFalse();
+        format.Should().BeNull();
+        args.Should().BeNull();
+    }
+
+    [Fact]
+    public void TryBuildScopePrefix_WithLogParamsState_ReturnsFalse()
+    {
+        var state = new LogParams("value is {x}", [42]);
+
+        var result = LoggingHelpers.TryBuildScopePrefix(state, out var prefix);
+
+        result.Should().BeFalse();
+        prefix.Should().BeNull();
+    }
+
+    [Fact]
+    public void ExtractFormatAndArguments_WithDuplicatePlaceholderNames_ExtractsAllArgsInOrder()
+    {
+        var state = new LogParams("{x} became {x}", [1, 2]);
+
+        var result = LoggingHelpers.ExtractFormatAndArguments(state, out var format, out var args);
+
         result.Should().BeTrue();
-        format.Should().Be("");
-        args.Should().Equal("value");
+        format.Should().Be("{x} became {x}");
+        args.Should().Equal(1, 2);
     }
 
     [Fact]

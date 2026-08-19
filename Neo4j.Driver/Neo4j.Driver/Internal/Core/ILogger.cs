@@ -16,10 +16,6 @@
 #nullable enable
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace Neo4j.Driver.Internal;
 
@@ -138,54 +134,11 @@ internal static class LoggerExtensions
     public static void Log(this ILogger logger, LogLevel logLevel, EventId eventId, Exception? exception, string? message, params object?[] args)
     {
         ArgumentNullException.ThrowIfNull(logger);
-        logger.Log(logLevel, eventId, new LogParams(message ?? "", args), exception, DefaultFormatter);
-    }
-}
-
-internal class LogParams : IReadOnlyList<KeyValuePair<string, object?>>
-{
-    private List<KeyValuePair<string,object?>> _extractedList;
-
-    public LogParams(
-        string messageTemplate, 
-        object?[] args)
-    {
-        _extractedList = CreateLogFormat(messageTemplate, args);
-    }
-
-    private List<KeyValuePair<string, object?>> CreateLogFormat(string messageTemplate, object?[] args)
-    {
-        var result = new List<KeyValuePair<string, object?>>
+        if (!logger.IsEnabled(logLevel))
         {
-            new("{OriginalFormat}", messageTemplate)
-        };
-
-        var parameterNames = ExtractParameterNames(messageTemplate);
-        for (var i = 0; i < Math.Min(parameterNames.Count, args.Length); i++)
-        {
-            result.Add(new(parameterNames[i], args[i]));
+            return;
         }
 
-        return result;
+        logger.Log(logLevel, eventId, new LogParams(message ?? "", args), exception, DefaultFormatter);
     }
-
-    private static List<string> ExtractParameterNames(string messageTemplate)
-    {
-        var matches = Regex.Matches(messageTemplate, @"\{(\w+)\}");
-        return matches.Select(m => m.Groups[1].Value).ToList();
-    }
-
-    public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
-    {
-        return _extractedList.GetEnumerator();
-    }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return ((IEnumerable)_extractedList).GetEnumerator();
-    }
-
-    public int Count => _extractedList.Count;
-
-    public KeyValuePair<string, object?> this[int index] => _extractedList[index];
 }

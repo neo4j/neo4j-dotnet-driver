@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Reflection;
 using AutoFixture;
 using AutoFixture.Kernel;
 using Neo4j.Driver.Internal;
@@ -23,12 +24,9 @@ internal class LoggerSpecimenBuilder : ISpecimenBuilder
 {
     public object Create(object request, ISpecimenContext context)
     {
-        if (request is System.Reflection.ParameterInfo p)
+        if (request is ParameterInfo p && p.ParameterType == typeof(ILogger))
         {
-            if (p.ParameterType == typeof(ILogger))
-            {
-                return new TestLogger(p.Member.DeclaringType!);
-            }
+            return new TestLogger(p.Member.DeclaringType!);
         }
 
         return new NoSpecimen();

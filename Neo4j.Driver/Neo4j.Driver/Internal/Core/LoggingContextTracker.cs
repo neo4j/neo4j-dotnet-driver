@@ -24,6 +24,7 @@ internal class LoggingContextTracker : ILoggingContextTracker
 {
     private readonly ILoggingContextTracker? _parent;
     private readonly List<ILoggingContext> _contexts = [];
+    private readonly object _lock = new();
 
     public LoggingContextTracker()
     {
@@ -36,14 +37,32 @@ internal class LoggingContextTracker : ILoggingContextTracker
 
     public ILoggingContextTracker CreateChild() => new LoggingContextTracker(this);
 
-    public IReadOnlyList<ILoggingContext> Contexts =>
-        _parent is null ? _contexts : [.._parent.Contexts, .._contexts];
+    public IReadOnlyList<ILoggingContext> Contexts
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _parent is null ? [.._contexts] : [.._parent.Contexts, .._contexts];
+            }
+        }
+    }
 
     public IDisposable Add(string key, object value)
     {
         var ctx = new LoggingContext(key, value);
-        _contexts.Add(ctx);
-        return new ContextHandle(() => _contexts.Remove(ctx));
+        lock (_lock)
+        {
+            _contexts.Add(ctx);
+        }
+
+        return new ContextHandle(() =>
+        {
+            lock (_lock)
+            {
+                _contexts.Remove(ctx);
+            }
+        });
     }
 
     private sealed class ContextHandle(Action remove) : IDisposable

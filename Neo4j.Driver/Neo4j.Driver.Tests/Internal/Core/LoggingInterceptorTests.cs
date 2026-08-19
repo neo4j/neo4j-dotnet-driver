@@ -44,6 +44,22 @@ public class LoggingInterceptorTests
     }
 
     [Fact]
+    public void TryResolve_ForLoggerTypeWithNullRequestingType_UsesUnknownLoggingSource()
+    {
+        var tracker = Mock.Of<ILoggingContextTracker>();
+        var logger = Mock.Of<ILogger>();
+        _resolver.Setup(r => r.Resolve<ILoggingContextTracker>()).Returns(tracker);
+        _loggerFactory
+            .Setup(f => f.GetLoggerForType(typeof(UnknownLoggingSource), tracker))
+            .Returns(logger);
+
+        var result = _subject.TryResolve(typeof(ILogger), null, _resolver.Object, out var service);
+
+        result.Should().BeTrue();
+        service.Should().BeSameAs(logger);
+    }
+
+    [Fact]
     public void TryResolve_ForLoggerType_ResolvesTrackerAndReturnsLoggerFromFactory()
     {
         var tracker = Mock.Of<ILoggingContextTracker>();
