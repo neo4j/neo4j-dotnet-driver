@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
 using Neo4j.Driver.Tests.TestBackend.Protocol.JsonConverters;
@@ -217,7 +218,7 @@ internal class NewDriver : ProtocolObject
             configBuilder.WithPropertyEncryptionProfiles(profiles);
         }
 
-        configBuilder.WithMockIvProvider(FixedIvProvider);
+        configBuilder.WithServiceOverride<IIvProvider>(FixedIvProvider);
 
         var logger = new SimpleNeo4JLogger();
         configBuilder.WithLogger(logger);

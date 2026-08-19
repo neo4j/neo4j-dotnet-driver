@@ -20,7 +20,7 @@ using System.IO.Pipelines;
 using System.Reflection;
 using System.Security.Authentication;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.Encryption;
+using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Util;
@@ -260,7 +260,7 @@ public class Config
 
     internal IReadOnlyList<IPropertyEncryptionProfile> Preview_PropertyEncryptionProfiles { get; set; } = [];
 
-    internal IIvProvider MockIvProvider { get; set; }
+    internal List<Action<IServiceRegistry>> ServiceOverrides { get; } = [];
 }
 
 /// <summary>The configuration for the driver's underlying message reading from the network.</summary>

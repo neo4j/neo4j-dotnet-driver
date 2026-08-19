@@ -30,9 +30,9 @@ internal static class RootContainerFactory
         container.RegisterInstance(DateTimeProvider.Instance);
         container.RegisterModule<LoggingModule>();
 
-        if (context.Config.MockIvProvider != null)
+        foreach (var serviceOverride in context.Config.ServiceOverrides)
         {
-            container.RegisterInstance(context.Config.MockIvProvider);
+            serviceOverride(container);
         }
 
         foreach (var profile in context.Config.Preview_PropertyEncryptionProfiles)

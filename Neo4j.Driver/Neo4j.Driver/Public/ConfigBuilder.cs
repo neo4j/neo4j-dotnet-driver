@@ -330,10 +330,10 @@ public sealed class ConfigBuilder
         return this;
     }
 
-    internal ConfigBuilder WithMockIvProvider(IIvProvider provider)
+    internal ConfigBuilder WithServiceOverride<TService>(TService instance)
     {
-        ArgumentNullException.ThrowIfNull(provider);
-        _config.MockIvProvider = provider;
+        ArgumentNullException.ThrowIfNull(instance);
+        _config.ServiceOverrides.Add(registry => registry.RegisterInstance(instance));
         return this;
     }
 

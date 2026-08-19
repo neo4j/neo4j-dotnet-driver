@@ -124,15 +124,15 @@ public class RootContainerFactoryTests
     }
 
     [Fact]
-    public void Build_ResolvesTheMockIvProviderInstance_WhenConfigured()
+    public void Build_ResolvesAServiceOverride_OverTheAutoRegisteredService()
     {
-        var mockProvider = Mock.Of<IIvProvider>();
-        var config = Config.Builder.WithMockIvProvider(mockProvider).Build();
+        var overridingProvider = Mock.Of<IIvProvider>();
+        var config = Config.Builder.WithServiceOverride(overridingProvider).Build();
         var context = new DriverContext(new("bolt://localhost"), null, config);
 
         var scope = RootContainerFactory.Build(context);
 
-        scope.Resolve<IIvProvider>().Should().BeSameAs(mockProvider);
+        scope.Resolve<IIvProvider>().Should().BeSameAs(overridingProvider);
     }
 
 }
