@@ -202,8 +202,8 @@ internal class NewDriver : ProtocolObject
                 .Select(
                     p =>
                     {
-                        var kes = p.fixedKek != null
-                            ? new FixtureKeyEncapsulationService((byte[])CypherToNative.Convert(p.fixedKek))
+                        var kes = p.kek != null
+                            ? new FixtureKeyEncapsulationService(CypherToNative.ConvertStringToBytes(p.kek))
                             : new FixtureKeyEncapsulationService();
 
                         var repository = new FixtureEncapsulatedKeyRepository();
@@ -274,7 +274,6 @@ internal class NewDriver : ProtocolObject
     {
         public string name { get; set; }
 
-        [JsonConverter(typeof(SingleCypherValueConverter))]
-        public CypherToNativeObject fixedKek { get; set; }
+        public string kek { get; set; }
     }
 }

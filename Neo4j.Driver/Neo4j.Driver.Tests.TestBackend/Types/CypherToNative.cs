@@ -290,7 +290,7 @@ internal class CypherToNative
         return Vector.CreateDynamic(typedArray, byteArray);
     }
 
-    private static byte[] ConvertStringToBytes(string hexString)
+    internal static byte[] ConvertStringToBytes(string hexString)
     {
         if (string.IsNullOrEmpty(hexString))
         {

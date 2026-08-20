@@ -36,9 +36,9 @@ internal class EncryptToBytes : ProtocolObject
         var driver = newDriver.Driver;
         var value = CypherToNative.Convert(data.value);
 
-        if (data.fixedIv != null)
+        if (data.iv != null)
         {
-            newDriver.FixedIvProvider.SetNextIv((byte[])CypherToNative.Convert(data.fixedIv));
+            newDriver.FixedIvProvider.SetNextIv(CypherToNative.ConvertStringToBytes(data.iv));
         }
 
         IEncryptRequestKeyStep keyStep = driver.PropertyEncryption().EncryptRequest().FromValue(value);
@@ -74,7 +74,9 @@ internal class EncryptToBytes : ProtocolObject
 
     public override string Respond()
     {
-        return new ProtocolResponse("EncryptedValue", new { encryptedBytes = NativeToCypher.Convert(EncryptedBytes) })
+        return new ProtocolResponse(
+                "EncryptedValue",
+                new { encryptedBytes = NativeToCypher.ByteStreamToHexString(EncryptedBytes) })
             .Encode();
     }
 
@@ -92,7 +94,6 @@ internal class EncryptToBytes : ProtocolObject
         public string keyAlias { get; set; }
         public string keyId { get; set; }
 
-        [JsonConverter(typeof(SingleCypherValueConverter))]
-        public CypherToNativeObject fixedIv { get; set; }
+        public string iv { get; set; }
     }
 }

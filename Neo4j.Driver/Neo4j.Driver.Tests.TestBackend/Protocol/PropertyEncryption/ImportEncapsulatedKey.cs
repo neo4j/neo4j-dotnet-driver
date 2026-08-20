@@ -16,7 +16,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Preview.Encryption;
-using Neo4j.Driver.Tests.TestBackend.Protocol.JsonConverters;
 using Neo4j.Driver.Tests.TestBackend.Types;
 using Newtonsoft.Json;
 
@@ -32,7 +31,7 @@ internal class ImportEncapsulatedKey : ProtocolObject
     public override async Task Process()
     {
         var fixture = ObjManager.GetObject<EncryptionProfileFixture>($"{data.driverId}:{data.profileName}");
-        var encapsulation = (byte[])CypherToNative.Convert(data.encapsulation);
+        var encapsulation = CypherToNative.ConvertStringToBytes(data.encapsulation);
         Key = await fixture.KeyRepository.SaveAsync(data.alias, encapsulation, data.metadata);
     }
 
@@ -44,7 +43,7 @@ internal class ImportEncapsulatedKey : ProtocolObject
                 {
                     id = Key.Id,
                     alias = Key.Alias,
-                    encapsulatedBytes = NativeToCypher.Convert(Key.Encapsulation),
+                    encapsulatedBytes = NativeToCypher.ByteStreamToHexString(Key.Encapsulation),
                     metadata = Key.Metadata
                 })
             .Encode();
@@ -55,8 +54,7 @@ internal class ImportEncapsulatedKey : ProtocolObject
         public string driverId { get; set; }
         public string alias { get; set; }
 
-        [JsonConverter(typeof(SingleCypherValueConverter))]
-        public CypherToNativeObject encapsulation { get; set; }
+        public string encapsulation { get; set; }
 
         public IReadOnlyDictionary<string, string> metadata { get; set; }
         public string profileName { get; set; }

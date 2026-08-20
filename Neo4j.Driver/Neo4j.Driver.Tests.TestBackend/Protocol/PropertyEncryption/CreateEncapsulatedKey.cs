@@ -47,7 +47,7 @@ internal class CreateEncapsulatedKey : ProtocolObject
                 {
                     id = Key.Id,
                     alias = Key.Alias,
-                    encapsulatedBytes = NativeToCypher.Convert(Key.Encapsulation),
+                    encapsulatedBytes = NativeToCypher.ByteStreamToHexString(Key.Encapsulation),
                     metadata = Key.Metadata
                 })
             .Encode();

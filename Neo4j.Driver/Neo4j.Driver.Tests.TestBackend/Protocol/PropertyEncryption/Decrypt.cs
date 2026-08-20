@@ -33,7 +33,7 @@ internal class Decrypt : ProtocolObject
     public override async Task Process()
     {
         var driver = ObjManager.GetObject<NewDriver>(data.driverId).Driver;
-        var value = (byte[])CypherToNative.Convert(data.value);
+        var value = CypherToNative.ConvertStringToBytes(data.value);
 
         if (data.aad == null && !data.usePersistedAad)
         {
@@ -66,8 +66,7 @@ internal class Decrypt : ProtocolObject
     {
         public string driverId { get; set; }
 
-        [JsonConverter(typeof(SingleCypherValueConverter))]
-        public CypherToNativeObject value { get; set; }
+        public string value { get; set; }
 
         [JsonConverter(typeof(SingleCypherValueConverter))]
         public CypherToNativeObject aad { get; set; }
