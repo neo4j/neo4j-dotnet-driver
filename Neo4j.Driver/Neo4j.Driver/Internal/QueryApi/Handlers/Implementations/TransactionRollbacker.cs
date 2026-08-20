@@ -43,6 +43,15 @@ internal class TransactionRollbacker : ITransactionRollback
 
     public async Task RollbackAsync(CancellationToken cancellationToken = default)
     {
+        if (_txContextTracker.IsFailed)
+        {
+            _logger.LogDebug(
+                "Transaction {txId} already failed server-side; skipping rollback request",
+                _txContextTracker.Context!.TxId);
+
+            return;
+        }
+
         _logger.LogDebug("Rolling back transaction {txId}", _txContextTracker.Context!.TxId);
         using var request = await _requestBuilder.DeleteAsync($"query/v2/tx/{_txContextTracker.Context!.TxId}", cancellationToken).ConfigureAwait(false);
         using var response = await _httpTransport.SendAsync(request, cancellationToken).ConfigureAwait(false);

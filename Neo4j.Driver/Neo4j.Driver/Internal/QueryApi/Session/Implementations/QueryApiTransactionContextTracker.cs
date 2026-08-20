@@ -20,6 +20,8 @@ namespace Neo4j.Driver.Internal.QueryApi;
 internal class QueryApiTransactionContextTracker : IQueryApiTransactionContextTracker
 {
     public QueryApiTransactionContext? Context { get; private set; }
+    public bool IsFailed { get; private set; }
 
     public void Set(QueryApiTransactionContext context) => Context = context;
+    public void MarkFailed() => IsFailed = true;
 }

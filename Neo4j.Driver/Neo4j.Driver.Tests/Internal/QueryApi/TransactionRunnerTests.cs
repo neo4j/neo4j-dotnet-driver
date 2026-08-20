@@ -91,4 +91,50 @@ public class TransactionRunnerTests
 
         await act.Should().ThrowAsync<ServiceUnavailableException>();
     }
+
+    [Fact]
+    public async Task RunAsync_MarksTransactionFailed_WhenServerReturnsClientError()
+    {
+        var txContext = _fixture.Freeze<QueryApiTransactionContext>();
+        var request = new HttpRequestMessage();
+        var txContextTracker = _fixture.Freeze<Mock<IQueryApiTransactionContextTracker>>();
+
+        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}", It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request);
+
+        _fixture.Freeze<Mock<IQueryApiClient>>()
+            .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ClientException("Neo.ClientError.Statement.SyntaxError", "Invalid input"));
+
+        var subject = _fixture.Create<TransactionRunner>();
+        var act = () => subject.RunAsync(new Query("Invalid Cypher"), TestContext.Current.CancellationToken);
+
+        await act.Should().ThrowAsync<ClientException>();
+
+        txContextTracker.Verify(x => x.MarkFailed(), Times.Once);
+    }
+
+    [Fact]
+    public async Task RunAsync_DoesNotMarkTransactionFailed_WhenServiceUnavailable()
+    {
+        var txContext = _fixture.Freeze<QueryApiTransactionContext>();
+        var request = new HttpRequestMessage();
+        var txContextTracker = _fixture.Freeze<Mock<IQueryApiTransactionContextTracker>>();
+
+        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}", It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request);
+
+        _fixture.Freeze<Mock<IQueryApiClient>>()
+            .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ServiceUnavailableException("HTTP 503"));
+
+        var subject = _fixture.Create<TransactionRunner>();
+        var act = () => subject.RunAsync(new Query("RETURN 1"), TestContext.Current.CancellationToken);
+
+        await act.Should().ThrowAsync<ServiceUnavailableException>();
+
+        txContextTracker.Verify(x => x.MarkFailed(), Times.Never);
+    }
 }

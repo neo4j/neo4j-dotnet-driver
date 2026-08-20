@@ -38,7 +38,7 @@ internal class QueryApiErrorChecker : IQueryApiErrorChecker
 
     public async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken cancellationToken = default)
     {
-        if (response.StatusCode == HttpStatusCode.Accepted || response.StatusCode == HttpStatusCode.OK)
+        if (response.StatusCode is HttpStatusCode.Accepted or HttpStatusCode.OK)
         {
             return;
         }
@@ -85,9 +85,9 @@ internal class QueryApiErrorChecker : IQueryApiErrorChecker
 
     public void ThrowIfErrors(QueryApiErrorBody[]? errors)
     {
-        if (errors is { Length: > 0 } e)
+        if (errors is { Length: > 0 })
         {
-            throw ErrorExtensions.ParseServerException(new FailureMessage(e[0].Code, e[0].Message));
+            throw ErrorExtensions.ParseServerException(new FailureMessage(errors[0].Code, errors[0].Message));
         }
     }
 

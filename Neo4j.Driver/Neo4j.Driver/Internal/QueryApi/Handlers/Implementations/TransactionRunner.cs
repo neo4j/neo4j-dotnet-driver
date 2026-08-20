@@ -15,6 +15,7 @@
 
 #nullable enable
 
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
@@ -51,7 +52,16 @@ internal class TransactionRunner : ITransactionRunner
         _logger.LogDebug("Running query in tx {txId}: {query}", _txContextTracker.Context!.TxId, query.Text);
 
         using var request = await BuildRequestAsync(query, cancellationToken).ConfigureAwait(false);
-        var result = await _client.ExecuteAsync<QueryApiResultBody>(request, cancellationToken).ConfigureAwait(false);
+        QueryApiResult<QueryApiResultBody> result;
+        try
+        {
+            result = await _client.ExecuteAsync<QueryApiResultBody>(request, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex.HasServerErrorCode())
+        {
+            _txContextTracker.MarkFailed();
+            throw;
+        }
 
         var body = result.Body;
         var resultSet = new QueryApiResultSet

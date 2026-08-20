@@ -41,6 +41,10 @@ public class TransactionRollbackerTests
         var txContext = _fixture.Freeze<QueryApiTransactionContext>();
         var request = new HttpRequestMessage();
 
+        _fixture.Freeze<Mock<IQueryApiTransactionContextTracker>>()
+            .Setup(x => x.IsFailed)
+            .Returns(false);
+
         _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
             .Setup(x => x.DeleteAsync($"query/v2/tx/{txContext.TxId}", It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
@@ -65,5 +69,21 @@ public class TransactionRollbackerTests
         var act = () => subject.RollbackAsync(TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<ServiceUnavailableException>();
+    }
+
+    [Fact]
+    public async Task DoesNotSendRequest_WhenTransactionAlreadyFailed()
+    {
+        var requestBuilder = _fixture.Freeze<Mock<IQueryApiRequestBuilder>>();
+        _fixture.Freeze<Mock<IQueryApiTransactionContextTracker>>()
+            .Setup(x => x.IsFailed)
+            .Returns(true);
+
+        var subject = _fixture.Create<TransactionRollbacker>();
+        var act = () => subject.RollbackAsync(TestContext.Current.CancellationToken);
+
+        await act.Should().NotThrowAsync();
+
+        requestBuilder.Verify(x => x.DeleteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }
