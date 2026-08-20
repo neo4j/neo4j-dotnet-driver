@@ -132,4 +132,21 @@ public class QueryApiRequestBuilderTests
         request.Method.Should().Be(HttpMethod.Delete);
         request.Content.Should().BeNull();
     }
+
+    [Fact]
+    public async Task PostAsync_WithNullBody_StillSetsContent()
+    {
+        var headerWriter = _fixture.Freeze<Mock<IQueryApiRequestHeaderWriter>>();
+
+        var subject = _fixture.Create<QueryApiRequestBuilder>();
+        var request = await subject.PostAsync(
+            "query/v2/tx/tx-1/commit",
+            null,
+            TestContext.Current.CancellationToken);
+
+        request.Content.Should().NotBeNull();
+        headerWriter.Verify(
+            x => x.ApplyMediaType(It.IsAny<HttpRequestMessage>(), QueryApiMediaVersion.V1_0),
+            Times.Once);
+    }
 }

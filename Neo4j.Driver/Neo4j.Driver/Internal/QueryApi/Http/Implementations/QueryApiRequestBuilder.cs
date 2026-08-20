@@ -72,11 +72,18 @@ internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
         }
 
         var version = QueryApiMediaVersion.V1_0;
-        if (body is not null)
+        if (method == HttpMethod.Post)
         {
-            var serialized = _jsonSerializer.Serialize(body);
-            version = serialized.Version;
-            request.Content = new StringContent(serialized.Json);
+            if (body is null)
+            {
+                request.Content = new ByteArrayContent([]);
+            }
+            else
+            {
+                var serialized = _jsonSerializer.Serialize(body);
+                version = serialized.Version;
+                request.Content = new StringContent(serialized.Json);
+            }
         }
 
         _headerWriter.ApplyMediaType(request, version);
