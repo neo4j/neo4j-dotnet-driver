@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -84,7 +85,36 @@ public class EncryptedStructureCodecTests
         var result = CreateSubject().Encode(structure);
 
         result.Should().BeSameAs(expectedBytes);
-        writer.Verify(w => w.Write(structure.Metadata), Times.Once);
+        writer.Verify(
+            w => w.Write(
+                It.Is<IDictionary<string, object>>(
+                    d => d.OrderBy(kv => kv.Key).SequenceEqual(structure.Metadata.OrderBy(kv => kv.Key)))),
+            Times.Once);
+    }
+
+    [Fact]
+    public void Encode_WritesMetadataKeysInAscendingOrdinalOrder()
+    {
+        var structure = Sample() with
+        {
+            Metadata = new Dictionary<string, object> { ["zulu"] = 1L, ["alpha"] = 2L }
+        };
+        var writer = new Mock<IPackStreamWriter>();
+
+        _packStreamMemorySerializer
+            .Setup(h => h.Serialize(_format, It.IsAny<Action<IPackStreamWriter>>()))
+            .Returns((MessageFormat _, Action<IPackStreamWriter> write) =>
+            {
+                write(writer.Object);
+                return Array.Empty<byte>();
+            });
+
+        CreateSubject().Encode(structure);
+
+        writer.Verify(
+            w => w.Write(
+                It.Is<IDictionary<string, object>>(d => d.Keys.SequenceEqual(new[] { "alpha", "zulu" }))),
+            Times.Once);
     }
 
     [Fact]

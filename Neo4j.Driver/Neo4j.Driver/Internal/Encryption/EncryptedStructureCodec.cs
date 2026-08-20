@@ -15,6 +15,8 @@
 
 #nullable enable
 
+using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Protocol;
 
@@ -50,8 +52,13 @@ internal class EncryptedStructureCodec : IEncryptedStructureCodec
                 writer.Write(structure.TypeName);
                 writer.Write(structure.TypeSerializationSchemeMajor);
                 writer.Write(structure.TypeSerializationSchemeMinor);
-                writer.Write(structure.Metadata);
+                writer.Write(SortMetadata(structure.Metadata));
             });
+    }
+
+    private static IDictionary<string, object> SortMetadata(IDictionary<string, object> metadata)
+    {
+        return new SortedDictionary<string, object>(metadata, StringComparer.Ordinal);
     }
 
     public EncryptedStructure Decode(byte[] bytes)
