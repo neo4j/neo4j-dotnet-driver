@@ -24,13 +24,19 @@ internal class EnvelopeMetadataBuilder : IEnvelopeMetadataBuilder
 {
     public IDictionary<string, object> Build(EnvelopeMetadata metadata)
     {
-        return new Dictionary<string, object>
+        var result = new Dictionary<string, object>
         {
             [EnvelopeMetadataKeys.KeyId] = metadata.KeyId,
-            [EnvelopeMetadataKeys.Iv] = metadata.Iv,
-            [EnvelopeMetadataKeys.Aad] = metadata.Aad,
-            [EnvelopeMetadataKeys.AadProtocolMajor] = (long)metadata.AadProtocolMajor,
-            [EnvelopeMetadataKeys.AadProtocolMinor] = (long)metadata.AadProtocolMinor
+            [EnvelopeMetadataKeys.Iv] = metadata.Iv
         };
+
+        if (metadata.Aad.Length > 0)
+        {
+            result[EnvelopeMetadataKeys.Aad] = metadata.Aad;
+            result[EnvelopeMetadataKeys.AadEncodingSchemeMajor] = (long)metadata.AadEncodingSchemeMajor;
+            result[EnvelopeMetadataKeys.AadEncodingSchemeMinor] = (long)metadata.AadEncodingSchemeMinor;
+        }
+
+        return result;
     }
 }

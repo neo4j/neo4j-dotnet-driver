@@ -74,25 +74,25 @@ public class BaselineCompatibilityGuardTests
     }
 
     [Fact]
-    public void EnsureAadProtocolCompatibility_NoSuppliedAad_IgnoresNewerPersistedBaseline()
+    public void EnsureAadEncodingSchemeCompatibility_NoSuppliedAad_IgnoresNewerPersistedBaseline()
     {
-        var act = () => _subject.EnsureAadProtocolCompatibility(null, Metadata(7, 0));
+        var act = () => _subject.EnsureAadEncodingSchemeCompatibility(null, Metadata(7, 0));
 
         act.Should().NotThrow();
     }
 
     [Fact]
-    public void EnsureAadProtocolCompatibility_SuppliedAadWithNewerPersistedBaseline_Throws()
+    public void EnsureAadEncodingSchemeCompatibility_SuppliedAadWithNewerPersistedBaseline_Throws()
     {
-        var act = () => _subject.EnsureAadProtocolCompatibility([0x99], Metadata(7, 0));
+        var act = () => _subject.EnsureAadEncodingSchemeCompatibility([0x99], Metadata(7, 0));
 
         act.Should().Throw<PropertyEncryptionException>();
     }
 
     [Fact]
-    public void EnsureAadProtocolCompatibility_SuppliedAadWithCurrentBaseline_DoesNotThrow()
+    public void EnsureAadEncodingSchemeCompatibility_SuppliedAadWithCurrentBaseline_DoesNotThrow()
     {
-        var act = () => _subject.EnsureAadProtocolCompatibility([0x99], Metadata(1, 0));
+        var act = () => _subject.EnsureAadEncodingSchemeCompatibility([0x99], Metadata(1, 0));
 
         act.Should().NotThrow();
     }

@@ -46,14 +46,14 @@ internal class BaselineCompatibilityGuard : IBaselineCompatibilityGuard
         return false;
     }
 
-    public void EnsureAadProtocolCompatibility(byte[]? suppliedAad, EnvelopeMetadata metadata)
+    public void EnsureAadEncodingSchemeCompatibility(byte[]? suppliedAad, EnvelopeMetadata metadata)
     {
         if (suppliedAad == null)
         {
             return;
         }
 
-        var aadBaseline = new BoltValueSerializationSchemeVersion(metadata.AadProtocolMajor, metadata.AadProtocolMinor);
+        var aadBaseline = new BoltValueSerializationSchemeVersion(metadata.AadEncodingSchemeMajor, metadata.AadEncodingSchemeMinor);
         if (aadBaseline > BoltValueSerializationSchemeVersion.Latest)
         {
             throw new PropertyEncryptionException(

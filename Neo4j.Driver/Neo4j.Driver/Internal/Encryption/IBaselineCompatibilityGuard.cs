@@ -25,5 +25,5 @@ internal interface IBaselineCompatibilityGuard
         EncryptedStructure structure,
         [NotNullWhen(true)] out UnsupportedType? unsupported);
 
-    void EnsureAadProtocolCompatibility(byte[]? suppliedAad, EnvelopeMetadata metadata);
+    void EnsureAadEncodingSchemeCompatibility(byte[]? suppliedAad, EnvelopeMetadata metadata);
 }

@@ -45,8 +45,24 @@ public class EnvelopeMetadataBuilderTests
 
         // integers must be written as long: that's what PackStream decoding hands back,
         // and the extractor requires the exact type
-        result["aad_protocol_major"].Should().Be(6L);
-        result["aad_protocol_minor"].Should().Be(0L);
+        result["aad_encoding_scheme_major"].Should().Be(6L);
+        result["aad_encoding_scheme_minor"].Should().Be(0L);
+    }
+
+    [Fact]
+    public void Build_OmitsAadAndEncodingSchemeFields_WhenAadIsEmpty()
+    {
+        var metadata = new EnvelopeMetadata(
+            "key-1",
+            new byte[] { 1, 2, 3 },
+            [],
+            6,
+            0,
+            new Dictionary<string, object>());
+
+        var result = _subject.Build(metadata);
+
+        result.Keys.Should().BeEquivalentTo("key_id", "iv");
     }
 
     [Fact]

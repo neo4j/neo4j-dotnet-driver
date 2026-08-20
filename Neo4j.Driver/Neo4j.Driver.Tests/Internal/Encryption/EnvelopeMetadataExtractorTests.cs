@@ -32,8 +32,8 @@ public class EnvelopeMetadataExtractorTests
         ["key_id"] = "key-1",
         ["iv"] = new byte[] { 1, 2, 3 },
         ["aad"] = new byte[] { 4, 5 },
-        ["aad_protocol_major"] = 6L,
-        ["aad_protocol_minor"] = 0L
+        ["aad_encoding_scheme_major"] = 6L,
+        ["aad_encoding_scheme_minor"] = 0L
     };
 
     [Fact]
@@ -44,22 +44,22 @@ public class EnvelopeMetadataExtractorTests
         result.KeyId.Should().Be("key-1");
         result.Iv.Should().Equal(1, 2, 3);
         result.Aad.Should().Equal(4, 5);
-        result.AadProtocolMajor.Should().Be(6);
-        result.AadProtocolMinor.Should().Be(0);
+        result.AadEncodingSchemeMajor.Should().Be(6);
+        result.AadEncodingSchemeMinor.Should().Be(0);
         result.EncapsulationOptions.Should().BeEmpty();
     }
 
     [Fact]
-    public void Extract_MissingAadProtocolVersion_DefaultsToLatestBaseline()
+    public void Extract_MissingAadEncodingScheme_DefaultsToLatestBaseline()
     {
         var metadata = ValidMetadata();
-        metadata.Remove("aad_protocol_major");
-        metadata.Remove("aad_protocol_minor");
+        metadata.Remove("aad_encoding_scheme_major");
+        metadata.Remove("aad_encoding_scheme_minor");
 
         var result = _subject.Extract(metadata);
 
-        result.AadProtocolMajor.Should().Be(1);
-        result.AadProtocolMinor.Should().Be(0);
+        result.AadEncodingSchemeMajor.Should().Be(1);
+        result.AadEncodingSchemeMinor.Should().Be(0);
     }
 
     [Fact]
@@ -96,14 +96,14 @@ public class EnvelopeMetadataExtractorTests
     }
 
     [Fact]
-    public void Extract_IntTypedAadProtocolVersion_Throws()
+    public void Extract_IntTypedAadEncodingScheme_Throws()
     {
         var metadata = ValidMetadata();
-        metadata["aad_protocol_major"] = 6;
+        metadata["aad_encoding_scheme_major"] = 6;
 
         var act = () => _subject.Extract(metadata);
 
-        act.Should().Throw<MetadataExtractionException>().WithMessage("*aad_protocol_major*");
+        act.Should().Throw<MetadataExtractionException>().WithMessage("*aad_encoding_scheme_major*");
     }
 
     [Fact]

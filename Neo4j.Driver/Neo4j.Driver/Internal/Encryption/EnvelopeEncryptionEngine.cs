@@ -26,8 +26,8 @@ namespace Neo4j.Driver.Internal.Encryption;
 [DriverAutoRegister(singleton: true)]
 internal class EnvelopeEncryptionEngine : IEncryptionEngine
 {
-    private static readonly int AadProtocolMajor = BoltValueSerializationSchemeVersion.Latest.Major;
-    private static readonly int AadProtocolMinor = BoltValueSerializationSchemeVersion.Latest.Minor;
+    private static readonly int AadEncodingSchemeMajor = BoltValueSerializationSchemeVersion.Latest.Major;
+    private static readonly int AadEncodingSchemeMinor = BoltValueSerializationSchemeVersion.Latest.Minor;
 
     private readonly IPlaintextCodec _plaintextCodec;
     private readonly IPropertyTypeInspector _propertyTypeInspector;
@@ -118,8 +118,8 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
             keyId,
             iv,
             aad,
-            AadProtocolMajor,
-            AadProtocolMinor,
+            AadEncodingSchemeMajor,
+            AadEncodingSchemeMinor,
             new Dictionary<string, object>());
 
         var metadata = _envelopeMetadataBuilder.Build(envelopeMetadata);
@@ -148,7 +148,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         }
 
         var metadata = _envelopeMetadataExtractor.Extract(structure.Metadata);
-        _baselineCompatibilityGuard.EnsureAadProtocolCompatibility(aad, metadata);
+        _baselineCompatibilityGuard.EnsureAadEncodingSchemeCompatibility(aad, metadata);
 
         var (_, dataKey) = await _envelopeDataKeyProvider
             .GetDataKeyAsync(profile, new KeyReference(metadata.KeyId, KeyReferenceType.Id), cancellationToken)

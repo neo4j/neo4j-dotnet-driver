@@ -22,7 +22,7 @@ internal static class EnvelopeMetadataKeys
     public const string KeyId = "key_id";
     public const string Iv = "iv";
     public const string Aad = "aad";
-    public const string AadProtocolMajor = "aad_protocol_major";
-    public const string AadProtocolMinor = "aad_protocol_minor";
+    public const string AadEncodingSchemeMajor = "aad_encoding_scheme_major";
+    public const string AadEncodingSchemeMinor = "aad_encoding_scheme_minor";
     public const string OptionsPrefix = "opt.";
 }

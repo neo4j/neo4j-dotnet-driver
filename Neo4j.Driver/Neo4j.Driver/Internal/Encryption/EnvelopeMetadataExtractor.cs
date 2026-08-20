@@ -25,8 +25,8 @@ namespace Neo4j.Driver.Internal.Encryption;
 [DriverAutoRegister(singleton: true)]
 internal class EnvelopeMetadataExtractor : IEnvelopeMetadataExtractor
 {
-    private static readonly long DefaultAadProtocolMajor = BoltValueSerializationSchemeVersion.Latest.Major;
-    private static readonly long DefaultAadProtocolMinor = BoltValueSerializationSchemeVersion.Latest.Minor;
+    private static readonly long DefaultAadEncodingSchemeMajor = BoltValueSerializationSchemeVersion.Latest.Major;
+    private static readonly long DefaultAadEncodingSchemeMinor = BoltValueSerializationSchemeVersion.Latest.Minor;
 
     public EnvelopeMetadata Extract(IDictionary<string, object> metadata)
     {
@@ -35,17 +35,23 @@ internal class EnvelopeMetadataExtractor : IEnvelopeMetadataExtractor
         var keyId = metadata.GetMandatoryValue<string>(EnvelopeMetadataKeys.KeyId, m => new MetadataExtractionException(m));
         var iv = metadata.GetMandatoryValue<byte[]>(EnvelopeMetadataKeys.Iv, m => new MetadataExtractionException(m));
         
-        var aadProtocolMajor = metadata.GetOptionalValue(
-            EnvelopeMetadataKeys.AadProtocolMajor,
-            DefaultAadProtocolMajor,
+        var aadEncodingSchemeMajor = metadata.GetOptionalValue(
+            EnvelopeMetadataKeys.AadEncodingSchemeMajor,
+            DefaultAadEncodingSchemeMajor,
             ExtractionError);
 
-        var aadProtocolMinor = metadata.GetOptionalValue(
-            EnvelopeMetadataKeys.AadProtocolMinor,
-            DefaultAadProtocolMinor,
+        var aadEncodingSchemeMinor = metadata.GetOptionalValue(
+            EnvelopeMetadataKeys.AadEncodingSchemeMinor,
+            DefaultAadEncodingSchemeMinor,
             ExtractionError);
 
-        return new EnvelopeMetadata(keyId, iv, aad, (int)aadProtocolMajor, (int)aadProtocolMinor, options);
+        return new EnvelopeMetadata(
+            keyId,
+            iv,
+            aad,
+            (int)aadEncodingSchemeMajor,
+            (int)aadEncodingSchemeMinor,
+            options);
 
         static Exception ExtractionError(string message)
         {
@@ -78,6 +84,6 @@ internal record EnvelopeMetadata(
     string KeyId,
     byte[] Iv,
     byte[] Aad,
-    int AadProtocolMajor,
-    int AadProtocolMinor,
+    int AadEncodingSchemeMajor,
+    int AadEncodingSchemeMinor,
     IDictionary<string, object> EncapsulationOptions);

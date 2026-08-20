@@ -212,7 +212,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         Freeze<IEnvelopeMetadataExtractor>().Setup(e => e.Extract(structureMetadata)).Returns(envelopeMetadata);
 
         Freeze<IBaselineCompatibilityGuard>()
-            .Setup(g => g.EnsureAadProtocolCompatibility(
+            .Setup(g => g.EnsureAadEncodingSchemeCompatibility(
                 It.Is<byte[]?>(a => a != null),
                 It.IsAny<EnvelopeMetadata>()))
             .Throws(new ClientException("engine passed a non-null AAD to the guard"));
@@ -296,7 +296,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             m.KeyId == keyId &&
             m.Iv.SequenceEqual(Iv) &&
             m.Aad.SequenceEqual(expectedAad) &&
-            m.AadProtocolMajor == 1 &&
-            m.AadProtocolMinor == 0);
+            m.AadEncodingSchemeMajor == 1 &&
+            m.AadEncodingSchemeMinor == 0);
     }
 }
