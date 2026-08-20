@@ -107,6 +107,36 @@ public class QueryApiErrorCheckerTests
         }
 
         [Fact]
+        public async Task ThrowsClientException_WhenStatusIs400_AndBodyContainsErrorCode()
+        {
+            const string responseBody = "test-response-body";
+            var errorBody = new QueryApiErrorChecker.ErrorResponseBody
+            {
+                Errors =
+                [
+                    new QueryApiErrorChecker.ErrorBody
+                    {
+                        Code = "Neo.ClientError.Statement.SyntaxError",
+                        Message = "Invalid input 'Invalid': expected ..."
+                    }
+                ]
+            };
+
+            var mockDeserializer = new Mock<IJsonDeserializer>();
+            mockDeserializer
+                .Setup(x => x.DeserializeAsync<QueryApiErrorChecker.ErrorResponseBody>(
+                    responseBody, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(errorBody);
+
+            var response = StringResponse(HttpStatusCode.BadRequest, responseBody);
+
+            await BuildChecker(mockDeserializer.Object)
+                .Invoking(x => x.EnsureSuccessAsync(response))
+                .Should().ThrowAsync<ClientException>()
+                .WithMessage("*Invalid input*");
+        }
+
+        [Fact]
         public async Task ThrowsServiceUnavailableException_WhenStatusIsUnexpected()
         {
             var response = new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);

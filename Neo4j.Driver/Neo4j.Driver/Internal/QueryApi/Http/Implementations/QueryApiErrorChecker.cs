@@ -38,37 +38,48 @@ internal class QueryApiErrorChecker : IQueryApiErrorChecker
 
     public async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken cancellationToken = default)
     {
+        if (response.StatusCode == HttpStatusCode.Accepted || response.StatusCode == HttpStatusCode.OK)
+        {
+            return;
+        }
+
+        var responseText = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        var first = await TryParseFirstErrorAsync(responseText, cancellationToken).ConfigureAwait(false);
+
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
-            ErrorResponseBody? parsed = null;
-            try
-            {
-                var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-                parsed = await _jsonDeserializer
-                    .DeserializeAsync<ErrorResponseBody>(json, cancellationToken)
-                    .ConfigureAwait(false);
-            }
-            catch
-            {
-                // If the body cannot be parsed, fall through to a generic auth exception.
-            }
-
-            var first = parsed?.Errors is { Length: > 0 } e ? e[0] : null;
             throw ErrorExtensions.ParseServerException(
                 new FailureMessage(
                     first?.Code ?? "Neo.ClientError.Security.Unauthorized",
                     first?.Message ?? response.ReasonPhrase ?? "Unauthorized"));
         }
 
-        if (response.StatusCode != HttpStatusCode.Accepted && response.StatusCode != HttpStatusCode.OK)
+        if (first is not null)
         {
-            var responseText = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            var method = response.RequestMessage?.Method;
-            var uri = response.RequestMessage?.RequestUri;
-            var message = $"HTTP {(int)response.StatusCode} {method} {uri}: {responseText}";
+            throw ErrorExtensions.ParseServerException(new FailureMessage(first.Code, first.Message));
+        }
 
-            _logger.LogDebug("{message}", message);
-            throw new ServiceUnavailableException(message);
+        var method = response.RequestMessage?.Method;
+        var uri = response.RequestMessage?.RequestUri;
+        var message = $"HTTP {(int)response.StatusCode} {method} {uri}: {responseText}";
+
+        _logger.LogDebug("{message}", message);
+        throw new ServiceUnavailableException(message);
+    }
+
+    private async Task<ErrorBody?> TryParseFirstErrorAsync(string responseText, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var parsed = await _jsonDeserializer
+                .DeserializeAsync<ErrorResponseBody>(responseText, cancellationToken)
+                .ConfigureAwait(false);
+
+            return parsed?.Errors is { Length: > 0 } e ? e[0] : null;
+        }
+        catch
+        {
+            return null;
         }
     }
 

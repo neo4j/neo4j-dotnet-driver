@@ -54,6 +54,5 @@ internal class QueryApiWriteCodecSelector : IQueryApiWriteCodecSelector
 
             _ => throw new InvalidOperationException("Unexpected codec selection state.")
         };
-
     }
 }
