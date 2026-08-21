@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Security;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Logging;
@@ -38,6 +39,13 @@ public class TrustManagerTests
         }
     }
 
+    private static X509Certificate2 SelfSignedCertificate()
+    {
+        using var key = RSA.Create(2048);
+        var request = new CertificateRequest("CN=example.test", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        return request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
+    }
+
     [Theory]
     [MemberData(nameof(AllTrustManagers))]
     public void ShouldRefusePeerThatPresentedNoCertificate(TrustManager trustManager, bool verifyHostname)
@@ -51,5 +59,52 @@ public class TrustManagerTests
             SslPolicyErrors.RemoteCertificateNotAvailable);
 
         trusted.Should().BeFalse($"verifyHostname: {verifyHostname}");
+    }
+
+    [Theory]
+    [MemberData(nameof(AllTrustManagers))]
+    public void ShouldRefuseCertificateAccompaniedByNotAvailableFlag(TrustManager trustManager, bool verifyHostname)
+    {
+        trustManager.Neo4JLogger = NullNeo4JLogger.Instance;
+        using var certificate = SelfSignedCertificate();
+
+        var trusted = trustManager.ValidateServerCertificate(
+            ServerUri,
+            certificate,
+            new X509Chain(),
+            SslPolicyErrors.RemoteCertificateNotAvailable);
+
+        trusted.Should().BeFalse($"verifyHostname: {verifyHostname}");
+    }
+
+    [Theory]
+    [MemberData(nameof(AllTrustManagers))]
+    public void ShouldRefuseMissingCertificateEvenWithoutPolicyErrors(TrustManager trustManager, bool verifyHostname)
+    {
+        trustManager.Neo4JLogger = NullNeo4JLogger.Instance;
+
+        var trusted = trustManager.ValidateServerCertificate(
+            ServerUri,
+            null,
+            new X509Chain(),
+            SslPolicyErrors.None);
+
+        trusted.Should().BeFalse($"verifyHostname: {verifyHostname}");
+    }
+
+    [Fact]
+    public void ShouldTrustPresentedCertificateWhenValidationIsDisabled()
+    {
+        var trustManager = TrustManager.CreateInsecure();
+        trustManager.Neo4JLogger = NullNeo4JLogger.Instance;
+        using var certificate = SelfSignedCertificate();
+
+        var trusted = trustManager.ValidateServerCertificate(
+            ServerUri,
+            certificate,
+            new X509Chain(),
+            SslPolicyErrors.None);
+
+        trusted.Should().BeTrue();
     }
 }
