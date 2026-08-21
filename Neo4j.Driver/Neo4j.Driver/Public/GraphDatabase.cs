@@ -152,7 +152,8 @@ public static class GraphDatabase
     /// used when creating a driver connecting to the Neo4j instance directly. The protocol <c>neo4j</c> should be used when
     /// creating a driver with built-in routing.
     /// </param>
-    /// <param name="authTokenManager">The <see cref="IAuthTokenManager"/> to use for authentication.</param>
+    /// <param name="authTokenManager">The <see cref="IAuthTokenManager"/> to use for authentication. It must serve
+/// a single identity; see <see cref="IAuthTokenManager"/> for why, and for how to connect as several users.</param>
     /// <returns>A new <see cref="IDriver"/> instance.</returns>
     public static IDriver Driver(Uri uri, IAuthTokenManager authTokenManager)
     {
@@ -187,7 +188,8 @@ public static class GraphDatabase
     /// used when creating a driver connecting to the Neo4j instance directly. The protocol <c>neo4j</c> should be used when
     /// creating a driver with built-in routing.
     /// </param>
-    /// <param name="authTokenManager">The <see cref="IAuthTokenManager"/> to use for authentication.</param>
+    /// <param name="authTokenManager">The <see cref="IAuthTokenManager"/> to use for authentication. It must serve
+/// a single identity; see <see cref="IAuthTokenManager"/> for why, and for how to connect as several users.</param>
     /// <param name="action">
     /// Specifies how to build a driver configuration <see cref="Config"/>, using
     /// <see cref="ConfigBuilder"/>. If set to <c>null</c>, then no modification will be carried out and the default driver
@@ -225,7 +227,8 @@ public static class GraphDatabase
     /// used when creating a driver connecting to the Neo4j instance directly. The protocol <c>neo4j</c> should be used when
     /// creating a driver with built-in routing.
     /// </param>
-    /// <param name="authTokenManager">The <see cref="IAuthTokenManager"/> to use for authentication.</param>
+    /// <param name="authTokenManager">The <see cref="IAuthTokenManager"/> to use for authentication. It must serve
+/// a single identity; see <see cref="IAuthTokenManager"/> for why, and for how to connect as several users.</param>
     /// <param name="action">
     /// Specifies how to build a driver configuration <see cref="Config"/>, using
     /// <see cref="ConfigBuilder"/>. If set to <c>null</c>, then no modification will be carried out and the default driver
