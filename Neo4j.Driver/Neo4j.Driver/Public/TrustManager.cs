@@ -41,7 +41,7 @@ public abstract class TrustManager
 {
     internal INeo4jLogger Neo4JLogger { get; set; }
 
-    internal bool HasNoCertificate(Uri uri, X509Certificate2 certificate, SslPolicyErrors sslPolicyErrors)
+    internal bool TryRejectMissingCertificate(Uri uri, X509Certificate2 certificate, SslPolicyErrors sslPolicyErrors)
     {
         if (certificate != null && !sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable))
         {
@@ -63,6 +63,13 @@ public abstract class TrustManager
     /// <value>false</value>
     /// otherwise
     /// </returns>
+    /// <remarks>
+    /// An implementation owns every precondition of its own decision, including the case where the peer presented
+    /// no certificate at all: <paramref name="certificate"/> is <see langword="null"/>, or
+    /// <paramref name="sslPolicyErrors"/> has <see cref="SslPolicyErrors.RemoteCertificateNotAvailable"/> set. Such a
+    /// peer must never be trusted, whatever the implementation's policy on certificates it can see, and callers of
+    /// this method are not required to screen it out first.
+    /// </remarks>
     public abstract bool ValidateServerCertificate(
         Uri uri,
         X509Certificate2 certificate,
@@ -70,7 +77,8 @@ public abstract class TrustManager
         SslPolicyErrors sslPolicyErrors);
 
     /// <summary>
-    /// Creates a trust manager that accepts any certificate without validation.
+    /// Creates a trust manager that accepts any certificate the peer presents, without validating it. A peer that
+    /// presents no certificate at all is still refused.
     /// </summary>
     /// <param name="verifyHostname">Whether to verify that the server hostname matches the certificate's subject.</param>
     /// <returns>An instance of <see cref="TrustManager"/>.</returns>

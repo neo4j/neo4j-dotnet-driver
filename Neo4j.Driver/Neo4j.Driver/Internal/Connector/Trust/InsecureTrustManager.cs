@@ -34,7 +34,7 @@ internal sealed class InsecureTrustManager : TrustManager
         X509Chain chain,
         SslPolicyErrors sslPolicyErrors)
     {
-        if (HasNoCertificate(uri, certificate, sslPolicyErrors))
+        if (TryRejectMissingCertificate(uri, certificate, sslPolicyErrors))
         {
             return false;
         }
