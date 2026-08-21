@@ -246,6 +246,36 @@ public class ConnectionPoolTests
         }
 
         [Fact]
+        public async Task ShouldKeepCountingConnectionWhileItIsBeingReleased()
+        {
+            var releaseReached = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var releaseMayFinish = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            var connectionMock = new Mock<IConnection>();
+            connectionMock.Setup(x => x.IsOpen).Returns(true);
+            connectionMock.SetupGet(x => x.SsrEnabled).Returns(false);
+
+            var pool = new ConnectionPool(
+                new MockedConnectionFactory(connectionMock.Object),
+                driverContext: TestDriverContext.MockContext,
+                validator: new BlockingReleaseValidator(releaseReached, releaseMayFinish));
+
+            var connection = await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
+            pool.NumberOfConnectionsWithSsrDisabled.Should().Be(1);
+
+            var release = connection.CloseAsync();
+            await releaseReached.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            pool.NumberOfConnectionsWithSsrDisabled.Should().Be(1);
+            pool.TotalNumberOfConnections.Should().Be(1);
+
+            releaseMayFinish.SetResult(true);
+            await release;
+
+            pool.NumberOfConnectionsWithSsrDisabled.Should().Be(1);
+        }
+
+        [Fact]
         public async Task ShouldAcquireFreshConnectionWhenIdleConnectionLivenessProbeHangs()
         {
             var deadConnection = new Mock<IPooledConnection>();
@@ -1901,6 +1931,29 @@ public class ConnectionPoolTests
     {
         public Task<bool> OnReleaseAsync(IPooledConnection connection) => Task.FromResult(true);
         public AcquireStatus GetConnectionLifetimeStatus(IPooledConnection connection) => AcquireStatus.RequiresLivenessProbe;
+    }
+
+    private sealed class BlockingReleaseValidator : IConnectionValidator
+    {
+        private readonly TaskCompletionSource _reached;
+        private readonly TaskCompletionSource<bool> _mayFinish;
+
+        public BlockingReleaseValidator(TaskCompletionSource reached, TaskCompletionSource<bool> mayFinish)
+        {
+            _reached = reached;
+            _mayFinish = mayFinish;
+        }
+
+        public Task<bool> OnReleaseAsync(IPooledConnection connection)
+        {
+            _reached.TrySetResult();
+            return _mayFinish.Task;
+        }
+
+        public AcquireStatus GetConnectionLifetimeStatus(IPooledConnection connection)
+        {
+            return AcquireStatus.Healthy;
+        }
     }
 
     private class TestConnectionValidator : IConnectionValidator

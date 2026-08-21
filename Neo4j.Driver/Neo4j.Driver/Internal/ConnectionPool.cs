@@ -52,6 +52,10 @@ internal sealed class ConnectionPool : IConnectionPool
 
     private readonly Uri _uri;
 
+    private readonly ConcurrentHashSet<IPooledConnection> _liveConnections = new();
+    private int _connectionsWithSsrDisabled;
+    private int _connectionsWithSsrEnabled;
+
     private int _poolSize;
 
     private ConnectionPoolStatus _poolStatus = Active;
@@ -113,9 +117,9 @@ internal sealed class ConnectionPool : IConnectionPool
     internal int PoolSize => Interlocked.CompareExchange(ref _poolSize, -1, -1);
     public int NumberOfInUseConnections => _inUseConnections.Count;
     public int NumberOfIdleConnections => _idleConnections.Count;
-    public int NumberOfConnectionsWithSsrEnabled => _inUseConnections.Concat(_idleConnections).Count(c => c.SsrEnabled);
-    public int NumberOfConnectionsWithSsrDisabled => _inUseConnections.Concat(_idleConnections).Count(c => !c.SsrEnabled);
-    public int TotalNumberOfConnections => _inUseConnections.Count + _idleConnections.Count;
+    public int NumberOfConnectionsWithSsrEnabled => _connectionsWithSsrEnabled;
+    public int NumberOfConnectionsWithSsrDisabled => _connectionsWithSsrDisabled;
+    public int TotalNumberOfConnections => _connectionsWithSsrDisabled + _connectionsWithSsrEnabled;
 
     public ConnectionPoolStatus Status
     {
@@ -356,6 +360,7 @@ internal sealed class ConnectionPool : IConnectionPool
                 .InitAsync(sessionConfig, cancellationToken)
                 .ConfigureAwait(false);
 
+            StartTrackingConnection(conn);
             _poolMetricsListener?.ConnectionCreated();
             return conn;
         }
@@ -396,6 +401,8 @@ internal sealed class ConnectionPool : IConnectionPool
             return;
         }
 
+        StopTrackingConnection(conn);
+
         _poolMetricsListener?.ConnectionClosing();
         try
         {
@@ -404,6 +411,40 @@ internal sealed class ConnectionPool : IConnectionPool
         finally
         {
             _poolMetricsListener?.ConnectionClosed();
+        }
+    }
+
+    private void StartTrackingConnection(IPooledConnection conn)
+    {
+        if (!_liveConnections.TryAdd(conn))
+        {
+            return;
+        }
+
+        if (conn.SsrEnabled)
+        {
+            Interlocked.Increment(ref _connectionsWithSsrEnabled);
+        }
+        else
+        {
+            Interlocked.Increment(ref _connectionsWithSsrDisabled);
+        }
+    }
+
+    private void StopTrackingConnection(IPooledConnection conn)
+    {
+        if (!_liveConnections.TryRemove(conn))
+        {
+            return;
+        }
+
+        if (conn.SsrEnabled)
+        {
+            Interlocked.Decrement(ref _connectionsWithSsrEnabled);
+        }
+        else
+        {
+            Interlocked.Decrement(ref _connectionsWithSsrDisabled);
         }
     }
 
