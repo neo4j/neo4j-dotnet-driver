@@ -281,28 +281,6 @@ internal sealed class ConnectionPool : IConnectionPool
         Interlocked.CompareExchange(ref _poolStatus, Active, Inactive);
     }
 
-    /// <inheritdoc />
-    public bool IsOnlyConnectionWithoutSsr(IConnection connection)
-    {
-        var allConnections = _inUseConnections.Concat(_idleConnections).ToArray();
-        if (allConnections.All(c => c != connection))
-        {
-            // the connection is not in the pool
-            return false;
-        }
-
-        // go through all connections in the pool and check if there is any connection that has SSR enabled
-        var ssrDisabledCount = 0;
-        var connectionFound = false;
-        foreach (var conn in allConnections)
-        {
-            ssrDisabledCount += conn.SsrEnabled ? 0 : 1;
-            connectionFound |= conn == connection;
-        }
-
-        return connectionFound && ssrDisabledCount == 1;
-    }
-
     public ValueTask DisposeAsync()
     {
         return new ValueTask(CloseAsync());
