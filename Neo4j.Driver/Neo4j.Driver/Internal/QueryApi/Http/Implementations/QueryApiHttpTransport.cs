@@ -29,6 +29,7 @@ internal class QueryApiHttpTransport : IQueryApiHttpTransport
     private readonly HttpClient _client;
     private readonly IQueryApiErrorChecker _errorChecker;
     private readonly ILogger _logger;
+    private bool _disposed;
 
     public QueryApiHttpTransport(IQueryApiErrorChecker errorChecker, ILogger logger)
     {
@@ -41,6 +42,13 @@ internal class QueryApiHttpTransport : IQueryApiHttpTransport
         HttpRequestMessage request,
         CancellationToken cancellationToken = default)
     {
+        if (_disposed)
+        {
+            throw new ObjectDisposedException(
+                nameof(QueryApiHttpTransport),
+                "Failed to acquire a new connection as the driver has already been disposed.");
+        }
+
         _logger.LogDebug("Sending {method} request to {uri}", request.Method, request.RequestUri);
         var response = await _client.SendAsync(request, cancellationToken).ConfigureAwait(false);
         _logger.LogDebug(
@@ -52,6 +60,7 @@ internal class QueryApiHttpTransport : IQueryApiHttpTransport
 
     public ValueTask DisposeAsync()
     {
+        _disposed = true;
         _client.Dispose();
         return ValueTask.CompletedTask;
     }
