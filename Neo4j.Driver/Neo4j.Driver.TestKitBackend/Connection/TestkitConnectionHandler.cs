@@ -18,6 +18,7 @@ using Autofac;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Logging;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Connection;
 
@@ -28,6 +29,7 @@ internal class TestkitConnectionHandler : ConnectionHandler
     private readonly Func<TextWriter, IConnectionOutput> _createOutput;
     private readonly IConnectionIdProvider _connectionIdProvider;
     private readonly ILoggingContextAccessor _loggingContextAccessor;
+    private readonly IObjectStoreAccessor _objectStoreAccessor;
     private readonly ILogger _logger;
 
     public TestkitConnectionHandler(
@@ -36,6 +38,7 @@ internal class TestkitConnectionHandler : ConnectionHandler
         Func<TextWriter, IConnectionOutput> createOutput,
         IConnectionIdProvider connectionIdProvider,
         ILoggingContextAccessor loggingContextAccessor,
+        IObjectStoreAccessor objectStoreAccessor,
         ILogger logger)
     {
         _rootScope = rootScope;
@@ -43,6 +46,7 @@ internal class TestkitConnectionHandler : ConnectionHandler
         _createOutput = createOutput;
         _connectionIdProvider = connectionIdProvider;
         _loggingContextAccessor = loggingContextAccessor;
+        _objectStoreAccessor = objectStoreAccessor;
         _logger = logger;
     }
 
@@ -65,6 +69,7 @@ internal class TestkitConnectionHandler : ConnectionHandler
 
         var loggingContext = scope.Resolve<ILoggingContext>();
         _loggingContextAccessor.Publish(loggingContext);
+        _objectStoreAccessor.Publish(scope.Resolve<IObjectStore>());
         loggingContext.Set("conn", connectionId);
         _logger.LogDebug("New connection {ConnectionId}", connectionId);
 

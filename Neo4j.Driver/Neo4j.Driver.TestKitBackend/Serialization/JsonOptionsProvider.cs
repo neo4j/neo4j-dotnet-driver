@@ -20,15 +20,15 @@ using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Serialization;
 
-[RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
+[RegistrationLifetime(RegistrationLifetime.Singleton)]
 internal class JsonOptionsProvider : IJsonOptionsProvider
 {
     private readonly JsonSerializerOptions _options;
-    private readonly IObjectStore _objectStore;
+    private readonly IObjectStoreAccessor _objectStoreAccessor;
 
-    public JsonOptionsProvider(IProtocolJsonConverter[] converters, IObjectStore objectStore)
+    public JsonOptionsProvider(IProtocolJsonConverter[] converters, IObjectStoreAccessor objectStoreAccessor)
     {
-        _objectStore = objectStore;
+        _objectStoreAccessor = objectStoreAccessor;
         _options = new JsonSerializerOptions(JsonSerializerOptions.Strict)
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -79,7 +79,7 @@ internal class JsonOptionsProvider : IJsonOptionsProvider
             {
                 property.CustomConverter = (JsonConverter)Activator.CreateInstance(
                     typeof(StoredObjectConverter<>).MakeGenericType(property.PropertyType),
-                    _objectStore)!;
+                    _objectStoreAccessor)!;
             }
         }
     }

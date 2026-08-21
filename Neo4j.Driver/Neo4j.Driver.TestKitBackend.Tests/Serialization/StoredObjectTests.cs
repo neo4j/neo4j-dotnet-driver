@@ -50,7 +50,7 @@ public class StoredObjectTests
         public required IFakeThing Thing { get; init; }
     }
 
-    private readonly Mock<IObjectStore> _objectStoreMock = new();
+    private readonly Mock<IObjectStoreAccessor> _objectStoreMock = new();
     private readonly IFakeThing _thing = Mock.Of<IFakeThing>();
 
     private IMessageSerializer Serializer()
@@ -62,7 +62,10 @@ public class StoredObjectTests
         typeMapMock.Setup(m => m.GetTypeByName("Renamed")).Returns(typeof(RenamedRequest));
 
         var envelopeConverter = new EnvelopeConverter(typeMapMock.Object, new StoredObjectFieldTransformer());
-        return new MessageSerializer(new JsonOptionsProvider([envelopeConverter], _objectStoreMock.Object));
+        return new MessageSerializer(
+            new JsonOptionsProvider(
+                [envelopeConverter],
+                _objectStoreMock.Object));
     }
 
     private void StoreThing(string id)

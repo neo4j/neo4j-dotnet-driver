@@ -43,7 +43,7 @@ public class AuthorizationTokenTests
     [Fact]
     public void Wire_data_without_principal_deserializes_with_a_null_principal()
     {
-        var realOptions = new JsonOptionsProvider([], Mock.Of<IObjectStore>()).GetOptions();
+        var realOptions = new JsonOptionsProvider([], Mock.Of<IObjectStoreAccessor>()).GetOptions();
 
         var token = JsonSerializer.Deserialize<AuthorizationToken>(
             """{"scheme":"kerberos","credentials":"QmFuYW5hIQ=="}""",

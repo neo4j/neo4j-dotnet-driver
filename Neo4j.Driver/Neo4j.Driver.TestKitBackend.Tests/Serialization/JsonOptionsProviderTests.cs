@@ -30,7 +30,7 @@ public class JsonOptionsProviderTests
     public void GetOptions_applies_the_conventions_and_adds_the_injected_converters()
     {
         var converter = new SampleConverter();
-        var provider = new JsonOptionsProvider([converter], Mock.Of<IObjectStore>());
+        var provider = new JsonOptionsProvider([converter], Mock.Of<IObjectStoreAccessor>());
 
         var options = provider.GetOptions();
 
@@ -50,11 +50,13 @@ public class JsonOptionsProviderTests
 
     public class RealMessageTypesUnderTheStrictBasePreset
     {
-        private readonly Mock<IObjectStore> _objectStoreMock = new();
+        private readonly Mock<IObjectStoreAccessor> _objectStoreMock = new();
 
         private JsonSerializerOptions RealOptions()
         {
-            return new JsonOptionsProvider([new OptionalConverterFactory()], _objectStoreMock.Object)
+            return new JsonOptionsProvider(
+                [new OptionalConverterFactory()],
+                _objectStoreMock.Object)
                 .GetOptions();
         }
 

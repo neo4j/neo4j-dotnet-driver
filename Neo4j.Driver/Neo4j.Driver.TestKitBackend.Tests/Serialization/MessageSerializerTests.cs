@@ -35,7 +35,7 @@ public class MessageSerializerTests
         _autoMocker.Use<IJsonOptionsProvider>(
             new JsonOptionsProvider(
                 [new EnvelopeConverter(_autoMocker.Get<IMessageTypeMap>(), new StoredObjectFieldTransformer())],
-                Mock.Of<IObjectStore>()));
+                Mock.Of<IObjectStoreAccessor>()));
         return _autoMocker.CreateInstance<MessageSerializer>();
     }
 

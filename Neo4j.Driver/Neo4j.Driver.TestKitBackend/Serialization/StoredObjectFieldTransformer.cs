@@ -25,6 +25,7 @@ internal interface IStoredObjectFieldTransformer
     string Transform(string dataJson, Type targetType);
 }
 
+[RegistrationLifetime(RegistrationLifetime.Singleton)]
 internal class StoredObjectFieldTransformer : IStoredObjectFieldTransformer
 {
     private record HandleField(string PlaceholderName, string IdFieldName, bool KeepIdField);

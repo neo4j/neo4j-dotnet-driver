@@ -43,7 +43,7 @@ public class BackendModuleTests
     }
 
     [Fact]
-    public void Json_options_in_a_connection_scope_resolve_handles_stored_through_that_scopes_objectStore()
+    public void Json_options_resolve_handles_through_the_published_connection_objectStore()
     {
         var container = BuildContainer();
         using var scope =
@@ -51,11 +51,37 @@ public class BackendModuleTests
 
         var thing = new Thing();
         var id = scope.Resolve<IObjectStore>().Store(thing);
+        scope.Resolve<IObjectStoreAccessor>().Publish(scope.Resolve<IObjectStore>());
         var options = scope.Resolve<IJsonOptionsProvider>().GetOptions();
 
         var request = JsonSerializer.Deserialize<Request>($$"""{"thing":"{{id}}"}""", options);
 
         request!.Thing.Should().BeSameAs(thing);
+    }
+
+    [Fact]
+    public void Json_options_are_built_once_and_shared_across_connection_scopes()
+    {
+        var container = BuildContainer();
+        Action<ContainerBuilder> withLogging = b =>
+            b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory());
+
+        using var scopeA = container.BeginLifetimeScope(withLogging);
+        using var scopeB = container.BeginLifetimeScope(withLogging);
+
+        scopeA.Resolve<IJsonOptionsProvider>().GetOptions()
+            .Should().BeSameAs(scopeB.Resolve<IJsonOptionsProvider>().GetOptions());
+    }
+
+    [Fact]
+    public void Stored_object_field_transformer_resolves_to_one_instance_across_connection_scopes()
+    {
+        var container = BuildContainer();
+        using var scopeA = container.BeginLifetimeScope();
+        using var scopeB = container.BeginLifetimeScope();
+
+        scopeA.Resolve<IStoredObjectFieldTransformer>()
+            .Should().BeSameAs(scopeB.Resolve<IStoredObjectFieldTransformer>());
     }
 
     [Fact]
@@ -212,6 +238,7 @@ public class BackendModuleTests
         using var scopeB = container.BeginLifetimeScope(withLogging);
 
         var id = scopeA.Resolve<IObjectStore>().Store(new Thing());
+        scopeB.Resolve<IObjectStoreAccessor>().Publish(scopeB.Resolve<IObjectStore>());
         var options = scopeB.Resolve<IJsonOptionsProvider>().GetOptions();
 
         var act = () => JsonSerializer.Deserialize<Request>($$"""{"thing":"{{id}}"}""", options);
