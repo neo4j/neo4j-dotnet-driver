@@ -58,13 +58,20 @@ public class HomeDbCacheKeyProviderTests
     }
 
     [Fact]
-    public void ShouldPreferSessionLevelAuthTokenOverDriverLevelAuthToken()
+    public void ShouldPreferImpersonatedUserOverSessionLevelAuthToken()
     {
-        var sessionConfig = SessionConfig.Builder.WithAuthToken(AuthTokens.Basic("alice", "alicepw")).Build();
+        var sessionToken = AuthTokens.Basic("bob", "bobpw");
+        var bothConfig = SessionConfig.Builder
+            .WithImpersonatedUser("alice")
+            .WithAuthToken(sessionToken)
+            .Build();
 
-        var withDriverToken = HomeDbCacheKeyProvider.GetCacheKey(AuthTokens.Basic("bob", "bobpw"), sessionConfig);
-        var withoutDriverToken = HomeDbCacheKeyProvider.GetCacheKey(null, sessionConfig);
+        var key = HomeDbCacheKeyProvider.GetCacheKey(null, bothConfig);
 
-        withDriverToken.Should().Be(withoutDriverToken);
+        var impersonationOnly = SessionConfig.Builder.WithImpersonatedUser("alice").Build();
+        var sessionTokenOnly = SessionConfig.Builder.WithAuthToken(sessionToken).Build();
+
+        key.Should().Be(HomeDbCacheKeyProvider.GetCacheKey(null, impersonationOnly));
+        key.Should().NotBe(HomeDbCacheKeyProvider.GetCacheKey(null, sessionTokenOnly));
     }
 }
