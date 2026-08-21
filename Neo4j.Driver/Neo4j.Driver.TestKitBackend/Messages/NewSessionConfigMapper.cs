@@ -13,9 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Reflection;
-using System.Runtime.ExceptionServices;
-
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal interface INewSessionConfigMapper
@@ -37,10 +34,14 @@ internal class NewSessionConfigMapper : INewSessionConfigMapper
     ];
 
     private readonly INotificationsMapper _notificationsMapper;
+    private readonly IRemainingPropertiesMapper _remainingPropertiesMapper;
 
-    public NewSessionConfigMapper(INotificationsMapper notificationsMapper)
+    public NewSessionConfigMapper(
+        INotificationsMapper notificationsMapper,
+        IRemainingPropertiesMapper remainingPropertiesMapper)
     {
         _notificationsMapper = notificationsMapper;
+        _remainingPropertiesMapper = remainingPropertiesMapper;
     }
 
     public void Apply(NewSessionRequest request, ISessionConfigBuilder builder)
@@ -50,7 +51,7 @@ internal class NewSessionConfigMapper : INewSessionConfigMapper
         ApplyAuthorizationToken(request, builder);
         ApplyNotifications(request, builder);
         ApplyBookmarkManager(request, builder);
-        ApplyRemainingProperties(request, builder);
+        _remainingPropertiesMapper.Apply(request, builder, HandledExplicitly);
     }
 
     private static void ApplyBookmarkManager(NewSessionRequest request, ISessionConfigBuilder builder)
@@ -91,34 +92,4 @@ internal class NewSessionConfigMapper : INewSessionConfigMapper
             (severity, categories) => builder.WithNotifications(severity, categories));
     }
 
-    private static void ApplyRemainingProperties(NewSessionRequest request, ISessionConfigBuilder builder)
-    {
-        foreach (var property in request.GetType().GetProperties())
-        {
-            if (HandledExplicitly.Contains(property.Name))
-            {
-                continue;
-            }
-
-            var value = property.GetValue(request);
-            if (value is null)
-            {
-                continue;
-            }
-
-            var methodName = "With" + property.Name;
-            var method = typeof(ISessionConfigBuilder).GetMethod(methodName) ??
-                throw new InvalidOperationException(
-                    $"No {methodName} method found on {nameof(ISessionConfigBuilder)} for {property.Name}.");
-
-            try
-            {
-                method.Invoke(builder, [value]);
-            }
-            catch (TargetInvocationException e) when (e.InnerException is not null)
-            {
-                ExceptionDispatchInfo.Capture(e.InnerException).Throw();
-            }
-        }
-    }
 }

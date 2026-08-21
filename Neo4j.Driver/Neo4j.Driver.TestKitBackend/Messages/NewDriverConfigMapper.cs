@@ -13,8 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Reflection;
-using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.Configuration;
 using Neo4j.Driver.TestKitBackend.Certificates;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
@@ -51,19 +49,22 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
     private readonly IServerAddressResolver _resolver;
     private readonly IConfiguration _configuration;
     private readonly INotificationsMapper _notificationsMapper;
+    private readonly IRemainingPropertiesMapper _remainingPropertiesMapper;
 
     public NewDriverConfigMapper(
         ICertificateLoader certificateLoader,
         IObjectStore objectStore,
         IServerAddressResolver resolver,
         IConfiguration configuration,
-        INotificationsMapper notificationsMapper)
+        INotificationsMapper notificationsMapper,
+        IRemainingPropertiesMapper remainingPropertiesMapper)
     {
         _certificateLoader = certificateLoader;
         _objectStore = objectStore;
         _resolver = resolver;
         _configuration = configuration;
         _notificationsMapper = notificationsMapper;
+        _remainingPropertiesMapper = remainingPropertiesMapper;
     }
 
     public void Apply(NewDriverRequest request, IConfigBuilder builder)
@@ -76,7 +77,7 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
         ApplyTrustedCertificates(request, builder);
         ApplyNotifications(request, builder);
         ApplyClientCertificate(request, builder);
-        ApplyRemainingProperties(request, builder);
+        _remainingPropertiesMapper.Apply(request, builder, HandledExplicitly);
     }
 
     private void ApplyResolver(NewDriverRequest request, IConfigBuilder builder)
@@ -173,37 +174,4 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
             (severity, categories) => builder.WithNotifications(severity, categories));
     }
 
-    private static void ApplyRemainingProperties(NewDriverRequest request, IConfigBuilder builder)
-    {
-        foreach (var property in request.GetType().GetProperties())
-        {
-            if (HandledExplicitly.Contains(property.Name))
-            {
-                continue;
-            }
-
-            var value = property.GetValue(request);
-            if (value is null)
-            {
-                continue;
-            }
-
-            var (methodName, argument) = property.Name.EndsWith("Ms", StringComparison.Ordinal)
-                ? ("With" + property.Name[..^2], (object)TimeSpan.FromMilliseconds((long)value))
-                : ("With" + property.Name, value);
-
-            var method = typeof(IConfigBuilder).GetMethod(methodName) ??
-                throw new InvalidOperationException(
-                    $"No {methodName} method found on {nameof(IConfigBuilder)} for {property.Name}.");
-
-            try
-            {
-                method.Invoke(builder, [argument]);
-            }
-            catch (TargetInvocationException e) when (e.InnerException is not null)
-            {
-                ExceptionDispatchInfo.Capture(e.InnerException).Throw();
-            }
-        }
-    }
 }
