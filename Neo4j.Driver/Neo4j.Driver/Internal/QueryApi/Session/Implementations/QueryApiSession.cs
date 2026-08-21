@@ -32,6 +32,7 @@ internal class QueryApiSession : IInternalAsyncSession
     private readonly IQueryApiTransactionFactory _transactionFactory;
 
     private bool _closed;
+    private IResultCursor? _lastCursor;
     private IInternalAsyncTransaction? _openTransaction;
 
     public QueryApiSession(
@@ -56,13 +57,15 @@ internal class QueryApiSession : IInternalAsyncSession
 
     public event AsyncEventHandler? Disposed;
 
-    public Task<IResultCursor> RunAsync(
+    public async Task<IResultCursor> RunAsync(
         Query query,
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult)
     {
         _logger.LogDebug("Session auto-commit: {query}", query.Text);
-        return _autoCommitRunner.RunAsync(query);
+        var cursor = await _autoCommitRunner.RunAsync(query).ConfigureAwait(false);
+        _lastCursor = cursor;
+        return cursor;
     }
 
     public Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action)
@@ -217,6 +220,11 @@ internal class QueryApiSession : IInternalAsyncSession
         }
 
         _closed = true;
+        if (_lastCursor is not null)
+        {
+            await _lastCursor.ConsumeAsync().ConfigureAwait(false);
+        }
+
         await Disposed.FireAsync().ConfigureAwait(false);
     }
 

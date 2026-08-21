@@ -48,6 +48,24 @@ public class QueryApiSessionTests
     }
 
     [Fact]
+    public async Task DisposeAsync_ConsumesCursorFromLastRunAsync()
+    {
+        var query = new Query("RETURN 1");
+        var cursor = new Mock<IResultCursor>();
+
+        _fixture.Freeze<Mock<IAutoCommitRunner>>()
+            .Setup(r => r.RunAsync(query, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(cursor.Object);
+
+        var sut = _fixture.Create<QueryApiSession>();
+        await sut.RunAsync(query, null!, false);
+
+        await sut.DisposeAsync();
+
+        cursor.Verify(c => c.ConsumeAsync(), Times.Once);
+    }
+
+    [Fact]
     public async Task BeginTransactionAsync_ReturnsTransactionFromFactory()
     {
         var tx = Mock.Of<IInternalAsyncTransaction>();
