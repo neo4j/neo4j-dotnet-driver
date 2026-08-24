@@ -71,7 +71,7 @@ public class ProtocolEnvelopeTests
 
     private static JsonSerializerOptions RealOptions()
     {
-        return new JsonOptionsProvider([], Mock.Of<IObjectStoreAccessor>()).GetOptions();
+        return new JsonOptionsProvider([], Mock.Of<IObjectStore>()).GetOptions();
     }
 
     private const string AuthEnvelope =

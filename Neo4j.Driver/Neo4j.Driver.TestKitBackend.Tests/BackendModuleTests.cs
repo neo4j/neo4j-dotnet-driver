@@ -35,23 +35,22 @@ namespace Neo4j.Driver.TestKitBackend.Tests;
 
 public class BackendModuleTests
 {
-    private static IContainer BuildContainer()
+    private static IContainer BuildContainer(Action<ContainerBuilder>? configure = null)
     {
         var builder = new ContainerBuilder();
         builder.RegisterModule<BackendModule>();
+        configure?.Invoke(builder);
         return builder.Build();
     }
 
     [Fact]
-    public void Json_options_resolve_handles_through_the_published_connection_objectStore()
+    public void Json_options_resolve_handles_through_the_singleton_objectStore()
     {
-        var container = BuildContainer();
-        using var scope =
-            container.BeginLifetimeScope(b => b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory()));
+        var container = BuildContainer(b => b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory()));
+        using var scope = container.BeginLifetimeScope();
 
         var thing = new Thing();
         var id = scope.Resolve<IObjectStore>().Store(thing);
-        scope.Resolve<IObjectStoreAccessor>().Publish(scope.Resolve<IObjectStore>());
         var options = scope.Resolve<IJsonOptionsProvider>().GetOptions();
 
         var request = JsonSerializer.Deserialize<Request>($$"""{"thing":"{{id}}"}""", options);
@@ -62,12 +61,10 @@ public class BackendModuleTests
     [Fact]
     public void Json_options_are_built_once_and_shared_across_connection_scopes()
     {
-        var container = BuildContainer();
-        Action<ContainerBuilder> withLogging = b =>
-            b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory());
+        var container = BuildContainer(b => b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory()));
 
-        using var scopeA = container.BeginLifetimeScope(withLogging);
-        using var scopeB = container.BeginLifetimeScope(withLogging);
+        using var scopeA = container.BeginLifetimeScope();
+        using var scopeB = container.BeginLifetimeScope();
 
         scopeA.Resolve<IJsonOptionsProvider>().GetOptions()
             .Should().BeSameAs(scopeB.Resolve<IJsonOptionsProvider>().GetOptions());
@@ -87,15 +84,15 @@ public class BackendModuleTests
     [Fact]
     public void Every_message_handler_resolves_keyed_by_its_message_type()
     {
-        var container = BuildContainer();
-
-        using var scope = container.BeginLifetimeScope(b =>
+        var container = BuildContainer(b =>
         {
             b.RegisterInstance(Mock.Of<IConnectionOutput>()).As<IConnectionOutput>();
             b.RegisterInstance(Mock.Of<IConnectionInput>()).As<IConnectionInput>();
             b.RegisterInstance(new TestOutputLoggerFactory()).As<ILoggerFactory>();
             b.RegisterInstance(new ConfigurationBuilder().Build()).As<IConfiguration>();
         });
+
+        using var scope = container.BeginLifetimeScope();
 
         var handlerTypes = typeof(BackendModule).Assembly.GetTypes()
             .Where(t => t is { IsClass: true, IsAbstract: false } && t.IsAssignableTo(typeof(IMessageHandler)))
@@ -127,16 +124,16 @@ public class BackendModuleTests
     [Fact]
     public void Classes_injecting_a_plain_ILogger_get_one_categorised_by_their_own_type()
     {
-        var container = BuildContainer();
         var factory = new Mock<ILoggerFactory>();
         factory.Setup(f => f.CreateLogger(It.IsAny<string>())).Returns(NullLogger.Instance);
-        using var scope = container.BeginLifetimeScope(b =>
+        var container = BuildContainer(b =>
         {
             b.RegisterInstance(Mock.Of<IConnectionOutput>()).As<IConnectionOutput>();
             b.RegisterInstance(Mock.Of<IConnectionInput>()).As<IConnectionInput>();
             b.RegisterInstance(factory.Object).As<ILoggerFactory>();
             b.RegisterInstance(new ConfigurationBuilder().Build()).As<IConfiguration>();
         });
+        using var scope = container.BeginLifetimeScope();
 
         scope.Resolve<IIndex<Type, IMessageHandler>>().TryGetValue(typeof(NewDriverRequest), out _);
 
@@ -145,16 +142,18 @@ public class BackendModuleTests
     }
 
     [Fact]
-    public async Task A_stored_logging_disposable_logs_exactly_once_when_the_scope_closes()
+    public async Task A_stored_logging_disposable_logs_exactly_once_when_the_store_is_cleared()
     {
-        var container = BuildContainer();
         var loggerFactory = new CountingLoggerFactory();
-        var scope = container.BeginLifetimeScope(b => b.RegisterInstance<ILoggerFactory>(loggerFactory));
+        var container = BuildContainer(b => b.RegisterInstance<ILoggerFactory>(loggerFactory));
+        var scope = container.BeginLifetimeScope();
 
         var creator = scope.Resolve<LoggingDisposableCreator>();
         var endTestLogger = creator("Test closedown", "END TEST marker");
-        scope.Resolve<IObjectStore>().Store(endTestLogger);
+        var store = scope.Resolve<IObjectStore>();
+        store.Store(endTestLogger);
 
+        await store.ClearAsync();
         await scope.DisposeAsync();
 
         loggerFactory.MessageCount("END TEST marker").Should().Be(1);
@@ -228,18 +227,25 @@ public class BackendModuleTests
     }
 
     [Fact]
-    public void Handles_stored_in_one_connection_scope_do_not_resolve_in_another()
+    public void Object_store_resolves_to_one_instance_across_connection_scopes()
     {
-        var container = BuildContainer();
-        Action<ContainerBuilder> withLogging = b =>
-            b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory());
+        var container = BuildContainer(b => b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory()));
+        using var scopeA = container.BeginLifetimeScope();
+        using var scopeB = container.BeginLifetimeScope();
 
-        using var scopeA = container.BeginLifetimeScope(withLogging);
-        using var scopeB = container.BeginLifetimeScope(withLogging);
+        scopeA.Resolve<IObjectStore>().Should().BeSameAs(scopeB.Resolve<IObjectStore>());
+    }
 
-        var id = scopeA.Resolve<IObjectStore>().Store(new Thing());
-        scopeB.Resolve<IObjectStoreAccessor>().Publish(scopeB.Resolve<IObjectStore>());
-        var options = scopeB.Resolve<IJsonOptionsProvider>().GetOptions();
+    [Fact]
+    public async Task Handles_stored_before_a_clear_do_not_resolve_after_it()
+    {
+        var container = BuildContainer(b => b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory()));
+        using var scope = container.BeginLifetimeScope();
+
+        var store = scope.Resolve<IObjectStore>();
+        var id = store.Store(new Thing());
+        await store.ClearAsync();
+        var options = scope.Resolve<IJsonOptionsProvider>().GetOptions();
 
         var act = () => JsonSerializer.Deserialize<Request>($$"""{"thing":"{{id}}"}""", options);
 
@@ -258,9 +264,8 @@ public class BackendModuleTests
     [Fact]
     public void Json_options_provider_resolves_to_the_same_instance_within_a_connection_scope()
     {
-        var container = BuildContainer();
-        using var scope =
-            container.BeginLifetimeScope(b => b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory()));
+        var container = BuildContainer(b => b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory()));
+        using var scope = container.BeginLifetimeScope();
 
         scope.Resolve<IJsonOptionsProvider>().Should().BeSameAs(scope.Resolve<IJsonOptionsProvider>());
     }
@@ -268,9 +273,8 @@ public class BackendModuleTests
     [Fact]
     public void Message_serializer_resolves_to_the_same_instance_within_a_connection_scope()
     {
-        var container = BuildContainer();
-        using var scope =
-            container.BeginLifetimeScope(b => b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory()));
+        var container = BuildContainer(b => b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory()));
+        using var scope = container.BeginLifetimeScope();
 
         scope.Resolve<IMessageSerializer>().Should().BeSameAs(scope.Resolve<IMessageSerializer>());
     }
@@ -278,12 +282,12 @@ public class BackendModuleTests
     [Fact]
     public void Response_writer_resolves_to_the_same_instance_within_a_connection_scope()
     {
-        var container = BuildContainer();
-        using var scope = container.BeginLifetimeScope(b =>
+        var container = BuildContainer(b =>
         {
             b.RegisterInstance(Mock.Of<IConnectionOutput>()).As<IConnectionOutput>();
             b.RegisterInstance(new TestOutputLoggerFactory()).As<ILoggerFactory>();
         });
+        using var scope = container.BeginLifetimeScope();
 
         scope.Resolve<IResponseWriter>().Should().BeSameAs(scope.Resolve<IResponseWriter>());
     }

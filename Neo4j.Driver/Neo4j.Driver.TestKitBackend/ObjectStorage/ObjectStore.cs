@@ -18,10 +18,10 @@ using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.ObjectStorage;
 
-[RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
+[RegistrationLifetime(RegistrationLifetime.Singleton)]
 internal class ObjectStore : IObjectStore, IAsyncDisposable
 {
-    private readonly OrderedDictionary<string, object> _objects = [];
+    private OrderedDictionary<string, object> _objects = [];
     private readonly Lock _lock = new();
     private readonly ILogger _logger;
     private int _nextId;
@@ -48,10 +48,10 @@ internal class ObjectStore : IObjectStore, IAsyncDisposable
 
     public T Get<T>(string id) where T : notnull
     {
-        object obj;
+        object? obj;
         lock (_lock)
         {
-            if (!_objects.TryGetValue(id, out obj!))
+            if (!_objects.TryGetValue(id, out obj))
             {
                 throw new TestKitProtocolException($"No object is stored with id '{id}'.");
             }
@@ -76,14 +76,15 @@ internal class ObjectStore : IObjectStore, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        await ClearAsync();
+    }
+
+    public async Task ClearAsync()
+    {
         List<object> toDispose;
         lock (_lock)
         {
-            toDispose = new List<object>(_objects.Count);
-            for (var i = _objects.Count - 1; i >= 0; i--)
-            {
-                toDispose.Add(_objects.GetAt(i).Value);
-            }
+            toDispose = [.._objects.Values.Reverse()];
         }
 
         foreach (var obj in toDispose)
@@ -110,7 +111,7 @@ internal class ObjectStore : IObjectStore, IAsyncDisposable
 
         lock (_lock)
         {
-            _objects.Clear();
+            _objects = new OrderedDictionary<string, object>();
         }
     }
 }

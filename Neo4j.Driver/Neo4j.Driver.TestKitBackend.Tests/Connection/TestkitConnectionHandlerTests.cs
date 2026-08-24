@@ -20,7 +20,6 @@ using Microsoft.AspNetCore.Connections;
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Logging;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Xunit;
 
@@ -55,7 +54,6 @@ public class TestkitConnectionHandlerTests
     {
         var builder = new ContainerBuilder();
         builder.RegisterInstance(new LoggingContext()).As<ILoggingContext>();
-        builder.RegisterInstance(_autoMocker.Get<IObjectStore>()).As<IObjectStore>();
         builder.RegisterInstance(_autoMocker.Get<IMessageLoop>()).As<IMessageLoop>();
         return builder.Build();
     }

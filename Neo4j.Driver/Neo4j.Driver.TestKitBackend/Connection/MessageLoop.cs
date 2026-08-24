@@ -18,6 +18,7 @@ using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Messages;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Serialization;
 
 namespace Neo4j.Driver.TestKitBackend.Connection;
@@ -31,6 +32,7 @@ internal class MessageLoop : IMessageLoop
     private readonly IDriverErrorMapper _driverErrorMapper;
     private readonly IExceptionOriginClassifier _originClassifier;
     private readonly IExpectationStore _expectationStore;
+    private readonly IObjectStore _objectStore;
     private readonly ILogger _logger;
 
     internal TimeSpan HandlerDrainTimeout { get; set; } = TimeSpan.FromSeconds(10);
@@ -43,6 +45,7 @@ internal class MessageLoop : IMessageLoop
         IDriverErrorMapper driverErrorMapper,
         IExceptionOriginClassifier originClassifier,
         IExpectationStore expectationStore,
+        IObjectStore objectStore,
         ILogger logger)
     {
         _input = input;
@@ -52,6 +55,7 @@ internal class MessageLoop : IMessageLoop
         _driverErrorMapper = driverErrorMapper;
         _originClassifier = originClassifier;
         _expectationStore = expectationStore;
+        _objectStore = objectStore;
         _logger = logger;
     }
 
@@ -96,6 +100,7 @@ internal class MessageLoop : IMessageLoop
         finally
         {
             _expectationStore.CancelAll();
+            await _objectStore.ClearAsync();
             try
             {
                 await Task.WhenAll(handlerTasks).WaitAsync(HandlerDrainTimeout);

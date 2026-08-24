@@ -94,7 +94,7 @@ The design rests on the following pieces:
   For an incoming request, the name is looked up in a name-to-type map built by reflection.
   For an outgoing response, the type name has its `Request` or `Response` suffix stripped to produce the name testkit expects; for example, `DriverResponse` becomes `"Driver"`, which also avoids any collision with the driver's own `Driver` type.
 - **Handles are declared by shape and resolved during deserialization.**
-  A message declares what it needs from the per-connection object store: a `string DriverId` property binds the wire field directly, a `[StoredObject] IDriver Driver` property resolves the stored object, and a message that needs both declares both, fed from the one wire field.
+  A message declares what it needs from the object store: a `string DriverId` property binds the wire field directly, a `[StoredObject] IDriver Driver` property resolves the stored object, and a message that needs both declares both, fed from the one wire field.
   Responses carry a `string Id`, since an outgoing message never needs the live object itself.
   See [The object store](#the-object-store) below.
 - **`Optional<T>` exists for the rare field where absence, a present null, and a present value are three distinct meanings**, as with `timeout` and `trustedCertificates`.
@@ -121,9 +121,9 @@ The wire field name is the camelCased property name plus `Id`; the attribute tak
 An id property exists only when the handler consumes the id as protocol data (echoing it in a response, removing it from the store, keying an expectation), never to feed a log line; the connection's `Request:` and `Response:` logs already carry every id.
 Calling `Get` directly is reserved for ids that arrive outside the property convention, such as `RetryableNegative` looking up a stored error by `ErrorId`.
 
-The store is scoped to the connection, so it is disposed automatically when a test's connection closes.
-Disposal walks every stored object in reverse storage order and disposes anything implementing `IAsyncDisposable` or `IDisposable`.
-This is what releases drivers, sessions, and other resources at the end of a test.
+The store is a process-wide singleton that the message loop clears when a test's connection closes.
+The clear walks every stored object in reverse storage order and disposes anything implementing `IAsyncDisposable` or `IDisposable`.
+This is what releases drivers, sessions, and other resources at the end of a test, and it runs before the loop waits for any still-running handlers, so a stale handler can never delay the next test's clean store.
 Explicit close handlers such as `DriverClose` exist to satisfy testkit's protocol, not to perform the underlying cleanup.
 
 ## Adding a new message handler
@@ -196,7 +196,7 @@ Handlers are constructor-injected classes resolved from the connection's DI scop
 var id = _objectStore.Store(driver);
 ```
 
-Because the store belongs to the connection's scope, the driver is disposed automatically when the test's connection closes; storing an object never creates a cleanup obligation for the handler.
+Because the message loop clears the store when the test's connection closes, the driver is disposed automatically at the end of the test; storing an object never creates a cleanup obligation for the handler.
 
 **Step 6: write the response.**
 Add a dependency on `IResponseWriter` and write the record:

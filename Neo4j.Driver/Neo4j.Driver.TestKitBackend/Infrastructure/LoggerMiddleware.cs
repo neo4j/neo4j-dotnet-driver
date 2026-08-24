@@ -27,10 +27,11 @@ public class LoggerMiddleware : IResolveMiddleware
     public void Execute(ResolveRequestContext context, Action<ResolveRequestContext> next)
     {
         context.ChangeParameters(
-            context.Parameters.Union([
+            context.Parameters.Union(
+            [
                 new ResolvedParameter(
-                        (p, _) => p.ParameterType == typeof(ILogger),
-                        (p, ctx) => ctx.Resolve<ILoggerFactory>().CreateLogger(p.Member.DeclaringType!))
+                    predicate: (p, _) => p.ParameterType == typeof(ILogger),
+                    valueAccessor: (p, ctx) => ctx.Resolve<ILoggerFactory>().CreateLogger(p.Member.DeclaringType!))
             ]));
 
         next(context);

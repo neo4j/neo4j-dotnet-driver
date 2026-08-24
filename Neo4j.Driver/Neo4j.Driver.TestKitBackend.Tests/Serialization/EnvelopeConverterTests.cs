@@ -175,7 +175,7 @@ public class EnvelopeConverterTests
 
         var options = new JsonOptionsProvider(
             [_autoMocker.CreateInstance<EnvelopeConverter>()],
-            Mock.Of<IObjectStoreAccessor>()).GetOptions();
+            Mock.Of<IObjectStore>()).GetOptions();
 
         const string json = """{"name":"Malformed","data":{"value":"x"}}""";
 

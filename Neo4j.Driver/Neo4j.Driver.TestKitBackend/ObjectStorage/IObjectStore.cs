@@ -24,4 +24,6 @@ internal interface IObjectStore
     T Get<T>(string id) where T : notnull;
 
     void Remove(string id);
+
+    Task ClearAsync();
 }

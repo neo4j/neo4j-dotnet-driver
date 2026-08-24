@@ -50,7 +50,7 @@ public class StoredObjectTests
         public required IFakeThing Thing { get; init; }
     }
 
-    private readonly Mock<IObjectStoreAccessor> _objectStoreMock = new();
+    private readonly Mock<IObjectStore> _objectStoreMock = new();
     private readonly IFakeThing _thing = Mock.Of<IFakeThing>();
 
     private IMessageSerializer Serializer()

@@ -24,11 +24,11 @@ namespace Neo4j.Driver.TestKitBackend.Serialization;
 internal class JsonOptionsProvider : IJsonOptionsProvider
 {
     private readonly JsonSerializerOptions _options;
-    private readonly IObjectStoreAccessor _objectStoreAccessor;
+    private readonly IObjectStore _objectStore;
 
-    public JsonOptionsProvider(IProtocolJsonConverter[] converters, IObjectStoreAccessor objectStoreAccessor)
+    public JsonOptionsProvider(IProtocolJsonConverter[] converters, IObjectStore objectStore)
     {
-        _objectStoreAccessor = objectStoreAccessor;
+        _objectStore = objectStore;
         _options = new JsonSerializerOptions(JsonSerializerOptions.Strict)
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -79,7 +79,7 @@ internal class JsonOptionsProvider : IJsonOptionsProvider
             {
                 property.CustomConverter = (JsonConverter)Activator.CreateInstance(
                     typeof(StoredObjectConverter<>).MakeGenericType(property.PropertyType),
-                    _objectStoreAccessor)!;
+                    _objectStore)!;
             }
         }
     }

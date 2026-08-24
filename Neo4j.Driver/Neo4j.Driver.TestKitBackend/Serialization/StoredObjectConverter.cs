@@ -21,11 +21,11 @@ namespace Neo4j.Driver.TestKitBackend.Serialization;
 
 internal class StoredObjectConverter<T> : JsonConverter<T> where T : notnull
 {
-    private readonly IObjectStoreAccessor _objectStoreAccessor;
+    private readonly IObjectStore _objectStore;
 
-    public StoredObjectConverter(IObjectStoreAccessor objectStoreAccessor)
+    public StoredObjectConverter(IObjectStore objectStore)
     {
-        _objectStoreAccessor = objectStoreAccessor;
+        _objectStore = objectStore;
     }
 
     public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -33,7 +33,7 @@ internal class StoredObjectConverter<T> : JsonConverter<T> where T : notnull
         var id = reader.GetString()
             ?? throw new TestKitProtocolException($"A stored {typeof(T).Name} id must be a string, not null.");
 
-        return _objectStoreAccessor.Get<T>(id);
+        return _objectStore.Get<T>(id);
     }
 
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
