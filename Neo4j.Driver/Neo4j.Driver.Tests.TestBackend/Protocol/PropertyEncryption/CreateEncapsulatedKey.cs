@@ -16,7 +16,6 @@
 using System.Threading.Tasks;
 using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.Tests.TestBackend.Protocol.Driver;
-using Neo4j.Driver.Tests.TestBackend.Types;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend.Protocol.PropertyEncryption;
@@ -46,9 +45,7 @@ internal class CreateEncapsulatedKey : ProtocolObject
                 new
                 {
                     id = Key.Id,
-                    alias = Key.Alias,
-                    encapsulatedBytes = NativeToCypher.ByteStreamToHexString(Key.Encapsulation),
-                    metadata = Key.Metadata
+                    alias = Key.Alias
                 })
             .Encode();
     }
