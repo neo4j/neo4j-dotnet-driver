@@ -13,30 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Reflection;
-using AutoFixture;
-using AutoFixture.Kernel;
+#nullable enable
+
+using Moq.AutoMock;
 using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.Tests.Internal.Core;
 
-internal class LoggerSpecimenBuilder : ISpecimenBuilder
+internal static class AutoMockerExtensions
 {
-    public object Create(object request, ISpecimenContext context)
+    public static AutoMocker ForTesting<T>()
     {
-        if (request is ParameterInfo p && p.ParameterType == typeof(ILogger))
-        {
-            return new TestLogger(p.Member.DeclaringType!);
-        }
-
-        return new NoSpecimen();
-    }
-}
-
-internal class LoggingCustomization : ICustomization
-{
-    public void Customize(IFixture fixture)
-    {
-        fixture.Customizations.Add(new LoggerSpecimenBuilder());
+        var autoMocker = new AutoMocker();
+        autoMocker.Use<ILogger>(new TestLogger(typeof(T)));
+        return autoMocker;
     }
 }

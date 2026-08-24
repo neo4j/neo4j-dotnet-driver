@@ -19,17 +19,18 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal.QueryApi;
+using Neo4j.Driver.Tests.Internal.Core;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 public class QueryApiClientTests
 {
-    private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
+    private readonly AutoMocker _autoMocker = AutoMockerExtensions.ForTesting<QueryApiClient>();
 
     private sealed record TestBody : QueryApiResponse
     {
@@ -41,15 +42,15 @@ public class QueryApiClientTests
     {
         var expected = new TestBody { Value = "hello" };
 
-        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
+        _autoMocker.GetMock<IQueryApiHttpTransport>()
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Accepted) { Content = new ByteArrayContent([]) });
 
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
+        _autoMocker.GetMock<IJsonDeserializer>()
             .Setup(x => x.DeserializeAsync<TestBody>(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
 
-        var subject = _fixture.Create<QueryApiClient>();
+        var subject = _autoMocker.CreateInstance<QueryApiClient>();
         var result = await subject.ExecuteAsync<TestBody>(
             new HttpRequestMessage(),
             TestContext.Current.CancellationToken);
@@ -63,15 +64,15 @@ public class QueryApiClientTests
         var response = new HttpResponseMessage(HttpStatusCode.Accepted) { Content = new ByteArrayContent([]) };
         response.Headers.TryAddWithoutValidation("neo4j-cluster-affinity", "shard-42");
 
-        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
+        _autoMocker.GetMock<IQueryApiHttpTransport>()
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
+        _autoMocker.GetMock<IJsonDeserializer>()
             .Setup(x => x.DeserializeAsync<TestBody>(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TestBody());
 
-        var subject = _fixture.Create<QueryApiClient>();
+        var subject = _autoMocker.CreateInstance<QueryApiClient>();
         var result = await subject.ExecuteAsync<TestBody>(
             new HttpRequestMessage(),
             TestContext.Current.CancellationToken);
@@ -83,11 +84,11 @@ public class QueryApiClientTests
     [Fact]
     public async Task PropagatesException_WhenTransportThrows()
     {
-        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
+        _autoMocker.GetMock<IQueryApiHttpTransport>()
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ServiceUnavailableException("HTTP 503"));
 
-        var subject = _fixture.Create<QueryApiClient>();
+        var subject = _autoMocker.CreateInstance<QueryApiClient>();
         var act = () => subject.ExecuteAsync<TestBody>(new HttpRequestMessage(), TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<ServiceUnavailableException>();
@@ -96,20 +97,20 @@ public class QueryApiClientTests
     [Fact]
     public async Task PropagatesException_WhenErrorCheckerThrows()
     {
-        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
+        _autoMocker.GetMock<IQueryApiHttpTransport>()
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Accepted) { Content = new ByteArrayContent([]) });
 
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
+        _autoMocker.GetMock<IJsonDeserializer>()
             .Setup(x => x.DeserializeAsync<TestBody>(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 new TestBody { Errors = [new QueryApiErrorBody("Neo.ClientError.General.Unknown", "error")] });
 
-        _fixture.Freeze<Mock<IQueryApiErrorChecker>>()
+        _autoMocker.GetMock<IQueryApiErrorChecker>()
             .Setup(x => x.ThrowIfErrors(It.IsAny<QueryApiErrorBody[]?>()))
             .Throws(new ClientException("Neo.ClientError.General.Unknown", "error"));
 
-        var subject = _fixture.Create<QueryApiClient>();
+        var subject = _autoMocker.CreateInstance<QueryApiClient>();
         var act = () => subject.ExecuteAsync<TestBody>(new HttpRequestMessage(), TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<ClientException>();

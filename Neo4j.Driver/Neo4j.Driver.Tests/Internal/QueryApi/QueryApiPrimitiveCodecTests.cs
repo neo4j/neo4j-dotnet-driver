@@ -17,10 +17,11 @@
 
 using System.Collections.Generic;
 using System.Text.Json;
-using AutoFixture;
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal.QueryApi;
+using Neo4j.Driver.Tests.Internal.Core;
 using Xunit;
 using static Neo4j.Driver.Tests.Internal.QueryApi.QueryApiCodecAssert;
 
@@ -28,9 +29,9 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 public class QueryApiPrimitiveCodecTests
 {
-    private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
+    private readonly AutoMocker _autoMocker = AutoMockerExtensions.ForTesting<QueryApiPrimitiveCodec>();
 
-    private QueryApiPrimitiveCodec Subject() => _fixture.Create<QueryApiPrimitiveCodec>();
+    private QueryApiPrimitiveCodec Subject() => _autoMocker.CreateInstance<QueryApiPrimitiveCodec>();
 
     public static IEnumerable<object?[]> WriteCases() =>
     [
@@ -58,7 +59,7 @@ public class QueryApiPrimitiveCodecTests
     {
         var bytes = new byte[] { 1, 2, 3 };
 
-        _fixture.Freeze<Mock<IBase64Encoder>>()
+        _autoMocker.GetMock<IBase64Encoder>()
             .Setup(e => e.Encode(bytes))
             .Returns("AQID");
 
@@ -93,7 +94,7 @@ public class QueryApiPrimitiveCodecTests
     {
         var bytes = new byte[] { 1, 2, 3 };
 
-        _fixture.Freeze<Mock<IBase64Decoder>>()
+        _autoMocker.GetMock<IBase64Decoder>()
             .Setup(d => d.Decode("AQID"))
             .Returns(bytes);
 

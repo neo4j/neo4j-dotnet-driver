@@ -19,32 +19,39 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.QueryApi;
+using Neo4j.Driver.Tests.Internal.Core;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
 public class AutoCommitRunnerTests
 {
-    private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
+    private readonly AutoMocker _autoMocker = AutoMockerExtensions.ForTesting<AutoCommitRunner>();
+    private readonly BookmarkTracker _bookmarkTracker = new(SessionConfig.Builder.Build());
+
+    public AutoCommitRunnerTests()
+    {
+        _autoMocker.Use<IBookmarkTracker>(_bookmarkTracker);
+    }
 
     private void SetupChain(QueryApiResultBody? body = null)
     {
         body ??= new QueryApiResultBody();
         var request = new HttpRequestMessage();
 
-        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+        _autoMocker.GetMock<IQueryApiRequestBuilder>()
             .Setup(x => x.PostAsync(
                 It.IsAny<string>(),
                 It.IsAny<IQueryApiRequestBody>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
 
-        _fixture.Freeze<Mock<IQueryApiClient>>()
+        _autoMocker.GetMock<IQueryApiClient>()
             .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new QueryApiResult<QueryApiResultBody>(body, new HttpResponseMessage().Headers));
     }
@@ -65,11 +72,11 @@ public class AutoCommitRunnerTests
         SetupChain(responseBody);
 
         var expectedCursor = new Mock<IResultCursor>().Object;
-        _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
+        _autoMocker.GetMock<IQueryApiResultCursorBuilder>()
             .Setup(x => x.Build(It.IsAny<QueryApiResultSet>(), It.IsAny<Query>()))
             .Returns(expectedCursor);
 
-        var subject = _fixture.Create<AutoCommitRunner>();
+        var subject = _autoMocker.CreateInstance<AutoCommitRunner>();
         var cursor = await subject.RunAsync(
             new Query("MATCH (n) RETURN n.name, n.age"),
             TestContext.Current.CancellationToken);
@@ -82,30 +89,25 @@ public class AutoCommitRunnerTests
     {
         // Spec: auto-commit response bookmarks must be applied to the session's tracker for causal chaining
         SetupChain(new QueryApiResultBody { Bookmarks = ["neo4j:bookmark:v1:tx55"] });
-        _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
+        _autoMocker.GetMock<IQueryApiResultCursorBuilder>()
             .Setup(x => x.Build(It.IsAny<QueryApiResultSet>(), It.IsAny<Query>()))
             .Returns(new Mock<IResultCursor>().Object);
 
-        var tracker = new BookmarkTracker(SessionConfig.Builder.Build());
-        _fixture.Inject<IBookmarkTracker>(tracker);
-
-        var subject = _fixture.Create<AutoCommitRunner>();
+        var subject = _autoMocker.CreateInstance<AutoCommitRunner>();
         await subject.RunAsync(new Query("RETURN 1"), TestContext.Current.CancellationToken);
 
-        tracker.CurrentBookmarks.Values.Should().Equal("neo4j:bookmark:v1:tx55");
+        _bookmarkTracker.CurrentBookmarks.Values.Should().Equal("neo4j:bookmark:v1:tx55");
     }
 
     [Fact]
     public async Task RunAsync_IncludesCurrentBookmarks_FromTracker_InRequest()
     {
         // Spec: current session bookmarks must be forwarded in the request for causal consistency
-        var tracker = new BookmarkTracker(SessionConfig.Builder.Build());
-        tracker.UpdateBookmarks(["existing-bookmark"]);
-        _fixture.Inject<IBookmarkTracker>(tracker);
+        _bookmarkTracker.UpdateBookmarks(["existing-bookmark"]);
 
         object? capturedBody = null;
         var request = new HttpRequestMessage();
-        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+        _autoMocker.GetMock<IQueryApiRequestBuilder>()
             .Setup(x => x.PostAsync(
                 It.IsAny<string>(),
                 It.IsAny<IQueryApiRequestBody>(),
@@ -113,16 +115,16 @@ public class AutoCommitRunnerTests
             .Callback<string, IQueryApiRequestBody, CancellationToken>((_, body, _) => capturedBody = body)
             .ReturnsAsync(request);
 
-        _fixture.Freeze<Mock<IQueryApiClient>>()
+        _autoMocker.GetMock<IQueryApiClient>()
             .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 new QueryApiResult<QueryApiResultBody>(new QueryApiResultBody(), new HttpResponseMessage().Headers));
 
-        _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
+        _autoMocker.GetMock<IQueryApiResultCursorBuilder>()
             .Setup(x => x.Build(It.IsAny<QueryApiResultSet>(), It.IsAny<Query>()))
             .Returns(new Mock<IResultCursor>().Object);
 
-        var subject = _fixture.Create<AutoCommitRunner>();
+        var subject = _autoMocker.CreateInstance<AutoCommitRunner>();
         await subject.RunAsync(new Query("RETURN 1"), TestContext.Current.CancellationToken);
 
         var body = capturedBody.Should().BeOfType<AutoCommitRunner.RequestBody>().Subject;
@@ -134,18 +136,18 @@ public class AutoCommitRunnerTests
     {
         var request = new HttpRequestMessage();
 
-        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+        _autoMocker.GetMock<IQueryApiRequestBuilder>()
             .Setup(x => x.PostAsync(
                 It.IsAny<string>(),
                 It.IsAny<IQueryApiRequestBody>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
 
-        _fixture.Freeze<Mock<IQueryApiClient>>()
+        _autoMocker.GetMock<IQueryApiClient>()
             .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ServiceUnavailableException("HTTP 503"));
 
-        var subject = _fixture.Create<AutoCommitRunner>();
+        var subject = _autoMocker.CreateInstance<AutoCommitRunner>();
         var act = () => subject.RunAsync(new Query("RETURN 1"), TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<ServiceUnavailableException>();
@@ -154,18 +156,18 @@ public class AutoCommitRunnerTests
     [Fact]
     public async Task RunAsync_RequestBody_IncludesImpersonatedUserAndAccessMode_FromSessionContext()
     {
-        _fixture.Freeze<Mock<ISessionContext>>()
+        _autoMocker.GetMock<ISessionContext>()
             .Setup(x => x.ImpersonatedUser)
             .Returns("banana_bob");
 
-        _fixture.Freeze<Mock<ISessionContext>>()
+        _autoMocker.GetMock<ISessionContext>()
             .Setup(x => x.AccessMode)
             .Returns(AccessMode.Read);
 
         var request = new HttpRequestMessage();
         object? capturedBody = null;
 
-        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+        _autoMocker.GetMock<IQueryApiRequestBuilder>()
             .Setup(x => x.PostAsync(
                 It.IsAny<string>(),
                 It.IsAny<IQueryApiRequestBody>(),
@@ -173,16 +175,16 @@ public class AutoCommitRunnerTests
             .Callback<string, IQueryApiRequestBody, CancellationToken>((_, body, _) => capturedBody = body)
             .ReturnsAsync(request);
 
-        _fixture.Freeze<Mock<IQueryApiClient>>()
+        _autoMocker.GetMock<IQueryApiClient>()
             .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 new QueryApiResult<QueryApiResultBody>(new QueryApiResultBody(), new HttpResponseMessage().Headers));
 
-        _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
+        _autoMocker.GetMock<IQueryApiResultCursorBuilder>()
             .Setup(x => x.Build(It.IsAny<QueryApiResultSet>(), It.IsAny<Query>()))
             .Returns(new Mock<IResultCursor>().Object);
 
-        var subject = _fixture.Create<AutoCommitRunner>();
+        var subject = _autoMocker.CreateInstance<AutoCommitRunner>();
         await subject.RunAsync(new Query("RETURN 1"), TestContext.Current.CancellationToken);
 
         var body = capturedBody.Should().BeOfType<AutoCommitRunner.RequestBody>().Subject;

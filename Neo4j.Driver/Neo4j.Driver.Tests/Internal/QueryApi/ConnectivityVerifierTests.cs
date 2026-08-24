@@ -22,10 +22,11 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal.QueryApi;
+using Neo4j.Driver.Tests.Internal.Core;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
@@ -39,7 +40,12 @@ public class ConnectivityVerifierTests
 {
     private static readonly Uri BaseUri = new("https://neo4j.example.com:7474/");
 
-    private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
+    private readonly AutoMocker _autoMocker = AutoMockerExtensions.ForTesting<ConnectivityVerifier>();
+
+    public ConnectivityVerifierTests()
+    {
+        _autoMocker.Use(new QueryApiServerInfo(BaseUri));
+    }
 
     private static ConnectivityVerifier.DiscoveryResponse ValidDiscovery(
         string? query = "http://localhost:7474/query/v2",
@@ -48,30 +54,34 @@ public class ConnectivityVerifierTests
         return new ConnectivityVerifier.DiscoveryResponse { Query = query, Neo4jVersion = neo4jVersion };
     }
 
-    // Freezes the minimum mock chain needed to exercise the handler without crashing:
+    private void SetupDiscoveryResponse(ConnectivityVerifier.DiscoveryResponse body)
+    {
+        _autoMocker.GetMock<IJsonDeserializer>()
+            .Setup(x => x.DeserializeAsync<ConnectivityVerifier.DiscoveryResponse>(
+                It.IsAny<Stream>(),
+                JsonNamingPolicy.SnakeCaseLower,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(body);
+    }
+
+    // Sets up the minimum mock chain needed to exercise the handler without crashing:
     // Build("") → BaseUri → SendAsync(GET BaseUri) → response → DeserializeAsync → ValidDiscovery()
     private HttpResponseMessage SetupChain()
     {
-        _fixture.Inject(new QueryApiServerInfo(BaseUri));
         var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([]) };
 
-        _fixture.Freeze<Mock<IQueryApiUrlBuilder>>()
+        _autoMocker.GetMock<IQueryApiUrlBuilder>()
             .Setup(x => x.Build(string.Empty))
             .Returns(BaseUri);
 
         // The handler builds its own HttpRequestMessage internally, so we match on GET method
-        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
+        _autoMocker.GetMock<IQueryApiHttpTransport>()
             .Setup(x => x.SendAsync(
                 It.Is<HttpRequestMessage>(r => r.Method == HttpMethod.Get),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<ConnectivityVerifier.DiscoveryResponse>(
-                It.IsAny<Stream>(),
-                JsonNamingPolicy.SnakeCaseLower,
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(ValidDiscovery());
+        SetupDiscoveryResponse(ValidDiscovery());
 
         return response;
     }
@@ -82,14 +92,9 @@ public class ConnectivityVerifierTests
         // Spec: address comes from the base URI; agent version comes from the discovery body
         SetupChain();
 
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<ConnectivityVerifier.DiscoveryResponse>(
-                It.IsAny<Stream>(),
-                JsonNamingPolicy.SnakeCaseLower,
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(ValidDiscovery(neo4jVersion: "5.22.0"));
+        SetupDiscoveryResponse(ValidDiscovery(neo4jVersion: "5.22.0"));
 
-        var subject = _fixture.Create<ConnectivityVerifier>();
+        var subject = _autoMocker.CreateInstance<ConnectivityVerifier>();
         var serverInfo = await subject.VerifyAsync(TestContext.Current.CancellationToken);
 
         serverInfo.Address.Should().Be("neo4j.example.com:7474");
@@ -102,14 +107,9 @@ public class ConnectivityVerifierTests
         // Server is running but does not support the Query API (e.g. Neo4j 4.x)
         SetupChain();
 
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<ConnectivityVerifier.DiscoveryResponse>(
-                It.IsAny<Stream>(),
-                JsonNamingPolicy.SnakeCaseLower,
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(ValidDiscovery(query: null));
+        SetupDiscoveryResponse(ValidDiscovery(query: null));
 
-        var subject = _fixture.Create<ConnectivityVerifier>();
+        var subject = _autoMocker.CreateInstance<ConnectivityVerifier>();
         var act = () => subject.VerifyAsync(TestContext.Current.CancellationToken);
 
         await act.Should()
@@ -122,14 +122,9 @@ public class ConnectivityVerifierTests
     {
         SetupChain();
 
-        _fixture.Freeze<Mock<IJsonDeserializer>>()
-            .Setup(x => x.DeserializeAsync<ConnectivityVerifier.DiscoveryResponse>(
-                It.IsAny<Stream>(),
-                JsonNamingPolicy.SnakeCaseLower,
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(ValidDiscovery(neo4jVersion: null));
+        SetupDiscoveryResponse(ValidDiscovery(neo4jVersion: null));
 
-        var subject = _fixture.Create<ConnectivityVerifier>();
+        var subject = _autoMocker.CreateInstance<ConnectivityVerifier>();
         var act = () => subject.VerifyAsync(TestContext.Current.CancellationToken);
 
         await act.Should()
@@ -140,17 +135,15 @@ public class ConnectivityVerifierTests
     [Fact]
     public async Task ThrowsServiceUnavailableException_WhenDiscoveryThrows()
     {
-        _fixture.Inject(new QueryApiServerInfo(BaseUri));
-
-        _fixture.Freeze<Mock<IQueryApiUrlBuilder>>()
+        _autoMocker.GetMock<IQueryApiUrlBuilder>()
             .Setup(x => x.Build(string.Empty))
             .Returns(BaseUri);
 
-        _fixture.Freeze<Mock<IQueryApiHttpTransport>>()
+        _autoMocker.GetMock<IQueryApiHttpTransport>()
             .Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ServiceUnavailableException("HTTP 404 GET https://neo4j.example.com:7474/ : "));
 
-        var subject = _fixture.Create<ConnectivityVerifier>();
+        var subject = _autoMocker.CreateInstance<ConnectivityVerifier>();
         var act = () => subject.VerifyAsync(TestContext.Current.CancellationToken);
 
         await act.Should()

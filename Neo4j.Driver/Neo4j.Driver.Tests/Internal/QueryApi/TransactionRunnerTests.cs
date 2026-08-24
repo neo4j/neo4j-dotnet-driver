@@ -18,10 +18,11 @@
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal.QueryApi;
+using Neo4j.Driver.Tests.Internal.Core;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
@@ -33,19 +34,27 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// </summary>
 public class TransactionRunnerTests
 {
-    private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
+    private const string TxId = "tx-1";
+
+    private readonly AutoMocker _autoMocker = AutoMockerExtensions.ForTesting<TransactionRunner>();
+
+    public TransactionRunnerTests()
+    {
+        _autoMocker.GetMock<IQueryApiTransactionContextTracker>()
+            .SetupGet(x => x.Context)
+            .Returns(new QueryApiTransactionContext(TxId, null));
+    }
 
     private void SetupChain(QueryApiResultBody? body = null)
     {
-        var txContext = _fixture.Freeze<QueryApiTransactionContext>();
         body ??= new QueryApiResultBody();
         var request = new HttpRequestMessage();
 
-        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
-            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}", It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
+        _autoMocker.GetMock<IQueryApiRequestBuilder>()
+            .Setup(x => x.PostAsync($"query/v2/tx/{TxId}", It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
 
-        _fixture.Freeze<Mock<IQueryApiClient>>()
+        _autoMocker.GetMock<IQueryApiClient>()
             .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new QueryApiResult<QueryApiResultBody>(body, new HttpResponseMessage().Headers));
     }
@@ -60,11 +69,11 @@ public class TransactionRunnerTests
         });
 
         var expectedCursor = new Mock<IResultCursor>().Object;
-        _fixture.Freeze<Mock<IQueryApiResultCursorBuilder>>()
+        _autoMocker.GetMock<IQueryApiResultCursorBuilder>()
             .Setup(x => x.Build(It.IsAny<QueryApiResultSet>(), It.IsAny<Query>()))
             .Returns(expectedCursor);
 
-        var subject = _fixture.Create<TransactionRunner>();
+        var subject = _autoMocker.CreateInstance<TransactionRunner>();
         var cursor = await subject.RunAsync(
             new Query("RETURN 42 AS x"),
             TestContext.Current.CancellationToken);
@@ -75,18 +84,17 @@ public class TransactionRunnerTests
     [Fact]
     public async Task RunAsync_Throws_WhenExecuteAsyncThrows()
     {
-        var txContext = _fixture.Freeze<QueryApiTransactionContext>();
         var request = new HttpRequestMessage();
 
-        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
-            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}", It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
+        _autoMocker.GetMock<IQueryApiRequestBuilder>()
+            .Setup(x => x.PostAsync($"query/v2/tx/{TxId}", It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
 
-        _fixture.Freeze<Mock<IQueryApiClient>>()
+        _autoMocker.GetMock<IQueryApiClient>()
             .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ServiceUnavailableException("HTTP 503"));
 
-        var subject = _fixture.Create<TransactionRunner>();
+        var subject = _autoMocker.CreateInstance<TransactionRunner>();
         var act = () => subject.RunAsync(new Query("RETURN 1"), TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<ServiceUnavailableException>();
@@ -95,19 +103,18 @@ public class TransactionRunnerTests
     [Fact]
     public async Task RunAsync_MarksTransactionFailed_WhenServerReturnsClientError()
     {
-        var txContext = _fixture.Freeze<QueryApiTransactionContext>();
         var request = new HttpRequestMessage();
-        var txContextTracker = _fixture.Freeze<Mock<IQueryApiTransactionContextTracker>>();
+        var txContextTracker = _autoMocker.GetMock<IQueryApiTransactionContextTracker>();
 
-        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
-            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}", It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
+        _autoMocker.GetMock<IQueryApiRequestBuilder>()
+            .Setup(x => x.PostAsync($"query/v2/tx/{TxId}", It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
 
-        _fixture.Freeze<Mock<IQueryApiClient>>()
+        _autoMocker.GetMock<IQueryApiClient>()
             .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ClientException("Neo.ClientError.Statement.SyntaxError", "Invalid input"));
 
-        var subject = _fixture.Create<TransactionRunner>();
+        var subject = _autoMocker.CreateInstance<TransactionRunner>();
         var act = () => subject.RunAsync(new Query("Invalid Cypher"), TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<ClientException>();
@@ -118,19 +125,18 @@ public class TransactionRunnerTests
     [Fact]
     public async Task RunAsync_DoesNotMarkTransactionFailed_WhenServiceUnavailable()
     {
-        var txContext = _fixture.Freeze<QueryApiTransactionContext>();
         var request = new HttpRequestMessage();
-        var txContextTracker = _fixture.Freeze<Mock<IQueryApiTransactionContextTracker>>();
+        var txContextTracker = _autoMocker.GetMock<IQueryApiTransactionContextTracker>();
 
-        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
-            .Setup(x => x.PostAsync($"query/v2/tx/{txContext.TxId}", It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
+        _autoMocker.GetMock<IQueryApiRequestBuilder>()
+            .Setup(x => x.PostAsync($"query/v2/tx/{TxId}", It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
 
-        _fixture.Freeze<Mock<IQueryApiClient>>()
+        _autoMocker.GetMock<IQueryApiClient>()
             .Setup(x => x.ExecuteAsync<QueryApiResultBody>(request, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ServiceUnavailableException("HTTP 503"));
 
-        var subject = _fixture.Create<TransactionRunner>();
+        var subject = _autoMocker.CreateInstance<TransactionRunner>();
         var act = () => subject.RunAsync(new Query("RETURN 1"), TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<ServiceUnavailableException>();

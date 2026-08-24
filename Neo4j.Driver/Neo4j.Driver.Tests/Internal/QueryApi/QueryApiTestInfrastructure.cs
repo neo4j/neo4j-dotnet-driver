@@ -15,10 +15,7 @@
 
 using System;
 using System.Threading.Tasks;
-using AutoFixture;
-using AutoFixture.AutoMoq;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Tests.Internal.Core;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
 
@@ -35,34 +32,6 @@ internal class SimpleRetryLogic : IAsyncRetryLogic
     {
         var obj = await _funcRunner(async () => await runTxAsyncFunc());
         return (T)obj;
-    }
-}
-
-internal class QueryApiCustomization : ICustomization
-{
-    public void Customize(IFixture fixture)
-    {
-        fixture.Customize(new AutoMoqCustomization { ConfigureMembers = true });
-        fixture.Customize(new LoggingCustomization());
-        fixture.Register(() => SessionConfig.Builder.Build());
-        fixture.Register<IBookmarkTracker>(() => new BookmarkTracker(SessionConfig.Builder.Build()));
-    }
-}
-
-internal static class FixtureExtensions
-{
-    public static IFixture AddPassThroughRetryLogic(this IFixture fixture)
-    {
-        fixture.Register<IAsyncRetryLogic>(() => new SimpleRetryLogic(fn => fn()));
-        return fixture;
-    }
-
-    public static IFixture AddThrowingRetryLogic(this IFixture fixture)
-    {
-        fixture.Register<IAsyncRetryLogic>(
-            () => new SimpleRetryLogic(_ => throw new QueryApiTestException("Retry failed")));
-
-        return fixture;
     }
 }
 

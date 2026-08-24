@@ -20,11 +20,12 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.QueryApi;
+using Neo4j.Driver.Tests.Internal.Core;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.QueryApi;
@@ -36,18 +37,24 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 /// </summary>
 public class TransactionBeginnerTests
 {
-    private readonly IFixture _fixture = new Fixture().Customize(new QueryApiCustomization());
+    private readonly AutoMocker _autoMocker = AutoMockerExtensions.ForTesting<TransactionBeginner>();
+    private readonly BookmarkTracker _bookmarkTracker = new(SessionConfig.Builder.Build());
+
+    public TransactionBeginnerTests()
+    {
+        _autoMocker.Use<IBookmarkTracker>(_bookmarkTracker);
+    }
 
     private void SetupChain(string txId = "tx-1", HttpResponseHeaders? headers = null)
     {
         headers ??= new HttpResponseMessage().Headers;
         var request = new HttpRequestMessage();
 
-        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+        _autoMocker.GetMock<IQueryApiRequestBuilder>()
             .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
 
-        _fixture.Freeze<Mock<IQueryApiClient>>()
+        _autoMocker.GetMock<IQueryApiClient>()
             .Setup(x => x.ExecuteAsync<TransactionBeginner.ResponseBody>(
                 request,
                 It.IsAny<CancellationToken>()))
@@ -59,15 +66,21 @@ public class TransactionBeginnerTests
                 headers));
     }
 
+    private QueryApiTransactionContextTracker UseRealContextTracker()
+    {
+        var holder = new QueryApiTransactionContextTracker();
+        _autoMocker.Use<IQueryApiTransactionContextTracker>(holder);
+        return holder;
+    }
+
     [Fact]
     public async Task BeginAsync_StoresTransactionId_InContextHolder()
     {
         // Spec: response body contains transaction.id — the handle for subsequent requests
         SetupChain(txId: "tx-abc-123");
 
-        var holder = new QueryApiTransactionContextTracker();
-        _fixture.Inject<IQueryApiTransactionContextTracker>(holder);
-        var subject = _fixture.Create<TransactionBeginner>();
+        var holder = UseRealContextTracker();
+        var subject = _autoMocker.CreateInstance<TransactionBeginner>();
         await subject.BeginAsync(TestContext.Current.CancellationToken);
 
         holder.Context.Should().NotBeNull();
@@ -79,12 +92,11 @@ public class TransactionBeginnerTests
     {
         SetupChain();
 
-        _fixture.Freeze<Mock<IClusterAffinityExtractor>>()
+        _autoMocker.GetMock<IClusterAffinityExtractor>()
             .Setup(x => x.Extract(It.IsAny<HttpResponseHeaders>())).Returns("shard-99");
 
-        var holder = new QueryApiTransactionContextTracker();
-        _fixture.Inject<IQueryApiTransactionContextTracker>(holder);
-        var subject = _fixture.Create<TransactionBeginner>();
+        var holder = UseRealContextTracker();
+        var subject = _autoMocker.CreateInstance<TransactionBeginner>();
         await subject.BeginAsync(TestContext.Current.CancellationToken);
 
         holder.Context!.ClusterAffinity.Should().Be("shard-99");
@@ -95,12 +107,11 @@ public class TransactionBeginnerTests
     {
         SetupChain();
 
-        _fixture.Freeze<Mock<IClusterAffinityExtractor>>()
+        _autoMocker.GetMock<IClusterAffinityExtractor>()
             .Setup(x => x.Extract(It.IsAny<HttpResponseHeaders>())).Returns((string?)null);
 
-        var holder = new QueryApiTransactionContextTracker();
-        _fixture.Inject<IQueryApiTransactionContextTracker>(holder);
-        var subject = _fixture.Create<TransactionBeginner>();
+        var holder = UseRealContextTracker();
+        var subject = _autoMocker.CreateInstance<TransactionBeginner>();
         await subject.BeginAsync(TestContext.Current.CancellationToken);
 
         holder.Context!.ClusterAffinity.Should().BeNull();
@@ -111,11 +122,11 @@ public class TransactionBeginnerTests
     {
         var request = new HttpRequestMessage();
 
-        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+        _autoMocker.GetMock<IQueryApiRequestBuilder>()
             .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(request);
 
-        _fixture.Freeze<Mock<IQueryApiClient>>()
+        _autoMocker.GetMock<IQueryApiClient>()
             .Setup(x => x.ExecuteAsync<TransactionBeginner.ResponseBody>(
                 request,
                 It.IsAny<CancellationToken>()))
@@ -126,7 +137,7 @@ public class TransactionBeginnerTests
                 },
                 new HttpResponseMessage().Headers));
 
-        var subject = _fixture.Create<TransactionBeginner>();
+        var subject = _autoMocker.CreateInstance<TransactionBeginner>();
         var act = () => subject.BeginAsync(TestContext.Current.CancellationToken);
 
         await act.Should()
@@ -138,20 +149,18 @@ public class TransactionBeginnerTests
     public async Task BeginAsync_IncludesCurrentBookmarks_FromTracker_InRequest()
     {
         // Spec: current session bookmarks must be forwarded in the request for causal consistency
-        var tracker = new BookmarkTracker(SessionConfig.Builder.Build());
-        tracker.UpdateBookmarks(["session-bookmark"]);
-        _fixture.Inject<IBookmarkTracker>(tracker);
-        _fixture.Inject<IQueryApiTransactionContextTracker>(new QueryApiTransactionContextTracker());
+        _bookmarkTracker.UpdateBookmarks(["session-bookmark"]);
+        UseRealContextTracker();
 
         object? capturedBody = null;
         var request = new HttpRequestMessage();
 
-        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+        _autoMocker.GetMock<IQueryApiRequestBuilder>()
             .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
             .Callback<string, IQueryApiRequestBody, CancellationToken>((_, body, _) => capturedBody = body)
             .ReturnsAsync(request);
 
-        _fixture.Freeze<Mock<IQueryApiClient>>()
+        _autoMocker.GetMock<IQueryApiClient>()
             .Setup(x => x.ExecuteAsync<TransactionBeginner.ResponseBody>(request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new QueryApiResult<TransactionBeginner.ResponseBody>(
                 new TransactionBeginner.ResponseBody
@@ -160,7 +169,7 @@ public class TransactionBeginnerTests
                 },
                 new HttpResponseMessage().Headers));
 
-        var subject = _fixture.Create<TransactionBeginner>();
+        var subject = _autoMocker.CreateInstance<TransactionBeginner>();
         await subject.BeginAsync(TestContext.Current.CancellationToken);
 
         var body = capturedBody.Should().BeOfType<TransactionBeginner.RequestBody>().Subject;
@@ -170,18 +179,18 @@ public class TransactionBeginnerTests
     [Fact]
     public async Task BeginAsync_RequestBody_IncludesImpersonatedUser_FromSessionContext()
     {
-        _fixture.Freeze<Mock<ISessionContext>>()
+        _autoMocker.GetMock<ISessionContext>()
             .Setup(x => x.ImpersonatedUser).Returns("banana_bob");
 
         var request = new HttpRequestMessage();
         object? capturedBody = null;
 
-        _fixture.Freeze<Mock<IQueryApiRequestBuilder>>()
+        _autoMocker.GetMock<IQueryApiRequestBuilder>()
             .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<IQueryApiRequestBody>(), It.IsAny<CancellationToken>()))
             .Callback<string, IQueryApiRequestBody, CancellationToken>((_, body, _) => capturedBody = body)
             .ReturnsAsync(request);
 
-        _fixture.Freeze<Mock<IQueryApiClient>>()
+        _autoMocker.GetMock<IQueryApiClient>()
             .Setup(x => x.ExecuteAsync<TransactionBeginner.ResponseBody>(
                 request,
                 It.IsAny<CancellationToken>()))
@@ -192,8 +201,8 @@ public class TransactionBeginnerTests
                 },
                 new HttpResponseMessage().Headers));
 
-        _fixture.Inject<IQueryApiTransactionContextTracker>(new QueryApiTransactionContextTracker());
-        var subject = _fixture.Create<TransactionBeginner>();
+        UseRealContextTracker();
+        var subject = _autoMocker.CreateInstance<TransactionBeginner>();
         await subject.BeginAsync(TestContext.Current.CancellationToken);
 
         var body = capturedBody.Should().BeOfType<TransactionBeginner.RequestBody>().Subject;
