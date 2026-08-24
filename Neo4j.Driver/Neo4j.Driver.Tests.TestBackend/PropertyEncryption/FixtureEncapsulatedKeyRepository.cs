@@ -60,6 +60,22 @@ internal class FixtureEncapsulatedKeyRepository : IEncapsulatedKeyRepository
         }
     }
 
+    public EncapsulatedKey Import(
+        string id,
+        string alias,
+        byte[] encapsulation,
+        IReadOnlyDictionary<string, string> metadata)
+    {
+        lock (_lock)
+        {
+            RemoveExistingAlias(alias);
+            var key = new EncapsulatedKey(id, alias, encapsulation, metadata);
+            _idToKey[id] = key;
+            _aliasToId[alias] = id;
+            return key;
+        }
+    }
+
     public Task AddAliasByIdAsync(string id, string alias, CancellationToken cancellationToken = default)
     {
         lock (_lock)

@@ -28,11 +28,12 @@ internal class ImportEncapsulatedKey : ProtocolObject
     [JsonIgnore]
     private EncapsulatedKey Key { get; set; }
 
-    public override async Task Process()
+    public override Task Process()
     {
         var fixture = ObjManager.GetObject<EncryptionProfileFixture>($"{data.driverId}:{data.profileName}");
         var encapsulation = CypherToNative.ConvertStringToBytes(data.encapsulation);
-        Key = await fixture.KeyRepository.SaveAsync(data.alias, encapsulation, data.metadata);
+        Key = fixture.KeyRepository.Import(data.keyId, data.alias, encapsulation, data.metadata);
+        return Task.CompletedTask;
     }
 
     public override string Respond()
@@ -52,6 +53,7 @@ internal class ImportEncapsulatedKey : ProtocolObject
     public class ImportEncapsulatedKeyType
     {
         public string driverId { get; set; }
+        public string keyId { get; set; }
         public string alias { get; set; }
 
         public string encapsulation { get; set; }
