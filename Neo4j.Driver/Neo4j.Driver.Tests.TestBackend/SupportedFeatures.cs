@@ -77,7 +77,7 @@ internal static class SupportedFeatures
             "Feature:Bolt:6.1",
             "Feature:Bolt:Patch:UTC",
             "Feature:Bolt:HandshakeManifestV1",
-            "Feature:HTTP:QueryAPI:1.0",
+            "Feature:HTTP:QueryAPI:2.0",
             "Feature:IdempotentRetries",
             "Feature:Impersonation",
             //"Feature:TLS:1.1",
