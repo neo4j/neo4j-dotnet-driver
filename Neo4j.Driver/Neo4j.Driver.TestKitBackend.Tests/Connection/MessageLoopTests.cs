@@ -459,6 +459,31 @@ public class MessageLoopTests
         _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(It.IsAny<IProtocolMessage>()), Times.Never);
     }
 
+    [Fact]
+    public async Task RunAsync_completes_despite_a_handler_stuck_past_the_drain_timeout()
+    {
+        const string json = """{"name":"Stuck","data":{}}""";
+        var message = Mock.Of<IProtocolMessage>();
+
+        _autoMocker.GetMock<IConnectionInput>()
+            .SetupSequence(i => i.ReadRequestAsync())
+            .ReturnsAsync(json)
+            .ReturnsAsync((string?)null);
+
+        _autoMocker.GetMock<IMessageSerializer>()
+            .Setup(s => s.Deserialize(json))
+            .Returns(message);
+
+        _autoMocker.GetMock<IMessageDispatcher>()
+            .Setup(d => d.DispatchAsync(message))
+            .Returns(new TaskCompletionSource().Task);
+
+        var loop = _autoMocker.CreateInstance<MessageLoop>();
+        loop.HandlerDrainTimeout = TimeSpan.FromMilliseconds(100);
+
+        await WithTimeoutAsync(loop.RunAsync("testkit-1"));
+    }
+
     private static async Task WithTimeoutAsync(Task task)
     {
         var completed = await Task.WhenAny(

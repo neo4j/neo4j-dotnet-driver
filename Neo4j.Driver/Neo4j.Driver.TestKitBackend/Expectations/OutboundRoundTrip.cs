@@ -32,9 +32,22 @@ internal class OutboundRoundTrip : IOutboundRoundTrip
 
     public async Task<T> SendExpectingAsync<T>(IProtocolMessage message, string key)
     {
-        var value = _expectationStore.Expect<T>(key);
-        await _writer.WriteAsync(message);
-        return await value;
+        var expectation = _expectationStore.Expect<T>(key);
+        if (expectation.IsCanceled)
+        {
+            return await expectation;
+        }
+
+        try
+        {
+            await _writer.WriteAsync(message);
+        }
+        catch (Exception exception)
+        {
+            _expectationStore.Fail(key, exception);
+        }
+
+        return await expectation;
     }
 
     public Task<T> SendExpectingAsync<T>(IProtocolMessage message)

@@ -33,6 +33,8 @@ internal class MessageLoop : IMessageLoop
     private readonly IExpectationStore _expectationStore;
     private readonly ILogger _logger;
 
+    internal TimeSpan HandlerDrainTimeout { get; set; } = TimeSpan.FromSeconds(10);
+
     public MessageLoop(
         IConnectionInput input,
         IMessageSerializer serializer,
@@ -67,18 +69,11 @@ internal class MessageLoop : IMessageLoop
                 }
                 catch (IOException)
                 {
-                    // This is the exception that the legacy testkit backend threw at
-                    // the end of every test, and we couldn't catch it due to the design.
-                    // It's caused when testkit drops the connection (maybe we failed a test)
-                    // and it doesn't represent an error - it's just the completion of the test.
                     _logger.LogDebug("Connection {ConnectionId} ended by testkit", connectionId);
                     break;
                 }
                 catch (Exception exception)
                 {
-                    // Log the error but don't rethrow: an exception in a test is normally sent
-                    // to testkit as a BackendErrorResponse, but we can't write one here because
-                    // the connection is dead. There's nothing left to read from, so the loop ends.
                     _logger.LogError(exception, "Connection {ConnectionId} failed while reading", connectionId);
                     break;
                 }
@@ -103,7 +98,14 @@ internal class MessageLoop : IMessageLoop
             _expectationStore.CancelAll();
             try
             {
-                await Task.WhenAll(handlerTasks);
+                await Task.WhenAll(handlerTasks).WaitAsync(HandlerDrainTimeout);
+            }
+            catch (TimeoutException)
+            {
+                _logger.LogWarning(
+                    "Handlers were still running {Timeout} after connection {ConnectionId} closed; abandoning them",
+                    HandlerDrainTimeout,
+                    connectionId);
             }
             catch (Exception exception)
             {

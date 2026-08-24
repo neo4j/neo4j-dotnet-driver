@@ -30,7 +30,6 @@ internal interface IFakeTimeService
 [RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
 internal class FakeTimeService : IFakeTimeService, IDisposable
 {
-    private IDateTimeProvider? _original;
     private FakeDateTimeProvider? _fake;
 
     public void Dispose()
@@ -45,8 +44,8 @@ internal class FakeTimeService : IFakeTimeService, IDisposable
             throw new InvalidOperationException("The fake time service is already installed.");
         }
 
-        _original = DateTimeProvider.StaticInstance;
-        _fake = new FakeDateTimeProvider();
+        var current = DateTimeProvider.StaticInstance;
+        _fake = new FakeDateTimeProvider(current is FakeDateTimeProvider superseded ? superseded.Original : current);
         DateTimeProvider.StaticInstance = _fake;
     }
 
@@ -62,54 +61,82 @@ internal class FakeTimeService : IFakeTimeService, IDisposable
             return;
         }
 
-        DateTimeProvider.StaticInstance = _original!;
-        _original = null;
+        if (DateTimeProvider.StaticInstance == _fake)
+        {
+            DateTimeProvider.StaticInstance = _fake.Original;
+        }
+
         _fake = null;
     }
 
     private class FakeDateTimeProvider : IDateTimeProvider
     {
+        private readonly Lock _lock = new();
         private readonly List<FakeTimer> _timers = [];
         private DateTime _now = DateTime.UtcNow;
 
+        public FakeDateTimeProvider(IDateTimeProvider original)
+        {
+            Original = original;
+        }
+
+        public IDateTimeProvider Original { get; }
+
         public DateTime Now()
         {
-            return _now;
+            lock (_lock)
+            {
+                return _now;
+            }
         }
 
         public ITimer NewTimer()
         {
             var timer = new FakeTimer();
-            _timers.Add(timer);
+            lock (_lock)
+            {
+                _timers.Add(timer);
+            }
+
             return timer;
         }
 
         public void Advance(long milliseconds)
         {
-            _now = _now.AddMilliseconds(milliseconds);
-            foreach (var timer in _timers)
+            lock (_lock)
             {
-                timer.Advance(milliseconds);
+                _now = _now.AddMilliseconds(milliseconds);
+                foreach (var timer in _timers)
+                {
+                    timer.Advance(milliseconds);
+                }
             }
         }
     }
 
     private class FakeTimer : ITimer
     {
+        private bool _running;
+
         public long ElapsedMilliseconds { get; private set; }
 
         public void Reset()
         {
+            _running = false;
             ElapsedMilliseconds = 0;
         }
 
         public void Start()
         {
+            _running = true;
         }
 
         public void Advance(long milliseconds)
         {
-            ElapsedMilliseconds += milliseconds;
+            if (_running)
+            {
+                ElapsedMilliseconds += milliseconds;
+            }
         }
     }
 }

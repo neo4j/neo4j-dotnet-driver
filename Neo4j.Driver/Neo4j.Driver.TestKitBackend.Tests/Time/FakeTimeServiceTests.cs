@@ -122,4 +122,101 @@ public class FakeTimeServiceTests : IDisposable
 
         DateTimeProvider.StaticInstance.Should().BeSameAs(_original);
     }
+
+    [Fact]
+    public void A_new_timer_does_not_accrue_until_started()
+    {
+        _service.Install();
+        var timer = DateTimeProvider.StaticInstance.NewTimer();
+
+        _service.Tick(100);
+
+        timer.ElapsedMilliseconds.Should().Be(0);
+    }
+
+    [Fact]
+    public void Reset_stops_the_timer_and_zeroes_it()
+    {
+        _service.Install();
+        var timer = DateTimeProvider.StaticInstance.NewTimer();
+        timer.Start();
+        _service.Tick(100);
+
+        timer.Reset();
+        _service.Tick(100);
+
+        timer.ElapsedMilliseconds.Should().Be(0);
+    }
+
+    [Fact]
+    public void Start_after_reset_resumes_accrual_from_zero()
+    {
+        _service.Install();
+        var timer = DateTimeProvider.StaticInstance.NewTimer();
+        timer.Start();
+        _service.Tick(100);
+        timer.Reset();
+
+        timer.Start();
+        _service.Tick(50);
+
+        timer.ElapsedMilliseconds.Should().Be(50);
+    }
+
+    [Fact]
+    public void Uninstall_of_a_superseded_service_leaves_the_newer_fake_installed()
+    {
+        var newerService = new FakeTimeService();
+        _service.Install();
+        newerService.Install();
+        var newerFake = DateTimeProvider.StaticInstance;
+
+        _service.Uninstall();
+
+        DateTimeProvider.StaticInstance.Should().BeSameAs(newerFake);
+    }
+
+    [Fact]
+    public void Uninstall_after_overlapping_installs_restores_the_real_provider()
+    {
+        var newerService = new FakeTimeService();
+        _service.Install();
+        newerService.Install();
+
+        _service.Uninstall();
+        newerService.Uninstall();
+
+        DateTimeProvider.StaticInstance.Should().BeSameAs(_original);
+    }
+
+    [Fact]
+    public async Task Timers_can_be_created_while_a_tick_is_advancing()
+    {
+        _service.Install();
+        var provider = DateTimeProvider.StaticInstance;
+
+        var ticking = Task.Run(
+            () =>
+            {
+                for (var i = 0; i < 2000; i++)
+                {
+                    _service.Tick(1);
+                }
+            },
+            TestContext.Current.CancellationToken);
+
+        var creating = Task.Run(
+            () =>
+            {
+                for (var i = 0; i < 2000; i++)
+                {
+                    provider.NewTimer();
+                }
+            },
+            TestContext.Current.CancellationToken);
+
+        var act = () => Task.WhenAll(ticking, creating);
+
+        await act.Should().NotThrowAsync();
+    }
 }

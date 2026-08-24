@@ -79,4 +79,34 @@ public class OutboundRoundTripTests
 
         value.Should().Be("value-1");
     }
+
+    [Fact]
+    public async Task A_write_failure_surfaces_the_writers_exception_and_frees_the_key()
+    {
+        _autoMocker.GetMock<IResponseWriter>()
+            .Setup(w => w.WriteAsync(It.IsAny<IProtocolMessage>()))
+            .ThrowsAsync(new IOException("broken pipe"));
+
+        var roundTrip = _autoMocker.CreateInstance<OutboundRoundTrip>();
+
+        var act = () => roundTrip.SendExpectingAsync<string>(new FakePrompt(), "key-1");
+        await act.Should().ThrowAsync<IOException>().WithMessage("broken pipe");
+
+        Action reuse = () => _expectationStore.Expect<string>("key-1");
+        reuse.Should().NotThrow();
+    }
+
+    [Fact]
+    public async Task Nothing_is_written_when_the_store_is_already_cancelled()
+    {
+        _expectationStore.CancelAll();
+
+        var roundTrip = _autoMocker.CreateInstance<OutboundRoundTrip>();
+
+        var act = () => roundTrip.SendExpectingAsync<string>(new FakePrompt(), "key-1");
+        await act.Should().ThrowAsync<OperationCanceledException>();
+
+        _autoMocker.GetMock<IResponseWriter>()
+            .Verify(w => w.WriteAsync(It.IsAny<IProtocolMessage>()), Times.Never);
+    }
 }
