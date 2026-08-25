@@ -17,44 +17,54 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
 [AutoRegister]
-internal class QueryApiTransaction : IInternalAsyncTransaction
+internal class QueryApiTransaction : IScopedTransaction
 {
+    private readonly ITransactionBeginner _beginner;
     private readonly ITransactionCommitter _committer;
-    private readonly IDisposable _loggingContext;
     private readonly ILogger _logger;
     private readonly ITransactionRollback _rollback;
     private readonly ITransactionRunner _runner;
 
+    private bool _disposed;
+
     public QueryApiTransaction(
+        ITransactionBeginner beginner,
         ITransactionRunner runner,
         ITransactionCommitter committer,
         ITransactionRollback rollback,
-        ILoggingContextTracker logContextTracker,
-        IQueryApiTransactionContextTracker txContextTracker,
         ILogger logger)
     {
+        _beginner = beginner;
         _runner = runner;
         _committer = committer;
         _rollback = rollback;
-        _loggingContext = logContextTracker.Add("transaction", txContextTracker.Context);
         _logger = logger;
     }
 
+    public event AsyncEventHandler? Disposed;
+
     public TransactionConfig TransactionConfig => TransactionConfig.Default;
 
-    public bool IsOpen { get; private set; } = true;
+    public bool IsOpen { get; private set; }
 
     public bool IsErrored(out Exception ex)
     {
         // any error would have already been thrown
         ex = null!;
         return false;
+    }
+
+    public async Task BeginAsync(CancellationToken cancellationToken = default)
+    {
+        await _beginner.BeginAsync(cancellationToken).ConfigureAwait(false);
+        IsOpen = true;
     }
 
     public async Task CommitAsync()
@@ -89,6 +99,13 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
 
     public async ValueTask DisposeAsync()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+
         if (IsOpen)
         {
             IsOpen = false;
@@ -96,7 +113,7 @@ internal class QueryApiTransaction : IInternalAsyncTransaction
             await _rollback.RollbackAsync().ConfigureAwait(false);
         }
 
-        _loggingContext.Dispose();
+        await Disposed.FireAsync().ConfigureAwait(false);
     }
 
     public void Dispose()

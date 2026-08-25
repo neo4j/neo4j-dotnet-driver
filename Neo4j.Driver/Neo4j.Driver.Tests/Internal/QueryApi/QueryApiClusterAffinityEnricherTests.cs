@@ -19,6 +19,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
 
@@ -28,7 +29,7 @@ public class QueryApiClusterAffinityEnricherTests
 {
     private static IQueryApiTransactionContextTracker TrackerWith(string txId, string? affinity)
     {
-        var tracker = new QueryApiTransactionContextTracker();
+        var tracker = new QueryApiTransactionContextTracker(new LoggingContextTracker());
         tracker.Set(new QueryApiTransactionContext(txId, affinity));
         return tracker;
     }
@@ -60,7 +61,7 @@ public class QueryApiClusterAffinityEnricherTests
     public async Task DoesNotAddHeader_WhenContextNotYetSet()
     {
         var request = new HttpRequestMessage();
-        var subject = new QueryApiClusterAffinityEnricher(new QueryApiTransactionContextTracker());
+        var subject = new QueryApiClusterAffinityEnricher(new QueryApiTransactionContextTracker(new LoggingContextTracker()));
 
         await subject.Enrich(request, TestContext.Current.CancellationToken);
 

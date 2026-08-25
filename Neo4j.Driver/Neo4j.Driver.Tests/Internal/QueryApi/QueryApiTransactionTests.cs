@@ -34,15 +34,11 @@ public class QueryApiTransactionTests
 
     private readonly AutoMocker _autoMocker = AutoMockerExtensions.ForTesting<QueryApiTransaction>();
 
-    public QueryApiTransactionTests()
+    private async Task<QueryApiTransaction> BegunTransactionAsync()
     {
-        _autoMocker.GetMock<IQueryApiTransactionContextTracker>()
-            .SetupGet(x => x.Context)
-            .Returns(new QueryApiTransactionContext(TxId, null));
-
-        _autoMocker.GetMock<ILoggingContextTracker>()
-            .Setup(x => x.Add(It.IsAny<string>(), It.IsAny<object>()))
-            .Returns(Mock.Of<IDisposable>());
+        var transaction = _autoMocker.CreateInstance<QueryApiTransaction>();
+        await transaction.BeginAsync();
+        return transaction;
     }
 
     [Fact]
@@ -63,7 +59,7 @@ public class QueryApiTransactionTests
             .Setup(r => r.RunAsync(query, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedCursor);
 
-        var subject = _autoMocker.CreateInstance<QueryApiTransaction>();
+        var subject = await BegunTransactionAsync();
         var result = await subject.RunAsync(query);
 
         result.Should().BeSameAs(expectedCursor);
@@ -78,7 +74,7 @@ public class QueryApiTransactionTests
             .Setup(r => r.RunAsync(It.Is<Query>(q => q.Text == "RETURN 1"), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedCursor);
 
-        var subject = _autoMocker.CreateInstance<QueryApiTransaction>();
+        var subject = await BegunTransactionAsync();
         var result = await subject.RunAsync("RETURN 1");
 
         result.Should().BeSameAs(expectedCursor);
@@ -87,7 +83,7 @@ public class QueryApiTransactionTests
     [Fact]
     public async Task CommitAsync_ThrowsAfterCommit()
     {
-        var subject = _autoMocker.CreateInstance<QueryApiTransaction>();
+        var subject = await BegunTransactionAsync();
         await subject.CommitAsync();
 
         var act = () => subject.CommitAsync();
@@ -97,7 +93,7 @@ public class QueryApiTransactionTests
     [Fact]
     public async Task RollbackAsync_ThrowsAfterCommit()
     {
-        var subject = _autoMocker.CreateInstance<QueryApiTransaction>();
+        var subject = await BegunTransactionAsync();
         await subject.CommitAsync();
 
         var act = () => subject.RollbackAsync();
@@ -107,7 +103,7 @@ public class QueryApiTransactionTests
     [Fact]
     public async Task RunAsync_ThrowsAfterCommit()
     {
-        var subject = _autoMocker.CreateInstance<QueryApiTransaction>();
+        var subject = await BegunTransactionAsync();
         await subject.CommitAsync();
 
         var act = () => subject.RunAsync(new Query("RETURN 1"));
@@ -117,7 +113,7 @@ public class QueryApiTransactionTests
     [Fact]
     public async Task RunAsync_ThrowsAfterRollback()
     {
-        var subject = _autoMocker.CreateInstance<QueryApiTransaction>();
+        var subject = await BegunTransactionAsync();
         await subject.RollbackAsync();
 
         var act = () => subject.RunAsync(new Query("RETURN 1"));
@@ -127,7 +123,7 @@ public class QueryApiTransactionTests
     [Fact]
     public async Task CommitAsync_ThrowsAfterRollback()
     {
-        var subject = _autoMocker.CreateInstance<QueryApiTransaction>();
+        var subject = await BegunTransactionAsync();
         await subject.RollbackAsync();
 
         var act = () => subject.CommitAsync();
@@ -135,15 +131,21 @@ public class QueryApiTransactionTests
     }
 
     [Fact]
-    public void IsOpen_TrueInitially()
+    public void IsOpen_FalseBeforeBegin()
     {
-        _autoMocker.CreateInstance<QueryApiTransaction>().IsOpen.Should().BeTrue();
+        _autoMocker.CreateInstance<QueryApiTransaction>().IsOpen.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task IsOpen_TrueAfterBegin()
+    {
+        (await BegunTransactionAsync()).IsOpen.Should().BeTrue();
     }
 
     [Fact]
     public async Task IsOpen_FalseAfterCommit()
     {
-        var subject = _autoMocker.CreateInstance<QueryApiTransaction>();
+        var subject = await BegunTransactionAsync();
         await subject.CommitAsync();
 
         subject.IsOpen.Should().BeFalse();
@@ -152,7 +154,7 @@ public class QueryApiTransactionTests
     [Fact]
     public async Task IsOpen_FalseAfterRollback()
     {
-        var subject = _autoMocker.CreateInstance<QueryApiTransaction>();
+        var subject = await BegunTransactionAsync();
         await subject.RollbackAsync();
 
         subject.IsOpen.Should().BeFalse();
@@ -168,7 +170,7 @@ public class QueryApiTransactionTests
             .Callback(() => rollbackCalled = true)
             .Returns(Task.CompletedTask);
 
-        var subject = _autoMocker.CreateInstance<QueryApiTransaction>();
+        var subject = await BegunTransactionAsync();
         await subject.DisposeAsync();
 
         rollbackCalled.Should().BeTrue();
@@ -185,7 +187,7 @@ public class QueryApiTransactionTests
             .Callback(() => rollbackCalled = true)
             .Returns(Task.CompletedTask);
 
-        var subject = _autoMocker.CreateInstance<QueryApiTransaction>();
+        var subject = await BegunTransactionAsync();
         await subject.CommitAsync();
         await subject.DisposeAsync();
 
@@ -202,11 +204,34 @@ public class QueryApiTransactionTests
             .Callback(() => rollbackCount++)
             .Returns(Task.CompletedTask);
 
-        var subject = _autoMocker.CreateInstance<QueryApiTransaction>();
+        var subject = await BegunTransactionAsync();
 
         await subject.RollbackAsync();
         await subject.DisposeAsync();
 
         rollbackCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_WhenBeginFailed_DoesNotRollBack()
+    {
+        var rollbackCalled = false;
+
+        _autoMocker.GetMock<ITransactionBeginner>()
+            .Setup(b => b.BeginAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ClientException("Neo.ClientError.Statement.SyntaxError", "nope"));
+
+        _autoMocker.GetMock<ITransactionRollback>()
+            .Setup(h => h.RollbackAsync(It.IsAny<CancellationToken>()))
+            .Callback(() => rollbackCalled = true)
+            .Returns(Task.CompletedTask);
+
+        var subject = _autoMocker.CreateInstance<QueryApiTransaction>();
+        var begin = () => subject.BeginAsync();
+        await begin.Should().ThrowAsync<ClientException>();
+
+        await subject.DisposeAsync();
+
+        rollbackCalled.Should().BeFalse();
     }
 }

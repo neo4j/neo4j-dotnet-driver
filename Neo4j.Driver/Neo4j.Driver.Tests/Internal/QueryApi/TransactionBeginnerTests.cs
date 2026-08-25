@@ -68,7 +68,7 @@ public class TransactionBeginnerTests
 
     private QueryApiTransactionContextTracker UseRealContextTracker()
     {
-        var holder = new QueryApiTransactionContextTracker();
+        var holder = new QueryApiTransactionContextTracker(new LoggingContextTracker());
         _autoMocker.Use<IQueryApiTransactionContextTracker>(holder);
         return holder;
     }

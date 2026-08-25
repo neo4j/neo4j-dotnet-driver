@@ -15,13 +15,35 @@
 
 #nullable enable
 
+using System;
+
 namespace Neo4j.Driver.Internal.QueryApi;
 
-internal class QueryApiTransactionContextTracker : IQueryApiTransactionContextTracker
+internal class QueryApiTransactionContextTracker : IQueryApiTransactionContextTracker, IDisposable
 {
+    private readonly ILoggingContextTracker _logContextTracker;
+
+    private IDisposable? _loggingContext;
+
+    public QueryApiTransactionContextTracker(ILoggingContextTracker logContextTracker)
+    {
+        _logContextTracker = logContextTracker;
+    }
+
     public QueryApiTransactionContext? Context { get; private set; }
     public bool IsFailed { get; private set; }
 
-    public void Set(QueryApiTransactionContext context) => Context = context;
+    public void Set(QueryApiTransactionContext context)
+    {
+        Context = context;
+        _loggingContext = _logContextTracker.Add("transaction", context);
+    }
+
     public void MarkFailed() => IsFailed = true;
+
+    public void Dispose()
+    {
+        _loggingContext?.Dispose();
+        _loggingContext = null;
+    }
 }

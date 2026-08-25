@@ -25,16 +25,13 @@ namespace Neo4j.Driver.Internal.QueryApi;
 [AutoRegister]
 internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
 {
-    private readonly ITransactionBeginner _beginner;
     private readonly ILogger _logger;
     private readonly IResolutionScope _resolutionScope;
 
     public QueryApiTransactionFactory(
-        ITransactionBeginner beginner,
         IResolutionScope resolutionScope,
         ILogger logger)
     {
-        _beginner = beginner;
         _resolutionScope = resolutionScope;
         _logger = logger;
     }
@@ -45,7 +42,33 @@ internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
         CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("Opening {mode} transaction", mode);
-        await _beginner.BeginAsync(cancellationToken).ConfigureAwait(false);
-        return _resolutionScope.Resolve<IInternalAsyncTransaction>();
+
+        var transactionScope = _resolutionScope.CreateChildScope(r => r
+            .RegisterType<IQueryApiTransactionContextTracker, QueryApiTransactionContextTracker>(singleton: true));
+
+        var transaction = transactionScope.Resolve<IScopedTransaction>();
+        transaction.Disposed += GetTransactionDisposedHandler(transactionScope);
+
+        try
+        {
+            await transaction.BeginAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            await transactionScope.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
+
+        return transaction;
+    }
+
+    private static AsyncEventHandler GetTransactionDisposedHandler(IAsyncDisposable transactionScope)
+    {
+        return TransactionDisposed;
+
+        async Task TransactionDisposed(object? o, EventArgs eventArgs)
+        {
+            await transactionScope.DisposeAsync().ConfigureAwait(false);
+        }
     }
 }
