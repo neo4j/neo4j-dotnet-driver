@@ -53,8 +53,7 @@ internal class QueryApiSessionFactory : IQueryApiSessionFactory
             .RegisterInstance(_driverTracker.CreateChild())
             .RegisterInstance(config)
             .RegisterInstance(authTokenManager)
-            .RegisterType<ISessionContext, QueryApiSessionContext>()
-            .RegisterType<IQueryApiTransactionContextTracker, QueryApiTransactionContextTracker>(singleton: true));
+            .RegisterType<ISessionContext, QueryApiSessionContext>());
 
         sessionScope.Resolve<ILoggingContextTracker>().Add("session", sessionId);
 

@@ -16,6 +16,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -93,6 +94,7 @@ public class QueryApiScopeWiringTests
             .DeleteAsync("query/v2/tx/tx-1", TestContext.Current.CancellationToken);
 
         request.Headers.Contains("neo4j-cluster-affinity").Should().BeFalse();
+        sessionScope.Resolve<IEnumerable<IHttpRequestEnricher>>().Should().BeEmpty();
     }
 
     [Fact]
@@ -124,12 +126,10 @@ public class QueryApiScopeWiringTests
         driverScope.RegisterInstance(Mock.Of<IQueryApiJsonSerializer>());
         driverScope.RegisterInstance(Mock.Of<IQueryApiRequestHeaderWriter>());
         driverScope.RegisterInstance<ILoggingContextTracker>(new LoggingContextTracker());
-        driverScope.RegisterType<IHttpRequestEnricher, QueryApiClusterAffinityEnricher>();
         driverScope.RegisterType<IQueryApiRequestBuilder, QueryApiRequestBuilder>();
 
         var sessionScope = driverScope.CreateChildScope(r => r
-            .RegisterInstance(Mock.Of<ISessionContext>(c => c.Database == "neo4j"))
-            .RegisterType<IQueryApiTransactionContextTracker, QueryApiTransactionContextTracker>(singleton: true));
+            .RegisterInstance(Mock.Of<ISessionContext>(c => c.Database == "neo4j")));
 
         return (sessionScope, driverScope);
     }
@@ -137,7 +137,8 @@ public class QueryApiScopeWiringTests
     private static IResolutionScope CreateTransactionScope(IResolutionScope sessionScope)
     {
         return sessionScope.CreateChildScope(r => r
-            .RegisterType<IQueryApiTransactionContextTracker, QueryApiTransactionContextTracker>(singleton: true));
+            .RegisterType<IQueryApiTransactionContextTracker, QueryApiTransactionContextTracker>(singleton: true)
+            .RegisterType<IHttpRequestEnricher, QueryApiClusterAffinityEnricher>());
     }
 
     private static (IInternalAsyncSession session, Mock<IQueryApiRequestBuilder> requestBuilder)

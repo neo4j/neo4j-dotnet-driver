@@ -16,7 +16,6 @@
 #nullable enable
 
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -299,6 +298,13 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         }
 
         var elementType = serviceType.GetGenericArguments()[0];
+
+        if (childScope != null && childScope != this)
+        {
+            resolved = childScope.ResolveEnumerable(elementType, null, childScope);
+            return true;
+        }
+
         resolved = ResolveEnumerable(elementType, childRegistrations, childScope);
         return true;
     }
@@ -434,12 +440,8 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 
         if (_parent != null)
         {
-            var enumerableType = typeof(IEnumerable<>).MakeGenericType(elementType);
-            var parentEnumerable = _parent.ResolveCore(enumerableType, null, effectiveOverrides, childScope);
-            if (parentEnumerable is IEnumerable enumerable)
-            {
-                instances.AddRange(enumerable.Cast<object>());
-            }
+            var parentEnumerable = _parent.ResolveEnumerable(elementType, effectiveOverrides, childScope);
+            instances.AddRange(parentEnumerable.Cast<object>());
         }
 
         if (_registrations.TryGetValue(elementType, out var registrations))

@@ -1082,4 +1082,159 @@ public class ScopedContainerTests
 
         act.Should().Throw<ObjectDisposedException>();
     }
+
+    public interface ICollected
+    {
+        string Name { get; }
+    }
+
+    public class ParentCollected : ICollected
+    {
+        public string Name => "parent";
+    }
+
+    public class ChildCollected : ICollected
+    {
+        public string Name => "child";
+    }
+
+    public class GrandchildCollected : ICollected
+    {
+        public string Name => "grandchild";
+    }
+
+    public interface IScopedState
+    {
+        int Id { get; }
+    }
+
+    public class ScopedState : IScopedState
+    {
+        private static int _next;
+
+        public ScopedState()
+        {
+            Id = Interlocked.Increment(ref _next);
+        }
+
+        public int Id { get; }
+    }
+
+    public class StateDependentCollected : ICollected
+    {
+        public StateDependentCollected(IScopedState state)
+        {
+            State = state;
+        }
+
+        public IScopedState State { get; }
+        public string Name => "state-dependent";
+    }
+
+    public class DisposableCollected : ICollected, IDisposable
+    {
+        public bool Disposed { get; private set; }
+        public string Name => "disposable";
+
+        public void Dispose()
+        {
+            Disposed = true;
+        }
+    }
+
+    public class CollectionConsumer
+    {
+        public CollectionConsumer(IEnumerable<ICollected> collected)
+        {
+            Collected = collected;
+        }
+
+        public IEnumerable<ICollected> Collected { get; }
+    }
+
+    public class SingleConsumer
+    {
+        public SingleConsumer(ICollected collected)
+        {
+            Collected = collected;
+        }
+
+        public ICollected Collected { get; }
+    }
+
+    [Fact]
+    public void ResolveEnumerable_ThroughParentRegisteredConsumer_SeesChildScopeRegistrations()
+    {
+        var parent = new ScopedContainer();
+        parent.RegisterType<ICollected, ParentCollected>();
+        parent.RegisterType<CollectionConsumer>();
+
+        var child = parent.CreateChildScope(r => r.RegisterType<ICollected, ChildCollected>());
+        var grandchild = child.CreateChildScope(r => r.RegisterType<ICollected, GrandchildCollected>());
+
+        var names = grandchild.Resolve<CollectionConsumer>().Collected.Select(c => c.Name);
+
+        names.Should().Equal("parent", "child", "grandchild");
+    }
+
+    [Fact]
+    public void ResolveEnumerable_ThroughParentRegisteredConsumer_MatchesDirectResolutionFromSameScope()
+    {
+        var parent = new ScopedContainer();
+        parent.RegisterType<ICollected, ParentCollected>();
+        parent.RegisterType<CollectionConsumer>();
+
+        var child = parent.CreateChildScope(r => r.RegisterType<ICollected, ChildCollected>());
+
+        var viaConsumer = child.Resolve<CollectionConsumer>().Collected.Select(c => c.Name).ToArray();
+        var direct = child.Resolve<IEnumerable<ICollected>>().Select(c => c.Name).ToArray();
+
+        viaConsumer.Should().Equal(direct);
+    }
+
+    [Fact]
+    public void ResolveEnumerable_SeesTheSameRegistrationsAsSingularResolution()
+    {
+        var parent = new ScopedContainer();
+        parent.RegisterType<ICollected, ParentCollected>();
+        parent.RegisterType<CollectionConsumer>();
+        parent.RegisterType<SingleConsumer>();
+
+        var child = parent.CreateChildScope(r => r.RegisterType<ICollected, ChildCollected>());
+
+        var singular = child.Resolve<SingleConsumer>().Collected.Name;
+        var collected = child.Resolve<CollectionConsumer>().Collected.Select(c => c.Name);
+
+        collected.Should().Contain(singular);
+    }
+
+    [Fact]
+    public void ResolveEnumerable_ThroughParentRegisteredConsumer_UsesTheChildScopeSingleton()
+    {
+        var parent = new ScopedContainer();
+        parent.RegisterType<ICollected, StateDependentCollected>();
+        parent.RegisterType<CollectionConsumer>();
+
+        var child = parent.CreateChildScope(r => r.RegisterType<IScopedState, ScopedState>(singleton: true));
+
+        var scopeSingleton = child.Resolve<IScopedState>();
+        var element = (StateDependentCollected)child.Resolve<CollectionConsumer>().Collected.Single();
+
+        element.State.Should().BeSameAs(scopeSingleton);
+    }
+
+    [Fact]
+    public async Task ResolveEnumerable_ChildRegisteredElement_IsDisposedWithThatScope()
+    {
+        var parent = new ScopedContainer();
+        parent.RegisterType<CollectionConsumer>();
+
+        var child = parent.CreateChildScope(r => r.RegisterType<ICollected, DisposableCollected>());
+        var element = (DisposableCollected)child.Resolve<CollectionConsumer>().Collected.Single();
+
+        element.Disposed.Should().BeFalse();
+        await child.DisposeAsync();
+
+        element.Disposed.Should().BeTrue();
+    }
 }

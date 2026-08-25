@@ -44,7 +44,8 @@ internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
         _logger.LogDebug("Opening {mode} transaction", mode);
 
         var transactionScope = _resolutionScope.CreateChildScope(r => r
-            .RegisterType<IQueryApiTransactionContextTracker, QueryApiTransactionContextTracker>(singleton: true));
+            .RegisterType<IQueryApiTransactionContextTracker, QueryApiTransactionContextTracker>(singleton: true)
+            .RegisterType<IHttpRequestEnricher, QueryApiClusterAffinityEnricher>());
 
         var transaction = transactionScope.Resolve<IScopedTransaction>();
         transaction.Disposed += GetTransactionDisposedHandler(transactionScope);
