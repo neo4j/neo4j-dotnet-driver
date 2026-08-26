@@ -28,6 +28,7 @@ internal interface IRoutingTableManager
         Bookmarks bookmark);
 
     Task<IServerInfo> GetServerInfoAsync(Uri uri, string database);
+    Task<IRoutingTable> ForceUpdateAsync(string database, SessionConfig sessionConfig, Bookmarks bookmarks);
     void Clear();
     void ForgetServer(Uri uri, string database);
     void ForgetWriter(Uri uri, string database);

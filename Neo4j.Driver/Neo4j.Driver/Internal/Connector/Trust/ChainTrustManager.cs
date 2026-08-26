@@ -41,6 +41,12 @@ internal class ChainTrustManager : TrustManager
         _revocationScope = revocationScope;
     }
 
+    internal bool IsDefaultConfiguration =>
+        !_useMachineCtx &&
+        _verifyHostname &&
+        _revocationMode == X509RevocationMode.NoCheck &&
+        _revocationScope == X509RevocationFlag.ExcludeRoot;
+
     public override bool ValidateServerCertificate(
         Uri uri,
         X509Certificate2 certificate,

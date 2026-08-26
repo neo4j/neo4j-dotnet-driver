@@ -19,6 +19,7 @@ using System.Security.Cryptography.X509Certificates;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector.Trust;
+using Neo4j.Driver.Internal.Util;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Connector;
@@ -128,21 +129,17 @@ public class EncryptionManagerTests
         }
 
         [Theory]
-        [InlineData("bolt+s", EncryptionLevel.None)]
-        [InlineData("neo4j+s", EncryptionLevel.None)]
-        [InlineData("bolt+ssc", EncryptionLevel.None)]
-        [InlineData("neo4j+ssc", EncryptionLevel.None)]
-        [InlineData("bolt+s", EncryptionLevel.Encrypted)]
-        [InlineData("neo4j+s", EncryptionLevel.Encrypted)]
-        [InlineData("bolt+ssc", EncryptionLevel.Encrypted)]
-        [InlineData("neo4j+ssc", EncryptionLevel.Encrypted)]
-        public void ShouldErrorIfEncryptionLevelNotNull(string scheme, EncryptionLevel level)
+        [InlineData("bolt+s")]
+        [InlineData("neo4j+s")]
+        [InlineData("bolt+ssc")]
+        [InlineData("neo4j+ssc")]
+        public void ShouldErrorIfEncryptionLevelExplicitlyEnabled(string scheme)
         {
             var uri = new Uri($"{scheme}://localhost/?");
-            var ex = Record.Exception(() => EncryptionManager.Create(uri, level, null, null));
+            var ex = Record.Exception(() => EncryptionManager.Create(uri, EncryptionLevel.Encrypted, null, null));
 
             ex.Should().BeOfType<ArgumentException>();
-            ex.Message.Should().Contain("cannot both be set via uri scheme and driver configuration");
+            ex.Message.Should().Contain("specify conflicting encryption and trust settings");
         }
 
         [Theory]
@@ -156,7 +153,82 @@ public class EncryptionManagerTests
             var ex = Record.Exception(() => EncryptionManager.Create(uri, null, new CustomTrustManager(), null));
 
             ex.Should().BeOfType<ArgumentException>();
-            ex.Message.Should().Contain("cannot both be set via uri scheme and driver configuration");
+            ex.Message.Should().Contain("specify conflicting encryption and trust settings");
+        }
+
+        [Theory]
+        [InlineData("bolt+s")]
+        [InlineData("neo4j+s")]
+        [InlineData("bolt+ssc")]
+        [InlineData("neo4j+ssc")]
+        public void ShouldNotErrorAndUseSchemeIfEncryptionLevelMatchesTheDefault(string scheme)
+        {
+            var uri = new Uri($"{scheme}://localhost/?");
+            var encryption = EncryptionManager.Create(uri, EncryptionLevel.None, null, null);
+
+            var expected = Neo4jUri.ParseUriSchemeToEncryptionManager(uri, null);
+            encryption.UseTls.Should().Be(expected.UseTls);
+            encryption.TrustManager.Should().BeOfType(expected.TrustManager.GetType());
+        }
+
+        [Theory]
+        [InlineData("bolt+s")]
+        [InlineData("neo4j+s")]
+        [InlineData("bolt+ssc")]
+        [InlineData("neo4j+ssc")]
+        public void ShouldNotErrorAndUseSchemeIfTrustManagerMatchesTheDefaultChainTrust(string scheme)
+        {
+            var uri = new Uri($"{scheme}://localhost/?");
+            var encryption = EncryptionManager.Create(uri, null, TrustManager.CreateChainTrust(), null);
+
+            var expected = Neo4jUri.ParseUriSchemeToEncryptionManager(uri, null);
+            encryption.UseTls.Should().Be(expected.UseTls);
+            encryption.TrustManager.Should().BeOfType(expected.TrustManager.GetType());
+        }
+
+        [Theory]
+        [InlineData("bolt+s")]
+        [InlineData("neo4j+s")]
+        [InlineData("bolt+ssc")]
+        [InlineData("neo4j+ssc")]
+        public void ShouldNotErrorIfBothEncryptionLevelAndTrustManagerMatchTheDefault(string scheme)
+        {
+            var uri = new Uri($"{scheme}://localhost/?");
+            var encryption = EncryptionManager.Create(uri, EncryptionLevel.None, TrustManager.CreateChainTrust(), null);
+
+            var expected = Neo4jUri.ParseUriSchemeToEncryptionManager(uri, null);
+            encryption.UseTls.Should().Be(expected.UseTls);
+            encryption.TrustManager.Should().BeOfType(expected.TrustManager.GetType());
+        }
+
+        [Theory]
+        [InlineData("bolt+s")]
+        [InlineData("neo4j+s")]
+        [InlineData("bolt+ssc")]
+        [InlineData("neo4j+ssc")]
+        public void ShouldErrorIfEncryptionLevelMatchesDefaultButTrustManagerDoesNot(string scheme)
+        {
+            var uri = new Uri($"{scheme}://localhost/?");
+            var ex = Record.Exception(
+                () => EncryptionManager.Create(uri, EncryptionLevel.None, new CustomTrustManager(), null));
+
+            ex.Should().BeOfType<ArgumentException>();
+            ex.Message.Should().Contain("specify conflicting encryption and trust settings");
+        }
+
+        [Theory]
+        [InlineData("bolt+s")]
+        [InlineData("neo4j+s")]
+        [InlineData("bolt+ssc")]
+        [InlineData("neo4j+ssc")]
+        public void ShouldErrorIfTrustManagerMatchesDefaultButEncryptionLevelDoesNot(string scheme)
+        {
+            var uri = new Uri($"{scheme}://localhost/?");
+            var ex = Record.Exception(
+                () => EncryptionManager.Create(uri, EncryptionLevel.Encrypted, TrustManager.CreateChainTrust(), null));
+
+            ex.Should().BeOfType<ArgumentException>();
+            ex.Message.Should().Contain("specify conflicting encryption and trust settings");
         }
     }
 

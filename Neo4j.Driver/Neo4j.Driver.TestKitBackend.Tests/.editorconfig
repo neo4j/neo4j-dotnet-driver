@@ -1,0 +1,6 @@
+# Inherits the solution-level Neo4j.Driver/.editorconfig; only overrides below.
+# GenerateDocumentationFile (needed for IDE0005-as-build-error) also activates CS1591
+# ("missing XML comment"). Test classes aren't documented, so silence CS1591 in the IDE as well
+# as the build (NoWarn only covers the build).
+[*.cs]
+dotnet_diagnostic.CS1591.severity = none

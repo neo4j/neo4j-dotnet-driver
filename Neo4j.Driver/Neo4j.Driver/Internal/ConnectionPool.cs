@@ -265,6 +265,15 @@ internal sealed class ConnectionPool : IConnectionPool
             "Should not be getting a routing table on a connection pool when it is the connection provider to the driver. Only Loadbalancer should do that.");
     }
 
+    public Task<IRoutingTable> ForceRoutingTableUpdateAsync(
+        string database,
+        SessionConfig sessionConfig,
+        Bookmarks bookmarks)
+    {
+        throw new NotSupportedException(
+            "Should not be forcing a routing table update on a connection pool when it is the connection provider to the driver. Only Loadbalancer should do that.");
+    }
+
     public Task DeactivateAsync()
     {
         if (Interlocked.CompareExchange(ref _poolStatus, Inactive, Active) == Active)
@@ -471,8 +480,7 @@ internal sealed class ConnectionPool : IConnectionPool
         catch (Exception ex) when (ex is OperationCanceledException or TimeoutException)
         {
             _poolMetricsListener?.PoolTimedOutToAcquire();
-            throw new ClientException(
-                $"Failed to obtain a connection from pool within {ConnectionAcquisitionTimeout}");
+            throw new ClientException($"Failed to obtain a connection from pool within {ConnectionAcquisitionTimeout}");
         }
     }
 

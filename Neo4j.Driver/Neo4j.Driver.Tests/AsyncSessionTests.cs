@@ -498,6 +498,11 @@ public class AsyncSessionTests
             throw new NotSupportedException();
         }
 
+        public Task<IRoutingTable> ForceRoutingTableUpdateAsync(string database, Driver.SessionConfig sessionConfig, Bookmarks bookmarks)
+        {
+            throw new NotSupportedException();
+        }
+
         public ValueTask DisposeAsync()
         {
             throw new NotImplementedException();
@@ -644,6 +649,8 @@ public class AsyncSessionTests
             public Task<bool> SupportsMultiDbAsync() => Task.FromResult(true);
             public Task<bool> SupportsReAuthAsync() => Task.FromResult(false);
             public IRoutingTable GetRoutingTable(string database) => null;
+            public Task<IRoutingTable> ForceRoutingTableUpdateAsync(string database, Driver.SessionConfig sessionConfig, Bookmarks bookmarks) =>
+                Task.FromResult<IRoutingTable>(null);
             public ValueTask DisposeAsync() => new(Task.CompletedTask);
             public void Dispose() { }
             public Task CloseAsync() => Task.CompletedTask;
