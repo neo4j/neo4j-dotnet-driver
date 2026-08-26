@@ -1,0 +1,64 @@
+// Copyright (c) "Neo4j"
+// Neo4j Sweden AB [https://neo4j.com]
+//
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using Microsoft.Extensions.Logging;
+using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Serialization;
+
+namespace Neo4j.Driver.TestKitBackend.Messages;
+
+internal record GetRoutingTableRequest : IProtocolMessage
+{
+    [StoredObject]
+    public required IDriver Driver { get; init; }
+    public string? Database { get; init; }
+}
+
+internal record RoutingTableResponse(
+    string? Database,
+    long Ttl,
+    IEnumerable<string> Routers,
+    IEnumerable<string> Readers,
+    IEnumerable<string> Writers) : IProtocolMessage;
+
+internal class GetRoutingTableHandler : MessageHandler<GetRoutingTableRequest>
+{
+    private readonly IResponseWriter _responseWriter;
+    private readonly ILogger _logger;
+
+    public GetRoutingTableHandler(IResponseWriter responseWriter, ILogger logger)
+    {
+        _responseWriter = responseWriter;
+        _logger = logger;
+    }
+
+    public override async Task ProcessAsync(GetRoutingTableRequest message)
+    {
+        var routingTable = ((Internal.IInternalDriver)message.Driver).GetRoutingTable(message.Database);
+        _logger.LogDebug("Fetched routing table for database '{Database}'", message.Database);
+
+        // No cached table - testkit expects an empty RoutingTable here, not an error.
+        await _responseWriter.WriteAsync(
+            routingTable is null
+                ? new RoutingTableResponse(message.Database, 0, [], [], [])
+                : new RoutingTableResponse(
+                    string.IsNullOrEmpty(routingTable.Database) ? null : routingTable.Database,
+                    routingTable.ExpireAfterSeconds,
+                    routingTable.Routers.Select(x => x.Authority),
+                    routingTable.Readers.Select(x => x.Authority),
+                    routingTable.Writers.Select(x => x.Authority)));
+    }
+}

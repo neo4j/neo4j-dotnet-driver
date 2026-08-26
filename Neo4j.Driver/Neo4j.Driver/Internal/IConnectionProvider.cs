@@ -34,6 +34,7 @@ internal interface IConnectionProvider : IAsyncDisposable
     Task<bool> SupportsMultiDbAsync();
     Task<bool> SupportsReAuthAsync();
     IRoutingTable GetRoutingTable(string database);
+    Task<IRoutingTable> ForceRoutingTableUpdateAsync(string database, SessionConfig sessionConfig, Bookmarks bookmarks);
     Task<IServerInfo> VerifyConnectivityAndGetInfoAsync();
     
     bool IsDirectDriver { get; }

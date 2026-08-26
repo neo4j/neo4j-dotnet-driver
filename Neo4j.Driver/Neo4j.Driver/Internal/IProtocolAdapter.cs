@@ -35,4 +35,5 @@ internal interface IProtocolAdapter : IAsyncDisposable
     Task<bool> SupportsReAuthAsync();
     Task<IServerInfo> VerifyConnectivityAndGetInfoAsync();
     IRoutingTable GetRoutingTable(string database);
+    Task<IRoutingTable> ForceRoutingTableUpdateAsync(string database, Bookmarks bookmarks);
 }

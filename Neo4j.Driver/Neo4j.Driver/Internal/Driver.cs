@@ -205,6 +205,12 @@ internal sealed class Driver : IInternalDriver
         return _server.GetRoutingTable(database);
     }
 
+    //Non public facing api. Used for testing with testkit only
+    public Task<IRoutingTable> ForceRoutingTableUpdateAsync(string database, Bookmarks bookmarks)
+    {
+        return _server.ForceRoutingTableUpdateAsync(database, bookmarks);
+    }
+
     private void Close()
     {
         CloseAsync().GetAwaiter().GetResult();

@@ -218,6 +218,11 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         return _routingTableManager.RoutingTableFor(database);
     }
 
+    public Task<IRoutingTable> ForceRoutingTableUpdateAsync(string database, SessionConfig sessionConfig, Bookmarks bookmarks)
+    {
+        return _routingTableManager.ForceUpdateAsync(database, sessionConfig, bookmarks);
+    }
+
     public ValueTask DisposeAsync()
     {
         if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
