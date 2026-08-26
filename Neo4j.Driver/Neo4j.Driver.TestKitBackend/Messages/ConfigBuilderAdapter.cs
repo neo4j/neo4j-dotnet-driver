@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.Preview.Encryption;
+
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
 internal interface IConfigBuilder
@@ -37,6 +39,11 @@ internal interface IConfigBuilder
     IConfigBuilder WithNotifications(Severity? minimumSeverity, Category[]? disabledCategories);
     IConfigBuilder WithClientCertificateProvider(IClientCertificateProvider clientCertificateProvider);
     IConfigBuilder WithResolver(IServerAddressResolver resolver);
+
+    IConfigBuilder WithPropertyEncryptionProfiles(
+        IReadOnlyList<IPropertyEncryptionProfile> propertyEncryptionProfiles);
+
+    IConfigBuilder WithServiceOverride<TService>(TService instance);
 }
 
 internal class ConfigBuilderAdapter : IConfigBuilder
@@ -143,6 +150,19 @@ internal class ConfigBuilderAdapter : IConfigBuilder
     public IConfigBuilder WithResolver(IServerAddressResolver resolver)
     {
         _builder.WithResolver(resolver);
+        return this;
+    }
+
+    public IConfigBuilder WithPropertyEncryptionProfiles(
+        IReadOnlyList<IPropertyEncryptionProfile> propertyEncryptionProfiles)
+    {
+        _builder.WithPropertyEncryptionProfiles(propertyEncryptionProfiles);
+        return this;
+    }
+
+    public IConfigBuilder WithServiceOverride<TService>(TService instance)
+    {
+        _builder.WithServiceOverride(instance);
         return this;
     }
 }
