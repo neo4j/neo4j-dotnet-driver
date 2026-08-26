@@ -17,14 +17,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Encryption;
-using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
-using Neo4j.Driver.Tests.TestBackend.Protocol.JsonConverters;
-using Neo4j.Driver.Tests.TestBackend.Protocol.PropertyEncryption;
-using Neo4j.Driver.Tests.TestBackend.PropertyEncryption;
 using Neo4j.Driver.Tests.TestBackend.Resolvers;
-using Neo4j.Driver.Tests.TestBackend.Types;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend.Protocol.Driver;
@@ -35,9 +29,6 @@ internal class NewDriver : ProtocolObject
 
     [JsonIgnore]
     public IDriver Driver { get; set; }
-
-    [JsonIgnore]
-    public FixedIvProvider FixedIvProvider { get; } = new();
 
     [JsonIgnore]
     private Controller Control { get; set; }
@@ -196,30 +187,6 @@ internal class NewDriver : ProtocolObject
             configBuilder.WithDisableAutoCommitRetries(data.disableAutoCommitRetries.Value);
         }
 
-        if (data.propertyEncryptionProfiles != null)
-        {
-            var profiles = data.propertyEncryptionProfiles
-                .Select(
-                    p =>
-                    {
-                        var kes = p.kek != null
-                            ? new FixtureKeyEncapsulationService(CypherToNative.ConvertStringToBytes(p.kek))
-                            : new FixtureKeyEncapsulationService();
-
-                        var repository = new FixtureEncapsulatedKeyRepository();
-                        ObjManager.AddProtocolObject(
-                            new EncryptionProfileFixture(kes, repository),
-                            $"{uniqueId}:{p.name}");
-
-                        return PropertyEncryptionProfile.Envelope(p.name, kes, repository);
-                    })
-                .ToArray();
-
-            configBuilder.WithPropertyEncryptionProfiles(profiles);
-        }
-
-        configBuilder.WithServiceOverride<IIvProvider>(FixedIvProvider);
-
         var logger = new SimpleNeo4JLogger();
         configBuilder.WithLogger(logger);
     }
@@ -267,13 +234,5 @@ internal class NewDriver : ProtocolObject
         public string[] notificationsDisabledCategories { get; set; }
         public int? livenessCheckTimeoutMs { get; set; }
         public bool? disableAutoCommitRetries { get; set; }
-        public PropertyEncryptionProfileType[] propertyEncryptionProfiles { get; set; }
-    }
-
-    public class PropertyEncryptionProfileType
-    {
-        public string name { get; set; }
-
-        public string kek { get; set; }
     }
 }

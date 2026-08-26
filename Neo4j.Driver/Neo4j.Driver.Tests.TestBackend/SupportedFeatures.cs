@@ -40,7 +40,6 @@ internal static class SupportedFeatures
             "Feature:API:Driver.VerifyConnectivity",
             "Feature:API:Driver.SupportsSessionAuth",
             "Feature:API:Liveness.Check",
-            "Feature:API:PropertyEncryption",
             "Feature:API:Result.List",
             "Feature:API:Result.Peek",
             "Feature:API:Result.Single",

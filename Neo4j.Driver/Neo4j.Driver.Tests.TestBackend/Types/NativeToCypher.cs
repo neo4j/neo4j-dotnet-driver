@@ -272,7 +272,7 @@ internal static class NativeToCypher
         };
     }
 
-    internal static string ByteStreamToHexString(byte[] byteStream)
+    private static string ByteStreamToHexString(byte[] byteStream)
     {
         return string.Join(" ", byteStream.Select(b => b.ToString("x2")));
     }

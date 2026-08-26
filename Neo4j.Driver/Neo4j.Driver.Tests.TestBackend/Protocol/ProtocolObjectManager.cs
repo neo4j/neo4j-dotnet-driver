@@ -39,17 +39,6 @@ internal class ProtocolObjectManager
         ProtocolObjects[obj.uniqueId] = obj;
     }
 
-    public void AddProtocolObject(ProtocolObject obj, string id)
-    {
-        if (ProtocolObjects.ContainsKey(id))
-        {
-            throw new TestKitProtocolException($"An object with id '{id}' is already registered.");
-        }
-
-        obj.SetUniqueId(id);
-        ProtocolObjects[id] = obj;
-    }
-
     public ProtocolObject GetObject(string id)
     {
         if (string.IsNullOrEmpty(id))
