@@ -39,7 +39,6 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
     private readonly object _singletonLock = new();
     private bool _disposed;
 
-    // Never null: the ThreadLocal factory always produces a fresh stack per thread.
     private Stack<Type> ResolutionStack => _resolutionStack.Value!;
 
     private IEnumerable<Type> GetStackOldestFirst()
@@ -76,20 +75,11 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         _resolutionStack.Dispose();
     }
 
-    public TService Resolve<TService>()
-    {
-        return (TService)ResolveCore(typeof(TService), null, null);
-    }
+    public TService Resolve<TService>() => (TService)ResolveCore(typeof(TService), null);
 
-    public object Resolve(Type serviceType)
-    {
-        return ResolveCore(serviceType, null, null);
-    }
+    public object Resolve(Type serviceType) => ResolveCore(serviceType, null);
 
-    public object Resolve(Type serviceType, Type? requestingType)
-    {
-        return ResolveCore(serviceType, requestingType, null);
-    }
+    public object Resolve(Type serviceType, Type? requestingType) => ResolveCore(serviceType, requestingType);
 
     public bool TryResolve<T>([NotNullWhen(true)] out T? value)
     {
@@ -100,7 +90,7 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 
     public bool TryResolve(Type serviceType, [NotNullWhen(true)] out object? service)
     {
-        return TryResolveCore(serviceType, null, null, null, out service);
+        return TryResolveCore(serviceType, null, out service);
     }
 
     public IResolutionScope CreateChildScope(Action<IServiceRegistry> registrations)
@@ -198,13 +188,9 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
         return this;
     }
 
-    private object ResolveCore(
-        Type serviceType,
-        Type? requestingType,
-        Dictionary<Type, List<Registration>>? extraRegistrations,
-        ScopedContainer? childScope = null)
+    private object ResolveCore(Type serviceType, Type? requestingType)
     {
-        if (TryResolveCore(serviceType, requestingType, extraRegistrations, childScope, out var resolved))
+        if (TryResolveCore(serviceType, requestingType, out var resolved))
         {
             return resolved;
         }
@@ -217,121 +203,81 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
     private bool TryResolveCore(
         Type serviceType,
         Type? requestingType,
-        Dictionary<Type, List<Registration>>? childRegistrations,
-        ScopedContainer? childScope,
         [NotNullWhen(true)] out object? resolved)
     {
         resolved = null;
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        var resolutionStack = ResolutionStack;
-        if (resolutionStack.Contains(serviceType))
+        if (ResolutionStack.Contains(serviceType))
         {
             throw new InvalidOperationException(
                 $"Circular dependency detected while resolving {serviceType}. " +
                 $"Resolution chain: {string.Join(" -> ", GetStackOldestFirst().Append(serviceType).Select(t => t.Name))}");
         }
 
-        var success =
-            TryResolveFromChildScope(serviceType, requestingType, childRegistrations, childScope, out resolved) ||
-            TryApplyInterceptors(serviceType, requestingType, childScope, out resolved) ||
-            TryResolveGenericEnumerable(serviceType, childRegistrations, childScope, out resolved) ||
-            TryResolveFromLocal(serviceType, childRegistrations, childScope, out resolved) ||
-            TryResolveFromParent(serviceType, requestingType, childRegistrations, childScope, out resolved);
+        resolved =
+            // interceptors get first crack
+            ResolveFromInterceptors(serviceType, requestingType) ??
 
-        return success;
+            // next look in the registrations
+            ResolveFromRegistrations(serviceType) ??
+
+            // is it a request for IEnumerable<T> that we can create?
+            CreateGenericEnumerable(serviceType);
+
+        return resolved != null;
     }
 
-    private bool TryResolveFromParent(
-        Type serviceType,
-        Type? requestingType,
-        Dictionary<Type, List<Registration>>? childRegistrations,
-        ScopedContainer? childScope,
-        out object? resolved)
+    private object? ResolveFromRegistrations(Type serviceType)
     {
-        resolved = null;
-        return _parent != null &&
-            _parent.TryResolveCore(
-                serviceType,
-                requestingType,
-                MergeRegistrations(_registrations, childRegistrations),
-                childScope ?? this,
-                out resolved);
-    }
-
-    private bool TryResolveFromLocal(
-        Type serviceType,
-        Dictionary<Type, List<Registration>>? childRegistrations,
-        ScopedContainer? childScope,
-        out object? resolved)
-    {
-        resolved = null;
-        if (!_registrations.TryGetValue(serviceType, out var registrations) || registrations.Count <= 0)
+        var registrations = FindRegistrations(serviceType);
+        if (registrations.Count == 0)
         {
-            return false;
+            return null;
         }
 
-        var registration = registrations[^1];
-        if (registration.Instance != null)
-        {
-            resolved = registration.Instance;
-            return true;
-        }
-
-        resolved = registration.Singleton
-            ? GetOrCreateSingleton(registration, serviceType, childRegistrations, childScope)
-            : CreateOwnedInstance(registration.ImplementationType, serviceType, childRegistrations, childScope, this);
-
-        return true;
+        var (registration, owner) = registrations[^1];
+        return Instantiate(registration, owner, serviceType);
     }
 
-    private bool TryResolveGenericEnumerable(
-        Type serviceType,
-        Dictionary<Type, List<Registration>>? childRegistrations,
-        ScopedContainer? childScope,
-        out object? resolved)
+    private Array? CreateGenericEnumerable(Type serviceType)
     {
         if (!serviceType.IsGenericType || serviceType.GetGenericTypeDefinition() != typeof(IEnumerable<>))
         {
-            resolved = null;
-            return false;
+            return null;
         }
 
         var elementType = serviceType.GetGenericArguments()[0];
-
-        if (childScope != null && childScope != this)
+        var registrations = FindRegistrations(elementType);
+        var elements = Array.CreateInstance(elementType, registrations.Count);
+        for (var i = 0; i < registrations.Count; i++)
         {
-            resolved = childScope.ResolveEnumerable(elementType, null, childScope);
-            return true;
+            var (registration, owner) = registrations[i];
+            elements.SetValue(Instantiate(registration, owner, elementType), i);
         }
 
-        resolved = ResolveEnumerable(elementType, childRegistrations, childScope);
-        return true;
+        return elements;
     }
 
-    private bool TryApplyInterceptors(
-        Type serviceType,
-        Type? requestingType,
-        ScopedContainer? childScope,
-        out object? resolved)
+    private object? ResolveFromInterceptors(Type serviceType, Type? requestingType)
     {
-        resolved = null;
-        if (_interceptors.Count == 0)
+        if (!HasAnyInterceptor())
         {
-            return false;
+            return null;
         }
 
         var resolutionStack = ResolutionStack;
         resolutionStack.Push(serviceType);
         try
         {
-            IServiceResolver interceptorResolver = childScope ?? this;
-            foreach (var interceptor in _interceptors)
+            for (var scope = this; scope != null; scope = scope._parent)
             {
-                if (interceptor.TryResolve(serviceType, requestingType, interceptorResolver, out var overrideResult))
+                foreach (var interceptor in scope._interceptors)
                 {
-                    resolved = overrideResult;
-                    return true;
+                    if (interceptor.TryResolve(serviceType, requestingType, this, out var overrideResult))
+                    {
+                        return overrideResult;
+                    }
                 }
             }
         }
@@ -340,63 +286,67 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             resolutionStack.Pop();
         }
 
+        return null;
+    }
+
+    private bool HasAnyInterceptor()
+    {
+        for (var scope = this; scope != null; scope = scope._parent)
+        {
+            if (scope._interceptors.Count > 0)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
-    private bool TryResolveFromChildScope(
-        Type serviceType,
-        Type? requestingType,
-        Dictionary<Type, List<Registration>>? childRegistrations,
-        ScopedContainer? childScope,
-        out object? resolved)
+    private List<(Registration Registration, ScopedContainer Owner)> FindRegistrations(Type serviceType)
     {
-        resolved = null;
-        if (childRegistrations == null ||
-            !childRegistrations.TryGetValue(serviceType, out var foundInChild) ||
-            foundInChild.Count <= 0)
-        {
-            return false;
-        }
-
-        var registration = foundInChild[^1];
-        resolved = registration switch
-        {
-            { Instance: not null } => registration.Instance,
-
-            { Singleton: true } when childScope != null => childScope.ResolveCore(
-                serviceType,
-                requestingType,
-                null,
-                null),
-
-            _ => CreateOwnedInstance(
-                registration.ImplementationType,
-                serviceType,
-                childRegistrations,
-                childScope,
-                childScope)
-        };
-
-        return (resolved is not null);
+        var found = new List<(Registration, ScopedContainer)>();
+        CollectRegistrations(serviceType, found);
+        return found;
     }
 
-    private object CreateOwnedInstance(
-        Type implementationType,
-        Type serviceType,
-        Dictionary<Type, List<Registration>>? childRegistrations,
-        ScopedContainer? childScope,
-        ScopedContainer? owner)
+    private void CollectRegistrations(Type serviceType, List<(Registration, ScopedContainer)> found)
     {
-        var obj = CreateInstance(implementationType, serviceType, childRegistrations, childScope);
-        owner?.TrackInstanceForDisposal(obj);
+        _parent?.CollectRegistrations(serviceType, found);
+
+        if (!_registrations.TryGetValue(serviceType, out var registrations))
+        {
+            return;
+        }
+
+        foreach (var registration in registrations)
+        {
+            found.Add((registration, this));
+        }
+    }
+
+    private object Instantiate(Registration registration, ScopedContainer owner, Type serviceType)
+    {
+        if (registration.Instance != null)
+        {
+            return registration.Instance;
+        }
+
+        if (registration.Singleton)
+        {
+            return GetOrCreateSingleton(registration, owner, serviceType);
+        }
+
+        return CreateOwnedInstance(registration.ImplementationType, serviceType, owner);
+    }
+
+    private object CreateOwnedInstance(Type implementationType, Type serviceType, ScopedContainer owner)
+    {
+        var obj = CreateInstance(implementationType, serviceType);
+        owner.TrackInstanceForDisposal(obj);
         return obj;
     }
 
-    private object GetOrCreateSingleton(
-        Registration registration,
-        Type serviceType,
-        Dictionary<Type, List<Registration>>? childRegistrations,
-        ScopedContainer? childScope)
+    private object GetOrCreateSingleton(Registration registration, ScopedContainer owner, Type serviceType)
     {
         var existing = registration.Instance;
         if (existing != null)
@@ -404,7 +354,7 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             return existing;
         }
 
-        lock (_singletonLock)
+        lock (owner._singletonLock)
         {
             existing = registration.Instance;
             if (existing != null)
@@ -412,13 +362,7 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
                 return existing;
             }
 
-            var created = CreateOwnedInstance(
-                registration.ImplementationType,
-                serviceType,
-                childRegistrations,
-                childScope,
-                this);
-
+            var created = CreateOwnedInstance(registration.ImplementationType, serviceType, owner);
             registration.Instance = created;
             return created;
         }
@@ -427,52 +371,6 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
     private string GetResolutionStackString()
     {
         return string.Join(" -> ", GetStackOldestFirst().Select(t => t.Name));
-    }
-
-    private Array ResolveEnumerable(
-        Type elementType,
-        Dictionary<Type, List<Registration>>? extraRegistrations,
-        ScopedContainer? childScope = null)
-    {
-        var instances = new List<object>();
-
-        var effectiveOverrides = MergeRegistrations(_registrations, extraRegistrations);
-
-        if (_parent != null)
-        {
-            var parentEnumerable = _parent.ResolveEnumerable(elementType, effectiveOverrides, childScope);
-            instances.AddRange(parentEnumerable.Cast<object>());
-        }
-
-        if (_registrations.TryGetValue(elementType, out var registrations))
-        {
-            foreach (var registration in registrations)
-            {
-                if (registration.Instance != null)
-                {
-                    instances.Add(registration.Instance);
-                    continue;
-                }
-
-                instances.Add(
-                    registration.Singleton
-                        ? GetOrCreateSingleton(registration, elementType, effectiveOverrides, childScope)
-                        : CreateOwnedInstance(
-                            registration.ImplementationType,
-                            elementType,
-                            effectiveOverrides,
-                            childScope,
-                            this));
-            }
-        }
-
-        var array = Array.CreateInstance(elementType, instances.Count);
-        for (var i = 0; i < instances.Count; i++)
-        {
-            array.SetValue(instances[i], i);
-        }
-
-        return array;
     }
 
     private (ConstructorInfo Constructor, ParameterInfo[] Parameters) GetConstructorAndParams(Type implementationType)
@@ -493,23 +391,18 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             });
     }
 
-    private object CreateInstance(
-        Type implementationType,
-        Type requestingType,
-        Dictionary<Type, List<Registration>>? extraRegistrations,
-        ScopedContainer? owningScope = null)
+    private object CreateInstance(Type implementationType, Type serviceType)
     {
         var (constructor, parameters) = GetConstructorAndParams(implementationType);
         var constructorArguments = new object[parameters.Length];
 
         var resolutionStack = ResolutionStack;
-        resolutionStack.Push(requestingType);
+        resolutionStack.Push(serviceType);
         try
         {
             for (var i = 0; i < parameters.Length; i++)
             {
-                constructorArguments[i] =
-                    ResolveCore(parameters[i].ParameterType, implementationType, extraRegistrations, owningScope);
+                constructorArguments[i] = ResolveCore(parameters[i].ParameterType, implementationType);
             }
         }
         finally
@@ -521,24 +414,6 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
 
         return instance ??
             throw new InvalidOperationException($"Failed to create instance of type {implementationType}.");
-    }
-
-    private static Dictionary<Type, List<Registration>> MergeRegistrations(
-        Dictionary<Type, List<Registration>> baseRegistrations,
-        Dictionary<Type, List<Registration>>? overrides)
-    {
-        if (overrides is not { Count: > 0 })
-        {
-            return baseRegistrations;
-        }
-
-        var merged = new Dictionary<Type, List<Registration>>(baseRegistrations);
-        foreach (var (type, registrations) in overrides)
-        {
-            merged[type] = registrations;
-        }
-
-        return merged;
     }
 
     private class Registration
