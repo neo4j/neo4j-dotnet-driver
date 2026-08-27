@@ -14,9 +14,11 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
+using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.PropertyEncryption;
 using Neo4j.Driver.TestKitBackend.Types;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
@@ -44,6 +46,7 @@ internal record NewDriverRequest : IProtocolMessage
     public bool? DisableAutoCommitRetries { get; init; }
     public bool? Encrypted { get; init; }
     public Optional<string[]?> TrustedCertificates { get; init; }
+    public IReadOnlyList<PropertyEncryptionProfileInput>? PropertyEncryptionProfiles { get; init; }
 }
 
 internal record DriverResponse(string Id) : IProtocolMessage;
@@ -55,39 +58,71 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
     private readonly INeo4jLogger _neo4JLogger;
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
+    private readonly IDriverEncryptionSetup _driverEncryptionSetup;
+    private readonly IDriverEncryptionObjectStore _driverEncryptionObjectStore;
 
     public NewDriverHandler(
         IObjectStore objectStore,
         INewDriverConfigMapper configMapper,
         INeo4jLogger neo4JLogger,
         IResponseWriter responseWriter,
-        ILogger logger)
+        ILogger logger,
+        IDriverEncryptionSetup driverEncryptionSetup,
+        IDriverEncryptionObjectStore driverEncryptionObjectStore)
     {
         _objectStore = objectStore;
         _configMapper = configMapper;
         _neo4JLogger = neo4JLogger;
         _responseWriter = responseWriter;
         _logger = logger;
+        _driverEncryptionSetup = driverEncryptionSetup;
+        _driverEncryptionObjectStore = driverEncryptionObjectStore;
     }
 
     public override async Task ProcessAsync(NewDriverRequest message)
     {
-        void Configure(ConfigBuilder builder)
+        var encryptionSetup = message.PropertyEncryptionProfiles is { Count: > 0 }
+            ? _driverEncryptionSetup.Prepare(message.PropertyEncryptionProfiles)
+            : null;
+
+        IDriver driver;
+
+        if (message.AuthTokenManagerId is not null)
         {
-            _configMapper.Apply(message, new ConfigBuilderAdapter(builder));
-            builder.WithLogger(_neo4JLogger);
-            builder.WithMetricsEnabled(true);
+            var authTokenManager = _objectStore.Get<IAuthTokenManager>(message.AuthTokenManagerId);
+            driver = GraphDatabase.Driver(message.Uri, authTokenManager, Configure);
+        }
+        else
+        {
+            driver = GraphDatabase.Driver(message.Uri, message.AuthorizationToken?.ToAuthToken(), Configure);
         }
 
-        var driver = message.AuthTokenManagerId is not null
-            ? GraphDatabase.Driver(
-                message.Uri,
-                _objectStore.Get<IAuthTokenManager>(message.AuthTokenManagerId),
-                Configure)
-            : GraphDatabase.Driver(message.Uri, message.AuthorizationToken?.ToAuthToken(), Configure);
+        if (encryptionSetup != null)
+        {
+            var (provider, _, repositories) = encryptionSetup;
+            _driverEncryptionObjectStore.StoreObjects(driver, provider, repositories);
+        }
 
         var id = _objectStore.Store(driver);
         _logger.LogDebug("Created driver with id '{Id}'", id);
         await _responseWriter.WriteAsync(new DriverResponse(id));
+
+        return;
+
+        void Configure(ConfigBuilder builder)
+        {
+            var configBuilder = new ConfigBuilderAdapter(builder);
+            _configMapper.Apply(message, configBuilder);
+            builder.WithLogger(_neo4JLogger);
+            builder.WithMetricsEnabled(true);
+
+            if (encryptionSetup is null)
+            {
+                return;
+            }
+
+            configBuilder.WithPropertyEncryptionProfiles(encryptionSetup.Profiles);
+            configBuilder.WithServiceOverride<IIvProvider>(encryptionSetup.IvProvider);
+        }
     }
 }

@@ -17,6 +17,7 @@ using Autofac;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Messages;
+using Neo4j.Driver.TestKitBackend.PropertyEncryption;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
 
@@ -113,6 +114,22 @@ public class NewDriverRequestTests
         request.Encrypted.Should().BeTrue();
         request.TrustedCertificates.IsSpecified(out var certs).Should().BeTrue();
         certs.Should().Equal("customRoot.crt");
+    }
+
+    [Fact]
+    public void Deserializes_the_property_encryption_profiles()
+    {
+        const string json =
+            """
+            {"name": "NewDriver", "data": {"uri": "bolt://x", "propertyEncryptionProfiles":
+            [{"name": "profile-a", "kek": "0102030405060708"}, {"name": "profile-b", "kek": null}]}}
+            """;
+
+        var request = (NewDriverRequest)Serializer().Deserialize(json);
+
+        request.PropertyEncryptionProfiles.Should().Equal(
+            new PropertyEncryptionProfileInput("profile-a", "0102030405060708"),
+            new PropertyEncryptionProfileInput("profile-b", null));
     }
 
     [Fact]
