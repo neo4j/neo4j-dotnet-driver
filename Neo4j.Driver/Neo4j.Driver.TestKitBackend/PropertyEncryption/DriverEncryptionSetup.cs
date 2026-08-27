@@ -14,10 +14,11 @@
 // limitations under the License.
 
 using Neo4j.Driver.Preview.Encryption;
+using Neo4j.Driver.TestKitBackend.Types;
 
 namespace Neo4j.Driver.TestKitBackend.PropertyEncryption;
 
-internal record PropertyEncryptionProfileInput(string Name, string? Kek);
+internal record PropertyEncryptionProfileInput(string Name, HexBytes? Kek);
 
 internal record DriverEncryptionSetupResult(
     IFixedIvProvider IvProvider,
@@ -53,8 +54,7 @@ internal class DriverEncryptionSetup : IDriverEncryptionSetup
 
         foreach (var profile in profiles)
         {
-            var kek = profile.Kek is null ? null : Convert.FromHexString(profile.Kek.Replace(" ", ""));
-            var keyEncapsulationService = _keyEncapsulationServiceFactory(kek);
+            var keyEncapsulationService = _keyEncapsulationServiceFactory(profile.Kek);
             var repository = _repositoryFactory();
 
             repositoriesByProfileName[profile.Name] = repository;

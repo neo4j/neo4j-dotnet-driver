@@ -19,6 +19,7 @@ using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.PropertyEncryption;
 using Neo4j.Driver.TestKitBackend.Serialization;
+using Neo4j.Driver.TestKitBackend.Types;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -128,7 +129,7 @@ public class NewDriverRequestTests
         var request = (NewDriverRequest)Serializer().Deserialize(json);
 
         request.PropertyEncryptionProfiles.Should().Equal(
-            new PropertyEncryptionProfileInput("profile-a", "0102030405060708"),
+            new PropertyEncryptionProfileInput("profile-a", new HexBytes([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08])),
             new PropertyEncryptionProfileInput("profile-b", null));
     }
 

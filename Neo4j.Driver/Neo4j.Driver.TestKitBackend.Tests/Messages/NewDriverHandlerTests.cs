@@ -23,6 +23,7 @@ using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.PropertyEncryption;
+using Neo4j.Driver.TestKitBackend.Types;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -113,7 +114,7 @@ public class NewDriverHandlerTests
 
     private static readonly PropertyEncryptionProfileInput[] RequestedProfiles =
     [
-        new("profile-a", "0102030405060708"),
+        new("profile-a", new HexBytes([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08])),
         new("profile-b", null)
     ];
 

@@ -18,6 +18,7 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.TestKitBackend.PropertyEncryption;
+using Neo4j.Driver.TestKitBackend.Types;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.PropertyEncryption;
@@ -59,7 +60,7 @@ public class DriverEncryptionSetupTests
     }
 
     [Fact]
-    public void Decodes_a_hex_kek_before_requesting_the_key_encapsulation_service()
+    public void Passes_the_kek_bytes_through_to_the_key_encapsulation_service_factory()
     {
         byte[]? requestedKek = null;
         _autoMocker.Use<Func<byte[]?, IKeyEncapsulationService>>(
@@ -69,7 +70,7 @@ public class DriverEncryptionSetupTests
                 return Mock.Of<IKeyEncapsulationService>();
             });
 
-        Prepare(new PropertyEncryptionProfileInput("profile-1", "01 02 0a ff"));
+        Prepare(new PropertyEncryptionProfileInput("profile-1", new HexBytes([0x01, 0x02, 0x0a, 0xff])));
 
         requestedKek.Should().Equal(0x01, 0x02, 0x0a, 0xff);
     }
