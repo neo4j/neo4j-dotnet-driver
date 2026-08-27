@@ -88,4 +88,34 @@ public class DriverEncryptionObjectStoreTests
 
         act.Should().Throw<TestKitProtocolException>();
     }
+
+    [Fact]
+    public void Returns_the_sole_repository_when_no_profile_name_is_given()
+    {
+        var stored = StoreObjects(_driver, "p1");
+
+        var repository = _store.GetRepository(_driver);
+
+        repository.Should().BeSameAs(stored.Repositories["p1"]);
+    }
+
+    [Fact]
+    public void Throws_when_no_profile_name_is_given_and_no_profiles_are_configured()
+    {
+        StoreObjects(_driver);
+
+        var act = () => _store.GetRepository(_driver);
+
+        act.Should().Throw<TestKitProtocolException>();
+    }
+
+    [Fact]
+    public void Throws_when_no_profile_name_is_given_and_multiple_profiles_are_configured()
+    {
+        StoreObjects(_driver, "p1", "p2");
+
+        var act = () => _store.GetRepository(_driver);
+
+        act.Should().Throw<TestKitProtocolException>();
+    }
 }

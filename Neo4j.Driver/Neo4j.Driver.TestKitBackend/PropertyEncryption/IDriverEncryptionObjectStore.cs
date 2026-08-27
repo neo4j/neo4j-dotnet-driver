@@ -23,5 +23,5 @@ internal interface IDriverEncryptionObjectStore
         IReadOnlyDictionary<string, ITestkitEncapsulatedKeyRepository> repositories);
 
     IFixedIvProvider GetIvProvider(IDriver driver);
-    ITestkitEncapsulatedKeyRepository GetRepository(IDriver driver, string profileName);
+    ITestkitEncapsulatedKeyRepository GetRepository(IDriver driver, string? profileName = null);
 }

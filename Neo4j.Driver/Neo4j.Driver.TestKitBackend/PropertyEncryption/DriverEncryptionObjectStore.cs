@@ -35,9 +35,21 @@ internal class DriverEncryptionObjectStore : IDriverEncryptionObjectStore
         return GetObjects(driver).IvProvider;
     }
 
-    public ITestkitEncapsulatedKeyRepository GetRepository(IDriver driver, string profileName)
+    public ITestkitEncapsulatedKeyRepository GetRepository(IDriver driver, string? profileName = null)
     {
         var repositories = GetObjects(driver).Repositories;
+
+        if (profileName is null)
+        {
+            return repositories.Count switch
+            {
+                1 => repositories.Values.First(),
+                0 => throw new TestKitProtocolException("The driver has no property-encryption profiles configured."),
+                _ => throw new TestKitProtocolException(
+                    "Multiple property-encryption profiles are configured; a profile name must be specified.")
+            };
+        }
+
         if (!repositories.TryGetValue(profileName, out var repository))
         {
             throw new TestKitProtocolException(
