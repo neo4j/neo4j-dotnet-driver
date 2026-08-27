@@ -46,12 +46,7 @@ internal class PropertyEncryption : IPropertyEncryption
         return new DecryptRequestBuilder(_runner);
     }
 
-    public IEncapsulatedKeyManager KeyManager()
-    {
-        return _keyManagerFactory.CreateKeyManager(_registry.Get(null));
-    }
-
-    public IEncapsulatedKeyManager KeyManager(string profileName)
+    public IEncapsulatedKeyManager KeyManager(string? profileName = null)
     {
         return _keyManagerFactory.CreateKeyManager(_registry.Get(profileName));
     }

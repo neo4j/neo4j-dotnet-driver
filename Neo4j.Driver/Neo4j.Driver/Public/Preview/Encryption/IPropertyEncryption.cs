@@ -39,22 +39,18 @@ public interface IPropertyEncryption
     IDecryptRequestValueStep DecryptRequest();
 
     /// <summary>
-    /// Returns the key manager for the sole configured encryption profile. This method is part of
-    /// the Encryption Preview feature, and is subject to change or removal.
+    /// Returns the key manager for the named encryption profile, or for the sole configured profile
+    /// when <paramref name="profileName"/> is omitted. This method is part of the Encryption Preview
+    /// feature, and is subject to change or removal.
     /// </summary>
+    /// <param name="profileName">The name of the profile, or null to use the sole configured profile.</param>
     /// <returns>The key manager.</returns>
-    /// <exception cref="DefaultEncryptionProfileNotFoundException">No encryption profile is configured.</exception>
-    /// <exception cref="AmbiguousEncryptionProfileException">More than one encryption profile is configured.</exception>
-    /// <exception cref="EncapsulatedKeyManagerNotFoundException">No key manager provider accepts the configured profile.</exception>
-    IEncapsulatedKeyManager KeyManager();
-
-    /// <summary>
-    /// Returns the key manager for the named encryption profile. This method is part of the
-    /// Encryption Preview feature, and is subject to change or removal.
-    /// </summary>
-    /// <param name="profileName">The name of the profile.</param>
-    /// <returns>The key manager.</returns>
-    /// <exception cref="EncryptionProfileNotFoundException">No profile named <paramref name="profileName"/> is configured.</exception>
+    /// <exception cref="EncryptionProfileNotFoundException">No profile named <paramref name="profileName"/> is
+    /// configured.</exception>
+    /// <exception cref="DefaultEncryptionProfileNotFoundException"><paramref name="profileName"/> is null and no
+    /// encryption profile is configured.</exception>
+    /// <exception cref="AmbiguousEncryptionProfileException"><paramref name="profileName"/> is null and more than one
+    /// encryption profile is configured.</exception>
     /// <exception cref="EncapsulatedKeyManagerNotFoundException">No key manager provider accepts the profile.</exception>
-    IEncapsulatedKeyManager KeyManager(string profileName);
+    IEncapsulatedKeyManager KeyManager(string? profileName = null);
 }

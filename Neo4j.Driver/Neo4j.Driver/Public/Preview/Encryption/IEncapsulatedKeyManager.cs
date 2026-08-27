@@ -22,8 +22,8 @@ namespace Neo4j.Driver.Preview.Encryption;
 
 /// <summary>
 /// Creates new encapsulated data encryption keys for a specific encryption profile. Obtain an instance via
-/// <see cref="IPropertyEncryption.KeyManager()"/> or <see cref="IPropertyEncryption.KeyManager(string)"/>.
-/// This interface is part of the Encryption Preview feature, and is subject to change or removal.
+/// <see cref="IPropertyEncryption.KeyManager(string)"/>. This interface is part of the Encryption Preview
+/// feature, and is subject to change or removal.
 /// </summary>
 public interface IEncapsulatedKeyManager
 {
