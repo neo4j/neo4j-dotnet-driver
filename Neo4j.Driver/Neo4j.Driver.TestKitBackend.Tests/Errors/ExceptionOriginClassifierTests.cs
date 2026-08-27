@@ -53,4 +53,12 @@ public class ExceptionOriginClassifierTests
         exception.Should().BeOfType<TestKitProtocolException>();
         _classifier.OriginatesInDriver(exception!).Should().BeFalse();
     }
+
+    [Fact]
+    public void A_Neo4jException_thrown_by_the_backends_own_code_still_originates_in_the_driver()
+    {
+        var exception = new ClientException("simulating a driver-defined failure from a user collaborator");
+
+        _classifier.OriginatesInDriver(exception).Should().BeTrue();
+    }
 }

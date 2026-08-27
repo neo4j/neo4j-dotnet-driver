@@ -18,7 +18,7 @@ using Neo4j.Driver.TestKitBackend.Types;
 
 namespace Neo4j.Driver.TestKitBackend.PropertyEncryption;
 
-internal record PropertyEncryptionProfileInput(string Name, HexBytes? Kek);
+internal record PropertyEncryptionProfileInput(string Name, HexBytes? Kek = null);
 
 internal record DriverEncryptionSetupResult(
     IFixedIvProvider IvProvider,
