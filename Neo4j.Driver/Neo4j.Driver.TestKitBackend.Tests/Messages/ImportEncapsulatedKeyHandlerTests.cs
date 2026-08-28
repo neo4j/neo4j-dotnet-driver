@@ -46,7 +46,7 @@ public class ImportEncapsulatedKeyHandlerTests
         var request = new ImportEncapsulatedKeyRequest
         {
             Driver = driver,
-            KeyId = "key-1",
+            Id = "key-1",
             Alias = "k1",
             Encapsulation = Encapsulation,
             Metadata = Metadata,
@@ -75,7 +75,7 @@ public class ImportEncapsulatedKeyHandlerTests
         var request = new ImportEncapsulatedKeyRequest
         {
             Driver = driver,
-            KeyId = "key-1",
+            Id = "key-1",
             Alias = "k1",
             Encapsulation = Encapsulation,
             Metadata = Metadata

@@ -26,7 +26,7 @@ internal record ImportEncapsulatedKeyRequest : IProtocolMessage
     [StoredObject]
     public required IDriver Driver { get; init; }
 
-    public required string KeyId { get; init; }
+    public required string Id { get; init; }
     public required string Alias { get; init; }
     public required HexBytes Encapsulation { get; init; }
     public required IReadOnlyDictionary<string, string> Metadata { get; init; }
@@ -50,7 +50,7 @@ internal class ImportEncapsulatedKeyHandler : MessageHandler<ImportEncapsulatedK
     {
         var key = _driverEncryptionObjectStore
             .GetRepository(message.Driver, message.ProfileName)
-            .Import(message.KeyId, message.Alias, message.Encapsulation, message.Metadata);
+            .Import(message.Id, message.Alias, message.Encapsulation, message.Metadata);
 
         await _responseWriter.WriteAsync(new EncapsulatedKeyResponse(key.Id, key.Alias));
     }
