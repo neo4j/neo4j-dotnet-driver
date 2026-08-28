@@ -1265,4 +1265,33 @@ public class ScopedContainerTests
 
         resolved.Should().Equal("grandchild");
     }
+
+    [Fact]
+    public void Resolve_ParentInterceptor_OverridesChildRegistration()
+    {
+        var parent = new ScopedContainer();
+        var interceptor = new Mock<IResolutionInterceptor>();
+        var overrideInstance = new GrandchildCollected();
+
+        interceptor
+            .Setup(x => x.TryResolve(
+                typeof(ICollected),
+                It.IsAny<Type>(),
+                It.IsAny<IServiceResolver>(),
+                out It.Ref<object>.IsAny))
+            .Returns(
+                new TryResolveDelegate((_, _, _, out service) =>
+                {
+                    service = overrideInstance;
+                    return true;
+                }));
+
+        parent.RegisterInterceptor(interceptor.Object);
+
+        var child = parent.CreateChildScope(r => r.RegisterType<ICollected, ChildCollected>());
+
+        var resolved = child.Resolve<ICollected>();
+
+        resolved.Should().BeSameAs(overrideInstance);
+    }
 }
