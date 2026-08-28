@@ -53,15 +53,22 @@ internal class CustomAuthToken : AuthToken
         }
     }
 
+    private static readonly HashSet<string> RedactedKeys = new()
+        { SchemeKey, PrincipalKey, RealmKey, CredentialsKey, ParametersKey };
+
     public override string ToString()
     {
         var scheme = Content.ContainsKey(SchemeKey) ? Content[SchemeKey] ?? "(null)" : "(none)";
         var principal = Content.ContainsKey(PrincipalKey) ? Content[PrincipalKey] ?? "(null)" : "(none)";
         var realm = Content.ContainsKey(RealmKey) ? Content[RealmKey] ?? "(null)" : "(none)";
+        var credentials = Content.ContainsKey(CredentialsKey) ? ", credentials: ******" : "";
+        var parameters = Content.ContainsKey(ParametersKey) ? ", parameters: ******" : "";
+
         return $"CustomAuthToken[scheme: {scheme}, principal: {principal}, realm: {realm}" +
-            // list of other keys present in Content
+            credentials +
+            parameters +
             Content.Keys
-                .Where(key => key != SchemeKey && key != PrincipalKey && key != RealmKey)
+                .Where(key => !RedactedKeys.Contains(key))
                 .Select(key => $", {key}: {Content[key] ?? "(null)"}")
                 .Aggregate("", (acc, next) => acc + next) +
             "]";
