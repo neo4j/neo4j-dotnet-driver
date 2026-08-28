@@ -58,6 +58,59 @@ public class TestkitConnectionHandlerTests
         return builder.Build();
     }
 
+    [Fact]
+    public async Task Waits_for_the_previous_connection_to_finish_before_running_the_next()
+    {
+        var firstStarted = new TaskCompletionSource();
+        var firstMayFinish = new TaskCompletionSource();
+        var secondStarted = new TaskCompletionSource();
+
+        _autoMocker.GetMock<IConnectionIdProvider>()
+            .SetupSequence(p => p.GetConnectionId())
+            .Returns("testkit-1")
+            .Returns("testkit-2");
+
+        _autoMocker.GetMock<IMessageLoop>()
+            .Setup(l => l.RunAsync("testkit-1"))
+            .Returns(async () =>
+            {
+                firstStarted.SetResult();
+                await firstMayFinish.Task;
+            });
+
+        _autoMocker.GetMock<IMessageLoop>()
+            .Setup(l => l.RunAsync("testkit-2"))
+            .Returns(() =>
+            {
+                secondStarted.SetResult();
+                return Task.CompletedTask;
+            });
+
+        _autoMocker.Use<Func<TextReader, IConnectionInput>>(_ => _autoMocker.Get<IConnectionInput>());
+        _autoMocker.Use<Func<TextWriter, IConnectionOutput>>(_ => _autoMocker.Get<IConnectionOutput>());
+        _autoMocker.Use(BuildRootScope());
+
+        var handler = _autoMocker.CreateInstance<TestkitConnectionHandler>();
+
+        var first = handler.OnConnectedAsync(NewConnection().Object);
+        await firstStarted.Task;
+
+        var second = handler.OnConnectedAsync(NewConnection().Object);
+        var settleWindow = Task.Delay(TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken);
+        var settled = await Task.WhenAny(secondStarted.Task, settleWindow);
+
+        settled.Should()
+            .NotBeSameAs(
+                secondStarted.Task,
+                "the next connection must not start its message loop until the previous connection has torn down");
+
+        firstMayFinish.SetResult();
+        await first;
+        await second;
+
+        secondStarted.Task.IsCompleted.Should().BeTrue();
+    }
+
     private static Mock<ConnectionContext> NewConnection()
     {
         var transport = new Mock<IDuplexPipe>();
