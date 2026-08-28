@@ -26,16 +26,15 @@ public class DriverEncryptionObjectStoreTests
     private readonly DriverEncryptionObjectStore _store = new();
     private readonly IDriver _driver = Mock.Of<IDriver>();
 
-    private (IFixedIvProvider IvProvider, IReadOnlyDictionary<string, ITestkitEncapsulatedKeyRepository> Repositories)
-        StoreObjects(IDriver driver, params string[] profileNames)
+    private DriverEncryptionObjects StoreObjects(IDriver driver, params string[] profileNames)
     {
-        var ivProvider = Mock.Of<IFixedIvProvider>();
         var repositories = profileNames.ToDictionary(
             name => name,
             _ => Mock.Of<ITestkitEncapsulatedKeyRepository>());
 
-        _store.StoreObjects(driver, ivProvider, repositories);
-        return (ivProvider, repositories);
+        var objects = new DriverEncryptionObjects(Mock.Of<IFixedIvProvider>(), [], repositories);
+        _store.StoreObjects(driver, objects);
+        return objects;
     }
 
     [Fact]
@@ -55,7 +54,7 @@ public class DriverEncryptionObjectStoreTests
 
         var repository = _store.GetRepository(_driver, "p2");
 
-        repository.Should().BeSameAs(stored.Repositories["p2"]);
+        repository.Should().BeSameAs(stored.RepositoriesByProfileName["p2"]);
     }
 
     [Fact]
@@ -67,8 +66,8 @@ public class DriverEncryptionObjectStoreTests
 
         var repository = _store.GetRepository(otherDriver, "p1");
 
-        repository.Should().BeSameAs(second.Repositories["p1"]);
-        repository.Should().NotBeSameAs(first.Repositories["p1"]);
+        repository.Should().BeSameAs(second.RepositoriesByProfileName["p1"]);
+        repository.Should().NotBeSameAs(first.RepositoriesByProfileName["p1"]);
     }
 
     [Fact]
@@ -96,7 +95,7 @@ public class DriverEncryptionObjectStoreTests
 
         var repository = _store.GetRepository(_driver);
 
-        repository.Should().BeSameAs(stored.Repositories["p1"]);
+        repository.Should().BeSameAs(stored.RepositoriesByProfileName["p1"]);
     }
 
     [Fact]

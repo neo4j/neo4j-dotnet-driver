@@ -16,7 +16,6 @@
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
@@ -32,27 +31,25 @@ public class DecryptHandlerTests
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<DecryptHandler>();
     private static readonly HexBytes EncryptedValue = new([0xDE, 0xAD, 0xBE, 0xEF]);
 
-    private (Mock<IDriver> Driver, Mock<IDecryptRequestExecuteStep> ExecuteStep) DriverAcceptingValue()
+    private static (Mock<IDriver> Driver, Mock<IDecryptRequestAadStep> AadStep) DriverAcceptingValue()
     {
         var driverMock = new Mock<IDriver>();
-        var internalDriverMock = driverMock.As<IInternalDriver>();
-        var propertyEncryptionMock = new Mock<IPropertyEncryption>();
+        var propertyEncryptionMock = driverMock.WithPropertyEncryption();
         var valueStepMock = new Mock<IDecryptRequestValueStep>();
         var aadStepMock = new Mock<IDecryptRequestAadStep>();
-        var executeStepMock = new Mock<IDecryptRequestExecuteStep>();
 
-        internalDriverMock.Setup(d => d.PropertyEncryption()).Returns(propertyEncryptionMock.Object);
         propertyEncryptionMock.Setup(p => p.DecryptRequest()).Returns(valueStepMock.Object);
         valueStepMock.Setup(v => v.FromValue(EncryptedValue.Value)).Returns(aadStepMock.Object);
-        aadStepMock.Setup(a => a.WithPersistedAad()).Returns(executeStepMock.Object);
 
-        return (driverMock, executeStepMock);
+        return (driverMock, aadStepMock);
     }
 
     [Fact]
     public async Task Decrypts_with_the_persisted_aad_and_responds_with_the_mapped_value()
     {
-        var (driverMock, executeStepMock) = DriverAcceptingValue();
+        var (driverMock, aadStepMock) = DriverAcceptingValue();
+        var executeStepMock = new Mock<IDecryptRequestExecuteStep>();
+        aadStepMock.Setup(a => a.WithPersistedAad()).Returns(executeStepMock.Object);
         executeStepMock.Setup(e => e.DecryptAsync(It.IsAny<CancellationToken>())).ReturnsAsync("hello world");
         _autoMocker.GetMock<INativeToCypherMapper>().Setup(m => m.Map("hello world")).Returns(new CypherString("hello world"));
 
@@ -68,16 +65,8 @@ public class DecryptHandlerTests
     [Fact]
     public async Task Decrypts_with_an_explicit_mapped_aad()
     {
-        var driverMock = new Mock<IDriver>();
-        var internalDriverMock = driverMock.As<IInternalDriver>();
-        var propertyEncryptionMock = new Mock<IPropertyEncryption>();
-        var valueStepMock = new Mock<IDecryptRequestValueStep>();
-        var aadStepMock = new Mock<IDecryptRequestAadStep>();
+        var (driverMock, aadStepMock) = DriverAcceptingValue();
         var executeStepMock = new Mock<IDecryptRequestExecuteStep>();
-
-        internalDriverMock.Setup(d => d.PropertyEncryption()).Returns(propertyEncryptionMock.Object);
-        propertyEncryptionMock.Setup(p => p.DecryptRequest()).Returns(valueStepMock.Object);
-        valueStepMock.Setup(v => v.FromValue(EncryptedValue.Value)).Returns(aadStepMock.Object);
 
         var aad = new CypherString("row-42");
         _autoMocker.GetMock<ICypherToNativeMapper>().Setup(m => m.Map(aad)).Returns("row-42");

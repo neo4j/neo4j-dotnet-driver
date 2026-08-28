@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System.Security.Cryptography;
+using Microsoft.Extensions.Logging;
 using Neo4j.Driver.Internal.Encryption;
 
 namespace Neo4j.Driver.TestKitBackend.PropertyEncryption;
@@ -21,14 +22,20 @@ namespace Neo4j.Driver.TestKitBackend.PropertyEncryption;
 internal interface IFixedIvProvider : IIvProvider
 {
     void SetNextIv(ReadOnlySpan<byte> iv);
-    void EnsureConsumed();
 }
 
 internal class FixedIvProvider : IFixedIvProvider
 {
     private const int IvLength = 12;
 
+    private readonly ILogger _logger;
+
     private byte[]? _pendingIv;
+
+    public FixedIvProvider(ILogger logger)
+    {
+        _logger = logger;
+    }
 
     public void SetNextIv(ReadOnlySpan<byte> iv)
     {
@@ -39,18 +46,10 @@ internal class FixedIvProvider : IFixedIvProvider
 
         if (_pendingIv != null)
         {
-            throw new ArgumentException("A fixed IV was set while the previous one is still unconsumed.");
+            _logger.LogInformation("Replacing a fixed IV that was never consumed by an encrypt operation");
         }
 
         _pendingIv = iv.ToArray();
-    }
-
-    public void EnsureConsumed()
-    {
-        if (_pendingIv != null)
-        {
-            throw new ArgumentException("The fixed IV was not consumed by the operation.");
-        }
     }
 
     public byte[] GetIv()

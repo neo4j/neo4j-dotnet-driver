@@ -13,12 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.TestKitBackend.PropertyEncryption;
+using Moq;
+using Neo4j.Driver.Internal;
+using Neo4j.Driver.Preview.Encryption;
 
-internal interface IDriverEncryptionObjectStore
+namespace Neo4j.Driver.TestKitBackend.Tests;
+
+internal static class DriverMockExtensions
 {
-    void StoreObjects(IDriver driver, DriverEncryptionObjects objects);
+    extension(Mock<IDriver> driverMock)
+    {
+        public Mock<IPropertyEncryption> WithPropertyEncryption()
+        {
+            var propertyEncryptionMock = new Mock<IPropertyEncryption>();
+            driverMock.As<IInternalDriver>()
+                .Setup(d => d.PropertyEncryption())
+                .Returns(propertyEncryptionMock.Object);
 
-    IFixedIvProvider GetIvProvider(IDriver driver);
-    ITestkitEncapsulatedKeyRepository GetRepository(IDriver driver, string? profileName = null);
+            return propertyEncryptionMock;
+        }
+    }
 }

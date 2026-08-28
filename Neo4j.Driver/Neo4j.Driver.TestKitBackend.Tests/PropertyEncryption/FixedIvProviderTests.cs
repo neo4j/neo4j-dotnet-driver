@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using FluentAssertions;
+using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.PropertyEncryption;
 using Xunit;
 
@@ -23,7 +24,8 @@ public class FixedIvProviderTests
 {
     private static readonly byte[] Iv = Enumerable.Range(0, 12).Select(i => (byte)i).ToArray();
 
-    private readonly FixedIvProvider _provider = new();
+    private readonly FixedIvProvider _provider =
+        AutoMocker.ForTesting<FixedIvProvider>().CreateInstance<FixedIvProvider>();
 
     [Fact]
     public void Draws_a_random_iv_when_none_was_set()
@@ -65,33 +67,15 @@ public class FixedIvProviderTests
     }
 
     [Fact]
-    public void Rejects_an_iv_set_while_another_is_pending()
+    public void Replaces_an_iv_that_is_still_pending()
     {
+        var replacementIv = Enumerable.Range(100, 12).Select(i => (byte)i).ToArray();
         _provider.SetNextIv(Iv);
+        _provider.SetNextIv(replacementIv);
 
-        var act = () => _provider.SetNextIv(Iv);
+        var actualIv = _provider.GetIv();
 
-        act.Should().Throw<ArgumentException>();
+        actualIv.Should().Equal(replacementIv);
     }
 
-    [Fact]
-    public void EnsureConsumed_throws_when_an_iv_is_still_pending()
-    {
-        _provider.SetNextIv(Iv);
-
-        var act = () => _provider.EnsureConsumed();
-
-        act.Should().Throw<ArgumentException>();
-    }
-
-    [Fact]
-    public void EnsureConsumed_passes_when_the_iv_was_consumed()
-    {
-        _provider.SetNextIv(Iv);
-        _provider.GetIv();
-
-        var act = () => _provider.EnsureConsumed();
-
-        act.Should().NotThrow();
-    }
 }

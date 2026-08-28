@@ -53,7 +53,9 @@ internal class DecryptHandler : MessageHandler<DecryptRequest>
 
     public override async Task ProcessAsync(DecryptRequest message)
     {
-        if ((message.Aad is not null) == message.UsePersistedAad)
+        var hasExplicitAad = message.Aad is not null;
+
+        if (hasExplicitAad == message.UsePersistedAad)
         {
             throw new FrontendException("Exactly one of aad or usePersistedAad must be set.");
         }

@@ -34,7 +34,7 @@ public class DriverEncryptionSetupTests
         _autoMocker.Use<Func<IFixedIvProvider>>(() => Mock.Of<IFixedIvProvider>());
     }
 
-    private DriverEncryptionSetupResult Prepare(params PropertyEncryptionProfileInput[] profiles)
+    private DriverEncryptionObjects Prepare(params PropertyEncryptionProfileInput[] profiles)
     {
         var setup = _autoMocker.CreateInstance<DriverEncryptionSetup>();
         return setup.Prepare(profiles);

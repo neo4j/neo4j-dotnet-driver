@@ -131,9 +131,9 @@ public class NewDriverHandlerTests
             Mock.Of<IEncapsulatedKeyRepository>());
     }
 
-    private DriverEncryptionSetupResult PrepareReturnsSetupForTheRequestedProfiles()
+    private DriverEncryptionObjects PrepareReturnsSetupForTheRequestedProfiles()
     {
-        var setup = new DriverEncryptionSetupResult(
+        var setup = new DriverEncryptionObjects(
             Mock.Of<IFixedIvProvider>(),
             [Profile("profile-a"), Profile("profile-b")],
             new Dictionary<string, ITestkitEncapsulatedKeyRepository>
@@ -204,9 +204,7 @@ public class NewDriverHandlerTests
         await handler.ProcessAsync(RequestWithEncryptionProfiles());
 
         _autoMocker.GetMock<IDriverEncryptionObjectStore>()
-            .Verify(
-                s => s.StoreObjects(created!, setup.IvProvider, setup.RepositoriesByProfileName),
-                Times.Once);
+            .Verify(s => s.StoreObjects(created!, setup), Times.Once);
     }
 
     [Fact]
@@ -226,10 +224,7 @@ public class NewDriverHandlerTests
         created.Config.ServiceOverrides.Should().BeEmpty();
         _autoMocker.GetMock<IDriverEncryptionObjectStore>()
             .Verify(
-                s => s.StoreObjects(
-                    It.IsAny<IDriver>(),
-                    It.IsAny<IFixedIvProvider>(),
-                    It.IsAny<IReadOnlyDictionary<string, ITestkitEncapsulatedKeyRepository>>()),
+                s => s.StoreObjects(It.IsAny<IDriver>(), It.IsAny<DriverEncryptionObjects>()),
                 Times.Never);
     }
 }

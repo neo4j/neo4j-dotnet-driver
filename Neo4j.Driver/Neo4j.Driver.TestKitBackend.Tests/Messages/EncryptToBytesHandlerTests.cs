@@ -16,7 +16,6 @@
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
@@ -35,16 +34,10 @@ public class EncryptToBytesHandlerTests
     private class RecordingIvProvider : IFixedIvProvider
     {
         public byte[]? SetIv { get; private set; }
-        public bool Consumed { get; private set; }
 
         public void SetNextIv(ReadOnlySpan<byte> iv)
         {
             SetIv = iv.ToArray();
-        }
-
-        public void EnsureConsumed()
-        {
-            Consumed = true;
         }
 
         public byte[] GetIv()
@@ -62,13 +55,11 @@ public class EncryptToBytesHandlerTests
         _autoMocker.GetMock<ICypherToNativeMapper>().Setup(m => m.Map(value)).Returns(nativeValue);
 
         var driverMock = new Mock<IDriver>();
-        var internalDriverMock = driverMock.As<IInternalDriver>();
-        var propertyEncryptionMock = new Mock<IPropertyEncryption>();
+        var propertyEncryptionMock = driverMock.WithPropertyEncryption();
         var valueStepMock = new Mock<IEncryptRequestValueStep>();
         var keyStepMock = new Mock<IEncryptRequestKeyStep>();
         var executeStepMock = new Mock<IEncryptRequestExecuteStep>();
 
-        internalDriverMock.Setup(d => d.PropertyEncryption()).Returns(propertyEncryptionMock.Object);
         propertyEncryptionMock.Setup(p => p.EncryptRequest()).Returns(valueStepMock.Object);
         valueStepMock.Setup(v => v.FromValue(nativeValue)).Returns(keyStepMock.Object);
 
@@ -160,7 +151,7 @@ public class EncryptToBytesHandlerTests
     }
 
     [Fact]
-    public async Task Sets_and_consumes_a_fixed_iv_around_the_encrypt_call()
+    public async Task Sets_the_fixed_iv_before_the_encrypt_call()
     {
         var value = new CypherString("hello world");
         var (driverMock, keyStepMock, executeStepMock) = DriverAcceptingValue(value, "hello world");
@@ -185,7 +176,6 @@ public class EncryptToBytesHandlerTests
         await handler.ProcessAsync(request);
 
         ivProvider.SetIv.Should().Equal(iv);
-        ivProvider.Consumed.Should().BeTrue();
     }
 
     [Fact]

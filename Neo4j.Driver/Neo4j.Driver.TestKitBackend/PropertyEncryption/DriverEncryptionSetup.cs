@@ -20,14 +20,14 @@ namespace Neo4j.Driver.TestKitBackend.PropertyEncryption;
 
 internal record PropertyEncryptionProfileInput(string Name, HexBytes? Kek = null);
 
-internal record DriverEncryptionSetupResult(
+internal record DriverEncryptionObjects(
     IFixedIvProvider IvProvider,
     IReadOnlyList<IPropertyEncryptionProfile> Profiles,
     IReadOnlyDictionary<string, ITestkitEncapsulatedKeyRepository> RepositoriesByProfileName);
 
 internal interface IDriverEncryptionSetup
 {
-    DriverEncryptionSetupResult Prepare(IReadOnlyList<PropertyEncryptionProfileInput> profiles);
+    DriverEncryptionObjects Prepare(IReadOnlyList<PropertyEncryptionProfileInput> profiles);
 }
 
 internal class DriverEncryptionSetup : IDriverEncryptionSetup
@@ -46,10 +46,10 @@ internal class DriverEncryptionSetup : IDriverEncryptionSetup
         _ivProviderFactory = ivProviderFactory;
     }
 
-    public DriverEncryptionSetupResult Prepare(IReadOnlyList<PropertyEncryptionProfileInput> profiles)
+    public DriverEncryptionObjects Prepare(IReadOnlyList<PropertyEncryptionProfileInput> profiles)
     {
         var ivProvider = _ivProviderFactory();
-        var repositoriesByProfileName = new Dictionary<string, ITestkitEncapsulatedKeyRepository>();
+        var repositories = new Dictionary<string, ITestkitEncapsulatedKeyRepository>();
         var resultProfiles = new List<IPropertyEncryptionProfile>();
 
         foreach (var profile in profiles)
@@ -57,10 +57,10 @@ internal class DriverEncryptionSetup : IDriverEncryptionSetup
             var keyEncapsulationService = _keyEncapsulationServiceFactory(profile.Kek);
             var repository = _repositoryFactory();
 
-            repositoriesByProfileName[profile.Name] = repository;
+            repositories[profile.Name] = repository;
             resultProfiles.Add(PropertyEncryptionProfile.Envelope(profile.Name, keyEncapsulationService, repository));
         }
 
-        return new DriverEncryptionSetupResult(ivProvider, resultProfiles, repositoriesByProfileName);
+        return new DriverEncryptionObjects(ivProvider, resultProfiles, repositories);
     }
 }

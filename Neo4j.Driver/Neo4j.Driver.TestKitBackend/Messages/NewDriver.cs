@@ -15,6 +15,7 @@
 
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.Internal.Encryption;
+using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
@@ -81,12 +82,14 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
 
     public override async Task ProcessAsync(NewDriverRequest message)
     {
-        var encryptionSetup = message.PropertyEncryptionProfiles is { Count: > 0 }
-            ? _driverEncryptionSetup.Prepare(message.PropertyEncryptionProfiles)
-            : null;
+        DriverEncryptionObjects? encryptionSetup = null;
+        var hasEncryptionProfiles = message.PropertyEncryptionProfiles is not null;
+        if (hasEncryptionProfiles)
+        {
+            encryptionSetup = _driverEncryptionSetup.Prepare(message.PropertyEncryptionProfiles!);
+        }
 
         IDriver driver;
-
         if (message.AuthTokenManagerId is not null)
         {
             var authTokenManager = _objectStore.Get<IAuthTokenManager>(message.AuthTokenManagerId);
@@ -97,10 +100,9 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
             driver = GraphDatabase.Driver(message.Uri, message.AuthorizationToken?.ToAuthToken(), Configure);
         }
 
-        if (encryptionSetup != null)
+        if (hasEncryptionProfiles)
         {
-            var (provider, _, repositories) = encryptionSetup;
-            _driverEncryptionObjectStore.StoreObjects(driver, provider, repositories);
+            _driverEncryptionObjectStore.StoreObjects(driver, encryptionSetup!);
         }
 
         var id = _objectStore.Store(driver);
@@ -111,18 +113,14 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
 
         void Configure(ConfigBuilder builder)
         {
-            var configBuilder = new ConfigBuilderAdapter(builder);
-            _configMapper.Apply(message, configBuilder);
+            _configMapper.Apply(message, new ConfigBuilderAdapter(builder));
             builder.WithLogger(_neo4JLogger);
             builder.WithMetricsEnabled(true);
-
-            if (encryptionSetup is null)
+            if (encryptionSetup is not null)
             {
-                return;
+                builder.WithPropertyEncryptionProfiles(encryptionSetup.Profiles);
+                builder.WithServiceOverride<IIvProvider>(encryptionSetup.IvProvider);
             }
-
-            configBuilder.WithPropertyEncryptionProfiles(encryptionSetup.Profiles);
-            configBuilder.WithServiceOverride<IIvProvider>(encryptionSetup.IvProvider);
         }
     }
 }

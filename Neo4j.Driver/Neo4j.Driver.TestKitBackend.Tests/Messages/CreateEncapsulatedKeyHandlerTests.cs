@@ -15,7 +15,6 @@
 
 using Moq;
 using Moq.AutoMock;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
@@ -27,19 +26,11 @@ public class CreateEncapsulatedKeyHandlerTests
 {
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<CreateEncapsulatedKeyHandler>();
 
-    private static Mock<IDriver> DriverWithPropertyEncryption(out Mock<IPropertyEncryption> propertyEncryptionMock)
-    {
-        var driverMock = new Mock<IDriver>();
-        var internalDriverMock = driverMock.As<IInternalDriver>();
-        propertyEncryptionMock = new Mock<IPropertyEncryption>();
-        internalDriverMock.Setup(d => d.PropertyEncryption()).Returns(propertyEncryptionMock.Object);
-        return driverMock;
-    }
-
     [Fact]
     public async Task Creates_a_key_using_the_sole_profiles_key_manager_when_no_profile_name_is_given()
     {
-        var driverMock = DriverWithPropertyEncryption(out var propertyEncryptionMock);
+        var driverMock = new Mock<IDriver>();
+        var propertyEncryptionMock = driverMock.WithPropertyEncryption();
         var keyManagerMock = new Mock<IEncapsulatedKeyManager>();
         propertyEncryptionMock.Setup(p => p.KeyManager()).Returns(keyManagerMock.Object);
         keyManagerMock.Setup(m => m.CreateAsync("k1", It.IsAny<CancellationToken>()))
@@ -57,7 +48,8 @@ public class CreateEncapsulatedKeyHandlerTests
     [Fact]
     public async Task Creates_a_key_using_the_named_profiles_key_manager()
     {
-        var driverMock = DriverWithPropertyEncryption(out var propertyEncryptionMock);
+        var driverMock = new Mock<IDriver>();
+        var propertyEncryptionMock = driverMock.WithPropertyEncryption();
         var keyManagerMock = new Mock<IEncapsulatedKeyManager>();
         propertyEncryptionMock.Setup(p => p.KeyManager("p1")).Returns(keyManagerMock.Object);
         keyManagerMock.Setup(m => m.CreateAsync("k1", It.IsAny<CancellationToken>()))

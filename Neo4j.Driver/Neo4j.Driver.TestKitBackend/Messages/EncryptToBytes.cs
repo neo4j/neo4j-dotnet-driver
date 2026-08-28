@@ -57,19 +57,21 @@ internal class EncryptToBytesHandler : MessageHandler<EncryptToBytesRequest>
 
     public override async Task ProcessAsync(EncryptToBytesRequest message)
     {
-        if (message.KeyAlias is null == message.KeyId is null)
+        var hasKeyAlias = message.KeyAlias is not null;
+        var hasKeyId = message.KeyId is not null;
+
+        if (hasKeyAlias == hasKeyId)
         {
             throw new FrontendException("Exactly one of keyAlias or keyId must be set.");
         }
 
-        IFixedIvProvider? ivProvider = null;
         if (message.Iv is { } iv)
         {
-            ivProvider = _driverEncryptionObjectStore.GetIvProvider(message.Driver);
-            ivProvider.SetNextIv(iv);
+            _driverEncryptionObjectStore.GetIvProvider(message.Driver).SetNextIv(iv);
         }
 
-        var keyStep = message.Driver.PropertyEncryption()
+        var keyStep = message.Driver
+            .PropertyEncryption()
             .EncryptRequest()
             .FromValue(_cypherToNativeMapper.Map(message.Value)!);
 
@@ -88,8 +90,6 @@ internal class EncryptToBytesHandler : MessageHandler<EncryptToBytesRequest>
             : keyStep.UsingKeyId(message.KeyId!);
 
         var encryptedBytes = await executeStep.EncryptToBytesAsync();
-
-        ivProvider?.EnsureConsumed();
 
         await _responseWriter.WriteAsync(new EncryptedValueResponse(encryptedBytes));
     }
