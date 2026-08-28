@@ -15,6 +15,7 @@
 
 #nullable enable
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -271,5 +272,20 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
             .DecryptAsync(token);
 
         decrypted.Should().Be("profile-b-value");
+    }
+
+    [Fact]
+    public async Task ConfiguringTwoProfilesWithTheSameName_SurfacesTheDuplicateNameError()
+    {
+        await using var driver = GraphDatabase.Driver(
+            "bolt://localhost",
+            builder => builder.WithPropertyEncryptionProfiles(
+                [EnvelopeProfile("same-name"), EnvelopeProfile("same-name")]));
+
+        var act = () => driver.PropertyEncryption().KeyManager("same-name");
+
+        act.Should()
+            .Throw<ArgumentException>()
+            .WithMessage("Duplicate encryption profile name 'same-name'.*");
     }
 }

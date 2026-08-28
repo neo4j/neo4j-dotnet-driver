@@ -64,6 +64,14 @@ public class ScopedContainerTests
     {
     }
 
+    private class ServiceWithAThrowingConstructor : ITestService
+    {
+        public ServiceWithAThrowingConstructor()
+        {
+            throw new ArgumentException("the constructor's own message");
+        }
+    }
+
     private class ServiceWithMultipleConstructors
     {
         public int ConstructorCalled { get; }
@@ -211,6 +219,17 @@ public class ScopedContainerTests
         await container.DisposeAsync();
 
         instance.IsDisposed.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Resolve_ConstructorThrows_SurfacesTheConstructorsOwnException()
+    {
+        var container = new ScopedContainer();
+        container.RegisterType<ITestService, ServiceWithAThrowingConstructor>();
+
+        var act = () => container.Resolve<ITestService>();
+
+        act.Should().Throw<ArgumentException>().WithMessage("the constructor's own message");
     }
 
     [Fact]

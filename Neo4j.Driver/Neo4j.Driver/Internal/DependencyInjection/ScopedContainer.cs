@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -522,10 +523,27 @@ internal class ScopedContainer : IResolutionScope, IServiceRegistry, IDisposable
             resolutionStack.Pop();
         }
 
-        var instance = constructor.Invoke(constructorArguments);
+        var instance = Construct(constructor, constructorArguments);
 
         return instance ??
             throw new InvalidOperationException($"Failed to create instance of type {implementationType}.");
+    }
+
+    private static object? Construct(ConstructorInfo constructor, object[] constructorArguments)
+    {
+        try
+        {
+            return constructor.Invoke(constructorArguments);
+        }
+        catch (TargetInvocationException exception)
+        {
+            if (exception.InnerException is {} inner)
+            {
+                ExceptionDispatchInfo.Capture(inner).Throw();
+            }
+
+            throw;
+        }
     }
 
     private static Dictionary<Type, List<Registration>> MergeRegistrations(
