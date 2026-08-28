@@ -24,6 +24,11 @@ namespace Neo4j.Driver;
 /// This class provides common implementations of <see cref="IAuthTokenManager"/> for various types of
 /// authentication.
 /// </summary>
+/// <remarks>
+/// These manage credentials for a single identity, as <see cref="IAuthTokenManager"/> requires. To connect as more
+/// than one user from a single driver, give each session its own credentials with
+/// <see cref="SessionConfigBuilder.WithAuthToken"/> or use <see cref="SessionConfigBuilder.WithImpersonatedUser"/>.
+/// </remarks>
 public static class AuthTokenManagers
 {
     /// <summary>

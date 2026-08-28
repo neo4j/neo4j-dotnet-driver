@@ -51,8 +51,9 @@ internal sealed class ConnectionPool : IConnectionPool
     private readonly object _poolSizeSync = new();
 
     private readonly Uri _uri;
-    private int _connectionsWithSsrDisabled;
 
+    private readonly ConcurrentHashSet<IPooledConnection> _liveConnections = new();
+    private int _connectionsWithSsrDisabled;
     private int _connectionsWithSsrEnabled;
 
     private int _poolSize;
@@ -289,28 +290,6 @@ internal sealed class ConnectionPool : IConnectionPool
         Interlocked.CompareExchange(ref _poolStatus, Active, Inactive);
     }
 
-    /// <inheritdoc />
-    public bool IsOnlyConnectionWithoutSsr(IConnection connection)
-    {
-        var allConnections = _inUseConnections.Concat(_idleConnections).ToArray();
-        if (allConnections.All(c => c != connection))
-        {
-            // the connection is not in the pool
-            return false;
-        }
-
-        // go through all connections in the pool and check if there is any connection that has SSR enabled
-        var ssrDisabledCount = 0;
-        var connectionFound = false;
-        foreach (var conn in allConnections)
-        {
-            ssrDisabledCount += conn.SsrEnabled ? 0 : 1;
-            connectionFound |= conn == connection;
-        }
-
-        return connectionFound && ssrDisabledCount == 1;
-    }
-
     public ValueTask DisposeAsync()
     {
         return new ValueTask(CloseAsync());
@@ -368,6 +347,7 @@ internal sealed class ConnectionPool : IConnectionPool
                 .InitAsync(sessionConfig, cancellationToken)
                 .ConfigureAwait(false);
 
+            StartTrackingConnection(conn);
             _poolMetricsListener?.ConnectionCreated();
             return conn;
         }
@@ -408,14 +388,7 @@ internal sealed class ConnectionPool : IConnectionPool
             return;
         }
 
-        if (conn.SsrEnabled)
-        {
-            Interlocked.Decrement(ref _connectionsWithSsrEnabled);
-        }
-        else
-        {
-            Interlocked.Decrement(ref _connectionsWithSsrDisabled);
-        }
+        StopTrackingConnection(conn);
 
         _poolMetricsListener?.ConnectionClosing();
         try
@@ -425,6 +398,40 @@ internal sealed class ConnectionPool : IConnectionPool
         finally
         {
             _poolMetricsListener?.ConnectionClosed();
+        }
+    }
+
+    private void StartTrackingConnection(IPooledConnection conn)
+    {
+        if (!_liveConnections.TryAdd(conn))
+        {
+            return;
+        }
+
+        if (conn.SsrEnabled)
+        {
+            Interlocked.Increment(ref _connectionsWithSsrEnabled);
+        }
+        else
+        {
+            Interlocked.Increment(ref _connectionsWithSsrDisabled);
+        }
+    }
+
+    private void StopTrackingConnection(IPooledConnection conn)
+    {
+        if (!_liveConnections.TryRemove(conn))
+        {
+            return;
+        }
+
+        if (conn.SsrEnabled)
+        {
+            Interlocked.Decrement(ref _connectionsWithSsrEnabled);
+        }
+        else
+        {
+            Interlocked.Decrement(ref _connectionsWithSsrDisabled);
         }
     }
 
@@ -544,14 +551,6 @@ internal sealed class ConnectionPool : IConnectionPool
     private async ValueTask AddConnectionAsync(IPooledConnection connection)
     {
         _inUseConnections.TryAdd(connection);
-        if (connection.SsrEnabled)
-        {
-            Interlocked.Increment(ref _connectionsWithSsrEnabled);
-        }
-        else
-        {
-            Interlocked.Increment(ref _connectionsWithSsrDisabled);
-        }
 
         if (!IsClosed)
         {

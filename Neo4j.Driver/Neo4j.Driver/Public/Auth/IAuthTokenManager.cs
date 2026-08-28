@@ -22,6 +22,15 @@ namespace Neo4j.Driver;
 /// Common interface for components that can provide auth tokens. For pre-baked implementations of this interface,
 /// see <see cref="AuthTokenManagers"/>.
 /// </summary>
+/// <remarks>
+/// An implementation is expected to supply credentials for a <b>single identity</b>, renewing that identity's
+/// credentials as they expire. It must not be used to switch between different users: the driver caches per-identity
+/// state, such as the home database resolved for a session that did not name one, without regard to the token
+/// returned here. Rotating identities through this interface can therefore route one user's session to another
+/// user's home database. To connect as more than one user from a single driver, give each session its own
+/// credentials via <see cref="SessionConfigBuilder.WithAuthToken"/>, or use
+/// <see cref="SessionConfigBuilder.WithImpersonatedUser"/>.
+/// </remarks>
 public interface IAuthTokenManager
 {
     /// <summary>
