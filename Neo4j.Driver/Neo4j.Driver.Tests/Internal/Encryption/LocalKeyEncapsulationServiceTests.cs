@@ -62,7 +62,7 @@ public class LocalKeyEncapsulationServiceTests
     [Fact]
     public async Task Encapsulate_WrapsTheGeneratedDekUnderTheKekAndReturnsTheEncapsulation()
     {
-        var wrapped = new CipherResult(new byte[] { 0xAA, 0xBB }, Sequence(16, seed: 0xC0));
+        var wrapped = new CipherResult([0xAA, 0xBB, ..Sequence(16, seed: 0xC0)], TagLength: 16);
         _autoMock.GetMock<IAeadCipher>()
             .Setup(c => c.Encrypt(Kek, Matches(Iv), Matches(Dek), Matches(Array.Empty<byte>())))
             .Returns(wrapped);
@@ -73,7 +73,7 @@ public class LocalKeyEncapsulationServiceTests
         var result = await CreateSubject().EncapsulateAsync(new NoOptions());
 
         result.Key.Should().Equal(Dek);
-        result.Encapsulation.Should().Equal(wrapped.Combined);
+        result.Encapsulation.Should().Equal(wrapped.CipherOutput);
         result.Options.ToMap()["iv"].Should().Be("encoded-iv");
     }
 

@@ -15,9 +15,13 @@
 
 #nullable enable
 
+using System;
+
 namespace Neo4j.Driver.Internal.Encryption;
 
-internal readonly record struct CipherResult(byte[] CipherText, byte[] Tag)
+internal readonly record struct CipherResult(byte[] CipherOutput, int TagLength)
 {
-    public byte[] Combined => [..CipherText, ..Tag];
+    public ReadOnlySpan<byte> CipherText => CipherOutput.AsSpan(0, CipherOutput.Length - TagLength);
+
+    public ReadOnlySpan<byte> Tag => CipherOutput.AsSpan(CipherOutput.Length - TagLength);
 }

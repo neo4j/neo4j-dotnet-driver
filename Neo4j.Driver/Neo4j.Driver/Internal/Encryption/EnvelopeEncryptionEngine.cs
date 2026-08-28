@@ -125,7 +125,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         var metadata = _envelopeMetadataBuilder.Build(envelopeMetadata);
         var structure = new EncryptedStructure(
             profile.Name,
-            cipherResult.Combined,
+            cipherResult.CipherOutput,
             typeInfo.Name,
             typeInfo.Baseline.Major,
             typeInfo.Baseline.Minor,

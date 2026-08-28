@@ -42,10 +42,10 @@ public class AesGcmCipherTests
 
         var cipherResult = _subject.Encrypt(key, iv, msg, aad);
 
-        cipherResult.CipherText.Should().Equal(expectedCt);
-        cipherResult.Tag.Should().Equal(expectedTag);
+        cipherResult.CipherText.ToArray().Should().Equal(expectedCt);
+        cipherResult.Tag.ToArray().Should().Equal(expectedTag);
 
-        _subject.Decrypt(key, iv, cipherResult.Combined, aad).Should().Equal(msg);
+        _subject.Decrypt(key, iv, cipherResult.CipherOutput, aad).Should().Equal(msg);
     }
 
     // https://github.com/C2SP/wycheproof/blob/master/testvectors_v1/aes_gcm_test.json tcId=92 (Ktv)
@@ -59,8 +59,8 @@ public class AesGcmCipherTests
 
         var cipherResult = _subject.Encrypt(key, iv, msg: [], aad);
 
-        cipherResult.Tag.Should().Equal(expectedTag);
-        _subject.Decrypt(key, iv, cipherResult.Combined, aad).Should().BeEmpty();
+        cipherResult.Tag.ToArray().Should().Equal(expectedTag);
+        _subject.Decrypt(key, iv, cipherResult.CipherOutput, aad).Should().BeEmpty();
     }
 
     // https://github.com/C2SP/wycheproof/blob/master/testvectors_v1/aes_gcm_test.json tcId=93
@@ -73,8 +73,8 @@ public class AesGcmCipherTests
 
         var cipherResult = _subject.Encrypt(key, iv, msg: [], aad: []);
 
-        cipherResult.Tag.Should().Equal(expectedTag);
-        _subject.Decrypt(key, iv, cipherResult.Combined, aad: []).Should().BeEmpty();
+        cipherResult.Tag.ToArray().Should().Equal(expectedTag);
+        _subject.Decrypt(key, iv, cipherResult.CipherOutput, aad: []).Should().BeEmpty();
     }
 
     // https://github.com/C2SP/wycheproof/blob/master/testvectors_v1/aes_gcm_test.json tcId=94
@@ -89,10 +89,10 @@ public class AesGcmCipherTests
 
         var cipherResult = _subject.Encrypt(key, iv, msg, aad: []);
 
-        cipherResult.CipherText.Should().Equal(expectedCt);
-        cipherResult.Tag.Should().Equal(expectedTag);
+        cipherResult.CipherText.ToArray().Should().Equal(expectedCt);
+        cipherResult.Tag.ToArray().Should().Equal(expectedTag);
 
-        _subject.Decrypt(key, iv, cipherResult.Combined, aad: []).Should().Equal(msg);
+        _subject.Decrypt(key, iv, cipherResult.CipherOutput, aad: []).Should().Equal(msg);
     }
 
     [Fact]
@@ -104,9 +104,9 @@ public class AesGcmCipherTests
         var msg = Convert.FromHexString("00010203040506070809");
 
         var cipherResult = _subject.Encrypt(key, iv, msg, aad);
-        cipherResult.Tag[^1] ^= 0xff;
+        cipherResult.CipherOutput[^1] ^= 0xff;
 
-        var act = () => _subject.Decrypt(key, iv, cipherResult.Combined, aad);
+        var act = () => _subject.Decrypt(key, iv, cipherResult.CipherOutput, aad);
         act.Should().Throw<AuthenticationTagMismatchException>();
     }
 }

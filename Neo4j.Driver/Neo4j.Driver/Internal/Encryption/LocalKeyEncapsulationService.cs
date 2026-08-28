@@ -57,7 +57,7 @@ internal class LocalKeyEncapsulationService : IKeyEncapsulationService
         var iv = new byte[IvSizeInBytes];
         _randomProvider.Fill(iv);
 
-        var wrapped = _aeadCipher.Encrypt(_kek, iv, dek, aad: []).Combined;
+        var wrapped = _aeadCipher.Encrypt(_kek, iv, dek, aad: []).CipherOutput;
 
         var resultOptions = new MapKeyEncapsulationOptions(
             new Dictionary<string, string> { [IvOption] = _base64Codec.Encode(iv) });

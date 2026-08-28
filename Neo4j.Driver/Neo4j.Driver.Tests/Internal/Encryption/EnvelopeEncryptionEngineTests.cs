@@ -54,7 +54,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         const long value = 5L;
         var plaintext = new byte[] { 0x10, 0x11 };
         var dataKey = Sequence(32, seed: 0x40);
-        var cipher = new CipherResult(new byte[] { 0xC0 }, new byte[] { 0xD0 });
+        var cipher = new CipherResult([0xC0, 0xD0], TagLength: 1);
         var encoded = new byte[] { 0xEE };
         var builtMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
         byte[] expectedAad = suppliedAad ?? [];
@@ -81,7 +81,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             .Returns(builtMetadata);
 
         Freeze<IEncryptedValueBytesCodec>()
-            .Setup(c => c.Encode(It.Is<EncryptedStructure>(s => IsExpectedStructure(s, cipher.Combined, builtMetadata))))
+            .Setup(c => c.Encode(It.Is<EncryptedStructure>(s => IsExpectedStructure(s, cipher.CipherOutput, builtMetadata))))
             .Returns(encoded);
 
         var subject = CreateSubject<EnvelopeEncryptionEngine>();

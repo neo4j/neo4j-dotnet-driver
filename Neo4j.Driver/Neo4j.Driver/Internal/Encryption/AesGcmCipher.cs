@@ -15,6 +15,7 @@
 
 #nullable enable
 
+using System;
 using System.Security.Cryptography;
 
 namespace Neo4j.Driver.Internal.Encryption;
@@ -34,19 +35,22 @@ internal class AesGcmCipher : IAeadCipher
         }
 
         using var aesGcm = new AesGcm(key, TagSizeInBytes);
-        var ciphertext = cipherOutput[..^TagSizeInBytes];
-        var tag = cipherOutput[^TagSizeInBytes..];
-        var plaintext = new byte[ciphertext.Length];
-        aesGcm.Decrypt(iv, ciphertext, tag, plaintext, aad);
+        var cipherTextLength = cipherOutput.Length - TagSizeInBytes;
+        var plaintext = new byte[cipherTextLength];
+        var cipherText = cipherOutput.AsSpan(0, cipherTextLength);
+        var tag = cipherOutput.AsSpan(cipherTextLength);
+        aesGcm.Decrypt(iv, cipherText, tag, plaintext, aad);
+
         return plaintext;
     }
 
     public CipherResult Encrypt(byte[] key, byte[] iv, byte[] msg, byte[] aad)
     {
         using var aesGcm = new AesGcm(key, TagSizeInBytes);
-        var cipherText = new byte[msg.Length];
-        var tag = new byte[TagSizeInBytes]; 
-        aesGcm.Encrypt(iv, msg, cipherText, tag, aad);
-        return new CipherResult(cipherText, tag);
+        var cipherOutputBuffer = new byte[msg.Length + TagSizeInBytes];
+        var cipherTextBuffer = cipherOutputBuffer.AsSpan(0, msg.Length);
+        var tagBuffer = cipherOutputBuffer.AsSpan(msg.Length);
+        aesGcm.Encrypt(iv, msg, cipherTextBuffer, tagBuffer, aad);
+        return new CipherResult(cipherOutputBuffer, TagSizeInBytes);
     }
 }
