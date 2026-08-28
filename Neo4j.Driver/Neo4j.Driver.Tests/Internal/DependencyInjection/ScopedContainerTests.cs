@@ -1205,7 +1205,8 @@ public class ScopedContainerTests
         var singular = child.Resolve<SingleConsumer>().Collected.Name;
         var collected = child.Resolve<CollectionConsumer>().Collected.Select(c => c.Name);
 
-        collected.Should().Contain(singular);
+        collected.Should().Equal("parent", "child");
+        collected.Last().Should().Be(singular);
     }
 
     [Fact]
@@ -1236,5 +1237,61 @@ public class ScopedContainerTests
         await child.DisposeAsync();
 
         element.Disposed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ResolveEnumerable_ExplicitCollectionRegistration_WinsOverCollectedImplementations()
+    {
+        var container = new ScopedContainer();
+        container.RegisterType<ICollected, ParentCollected>();
+        IEnumerable<ICollected> explicitCollection = [new ChildCollected(), new GrandchildCollected()];
+        container.RegisterInstance(explicitCollection);
+
+        var resolved = container.Resolve<IEnumerable<ICollected>>().Select(c => c.Name);
+
+        resolved.Should().Equal("child", "grandchild");
+    }
+
+    [Fact]
+    public void ResolveEnumerable_ExplicitCollectionRegistration_WinsThroughParentRegisteredConsumer()
+    {
+        var parent = new ScopedContainer();
+        parent.RegisterType<ICollected, ParentCollected>();
+        parent.RegisterType<CollectionConsumer>();
+        IEnumerable<ICollected> explicitCollection = [new GrandchildCollected()];
+
+        var child = parent.CreateChildScope(r => r.RegisterInstance(explicitCollection));
+        var resolved = child.Resolve<CollectionConsumer>().Collected.Select(c => c.Name);
+
+        resolved.Should().Equal("grandchild");
+    }
+
+    [Fact]
+    public void Resolve_ParentInterceptor_OverridesChildRegistration()
+    {
+        var parent = new ScopedContainer();
+        var interceptor = new Mock<IResolutionInterceptor>();
+        var overrideInstance = new GrandchildCollected();
+
+        interceptor
+            .Setup(x => x.TryResolve(
+                typeof(ICollected),
+                It.IsAny<Type>(),
+                It.IsAny<IServiceResolver>(),
+                out It.Ref<object>.IsAny))
+            .Returns(
+                new TryResolveDelegate((_, _, _, out service) =>
+                {
+                    service = overrideInstance;
+                    return true;
+                }));
+
+        parent.RegisterInterceptor(interceptor.Object);
+
+        var child = parent.CreateChildScope(r => r.RegisterType<ICollected, ChildCollected>());
+
+        var resolved = child.Resolve<ICollected>();
+
+        resolved.Should().BeSameAs(overrideInstance);
     }
 }
