@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 //
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -142,18 +142,15 @@ public class BackendModuleTests
     }
 
     [Fact]
-    public async Task A_stored_logging_disposable_logs_exactly_once_when_the_store_is_cleared()
+    public async Task A_logging_disposable_logs_exactly_once_when_its_scope_is_disposed()
     {
         var loggerFactory = new CountingLoggerFactory();
         var container = BuildContainer(b => b.RegisterInstance<ILoggerFactory>(loggerFactory));
         var scope = container.BeginLifetimeScope();
 
         var creator = scope.Resolve<LoggingDisposableCreator>();
-        var endTestLogger = creator("Test closedown", "END TEST marker");
-        var store = scope.Resolve<IObjectStore>();
-        store.Store(endTestLogger);
+        _ = creator("Test closedown", "END TEST marker");
 
-        await store.ClearAsync();
         await scope.DisposeAsync();
 
         loggerFactory.MessageCount("END TEST marker").Should().Be(1);
@@ -234,22 +231,6 @@ public class BackendModuleTests
         using var scopeB = container.BeginLifetimeScope();
 
         scopeA.Resolve<IObjectStore>().Should().BeSameAs(scopeB.Resolve<IObjectStore>());
-    }
-
-    [Fact]
-    public async Task Handles_stored_before_a_clear_do_not_resolve_after_it()
-    {
-        var container = BuildContainer(b => b.RegisterInstance<ILoggerFactory>(new TestOutputLoggerFactory()));
-        using var scope = container.BeginLifetimeScope();
-
-        var store = scope.Resolve<IObjectStore>();
-        var id = store.Store(new Thing());
-        await store.ClearAsync();
-        var options = scope.Resolve<IJsonOptionsProvider>().GetOptions();
-
-        var act = () => JsonSerializer.Deserialize<Request>($$"""{"thing":"{{id}}"}""", options);
-
-        act.Should().Throw<TestKitProtocolException>();
     }
 
     [Fact]

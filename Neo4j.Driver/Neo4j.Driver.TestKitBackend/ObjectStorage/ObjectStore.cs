@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 //
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -75,11 +75,6 @@ internal class ObjectStore : IObjectStore, IAsyncDisposable
     }
 
     public async ValueTask DisposeAsync()
-    {
-        await ClearAsync();
-    }
-
-    public async Task ClearAsync()
     {
         List<object> toDispose;
         lock (_lock)

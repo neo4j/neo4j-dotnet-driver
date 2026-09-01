@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -20,7 +20,6 @@ using Autofac.Core.Registration;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Infrastructure;
-using Neo4j.Driver.TestKitBackend.Logging;
 using Module = Autofac.Module;
 
 namespace Neo4j.Driver.TestKitBackend;
@@ -38,12 +37,6 @@ internal class BackendModule : Module
             if (type.IsAssignableTo(typeof(IMessageHandler)))
             {
                 registration.Keyed<IMessageHandler>(MessageHandlingHelper.MessageTypeFor(type));
-            }
-
-            // the end-of-test logger is already disposed by the object store in the correct order
-            if (type == typeof(LoggingDisposable))
-            {
-                registration.ExternallyOwned();
             }
 
             _ = LifetimeOf(type) switch
