@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 //
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -29,7 +29,6 @@ internal class TestkitConnectionHandler : ConnectionHandler
     private readonly IConnectionIdProvider _connectionIdProvider;
     private readonly ILoggingContextAccessor _loggingContextAccessor;
     private readonly ILogger _logger;
-    private readonly SemaphoreSlim _connectionTurn = new(1, 1);
 
     public TestkitConnectionHandler(
         ILifetimeScope rootScope,
@@ -48,19 +47,6 @@ internal class TestkitConnectionHandler : ConnectionHandler
     }
 
     public override async Task OnConnectedAsync(ConnectionContext connection)
-    {
-        await _connectionTurn.WaitAsync();
-        try
-        {
-            await RunConnectionAsync(connection);
-        }
-        finally
-        {
-            _connectionTurn.Release();
-        }
-    }
-
-    private async Task RunConnectionAsync(ConnectionContext connection)
     {
         var connectionId = _connectionIdProvider.GetConnectionId();
         connection.ConnectionId = connectionId;

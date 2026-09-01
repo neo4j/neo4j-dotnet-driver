@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 //
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -25,5 +25,4 @@ internal interface IObjectStore
 
     void Remove(string id);
 
-    Task ClearAsync();
 }

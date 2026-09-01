@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 //
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -195,29 +195,17 @@ public class ObjectStoreTests
     }
 
     [Fact]
-    public async Task ClearAsync_disposes_in_reverse_storage_order_and_empties_the_store()
+    public async Task DisposeAsync_disposes_in_reverse_storage_order_and_empties_the_store()
     {
         var disposalOrder = new List<string>();
         _objectStore.Store(new SequencedDisposable("first", disposalOrder));
         var secondId = _objectStore.Store(new SequencedDisposable("second", disposalOrder));
 
-        await _objectStore.ClearAsync();
+        await _objectStore.DisposeAsync();
 
         disposalOrder.Should().Equal("second", "first");
         var get = () => _objectStore.Get<SequencedDisposable>(secondId);
         get.Should().Throw<TestKitProtocolException>();
-    }
-
-    [Fact]
-    public async Task ClearAsync_leaves_the_store_usable_for_the_next_test()
-    {
-        _objectStore.Store(new Stored());
-        await _objectStore.ClearAsync();
-
-        var stored = new Stored();
-        var id = _objectStore.Store(stored);
-
-        _objectStore.Get<Stored>(id).Should().BeSameAs(stored);
     }
 
     [Fact]

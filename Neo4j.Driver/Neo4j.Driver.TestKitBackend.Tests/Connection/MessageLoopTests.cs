@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 //
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -21,7 +21,6 @@ using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Xunit;
 
@@ -458,59 +457,6 @@ public class MessageLoopTests
 
         unwound.Should().BeTrue();
         _autoMocker.GetMock<IResponseWriter>().Verify(w => w.WriteAsync(It.IsAny<IProtocolMessage>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task RunAsync_clears_the_object_store_when_the_connection_ends()
-    {
-        _autoMocker.GetMock<IConnectionInput>()
-            .Setup(i => i.ReadRequestAsync())
-            .ReturnsAsync((string?)null);
-
-        var loop = _autoMocker.CreateInstance<MessageLoop>();
-
-        await loop.RunAsync("testkit-1");
-
-        _autoMocker.GetMock<IObjectStore>().Verify(s => s.ClearAsync(), Times.Once);
-    }
-
-    [Fact]
-    public async Task The_store_is_cleared_before_waiting_for_running_handlers()
-    {
-        const string json = """{"name":"Stuck","data":{}}""";
-        var message = Mock.Of<IProtocolMessage>();
-        var handlerFinished = new TaskCompletionSource();
-
-        _autoMocker.GetMock<IConnectionInput>()
-            .SetupSequence(i => i.ReadRequestAsync())
-            .ReturnsAsync(json)
-            .ReturnsAsync((string?)null);
-
-        _autoMocker.GetMock<IMessageSerializer>()
-            .Setup(s => s.Deserialize(json))
-            .Returns(message);
-
-        _autoMocker.GetMock<IMessageDispatcher>()
-            .Setup(d => d.DispatchAsync(message))
-            .Returns(handlerFinished.Task);
-
-        _autoMocker.GetMock<IObjectStore>()
-            .Setup(s => s.ClearAsync())
-            .Returns(() =>
-            {
-                handlerFinished.SetResult();
-                return Task.CompletedTask;
-            });
-
-        var loop = _autoMocker.CreateInstance<MessageLoop>();
-        loop.HandlerDrainTimeout = TimeSpan.FromHours(1);
-
-        await WithTimeoutAsync(loop.RunAsync("testkit-1"));
-
-        _autoMocker.GetMock<IObjectStore>().Verify(s => s.ClearAsync(), Times.Once);
-        handlerFinished.Task.IsCompleted.Should()
-            .BeTrue("the handler only finishes once the store has been cleared, so a clear placed after " +
-                "the drain would deadlock until the drain timeout");
     }
 
     [Fact]
