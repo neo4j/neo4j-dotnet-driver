@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 //
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -18,7 +18,6 @@ using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Logging;
 using Neo4j.Driver.TestKitBackend.Dispatch;
-using Neo4j.Driver.TestKitBackend.ObjectStorage;
 
 namespace Neo4j.Driver.TestKitBackend.Messages;
 
@@ -40,24 +39,21 @@ internal class StartTestHandler : MessageHandler<StartTestRequest>
 {
     private readonly ILoggingContext _loggingContext;
     private readonly ISkipPolicy _skipPolicy;
-    private readonly LoggingDisposableCreator _createLoggingDisposable;
+    private readonly LoggingDisposableCreator _logAtEndOfTest;
     private readonly IResponseWriter _responseWriter;
-    private readonly IObjectStore _objectStore;
     private readonly ILogger _logger;
 
     public StartTestHandler(
         ILoggingContext loggingContext,
         ISkipPolicy skipPolicy,
-        LoggingDisposableCreator createLoggingDisposable,
+        LoggingDisposableCreator logAtEndOfTest,
         IResponseWriter responseWriter,
-        IObjectStore objectStore,
         ILogger logger)
     {
         _loggingContext = loggingContext;
         _skipPolicy = skipPolicy;
-        _createLoggingDisposable = createLoggingDisposable;
+        _logAtEndOfTest = logAtEndOfTest;
         _responseWriter = responseWriter;
-        _objectStore = objectStore;
         _logger = logger;
     }
 
@@ -77,9 +73,7 @@ internal class StartTestHandler : MessageHandler<StartTestRequest>
 
             _logger.LogDebug("START TEST {TestName}", message.TestName);
 
-            var endTestMsg = $"END TEST {message.TestName}";
-            var endTestLogger = _createLoggingDisposable("Test closedown", endTestMsg);
-            _objectStore.Store(endTestLogger);
+            _ = _logAtEndOfTest("Test closedown", $"END TEST {message.TestName}");
         }
     }
 }
