@@ -31,7 +31,6 @@ public class DriverEncryptionSetupTests
     {
         _autoMocker.Use<Func<byte[]?, IKeyEncapsulationService>>(_ => Mock.Of<IKeyEncapsulationService>());
         _autoMocker.Use<Func<ITestkitEncapsulatedKeyRepository>>(() => Mock.Of<ITestkitEncapsulatedKeyRepository>());
-        _autoMocker.Use<Func<IFixedIvProvider>>(() => Mock.Of<IFixedIvProvider>());
     }
 
     private DriverEncryptionObjects Prepare(params PropertyEncryptionProfileInput[] profiles)
@@ -73,26 +72,6 @@ public class DriverEncryptionSetupTests
         Prepare(new PropertyEncryptionProfileInput("profile-1", new HexBytes([0x01, 0x02, 0x0a, 0xff])));
 
         requestedKek.Should().Equal(0x01, 0x02, 0x0a, 0xff);
-    }
-
-    [Fact]
-    public void Shares_a_single_iv_provider_across_all_profiles()
-    {
-        var ivProviderRequests = 0;
-        var sharedIvProvider = Mock.Of<IFixedIvProvider>();
-        _autoMocker.Use<Func<IFixedIvProvider>>(
-            () =>
-            {
-                ivProviderRequests++;
-                return sharedIvProvider;
-            });
-
-        var result = Prepare(
-            new PropertyEncryptionProfileInput("profile-1", null),
-            new PropertyEncryptionProfileInput("profile-2", null));
-
-        ivProviderRequests.Should().Be(1);
-        result.IvProvider.Should().BeSameAs(sharedIvProvider);
     }
 
     [Fact]

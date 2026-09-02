@@ -32,19 +32,9 @@ public class DriverEncryptionObjectStoreTests
             name => name,
             _ => Mock.Of<ITestkitEncapsulatedKeyRepository>());
 
-        var objects = new DriverEncryptionObjects(Mock.Of<IFixedIvProvider>(), [], repositories);
+        var objects = new DriverEncryptionObjects([], repositories);
         _store.StoreObjects(driver, objects);
         return objects;
-    }
-
-    [Fact]
-    public void Returns_the_iv_provider_that_was_added_for_the_driver()
-    {
-        var stored = StoreObjects(_driver);
-
-        var ivProvider = _store.GetIvProvider(_driver);
-
-        ivProvider.Should().BeSameAs(stored.IvProvider);
     }
 
     [Fact]
@@ -73,7 +63,7 @@ public class DriverEncryptionObjectStoreTests
     [Fact]
     public void Throws_when_the_driver_has_no_fixtures()
     {
-        var act = () => _store.GetIvProvider(_driver);
+        var act = () => _store.GetRepository(_driver, "p1");
 
         act.Should().Throw<TestKitProtocolException>();
     }

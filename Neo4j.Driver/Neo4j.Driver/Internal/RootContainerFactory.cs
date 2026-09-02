@@ -30,11 +30,6 @@ internal static class RootContainerFactory
         container.RegisterInstance(DateTimeProvider.Instance);
         container.RegisterModule<LoggingModule>();
 
-        foreach (var serviceOverride in context.Config.ServiceOverrides)
-        {
-            serviceOverride(container);
-        }
-
         foreach (var profile in context.Config.Preview_PropertyEncryptionProfiles)
         {
             container.RegisterInstance((IInternalEncryptionProfile)profile);

@@ -123,16 +123,4 @@ public class RootContainerFactoryTests
         registry.Get("b").Should().BeSameAs(b);
     }
 
-    [Fact]
-    public void Build_ResolvesAServiceOverride_OverTheAutoRegisteredService()
-    {
-        var overridingProvider = Mock.Of<IIvProvider>();
-        var config = Config.Builder.WithServiceOverride(overridingProvider).Build();
-        var context = new DriverContext(new("bolt://localhost"), null, config);
-
-        var scope = RootContainerFactory.Build(context);
-
-        scope.Resolve<IIvProvider>().Should().BeSameAs(overridingProvider);
-    }
-
 }

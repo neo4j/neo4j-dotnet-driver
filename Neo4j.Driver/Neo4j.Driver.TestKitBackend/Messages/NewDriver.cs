@@ -14,7 +14,6 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Logging;
-using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
@@ -119,7 +118,6 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
             if (encryptionSetup is not null)
             {
                 builder.WithPropertyEncryptionProfiles(encryptionSetup.Profiles);
-                builder.WithServiceOverride<IIvProvider>(encryptionSetup.IvProvider);
             }
         }
     }

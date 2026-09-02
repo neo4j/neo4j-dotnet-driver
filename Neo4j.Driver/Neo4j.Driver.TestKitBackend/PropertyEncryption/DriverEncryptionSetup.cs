@@ -21,7 +21,6 @@ namespace Neo4j.Driver.TestKitBackend.PropertyEncryption;
 internal record PropertyEncryptionProfileInput(string Name, HexBytes? Kek = null);
 
 internal record DriverEncryptionObjects(
-    IFixedIvProvider IvProvider,
     IReadOnlyList<IPropertyEncryptionProfile> Profiles,
     IReadOnlyDictionary<string, ITestkitEncapsulatedKeyRepository> RepositoriesByProfileName);
 
@@ -34,21 +33,17 @@ internal class DriverEncryptionSetup : IDriverEncryptionSetup
 {
     private readonly Func<byte[]?, IKeyEncapsulationService> _keyEncapsulationServiceFactory;
     private readonly Func<ITestkitEncapsulatedKeyRepository> _repositoryFactory;
-    private readonly Func<IFixedIvProvider> _ivProviderFactory;
 
     public DriverEncryptionSetup(
         Func<byte[]?, IKeyEncapsulationService> keyEncapsulationServiceFactory,
-        Func<ITestkitEncapsulatedKeyRepository> repositoryFactory,
-        Func<IFixedIvProvider> ivProviderFactory)
+        Func<ITestkitEncapsulatedKeyRepository> repositoryFactory)
     {
         _keyEncapsulationServiceFactory = keyEncapsulationServiceFactory;
         _repositoryFactory = repositoryFactory;
-        _ivProviderFactory = ivProviderFactory;
     }
 
     public DriverEncryptionObjects Prepare(IReadOnlyList<PropertyEncryptionProfileInput> profiles)
     {
-        var ivProvider = _ivProviderFactory();
         var repositories = new Dictionary<string, ITestkitEncapsulatedKeyRepository>();
         var resultProfiles = new List<IPropertyEncryptionProfile>();
 
@@ -61,6 +56,6 @@ internal class DriverEncryptionSetup : IDriverEncryptionSetup
             resultProfiles.Add(PropertyEncryptionProfile.Envelope(profile.Name, keyEncapsulationService, repository));
         }
 
-        return new DriverEncryptionObjects(ivProvider, resultProfiles, repositories);
+        return new DriverEncryptionObjects(resultProfiles, repositories);
     }
 }

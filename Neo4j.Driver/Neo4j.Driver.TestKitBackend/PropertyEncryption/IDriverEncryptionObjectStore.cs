@@ -19,6 +19,5 @@ internal interface IDriverEncryptionObjectStore
 {
     void StoreObjects(IDriver driver, DriverEncryptionObjects objects);
 
-    IFixedIvProvider GetIvProvider(IDriver driver);
     ITestkitEncapsulatedKeyRepository GetRepository(IDriver driver, string? profileName = null);
 }

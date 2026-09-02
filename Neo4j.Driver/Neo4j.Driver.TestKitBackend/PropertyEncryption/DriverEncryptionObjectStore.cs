@@ -27,11 +27,6 @@ internal class DriverEncryptionObjectStore : IDriverEncryptionObjectStore
         _objectsByDriver[driver] = objects;
     }
 
-    public IFixedIvProvider GetIvProvider(IDriver driver)
-    {
-        return GetObjects(driver).IvProvider;
-    }
-
     public ITestkitEncapsulatedKeyRepository GetRepository(IDriver driver, string? profileName = null)
     {
         var repositories = GetObjects(driver).RepositoriesByProfileName;

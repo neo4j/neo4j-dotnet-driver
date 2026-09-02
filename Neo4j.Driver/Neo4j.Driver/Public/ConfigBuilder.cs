@@ -330,13 +330,6 @@ public sealed class ConfigBuilder
         return this;
     }
 
-    internal ConfigBuilder WithServiceOverride<TService>(TService instance)
-    {
-        ArgumentNullException.ThrowIfNull(instance);
-        _config.ServiceOverrides.Add(registry => registry.RegisterInstance(instance));
-        return this;
-    }
-
     /// <summary>
     /// Sets the userAgent. Used to get and set the User Agent string. If not used the default will be
     /// "neo4j-dotnet/x.y" where x is the major version and y is the minor version.

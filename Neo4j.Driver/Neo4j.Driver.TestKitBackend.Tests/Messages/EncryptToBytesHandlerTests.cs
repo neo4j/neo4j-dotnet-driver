@@ -16,12 +16,12 @@
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Errors;
 using Neo4j.Driver.TestKitBackend.Messages;
-using Neo4j.Driver.TestKitBackend.PropertyEncryption;
 using Neo4j.Driver.TestKitBackend.Types;
 using Xunit;
 
@@ -29,23 +29,6 @@ namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
 
 public class EncryptToBytesHandlerTests
 {
-    // Moq can't build a Setup/Verify expression over a ReadOnlySpan<byte> parameter, so this
-    // records SetNextIv calls instead of mocking them.
-    private class RecordingIvProvider : IFixedIvProvider
-    {
-        public byte[]? SetIv { get; private set; }
-
-        public void SetNextIv(ReadOnlySpan<byte> iv)
-        {
-            SetIv = iv.ToArray();
-        }
-
-        public byte[] GetIv()
-        {
-            throw new NotSupportedException();
-        }
-    }
-
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<EncryptToBytesHandler>();
     private static readonly byte[] EncryptedBytes = [0xDE, 0xAD, 0xBE, 0xEF];
 
@@ -151,17 +134,13 @@ public class EncryptToBytesHandlerTests
     }
 
     [Fact]
-    public async Task Sets_the_fixed_iv_before_the_encrypt_call()
+    public async Task Applies_the_fixed_iv_to_the_encryption_request()
     {
         var value = new CypherString("hello world");
         var (driverMock, keyStepMock, executeStepMock) = DriverAcceptingValue(value, "hello world");
+        var internalRequestMock = executeStepMock.As<IInternalEncryptRequest>();
         keyStepMock.Setup(k => k.UsingKeyAlias("k1")).Returns(executeStepMock.Object);
         executeStepMock.Setup(e => e.EncryptToBytesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(EncryptedBytes);
-
-        var ivProvider = new RecordingIvProvider();
-        _autoMocker.GetMock<IDriverEncryptionObjectStore>()
-            .Setup(s => s.GetIvProvider(driverMock.Object))
-            .Returns(ivProvider);
 
         var iv = Enumerable.Range(0, 12).Select(b => (byte)b).ToArray();
         var handler = _autoMocker.CreateInstance<EncryptToBytesHandler>();
@@ -175,7 +154,7 @@ public class EncryptToBytesHandlerTests
 
         await handler.ProcessAsync(request);
 
-        ivProvider.SetIv.Should().Equal(iv);
+        internalRequestMock.Verify(r => r.UseFixedIv(iv), Times.Once);
     }
 
     [Fact]

@@ -16,8 +16,6 @@
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
-using Neo4j.Driver.Internal.DependencyInjection;
-using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
@@ -134,7 +132,6 @@ public class NewDriverHandlerTests
     private DriverEncryptionObjects PrepareReturnsSetupForTheRequestedProfiles()
     {
         var setup = new DriverEncryptionObjects(
-            Mock.Of<IFixedIvProvider>(),
             [Profile("profile-a"), Profile("profile-b")],
             new Dictionary<string, ITestkitEncapsulatedKeyRepository>
             {
@@ -164,29 +161,6 @@ public class NewDriverHandlerTests
         await handler.ProcessAsync(RequestWithEncryptionProfiles());
 
         created!.Config.Preview_PropertyEncryptionProfiles.Should().Equal(setup.Profiles);
-    }
-
-    [Fact]
-    public async Task Overrides_the_drivers_iv_provider_with_the_prepared_one()
-    {
-        var setup = PrepareReturnsSetupForTheRequestedProfiles();
-        IDriver? created = null;
-        _autoMocker.GetMock<IObjectStore>()
-            .Setup(r => r.Store(It.IsAny<IDriver>()))
-            .Callback((IDriver driver) => created = driver)
-            .Returns((IDriver driver) => "driver-1");
-
-        var handler = _autoMocker.CreateInstance<NewDriverHandler>();
-
-        await handler.ProcessAsync(RequestWithEncryptionProfiles());
-
-        var registry = new Mock<IServiceRegistry>();
-        foreach (var serviceOverride in created!.Config.ServiceOverrides)
-        {
-            serviceOverride(registry.Object);
-        }
-
-        registry.Verify(r => r.RegisterInstance((IIvProvider)setup.IvProvider, false), Times.Once);
     }
 
     [Fact]
@@ -221,7 +195,6 @@ public class NewDriverHandlerTests
         await handler.ProcessAsync(MinimalRequest());
 
         created!.Config.Preview_PropertyEncryptionProfiles.Should().BeEmpty();
-        created.Config.ServiceOverrides.Should().BeEmpty();
         _autoMocker.GetMock<IDriverEncryptionObjectStore>()
             .Verify(
                 s => s.StoreObjects(It.IsAny<IDriver>(), It.IsAny<DriverEncryptionObjects>()),

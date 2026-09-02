@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Cypher;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Errors;
-using Neo4j.Driver.TestKitBackend.PropertyEncryption;
 using Neo4j.Driver.TestKitBackend.Serialization;
 using Neo4j.Driver.TestKitBackend.Types;
 
@@ -42,16 +42,11 @@ internal record EncryptedValueResponse(HexBytes EncryptedBytes) : IProtocolMessa
 internal class EncryptToBytesHandler : MessageHandler<EncryptToBytesRequest>
 {
     private readonly ICypherToNativeMapper _cypherToNativeMapper;
-    private readonly IDriverEncryptionObjectStore _driverEncryptionObjectStore;
     private readonly IResponseWriter _responseWriter;
 
-    public EncryptToBytesHandler(
-        ICypherToNativeMapper cypherToNativeMapper,
-        IDriverEncryptionObjectStore driverEncryptionObjectStore,
-        IResponseWriter responseWriter)
+    public EncryptToBytesHandler(ICypherToNativeMapper cypherToNativeMapper, IResponseWriter responseWriter)
     {
         _cypherToNativeMapper = cypherToNativeMapper;
-        _driverEncryptionObjectStore = driverEncryptionObjectStore;
         _responseWriter = responseWriter;
     }
 
@@ -63,11 +58,6 @@ internal class EncryptToBytesHandler : MessageHandler<EncryptToBytesRequest>
         if (hasKeyAlias == hasKeyId)
         {
             throw new FrontendException("Exactly one of keyAlias or keyId must be set.");
-        }
-
-        if (message.Iv is { } iv)
-        {
-            _driverEncryptionObjectStore.GetIvProvider(message.Driver).SetNextIv(iv);
         }
 
         var keyStep = message.Driver
@@ -88,6 +78,11 @@ internal class EncryptToBytesHandler : MessageHandler<EncryptToBytesRequest>
         var executeStep = message.KeyAlias is not null
             ? keyStep.UsingKeyAlias(message.KeyAlias)
             : keyStep.UsingKeyId(message.KeyId!);
+
+        if (message.Iv is not null)
+        {
+            ((IInternalEncryptRequest)executeStep).UseFixedIv(message.Iv);
+        }
 
         var encryptedBytes = await executeStep.EncryptToBytesAsync();
 
