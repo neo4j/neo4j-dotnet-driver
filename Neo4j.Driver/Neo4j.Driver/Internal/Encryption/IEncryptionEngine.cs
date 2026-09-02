@@ -29,6 +29,7 @@ internal interface IEncryptionEngine
         object value,
         KeyReference keyRef,
         byte[]? aad,
+        byte[]? iv,
         CancellationToken cancellationToken,
         [NotNullWhen(true)] out Task<byte[]>? encryptionTask);
 

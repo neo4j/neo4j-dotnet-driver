@@ -84,4 +84,23 @@ public class EncryptRequestBuilderTests
 
         result.Should().BeSameAs(expected);
     }
+    [Fact]
+    public async Task EncryptToBytesAsync_WithAFixedIv_CarriesTheIvOnTheRequest()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var iv = new byte[] { 0x70, 0x71 };
+        var expected = new byte[] { 7 };
+        var runner = new Mock<IEncryptionRequestRunner>();
+        runner.Setup(r => r.EncryptToBytesAsync(
+                new EncryptRequest("hello", null, null, new KeyReference("id-1", KeyReferenceType.Id), iv),
+                token))
+            .ReturnsAsync(expected);
+
+        var step = new EncryptRequestBuilder(runner.Object).FromValue("hello");
+        ((IInternalEncryptRequest)step).UseFixedIv(iv);
+
+        var result = await step.UsingKeyId("id-1").EncryptToBytesAsync(token);
+
+        result.Should().BeSameAs(expected);
+    }
 }

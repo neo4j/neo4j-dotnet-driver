@@ -24,13 +24,15 @@ namespace Neo4j.Driver.Internal.Encryption;
 internal class EncryptRequestBuilder :
     IEncryptRequestValueStep,
     IEncryptRequestKeyStep,
-    IEncryptRequestExecuteStep
+    IEncryptRequestExecuteStep,
+    IInternalEncryptRequest
 {
     private readonly IEncryptionRequestRunner _runner;
     private object? _value;
     private object? _aad;
     private string? _profileName;
     private KeyReference? _keyReference;
+    private byte[]? _iv;
 
     public EncryptRequestBuilder(IEncryptionRequestRunner runner)
     {
@@ -67,9 +69,14 @@ internal class EncryptRequestBuilder :
         return this;
     }
 
+    public void UseFixedIv(byte[] iv)
+    {
+        _iv = iv;
+    }
+
     public Task<byte[]> EncryptToBytesAsync(CancellationToken cancellationToken = default)
     {
-        var request = new EncryptRequest(_value!, _aad, _profileName, _keyReference!);
+        var request = new EncryptRequest(_value!, _aad, _profileName, _keyReference!, _iv);
         return _runner.EncryptToBytesAsync(request, cancellationToken);
     }
 }

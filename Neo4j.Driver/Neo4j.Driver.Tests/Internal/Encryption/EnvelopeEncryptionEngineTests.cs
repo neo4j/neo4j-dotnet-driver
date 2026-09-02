@@ -90,6 +90,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             value,
             new KeyReference("main", KeyReferenceType.Alias),
             suppliedAad,
+            iv: null,
             TestContext.Current.CancellationToken,
             out var encryptedTask);
 
@@ -97,6 +98,58 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
         var result = await encryptedTask!;
 
         result.Should().Equal(encoded);
+    }
+
+    [Fact]
+    public async Task TryStartEncrypt_WithASuppliedIv_UsesItInsteadOfTheProviderIv()
+    {
+        const long value = 5L;
+        var plaintext = new byte[] { 0x10, 0x11 };
+        var dataKey = Sequence(32, seed: 0x40);
+        var suppliedIv = Sequence(12, seed: 0x70);
+        var cipher = new CipherResult([0xC0, 0xD0], TagLength: 1);
+        var profile = Profile();
+        byte[]? ivGivenToCipher = null;
+
+        Freeze<IPlaintextCodec>().Setup(s => s.Serialize(value)).Returns(plaintext);
+        Freeze<IPropertyTypeInspector>()
+            .Setup(n => n.GetPropertyTypeInfo(value))
+            .Returns(new PropertyTypeInfo("INTEGER", new BoltValueSerializationSchemeVersion(1, 0)));
+
+        Freeze<IEnvelopeDataKeyProvider>()
+            .Setup(p => p.GetDataKeyAsync(
+                profile,
+                new KeyReference("main", KeyReferenceType.Alias),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DataKeyResult("key-1", dataKey));
+
+        Freeze<IAeadCipher>()
+            .Setup(c => c.Encrypt(It.IsAny<byte[]>(), It.IsAny<byte[]>(), It.IsAny<byte[]>(), It.IsAny<byte[]>()))
+            .Callback<byte[], byte[], byte[], byte[]>((_, iv, _, _) => ivGivenToCipher = iv)
+            .Returns(cipher);
+
+        Freeze<IEnvelopeMetadataBuilder>()
+            .Setup(b => b.Build(It.IsAny<EnvelopeMetadata>()))
+            .Returns(new Dictionary<string, object> { ["key_id"] = "key-1" });
+
+        Freeze<IEncryptedValueBytesCodec>()
+            .Setup(c => c.Encode(It.IsAny<EncryptedStructure>()))
+            .Returns([0xEE]);
+
+        var subject = CreateSubject<EnvelopeEncryptionEngine>();
+        var started = subject.TryStartEncrypt(
+            profile,
+            value,
+            new KeyReference("main", KeyReferenceType.Alias),
+            aad: null,
+            iv: suppliedIv,
+            TestContext.Current.CancellationToken,
+            out var encryptedTask);
+
+        started.Should().BeTrue();
+        await encryptedTask!;
+
+        ivGivenToCipher.Should().Equal(suppliedIv);
     }
 
     [Theory]
@@ -254,6 +307,7 @@ public class EnvelopeEncryptionEngineTests : UnitTestBase
             5L,
             keyRef: new KeyReference("main", KeyReferenceType.Alias),
             aad: null,
+            iv: null,
             TestContext.Current.CancellationToken,
             out var encrypted);
 

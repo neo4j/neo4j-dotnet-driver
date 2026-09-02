@@ -52,7 +52,7 @@ public class EncryptionRequestRunnerTests
 
         _registry.Setup(r => r.Get("profile-b")).Returns(profile);
         _plaintextCodec.Setup(c => c.Serialize(aad)).Returns(aadBytes);
-        _dispatcher.Setup(d => d.DispatchEncryptAsync(profile, "hello", keyRef, aadBytes, token)).ReturnsAsync(expected);
+        _dispatcher.Setup(d => d.DispatchEncryptAsync(profile, "hello", keyRef, aadBytes, null, token)).ReturnsAsync(expected);
 
         var request = new EncryptRequest("hello", aad, "profile-b", keyRef);
         var result = await CreateSubject().EncryptToBytesAsync(request, token);
@@ -69,7 +69,7 @@ public class EncryptionRequestRunnerTests
         var expected = new byte[] { 9 };
 
         _registry.Setup(r => r.Get(null)).Returns(profile);
-        _dispatcher.Setup(d => d.DispatchEncryptAsync(profile, "hello", keyRef, null, token)).ReturnsAsync(expected);
+        _dispatcher.Setup(d => d.DispatchEncryptAsync(profile, "hello", keyRef, null, null, token)).ReturnsAsync(expected);
 
         var request = new EncryptRequest("hello", null, null, keyRef);
         var result = await CreateSubject().EncryptToBytesAsync(request, token);
@@ -116,5 +116,22 @@ public class EncryptionRequestRunnerTests
 
         result.Should().BeSameAs(expected);
         _plaintextCodec.Verify(c => c.Serialize(It.IsAny<object>()), Times.Never);
+    }
+    [Fact]
+    public async Task EncryptToBytesAsync_ForwardsTheRequestIvToTheDispatcher()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var profile = Mock.Of<IInternalEncryptionProfile>();
+        var iv = new byte[] { 0x70, 0x71 };
+        var keyRef = new KeyReference("id-1", KeyReferenceType.Id);
+        var expected = new byte[] { 4, 5 };
+
+        _registry.Setup(r => r.Get("profile-b")).Returns(profile);
+        _dispatcher.Setup(d => d.DispatchEncryptAsync(profile, "hello", keyRef, null, iv, token)).ReturnsAsync(expected);
+
+        var request = new EncryptRequest("hello", null, "profile-b", keyRef, iv);
+        var result = await CreateSubject().EncryptToBytesAsync(request, token);
+
+        result.Should().BeSameAs(expected);
     }
 }

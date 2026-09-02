@@ -66,6 +66,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         object value,
         KeyReference keyRef,
         byte[]? aad,
+        byte[]? iv,
         CancellationToken cancellationToken,
         [NotNullWhen(true)] out Task<byte[]>? encryptionTask)
     {
@@ -75,7 +76,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
             return false;
         }
 
-        encryptionTask = EncryptAsync(envelopeProfile, value, keyRef, aad, cancellationToken);
+        encryptionTask = EncryptAsync(envelopeProfile, value, keyRef, aad, iv, cancellationToken);
         return true;
     }
 
@@ -101,6 +102,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         object value,
         KeyReference keyRef,
         byte[]? aad,
+        byte[]? suppliedIv,
         CancellationToken cancellationToken)
     {
         var typeInfo = _propertyTypeInspector.GetPropertyTypeInfo(value);
@@ -109,7 +111,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
         var (keyId, dataKey) = await _envelopeDataKeyProvider.GetDataKeyAsync(profile, keyRef, cancellationToken)
             .ConfigureAwait(false);
 
-        var iv = _ivProvider.GetIv();
+        var iv = suppliedIv ?? _ivProvider.GetIv();
 
         aad ??= [];
         var cipherResult = _aeadCipher.Encrypt(dataKey, iv, plaintext, aad);

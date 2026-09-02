@@ -49,13 +49,14 @@ public class EncryptionEngineDispatcherTests
                 "value",
                 KeyRef,
                 null,
+                null,
                 It.IsAny<CancellationToken>(),
                 out encryptionTask))
             .Returns(true);
 
         var dispatcher = CreateSubjectWithRealErrorPolicy(engine.Object);
 
-        var result = await dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, CancellationToken.None);
+        var result = await dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, null, CancellationToken.None);
 
         result.Should().BeSameAs(expected);
     }
@@ -73,6 +74,7 @@ public class EncryptionEngineDispatcherTests
                 "value",
                 KeyRef,
                 null,
+                null,
                 It.IsAny<CancellationToken>(),
                 out noTask))
             .Returns(false);
@@ -83,13 +85,14 @@ public class EncryptionEngineDispatcherTests
                 "value",
                 KeyRef,
                 null,
+                null,
                 It.IsAny<CancellationToken>(),
                 out yesTask))
             .Returns(true);
 
         var dispatcher = CreateSubjectWithRealErrorPolicy(rejecting.Object, accepting.Object);
 
-        var result = await dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, CancellationToken.None);
+        var result = await dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, null, CancellationToken.None);
 
         result.Should().BeSameAs(expected);
     }
@@ -105,13 +108,14 @@ public class EncryptionEngineDispatcherTests
                 "value",
                 KeyRef,
                 null,
+                null,
                 It.IsAny<CancellationToken>(),
                 out noTask))
             .Returns(false);
 
         var dispatcher = CreateSubjectWithRealErrorPolicy(engine.Object);
 
-        var act = () => dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, CancellationToken.None);
+        var act = () => dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, null, CancellationToken.None);
 
         await act.Should().ThrowAsync<EncryptionEngineNotFoundException>();
     }
@@ -173,6 +177,7 @@ public class EncryptionEngineDispatcherTests
                 "value",
                 KeyRef,
                 null,
+                null,
                 It.IsAny<CancellationToken>(),
                 out failingTask))
             .Returns(true);
@@ -183,7 +188,7 @@ public class EncryptionEngineDispatcherTests
 
         var dispatcher = new EncryptionEngineDispatcher([engine.Object], errorPolicy.Object);
 
-        var act = () => dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, CancellationToken.None);
+        var act = () => dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, null, CancellationToken.None);
 
         var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
         thrown.Which.Should().BeSameAs(wrapped);

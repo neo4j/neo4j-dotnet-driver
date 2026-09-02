@@ -40,13 +40,14 @@ internal class EncryptionEngineDispatcher : IEncryptionEngineDispatcher
         object value,
         KeyReference keyRef,
         byte[]? aad,
+        byte[]? iv,
         CancellationToken cancellationToken)
     {
         try
         {
             foreach (var engine in _engines)
             {
-                if (engine.TryStartEncrypt(profile, value, keyRef, aad, cancellationToken, out var task))
+                if (engine.TryStartEncrypt(profile, value, keyRef, aad, iv, cancellationToken, out var task))
                 {
                     return await task.ConfigureAwait(false);
                 }

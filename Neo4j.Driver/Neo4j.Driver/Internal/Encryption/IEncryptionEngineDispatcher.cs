@@ -28,6 +28,7 @@ internal interface IEncryptionEngineDispatcher
         object value,
         KeyReference keyRef,
         byte[]? aad,
+        byte[]? iv,
         CancellationToken cancellationToken);
 
     Task<object> DispatchDecryptAsync(
