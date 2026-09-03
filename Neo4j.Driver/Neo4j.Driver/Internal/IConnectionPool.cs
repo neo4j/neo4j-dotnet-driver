@@ -14,7 +14,6 @@
 // limitations under the License.
 
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal;
 
@@ -29,6 +28,4 @@ internal interface IConnectionPool : IConnectionProvider, IConnectionReleaseMana
     ConnectionPoolStatus Status { get; }
     Task DeactivateAsync();
     void Activate();
-
-    bool IsOnlyConnectionWithoutSsr(IConnection connection);
 }

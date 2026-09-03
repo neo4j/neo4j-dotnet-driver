@@ -1,0 +1,10 @@
+{
+    "profiles": {
+        "TestKit Backend": {
+            "commandName": "Project",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "dev"
+            }
+        }
+    }
+}

@@ -1,0 +1,177 @@
+// Copyright (c) "Neo4j"
+// Neo4j Sweden AB [https://neo4j.com]
+//
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using Microsoft.Extensions.Configuration;
+using Neo4j.Driver.TestKitBackend.Certificates;
+using Neo4j.Driver.TestKitBackend.ObjectStorage;
+
+namespace Neo4j.Driver.TestKitBackend.Messages;
+
+internal interface INewDriverConfigMapper
+{
+    void Apply(NewDriverRequest request, IConfigBuilder builder);
+}
+
+internal class NewDriverConfigMapper : INewDriverConfigMapper
+{
+    private static readonly HashSet<string> HandledExplicitly =
+    [
+        nameof(NewDriverRequest.MaxTxRetryTimeMs),
+        nameof(NewDriverRequest.LivenessCheckTimeoutMs),
+        nameof(NewDriverRequest.Encrypted),
+        nameof(NewDriverRequest.TelemetryDisabled),
+        nameof(NewDriverRequest.TrustedCertificates),
+        nameof(NewDriverRequest.NotificationsMinSeverity),
+        nameof(NewDriverRequest.NotificationsDisabledCategories),
+        nameof(NewDriverRequest.ClientCertificate),
+        nameof(NewDriverRequest.ClientCertificateProviderId),
+        nameof(NewDriverRequest.ResolverRegistered),
+        nameof(NewDriverRequest.Uri),
+        nameof(NewDriverRequest.AuthorizationToken),
+        nameof(NewDriverRequest.AuthTokenManagerId),
+        nameof(NewDriverRequest.DomainNameResolverRegistered)
+    ];
+
+    private readonly ICertificateLoader _certificateLoader;
+    private readonly IObjectStore _objectStore;
+    private readonly IServerAddressResolver _resolver;
+    private readonly IConfiguration _configuration;
+    private readonly INotificationsMapper _notificationsMapper;
+    private readonly IRemainingPropertiesMapper _remainingPropertiesMapper;
+
+    public NewDriverConfigMapper(
+        ICertificateLoader certificateLoader,
+        IObjectStore objectStore,
+        IServerAddressResolver resolver,
+        IConfiguration configuration,
+        INotificationsMapper notificationsMapper,
+        IRemainingPropertiesMapper remainingPropertiesMapper)
+    {
+        _certificateLoader = certificateLoader;
+        _objectStore = objectStore;
+        _resolver = resolver;
+        _configuration = configuration;
+        _notificationsMapper = notificationsMapper;
+        _remainingPropertiesMapper = remainingPropertiesMapper;
+    }
+
+    public void Apply(NewDriverRequest request, IConfigBuilder builder)
+    {
+        ApplyResolver(request, builder);
+        ApplyMaxTransactionRetryTime(request, builder);
+        ApplyConnectionLivenessCheckTimeout(request, builder);
+        ApplyEncryption(request, builder);
+        ApplyTelemetry(request, builder);
+        ApplyTrustedCertificates(request, builder);
+        ApplyNotifications(request, builder);
+        ApplyClientCertificate(request, builder);
+        _remainingPropertiesMapper.Apply(request, builder, HandledExplicitly);
+    }
+
+    private void ApplyResolver(NewDriverRequest request, IConfigBuilder builder)
+    {
+        if (request.ResolverRegistered)
+        {
+            builder.WithResolver(_resolver);
+        }
+    }
+
+    private void ApplyClientCertificate(NewDriverRequest request, IConfigBuilder builder)
+    {
+        if (request.ClientCertificate is { } certificate)
+        {
+            builder.WithClientCertificateProvider(
+                ClientCertificateProviders.Static(
+                    _certificateLoader.Load(certificate.Certfile, certificate.Keyfile, certificate.Password)));
+        }
+
+        if (request.ClientCertificateProviderId is { } providerId)
+        {
+            builder.WithClientCertificateProvider(_objectStore.Get<IClientCertificateProvider>(providerId));
+        }
+    }
+
+    private static void ApplyMaxTransactionRetryTime(NewDriverRequest request, IConfigBuilder builder)
+    {
+        if (request.MaxTxRetryTimeMs is { } ms)
+        {
+            builder.WithMaxTransactionRetryTime(TimeSpan.FromMilliseconds(ms));
+        }
+    }
+
+    private static void ApplyConnectionLivenessCheckTimeout(NewDriverRequest request, IConfigBuilder builder)
+    {
+        if (request.LivenessCheckTimeoutMs is { } ms)
+        {
+            builder.WithConnectionLivenessCheckTimeout(TimeSpan.FromMilliseconds(ms));
+        }
+    }
+
+    private static void ApplyEncryption(NewDriverRequest request, IConfigBuilder builder)
+    {
+        if (request.Encrypted is { } encrypted)
+        {
+            builder.WithEncryptionLevel(encrypted ? EncryptionLevel.Encrypted : EncryptionLevel.None);
+        }
+    }
+
+    private static void ApplyTelemetry(NewDriverRequest request, IConfigBuilder builder)
+    {
+        if (request.TelemetryDisabled == true)
+        {
+            builder.WithTelemetryDisabled();
+        }
+    }
+
+    private void ApplyTrustedCertificates(NewDriverRequest request, IConfigBuilder builder)
+    {
+        if (!request.TrustedCertificates.IsSpecified(out var certificates))
+        {
+            return;
+        }
+
+        var rule = certificates switch
+        {
+            null => CertificateTrustRule.TrustSystem,
+            { Length: 0 } => CertificateTrustRule.TrustAny,
+            _ => CertificateTrustRule.TrustList
+        };
+
+        builder.WithCertificateTrustRule(
+            rule,
+            rule == CertificateTrustRule.TrustList 
+                ? certificates!.Select(PrefixCaPath).ToList() 
+                : null);
+    }
+
+    private string PrefixCaPath(string certificateFileName)
+    {
+        var caPath = _configuration["TK_CUSTOM_CA_PATH"] ??
+            throw new InvalidOperationException(
+                "trustedCertificates names a custom CA but TK_CUSTOM_CA_PATH is not configured.");
+
+        return $"{caPath}{certificateFileName}";
+    }
+
+    private void ApplyNotifications(NewDriverRequest request, IConfigBuilder builder)
+    {
+        _notificationsMapper.Apply(
+            request.NotificationsMinSeverity,
+            request.NotificationsDisabledCategories,
+            () => builder.WithNotificationsDisabled(),
+            (severity, categories) => builder.WithNotifications(severity, categories));
+    }
+
+}

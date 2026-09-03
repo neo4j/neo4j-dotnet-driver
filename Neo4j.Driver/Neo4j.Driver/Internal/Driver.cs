@@ -199,6 +199,17 @@ internal sealed class Driver : IInternalDriver
         return new RoutingTable(database, []);
     }
 
+    //Non public facing api. Used for testing with testkit only
+    public Task<IRoutingTable> ForceRoutingTableUpdateAsync(string database, Bookmarks bookmarks)
+    {
+        if (_server is IRoutingSupported rs)
+        {
+            return rs.ForceRoutingTableUpdateAsync(database, bookmarks);
+        }
+
+        return Task.FromResult<IRoutingTable>(new RoutingTable(database, []));
+    }
+
     private void Close()
     {
         CloseAsync().GetAwaiter().GetResult();

@@ -17,12 +17,19 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Routing;
 
 namespace Neo4j.Driver.Internal;
 
 internal interface IInternalDriver : IDriver
 {
     IInternalAsyncSession Session(Action<SessionConfigBuilder> action, bool reactive);
+
+    //Non public facing api. Used for testing with testkit only
+    IRoutingTable GetRoutingTable(string database);
+
+    //Non public facing api. Used for testing with testkit only
+    Task<IRoutingTable> ForceRoutingTableUpdateAsync(string database, Bookmarks bookmarks);
 
     Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
         Query query,

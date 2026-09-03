@@ -80,6 +80,11 @@ internal sealed class BoltProtocolAdapter : IProtocolAdapter, IReauthSupported, 
         return _connectionProvider.GetRoutingTable(database);
     }
 
+    public Task<IRoutingTable> ForceRoutingTableUpdateAsync(string database, Bookmarks bookmarks)
+    {
+        return _connectionProvider.ForceRoutingTableUpdateAsync(database, null, bookmarks);
+    }
+
     public ValueTask DisposeAsync()
     {
         return _connectionProvider.DisposeAsync();

@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Routing;
 
 namespace Neo4j.Driver.Internal;
@@ -23,5 +24,6 @@ namespace Neo4j.Driver.Internal;
 internal interface IRoutingSupported
 {
     IRoutingTable GetRoutingTable(string database);
+    Task<IRoutingTable> ForceRoutingTableUpdateAsync(string database, Bookmarks bookmarks);
 }
 

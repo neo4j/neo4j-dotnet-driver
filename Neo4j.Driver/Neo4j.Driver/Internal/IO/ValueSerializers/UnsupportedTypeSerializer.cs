@@ -47,7 +47,7 @@ internal class UnsupportedTypeSerializer: IPackStreamSerializer
         var minProtocolMajor = reader.ReadInteger();
         var minProtocolMinor = reader.ReadInteger();
         var extra = reader.ReadMap();
-        var message = "";
+        string message = null;
         
         if (extra.TryGetValue("message", out var messageObj) && messageObj is string foundMessage)
         {
@@ -72,7 +72,7 @@ internal class UnsupportedTypeSerializer: IPackStreamSerializer
         var minProtocolMajor = reader.ReadInteger();
         var minProtocolMinor = reader.ReadInteger();
         var extra = reader.ReadMap();
-        var message = "";
+        string message = null;
 
         if (extra.TryGetValue("message", out var messageObj) && messageObj is string foundMessage)
         {

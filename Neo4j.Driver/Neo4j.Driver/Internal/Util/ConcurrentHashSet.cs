@@ -40,7 +40,7 @@ internal class ConcurrentHashSet<T> : IEnumerable<T>
     /// <returns></returns>
     public bool TryAdd(T item)
     {
-        return _items.GetOrAdd(item, _ => true);
+        return _items.TryAdd(item, true);
     }
 
     /// <summary>true if the item was removed from the set successfully; false if the item does not exists.</summary>
