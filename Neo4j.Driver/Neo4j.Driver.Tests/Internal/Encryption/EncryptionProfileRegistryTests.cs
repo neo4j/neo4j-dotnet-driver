@@ -78,12 +78,4 @@ public class EncryptionProfileRegistryTests
 
         act.Should().Throw<AmbiguousEncryptionProfileException>();
     }
-
-    [Fact]
-    public void Construction_ThrowsWhenProfileNamesAreDuplicated()
-    {
-        var act = () => new EncryptionProfileRegistry([Profile("dup"), Profile("dup")]);
-
-        act.Should().Throw<ArgumentException>();
-    }
 }

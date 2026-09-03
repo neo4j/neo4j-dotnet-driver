@@ -15,7 +15,6 @@
 
 #nullable enable
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Preview.Encryption;
@@ -24,19 +23,11 @@ namespace Neo4j.Driver.Internal.Encryption;
 
 internal class EncryptionProfileRegistry : IEncryptionProfileRegistry
 {
-    private readonly Dictionary<string, IInternalEncryptionProfile> _profilesByName = new();
+    private readonly Dictionary<string, IInternalEncryptionProfile> _profilesByName;
 
     public EncryptionProfileRegistry(IEnumerable<IInternalEncryptionProfile> profiles)
     {
-        foreach (var profile in profiles)
-        {
-            if (!_profilesByName.TryAdd(profile.Name, profile))
-            {
-                throw new ArgumentException(
-                    $"Duplicate encryption profile name '{profile.Name}'.",
-                    nameof(profiles));
-            }
-        }
+        _profilesByName = profiles.ToDictionary(profile => profile.Name);
     }
 
     public IInternalEncryptionProfile Get(string? name)

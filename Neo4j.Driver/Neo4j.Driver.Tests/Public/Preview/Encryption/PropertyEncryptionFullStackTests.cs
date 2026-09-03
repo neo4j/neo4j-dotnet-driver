@@ -275,14 +275,12 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ConfiguringTwoProfilesWithTheSameName_SurfacesTheDuplicateNameError()
+    public void ConfiguringTwoProfilesWithTheSameName_IsRejectedWhenTheProfilesAreSupplied()
     {
-        await using var driver = GraphDatabase.Driver(
+        var act = () => GraphDatabase.Driver(
             "bolt://localhost",
             builder => builder.WithPropertyEncryptionProfiles(
                 [EnvelopeProfile("same-name"), EnvelopeProfile("same-name")]));
-
-        var act = () => driver.PropertyEncryption().KeyManager("same-name");
 
         act.Should()
             .Throw<ArgumentException>()

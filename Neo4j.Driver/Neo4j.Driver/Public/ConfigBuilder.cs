@@ -628,6 +628,19 @@ public sealed class ConfigBuilder
                 "Encryption profiles must be built using a factory method in the PropertyEncryptionProfile class."
                 , nameof(propertyEncryptionProfiles));
         }
+
+        var duplicateName = propertyEncryptionProfiles
+            .GroupBy(x => x.Name)
+            .FirstOrDefault(names => names.Count() > 1)
+            ?.Key;
+
+        if (duplicateName is not null)
+        {
+            throw new ArgumentException(
+                $"Duplicate encryption profile name '{duplicateName}'."
+                , nameof(propertyEncryptionProfiles));
+        }
+
         _config.Preview_PropertyEncryptionProfiles = propertyEncryptionProfiles;
         return this;
     }
