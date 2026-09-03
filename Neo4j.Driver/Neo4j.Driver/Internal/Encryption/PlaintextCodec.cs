@@ -20,7 +20,6 @@ using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-[DriverAutoRegister(singleton: true)]
 internal class PlaintextCodec : IPlaintextCodec
 {
     private static readonly BoltProtocolVersion PlaintextVersion = BoltProtocolVersion.V6_1;

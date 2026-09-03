@@ -20,7 +20,6 @@ using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-[DriverAutoRegister(singleton: true)]
 internal class EncapsulatedKeyManagerFactory : IEncapsulatedKeyManagerFactory
 {
     private readonly IEnumerable<IEncapsulatedKeyManagerProvider> _providers;

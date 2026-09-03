@@ -22,7 +22,6 @@ using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-[DriverAutoRegister(singleton: true)]
 internal class EnvelopeMetadataExtractor : IEnvelopeMetadataExtractor
 {
     private static readonly long DefaultAadEncodingSchemeMajor = BoltValueSerializationSchemeVersion.Latest.Major;

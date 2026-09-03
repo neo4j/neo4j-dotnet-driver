@@ -20,7 +20,6 @@ using System.Security.Cryptography;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-[DriverAutoRegister(singleton: true)]
 internal class AesGcmCipher : IAeadCipher
 {
     private const int TagSizeInBytes = 16;

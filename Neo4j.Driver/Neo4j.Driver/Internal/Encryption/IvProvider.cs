@@ -17,7 +17,6 @@
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-[DriverAutoRegister(singleton: true)]
 internal class IvProvider : IIvProvider
 {
     private const int IvLength = 12;

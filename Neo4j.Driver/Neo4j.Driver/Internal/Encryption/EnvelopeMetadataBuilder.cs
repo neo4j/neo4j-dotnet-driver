@@ -19,7 +19,6 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-[DriverAutoRegister(singleton: true)]
 internal class EnvelopeMetadataBuilder : IEnvelopeMetadataBuilder
 {
     public IDictionary<string, object> Build(EnvelopeMetadata metadata)

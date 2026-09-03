@@ -17,7 +17,6 @@ using System;
 
 namespace Neo4j.Driver.Internal;
 
-[DriverAutoRegister(singleton: true)]
 internal class Base64Codec : IBase64Codec
 {
     public string Encode(byte[] bytes)

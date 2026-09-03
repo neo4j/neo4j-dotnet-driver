@@ -20,7 +20,6 @@ using System.Text;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-[DriverAutoRegister(singleton: true)]
 internal class HkdfKeyDerivation : IKeyDerivation
 {
     private const string InfoString = "neo4j/property-encryption/v1";

@@ -20,7 +20,6 @@ using System.Security.Cryptography;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-[DriverAutoRegister(singleton: true)]
 internal class CryptoRandomProvider : ICryptoRandomProvider
 {
     public void Fill(Span<byte> buffer)

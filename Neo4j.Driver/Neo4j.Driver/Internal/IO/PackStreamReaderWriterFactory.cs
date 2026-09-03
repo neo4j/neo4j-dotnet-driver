@@ -21,7 +21,6 @@ using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO;
 
-[DriverAutoRegister(singleton: true)]
 internal class PackStreamReaderWriterFactory : IPackStreamReaderWriterFactory
 {
     public IPackStreamWriter CreateWriter(MessageFormat format, Stream stream)

@@ -20,7 +20,6 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-[DriverAutoRegister(singleton: true)]
 internal class EncryptionRequestRunner : IEncryptionRequestRunner
 {
     private readonly IEncryptionProfileRegistry _registry;

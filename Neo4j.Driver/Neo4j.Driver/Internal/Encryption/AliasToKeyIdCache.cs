@@ -22,7 +22,6 @@ using Neo4j.Driver.Internal.Services;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-[DriverAutoRegister(singleton: true)]
 internal class AliasToKeyIdCache : IAliasToKeyIdCache
 {
     private static readonly TimeSpan Ttl = TimeSpan.FromSeconds(15);

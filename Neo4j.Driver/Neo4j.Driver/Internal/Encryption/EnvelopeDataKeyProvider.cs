@@ -21,7 +21,6 @@ using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-[DriverAutoRegister(singleton: true)]
 internal class EnvelopeDataKeyProvider : IEnvelopeDataKeyProvider
 {
     private const int DataKeyLength = 32;

@@ -22,7 +22,6 @@ using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-[DriverAutoRegister(singleton: true)]
 internal class EncryptedStructureCodec : IEncryptedStructureCodec
 {
     private static readonly BoltProtocolVersion StructureVersion = BoltProtocolVersion.V6_1;

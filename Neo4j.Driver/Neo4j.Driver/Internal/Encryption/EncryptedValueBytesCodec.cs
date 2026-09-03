@@ -19,7 +19,6 @@ using System;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-[DriverAutoRegister(singleton: true)]
 internal class EncryptedValueBytesCodec : IEncryptedValueBytesCodec
 {
     private const byte EncodingVersion = 0x01;

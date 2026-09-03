@@ -23,7 +23,6 @@ using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-[DriverAutoRegister(singleton: true)]
 internal class EncryptionEngineDispatcher : IEncryptionEngineDispatcher
 {
     private readonly IEnumerable<IEncryptionEngine> _engines;

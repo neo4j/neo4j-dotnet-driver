@@ -20,7 +20,6 @@ using System.Collections;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-[DriverAutoRegister(singleton: true)]
 internal class PropertyTypeInspector : IPropertyTypeInspector
 {
     private static readonly BoltValueSerializationSchemeVersion Baseline1_0 = new(1, 0);

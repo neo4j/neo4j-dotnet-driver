@@ -21,7 +21,6 @@ using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO;
 
-[DriverAutoRegister(singleton: true)]
 internal class PackStreamMemorySerializer : IPackStreamMemorySerializer
 {
     private readonly IPackStreamReaderWriterFactory _readerWriterFactory;

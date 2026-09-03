@@ -18,7 +18,6 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Preview.Encryption;
 using Xunit;
 using InternalDriver = Neo4j.Driver.Internal.Driver;
