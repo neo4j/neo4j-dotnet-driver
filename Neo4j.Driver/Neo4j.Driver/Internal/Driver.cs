@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
 using Neo4j.Driver.Preview.Encryption;
@@ -28,7 +27,7 @@ internal sealed class Driver : IInternalDriver
 {
     private readonly DefaultBookmarkManager _bookmarkManager;
     private readonly IProtocolAdapter _server;
-    private readonly IResolutionScope _rootScope;
+    private readonly IDriverComposition _composition;
 
     private int _closedMarker;
 
@@ -36,12 +35,12 @@ internal sealed class Driver : IInternalDriver
         Uri uri,
         IProtocolAdapter server,
         DriverContext driverContext,
-        IResolutionScope rootScope)
+        IDriverComposition composition)
     {
         Uri = uri;
         Context = driverContext;
         _server = server ?? throw new ArgumentNullException(nameof(server));
-        _rootScope = rootScope ?? throw new ArgumentNullException(nameof(rootScope));
+        _composition = composition ?? throw new ArgumentNullException(nameof(composition));
         _bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
     }
 
@@ -54,7 +53,7 @@ internal sealed class Driver : IInternalDriver
 
     public IPropertyEncryption PropertyEncryption()
     {
-        return _rootScope.Resolve<IPropertyEncryption>();
+        return _composition.PropertyEncryption();
     }
 
     public IBookmarkManager GetExecutableQueryBookmarkManager()
@@ -156,7 +155,6 @@ internal sealed class Driver : IInternalDriver
     private async ValueTask ShutdownAsync()
     {
         await _server.DisposeAsync().ConfigureAwait(false);
-        await _rootScope.DisposeAsync().ConfigureAwait(false);
     }
 
     public async Task<ExecutionSummary> GetRowsAsync(

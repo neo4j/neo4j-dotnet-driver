@@ -137,36 +137,6 @@ public class DriverTests
     }
 
     [Fact]
-    public void PropertyEncryptionResolvesFromRootScope()
-    {
-        var propertyEncryption = Mock.Of<IPropertyEncryption>();
-        var scope = new Mock<IResolutionScope>();
-        scope.Setup(x => x.Resolve<IPropertyEncryption>()).Returns(propertyEncryption);
-        var driver = new InternalDriver(
-            new Uri("bolt://localhost"),
-            Mock.Of<IProtocolAdapter>(),
-            TestDriverContext.MockContext,
-            scope.Object);
-
-        driver.PropertyEncryption().Should().BeSameAs(propertyEncryption);
-    }
-
-    [Fact]
-    public async Task DisposeAsyncDisposesRootScope()
-    {
-        var scope = new Mock<IResolutionScope>();
-        var driver = new InternalDriver(
-            new Uri("bolt://localhost"),
-            Mock.Of<IProtocolAdapter>(),
-            TestDriverContext.MockContext,
-            scope.Object);
-
-        await driver.DisposeAsync();
-
-        scope.Verify(x => x.DisposeAsync(), Times.Once);
-    }
-
-    [Fact]
     public async Task ShouldVerifyConnection()
     {
         var mock = new Mock<IProtocolAdapter>();
@@ -177,7 +147,7 @@ public class DriverTests
             new Uri("bolt://localhost"),
             mock.Object,
             TestDriverContext.MockContext,
-            Mock.Of<IResolutionScope>());
+            Mock.Of<IDriverComposition>());
 
         await driver.VerifyConnectivityAsync();
 
@@ -195,7 +165,7 @@ public class DriverTests
             new Uri("bolt://localhost"),
             mock.Object,
             TestDriverContext.MockContext,
-            Mock.Of<IResolutionScope>());
+            Mock.Of<IDriverComposition>());
 
         var connects = await driver.TryVerifyConnectivityAsync();
 
@@ -213,7 +183,7 @@ public class DriverTests
             new Uri("bolt://localhost"),
             mock.Object,
             TestDriverContext.MockContext,
-            Mock.Of<IResolutionScope>());
+            Mock.Of<IDriverComposition>());
 
         var connects = await driver.TryVerifyConnectivityAsync();
 
@@ -232,7 +202,7 @@ public class DriverTests
             new Uri("bolt://localhost"),
             mock.Object,
             TestDriverContext.MockContext,
-            Mock.Of<IResolutionScope>());
+            Mock.Of<IDriverComposition>());
 
         var info = await driver.GetServerInfoAsync();
 
@@ -249,7 +219,7 @@ public class DriverTests
             new Uri("bolt://localhost"),
             mock.Object,
             TestDriverContext.MockContext,
-            Mock.Of<IResolutionScope>());
+            Mock.Of<IDriverComposition>());
 
         await driver.SupportsMultiDbAsync();
 

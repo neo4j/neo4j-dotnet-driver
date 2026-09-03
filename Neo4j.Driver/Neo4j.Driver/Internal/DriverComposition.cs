@@ -33,6 +33,7 @@ internal interface IDriverComposition
 
 internal partial class DriverComposition : IDriverComposition
 {
+    // ReSharper disable once UnusedMember.Local
     private static void Setup()
     {
         DI.Setup(nameof(DriverComposition))

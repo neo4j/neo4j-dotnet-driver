@@ -17,7 +17,6 @@ using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.Serialization;
@@ -45,7 +44,7 @@ public class GetConnectionPoolMetricsHandlerTests
             context.InitialUri,
             Mock.Of<IProtocolAdapter>(),
             context,
-            Mock.Of<IResolutionScope>());
+            Mock.Of<IDriverComposition>());
     }
 
     [Fact]

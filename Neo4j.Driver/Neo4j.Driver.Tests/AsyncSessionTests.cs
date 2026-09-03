@@ -443,7 +443,7 @@ public class AsyncSessionTests
                 new Uri("neo4j://myTest.org"),
                 server,
                 context,
-                RootContainerFactory.Build(context));
+                Mock.Of<IDriverComposition>());
 
             return driver;
         }
