@@ -21,8 +21,10 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector.Trust;
+using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Types;
+using Neo4j.Driver.Preview.Encryption;
 using Xunit;
 
 namespace Neo4j.Driver.Tests;
@@ -67,6 +69,14 @@ public class ConfigTests
             config.NullableEncryptionLevel.Should().BeNull();
             config.EncryptionLevel.Should().Be(EncryptionLevel.None);
             config.TrustManager.Should().BeNull();
+        }
+
+        [Fact]
+        public void PropertyEncryptionProfiles_ShouldDefaultToEmpty()
+        {
+            var config = new Config();
+
+            config.Preview_PropertyEncryptionProfiles.Should().BeEmpty();
         }
 
         [Fact]
@@ -464,6 +474,48 @@ public class ConfigTests
                 .Which
                 .MinimumSeverity.Should()
                 .Be(Severity.Warning);
+        }
+
+        private class ValidProfile(string name) : IInternalEncryptionProfile
+        {
+            public string Name => name;
+        }
+
+        [Fact]
+        public void WithPropertyEncryptionProfiles_ShouldSetTheProfiles()
+        {
+            var profile = new ValidProfile("profile-1");
+            var config = Config.Builder.WithPropertyEncryptionProfiles([profile]).Build();
+            config.PropertyEncryptionProfiles.Should().ContainSingle().Which.Should().Be(profile);
+        }
+
+        [Fact]
+        public void PropertyEncryptionProfiles_PublicGetter_ReturnsTheConfiguredProfiles()
+        {
+            var profile = new ValidProfile("profile-1");
+            var config = Config.Builder.WithPropertyEncryptionProfiles([profile]).Build();
+
+            config.PropertyEncryptionProfiles.Should().ContainSingle().Which.Should().Be(profile);
+        }
+
+        private class AttackerProfile : IPropertyEncryptionProfile
+        {
+            public string Name => "thisisfine";
+        }
+
+        [Fact]
+        public void WithPropertyEncryptionProfiles_ShouldThrowWithInvalidProfile()
+        {
+            var profile = new AttackerProfile();
+            var act = () => Config.Builder.WithPropertyEncryptionProfiles([profile]).Build();
+            act.Should().Throw<ArgumentException>();
+        }
+
+        [Fact]
+        public void WithPropertyEncryptionProfiles_ShouldThrowWhenProfilesNull()
+        {
+            var act = () => Config.Builder.WithPropertyEncryptionProfiles(null);
+            act.Should().Throw<ArgumentNullException>();
         }
 
         private class MockTlsNegotiator : ITlsNegotiator

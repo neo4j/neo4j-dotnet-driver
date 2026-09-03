@@ -13,8 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Neo4j.Driver.Internal;
 
@@ -27,10 +30,23 @@ internal static class StringObjectDictionaryExtensions
             Func<string, Exception> exceptionFact)
         {
             return dict.TryGetValue(key, out var value)
-                ? (T)value
+                ? value is T castValue
+                    ? castValue
+                    : throw exceptionFact(
+                        $"Expected key '{key}' to be of type '{typeof(T)}', but was '{value.GetType()}'.")
                 : throw exceptionFact($"Expected key '{key}' to be present in the dictionary, but could not find.");
         }
-    
+
+        public T GetOptionalValue<T>(
+            string key,
+            T defaultValue,
+            Func<string, Exception> exceptionFact)
+        {
+            return dict.TryGetValue<T>(key, out var value, exceptionFact) 
+                ? value 
+                : defaultValue;
+        }
+
         public T GetValue<T>(string key, T defaultValue)
         {
             return dict.TryGetValue(key, out var value) ? (T)value : defaultValue;
@@ -47,6 +63,33 @@ internal static class StringObjectDictionaryExtensions
             value = defaultValue;
             return false;
         }
+
+        public bool TryGetValue<T>(string key, [NotNullWhen(true)] out T? value)
+        {
+            return dict.TryGetValue<T>(key, out value, m => new InvalidOperationException(m));
+        }
+
+        public bool TryGetValue<T>(
+            string key,
+            [NotNullWhen(true)] out T? value,
+            Func<string, Exception> exceptionFactory)
+        {
+            var found = dict.TryGetValue(key, out var uncastValue);
+
+            if (found)
+            {
+                if (uncastValue is T goodValue)
+                {
+                    value = goodValue;
+                    return true;
+                }
+
+                throw exceptionFactory(
+                    $"Expected key '{key}' to be of type '{typeof(T)}', but was '{uncastValue!.GetType()}'.");
+            }
+
+            value = default;
+            return false;
+        }
     }
 }
-

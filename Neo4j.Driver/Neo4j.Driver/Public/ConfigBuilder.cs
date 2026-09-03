@@ -19,8 +19,10 @@ using System.Linq;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using Neo4j.Driver.Internal.Auth;
+using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Types;
+using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver;
 
@@ -35,12 +37,11 @@ public sealed class ConfigBuilder
     }
 
     /// <summary>Builds the <see cref="Config"/> instance based on the previously internal set values.</summary>
-    /// <remarks>> If no value was internal set for a property the defaults specified in <see cref="Config"/> will be used.</remarks>
+    /// <remarks>> If no value is set for a property, the defaults specified in <see cref="Config"/>
+    /// will be used.</remarks>
     /// <returns>A <see cref="Config"/> instance.</returns>
     internal Config Build()
     {
-        // Initialize the message reader config with internal constructor, it can read the default and max read buffer
-        // sizes. if users have configured a message reader config we will use that instead.
         _config.MessageReaderConfig ??= new MessageReaderConfig(_config);
         return _config;
     }
@@ -212,7 +213,7 @@ public sealed class ConfigBuilder
         _config.MaxConnectionLifetime = timeSpan;
         return this;
     }
-    
+
     /// <summary>
     /// Gets or internal sets a custom server address resolver used by the routing driver to resolve the initial
     /// address used to create the driver. Such resolution happens: 1) during the very first rediscovery when driver is
@@ -613,6 +614,34 @@ public sealed class ConfigBuilder
     public ConfigBuilder WithTlsNegotiator<T>() where T : ITlsNegotiator, new()
     {
         _config.TlsNegotiator = new T();
+        return this;
+    }
+
+    internal ConfigBuilder Preview_WithPropertyEncryptionProfiles(
+        IReadOnlyList<IPropertyEncryptionProfile> propertyEncryptionProfiles)
+    {
+        ArgumentNullException.ThrowIfNull(propertyEncryptionProfiles);
+
+        if(!propertyEncryptionProfiles.All(x => x is IInternalEncryptionProfile))
+        {
+            throw new ArgumentException(
+                "Encryption profiles must be built using a factory method in the PropertyEncryptionProfile class."
+                , nameof(propertyEncryptionProfiles));
+        }
+
+        var duplicateName = propertyEncryptionProfiles
+            .GroupBy(x => x.Name)
+            .FirstOrDefault(names => names.Count() > 1)
+            ?.Key;
+
+        if (duplicateName is not null)
+        {
+            throw new ArgumentException(
+                $"Duplicate encryption profile name '{duplicateName}'."
+                , nameof(propertyEncryptionProfiles));
+        }
+
+        _config.Preview_PropertyEncryptionProfiles = propertyEncryptionProfiles;
         return this;
     }
 }

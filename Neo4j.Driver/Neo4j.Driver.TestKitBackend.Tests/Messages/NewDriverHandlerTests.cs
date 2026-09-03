@@ -16,9 +16,12 @@
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
+using Neo4j.Driver.TestKitBackend.PropertyEncryption;
+using Neo4j.Driver.TestKitBackend.Types;
 using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.Messages;
@@ -105,5 +108,96 @@ public class NewDriverHandlerTests
         await handler.ProcessAsync(MinimalRequest());
 
         created!.Config.MetricsEnabled.Should().BeTrue();
+    }
+
+    private static readonly PropertyEncryptionProfileInput[] RequestedProfiles =
+    [
+        new("profile-a", new HexBytes([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08])),
+        new("profile-b", null)
+    ];
+
+    private static NewDriverRequest RequestWithEncryptionProfiles()
+    {
+        return MinimalRequest() with { PropertyEncryptionProfiles = RequestedProfiles };
+    }
+
+    private static IPropertyEncryptionProfile Profile(string name)
+    {
+        return PropertyEncryptionProfile.Envelope(
+            name,
+            Mock.Of<IKeyEncapsulationService>(),
+            Mock.Of<IEncapsulatedKeyRepository>());
+    }
+
+    private DriverEncryptionObjects PrepareReturnsSetupForTheRequestedProfiles()
+    {
+        var setup = new DriverEncryptionObjects(
+            [Profile("profile-a"), Profile("profile-b")],
+            new Dictionary<string, ITestkitEncapsulatedKeyRepository>
+            {
+                ["profile-a"] = Mock.Of<ITestkitEncapsulatedKeyRepository>(),
+                ["profile-b"] = Mock.Of<ITestkitEncapsulatedKeyRepository>()
+            });
+
+        _autoMocker.GetMock<IDriverEncryptionSetup>()
+            .Setup(s => s.Prepare(RequestedProfiles))
+            .Returns(setup);
+
+        return setup;
+    }
+
+    [Fact]
+    public async Task Configures_the_driver_with_the_prepared_encryption_profiles()
+    {
+        var setup = PrepareReturnsSetupForTheRequestedProfiles();
+        IDriver? created = null;
+        _autoMocker.GetMock<IObjectStore>()
+            .Setup(r => r.Store(It.IsAny<IDriver>()))
+            .Callback((IDriver driver) => created = driver)
+            .Returns((IDriver driver) => "driver-1");
+
+        var handler = _autoMocker.CreateInstance<NewDriverHandler>();
+
+        await handler.ProcessAsync(RequestWithEncryptionProfiles());
+
+        created!.Config.Preview_PropertyEncryptionProfiles.Should().Equal(setup.Profiles);
+    }
+
+    [Fact]
+    public async Task Stores_the_encryption_objects_against_the_created_driver()
+    {
+        var setup = PrepareReturnsSetupForTheRequestedProfiles();
+        IDriver? created = null;
+        _autoMocker.GetMock<IObjectStore>()
+            .Setup(r => r.Store(It.IsAny<IDriver>()))
+            .Callback((IDriver driver) => created = driver)
+            .Returns((IDriver driver) => "driver-1");
+
+        var handler = _autoMocker.CreateInstance<NewDriverHandler>();
+
+        await handler.ProcessAsync(RequestWithEncryptionProfiles());
+
+        _autoMocker.GetMock<IDriverEncryptionObjectStore>()
+            .Verify(s => s.StoreObjects(created!, setup), Times.Once);
+    }
+
+    [Fact]
+    public async Task Leaves_the_driver_unencrypted_when_the_request_specifies_no_profiles()
+    {
+        IDriver? created = null;
+        _autoMocker.GetMock<IObjectStore>()
+            .Setup(r => r.Store(It.IsAny<IDriver>()))
+            .Callback((IDriver driver) => created = driver)
+            .Returns((IDriver driver) => "driver-1");
+
+        var handler = _autoMocker.CreateInstance<NewDriverHandler>();
+
+        await handler.ProcessAsync(MinimalRequest());
+
+        created!.Config.Preview_PropertyEncryptionProfiles.Should().BeEmpty();
+        _autoMocker.GetMock<IDriverEncryptionObjectStore>()
+            .Verify(
+                s => s.StoreObjects(It.IsAny<IDriver>(), It.IsAny<DriverEncryptionObjects>()),
+                Times.Never);
     }
 }

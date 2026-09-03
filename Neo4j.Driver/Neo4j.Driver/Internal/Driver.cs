@@ -19,6 +19,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
+using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal;
 
@@ -26,17 +27,20 @@ internal sealed class Driver : IInternalDriver
 {
     private readonly DefaultBookmarkManager _bookmarkManager;
     private readonly IProtocolAdapter _server;
+    private readonly IDriverComposition _composition;
 
     private int _closedMarker;
 
     internal Driver(
         Uri uri,
         IProtocolAdapter server,
-        DriverContext driverContext)
+        DriverContext driverContext,
+        IDriverComposition composition)
     {
         Uri = uri;
         Context = driverContext;
         _server = server ?? throw new ArgumentNullException(nameof(server));
+        _composition = composition ?? throw new ArgumentNullException(nameof(composition));
         _bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
     }
 
@@ -46,6 +50,11 @@ internal sealed class Driver : IInternalDriver
     private bool IsClosed => _closedMarker > 0;
     public bool Encrypted => Context.EncryptionManager.UseTls;
     public Config Config => Context.Config;
+
+    public IPropertyEncryption PropertyEncryption()
+    {
+        return _composition.PropertyEncryption();
+    }
 
     public IBookmarkManager GetExecutableQueryBookmarkManager()
     {
@@ -94,7 +103,7 @@ internal sealed class Driver : IInternalDriver
     public Task CloseAsync()
     {
         return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0
-            ? _server.DisposeAsync().AsTask()
+            ? ShutdownAsync().AsTask()
             : Task.CompletedTask;
     }
 
@@ -139,8 +148,13 @@ internal sealed class Driver : IInternalDriver
     public ValueTask DisposeAsync()
     {
         return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0
-            ? _server.DisposeAsync()
+            ? ShutdownAsync()
             : new ValueTask(Task.CompletedTask);
+    }
+
+    private async ValueTask ShutdownAsync()
+    {
+        await _server.DisposeAsync().ConfigureAwait(false);
     }
 
     public async Task<ExecutionSummary> GetRowsAsync(
