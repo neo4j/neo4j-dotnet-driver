@@ -17,20 +17,19 @@
 
 using System;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
 internal class QueryApiProtocolAdapter : IQueryApiProtocolAdapter
 {
+    private readonly IQueryApiDriverComposition _composition;
     private readonly IConnectivityVerifier _connectivityVerifier;
-    private readonly IResolutionScope _scope;
     private readonly IQueryApiSessionFactory _sessionFactory;
 
     public QueryApiProtocolAdapter(
         IConnectivityVerifier connectivityVerifier,
         IQueryApiSessionFactory sessionFactory,
-        IResolutionScope scope)
+        IQueryApiDriverComposition composition)
     {
         _connectivityVerifier = connectivityVerifier ??
             throw new ArgumentNullException(nameof(connectivityVerifier));
@@ -38,8 +37,8 @@ internal class QueryApiProtocolAdapter : IQueryApiProtocolAdapter
         _sessionFactory = sessionFactory ??
             throw new ArgumentNullException(nameof(sessionFactory));
 
-        _scope = scope ??
-            throw new ArgumentNullException(nameof(scope));
+        _composition = composition ??
+            throw new ArgumentNullException(nameof(composition));
     }
 
     public IInternalAsyncSession CreateSession(SessionConfig config, bool reactive, bool telemetryEnabled)
@@ -58,6 +57,6 @@ internal class QueryApiProtocolAdapter : IQueryApiProtocolAdapter
 
     public ValueTask DisposeAsync()
     {
-        return _scope.DisposeAsync();
+        return _composition.DisposeAsync();
     }
 }

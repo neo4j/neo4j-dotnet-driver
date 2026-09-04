@@ -24,7 +24,7 @@ using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal;
 
-internal sealed class DriverContext
+internal sealed class DriverContext : IDriverUri
 {
     internal DriverContext(
         Uri initialUri,

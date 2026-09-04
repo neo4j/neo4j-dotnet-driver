@@ -44,7 +44,9 @@ public class ConnectivityVerifierTests
 
     public ConnectivityVerifierTests()
     {
-        _autoMocker.Use(new QueryApiServerInfo(BaseUri));
+        var serverInfo = new QueryApiServerInfo(TestDriverContext.With(uri: BaseUri));
+        _autoMocker.Use<IServerInfo>(serverInfo);
+        _autoMocker.Use<IServerAgentWriter>(serverInfo);
     }
 
     private static ConnectivityVerifier.DiscoveryResponse ValidDiscovery(

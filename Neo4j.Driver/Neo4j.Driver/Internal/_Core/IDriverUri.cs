@@ -1,12 +1,12 @@
 // Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,20 +17,13 @@
 
 using System;
 
-namespace Neo4j.Driver.Internal.QueryApi;
+namespace Neo4j.Driver.Internal;
 
-internal class QueryApiUrlBuilder : IQueryApiUrlBuilder
+/// <summary>
+/// The URI the driver was created with. A narrow role over <see cref="DriverContext"/>, so that
+/// consumers needing only the address do not depend on the whole driver context.
+/// </summary>
+internal interface IDriverUri
 {
-    private readonly string _base;
-
-    public QueryApiUrlBuilder(IDriverUri driver)
-    {
-        _base = driver.InitialUri.AbsoluteUri.TrimEnd('/');
-    }
-
-    public Uri Build(string path)
-    {
-        var subPath = path.TrimStart('/');
-        return new Uri($"{_base}/{subPath}");
-    }
+    Uri InitialUri { get; }
 }

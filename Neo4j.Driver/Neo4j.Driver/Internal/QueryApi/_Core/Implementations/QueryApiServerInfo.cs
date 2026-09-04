@@ -15,8 +15,6 @@
 
 #nullable enable
 
-using System;
-
 namespace Neo4j.Driver.Internal.QueryApi;
 
 /// <summary>
@@ -24,18 +22,21 @@ namespace Neo4j.Driver.Internal.QueryApi;
 /// construction; <see cref="Agent"/> is populated when <see cref="IDriver.VerifyConnectivityAsync"/> is called
 /// and returns an empty string before that.
 /// </summary>
-internal class QueryApiServerInfo : IServerInfo
+internal class QueryApiServerInfo : IServerInfo, IServerAgentWriter
 {
     private volatile string _agent = "";
 
-    public QueryApiServerInfo(Uri initialUri)
+    public QueryApiServerInfo(IDriverUri driver)
     {
-        Address = $"{initialUri.Host}:{initialUri.Port}";
+        Address = $"{driver.InitialUri.Host}:{driver.InitialUri.Port}";
     }
 
     public string Address { get; }
     public string ProtocolVersion => "QueryApi/2.0";
     public string Agent => _agent;
 
-    internal void UpdateAgent(string agent) => _agent = agent;
+    public void UpdateAgent(string agent)
+    {
+        _agent = agent;
+    }
 }

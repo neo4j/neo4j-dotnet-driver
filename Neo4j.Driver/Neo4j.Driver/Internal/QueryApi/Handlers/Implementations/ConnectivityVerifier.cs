@@ -33,20 +33,23 @@ internal class ConnectivityVerifier : IConnectivityVerifier
     private readonly IQueryApiHttpTransport _httpTransport;
     private readonly IJsonDeserializer _jsonDeserializer;
     private readonly ILogger _logger;
-    private readonly QueryApiServerInfo _serverInfo;
+    private readonly IServerAgentWriter _agentWriter;
+    private readonly IServerInfo _serverInfo;
     private readonly IQueryApiUrlBuilder _urlBuilder;
 
     public ConnectivityVerifier(
         IQueryApiUrlBuilder urlBuilder,
         IQueryApiHttpTransport httpTransport,
         IJsonDeserializer jsonDeserializer,
-        QueryApiServerInfo serverInfo,
+        IServerInfo serverInfo,
+        IServerAgentWriter agentWriter,
         ILogger logger)
     {
         _urlBuilder = urlBuilder;
         _httpTransport = httpTransport;
         _jsonDeserializer = jsonDeserializer;
         _serverInfo = serverInfo;
+        _agentWriter = agentWriter;
         _logger = logger;
     }
 
@@ -72,7 +75,7 @@ internal class ConnectivityVerifier : IConnectivityVerifier
             throw new ServiceUnavailableException("The discovery endpoint did not include a server version.");
         }
 
-        _serverInfo.UpdateAgent(body.Neo4jVersion);
+        _agentWriter.UpdateAgent(body.Neo4jVersion);
         _logger.LogDebug("Connectivity verified; server version {version}", body.Neo4jVersion);
         return _serverInfo;
     }

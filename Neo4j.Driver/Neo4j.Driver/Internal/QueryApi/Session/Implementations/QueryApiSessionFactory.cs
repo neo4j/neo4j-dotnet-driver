@@ -14,28 +14,34 @@
 // limitations under the License.
 
 #nullable enable
-using System;
-using System.Threading.Tasks;
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
 internal class QueryApiSessionFactory : IQueryApiSessionFactory
 {
-    private readonly IResolutionScope _resolutionScope;
-    private readonly ISessionIdGenerator _sessionIdGenerator;
+    private readonly IBookmarkTracker _bookmarkTracker;
     private readonly ILoggingContextTracker _driverTracker;
+    private readonly IQueryApiHttpTransport _httpTransport;
     private readonly ILogger _logger;
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly IServerInfo _serverInfo;
+    private readonly ISessionIdGenerator _sessionIdGenerator;
 
     public QueryApiSessionFactory(
-        IResolutionScope resolutionScope,
         ISessionIdGenerator sessionIdGenerator,
         ILoggingContextTracker driverTracker,
+        ILoggerFactory loggerFactory,
+        IQueryApiHttpTransport httpTransport,
+        IServerInfo serverInfo,
+        IBookmarkTracker bookmarkTracker,
         ILogger logger)
     {
-        _resolutionScope = resolutionScope;
         _sessionIdGenerator = sessionIdGenerator;
         _driverTracker = driverTracker;
+        _loggerFactory = loggerFactory;
+        _httpTransport = httpTransport;
+        _serverInfo = serverInfo;
+        _bookmarkTracker = bookmarkTracker;
         _logger = logger;
     }
 
@@ -48,26 +54,18 @@ internal class QueryApiSessionFactory : IQueryApiSessionFactory
             ? AuthTokenManagers.Static(config.AuthToken)
             : config.DriverContext.AuthTokenManager;
 
-        var sessionScope = _resolutionScope.CreateChildScope(r => r
-            .RegisterInstance(_driverTracker.CreateChild())
-            .RegisterInstance(config)
-            .RegisterInstance(authTokenManager)
-            .RegisterType<ISessionContext, QueryApiSessionContext>());
+        var sessionTracker = _driverTracker.CreateChild();
+        sessionTracker.Add("session", sessionId);
 
-        sessionScope.Resolve<ILoggingContextTracker>().Add("session", sessionId);
+        var composition = new QueryApiSessionComposition(
+            config,
+            authTokenManager,
+            sessionTracker,
+            _loggerFactory,
+            _httpTransport,
+            _serverInfo,
+            _bookmarkTracker);
 
-        var session = sessionScope.Resolve<IInternalAsyncSession>();
-        session.Disposed += GetSessionDisposedHandler(sessionScope);
-        return session;
-    }
-
-    private static AsyncEventHandler GetSessionDisposedHandler(IAsyncDisposable sessionScope)
-    {
-        return SessionDisposed;
-
-        async Task SessionDisposed(object? o, EventArgs eventArgs)
-        {
-            await sessionScope.DisposeAsync().ConfigureAwait(false);
-        }
+        return composition.Session();
     }
 }

@@ -262,9 +262,7 @@ public static class GraphDatabase
 
     private static Internal.Driver GetQueryApiDriver(DriverContext driverContext)
     {
-        // single composition root for Query API stack
-        var container = new QueryApiContainerBuilder().BuildContainer(driverContext);
-        var adapter = container.Resolve<IQueryApiProtocolAdapter>();
+        var adapter = new QueryApiDriverComposition(driverContext).ProtocolAdapter();
         return new Internal.Driver(driverContext.InitialUri, adapter, driverContext);
     }
 

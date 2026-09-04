@@ -18,20 +18,40 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
 internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
 {
+    private readonly IAuthTokenManager _authTokenManager;
+    private readonly IBookmarkTracker _bookmarkTracker;
+    private readonly DriverContext _driverContext;
+    private readonly IQueryApiHttpTransport _httpTransport;
     private readonly ILogger _logger;
-    private readonly IResolutionScope _resolutionScope;
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly IServerInfo _serverInfo;
+    private readonly ISessionContext _sessionContext;
+    private readonly ILoggingContextTracker _sessionTracker;
 
     public QueryApiTransactionFactory(
-        IResolutionScope resolutionScope,
+        DriverContext driverContext,
+        ISessionContext sessionContext,
+        IAuthTokenManager authTokenManager,
+        ILoggerFactory loggerFactory,
+        ILoggingContextTracker sessionTracker,
+        IQueryApiHttpTransport httpTransport,
+        IServerInfo serverInfo,
+        IBookmarkTracker bookmarkTracker,
         ILogger logger)
     {
-        _resolutionScope = resolutionScope;
+        _driverContext = driverContext;
+        _sessionContext = sessionContext;
+        _authTokenManager = authTokenManager;
+        _loggerFactory = loggerFactory;
+        _sessionTracker = sessionTracker;
+        _httpTransport = httpTransport;
+        _serverInfo = serverInfo;
+        _bookmarkTracker = bookmarkTracker;
         _logger = logger;
     }
 
@@ -42,12 +62,18 @@ internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
     {
         _logger.LogDebug("Opening {mode} transaction", mode);
 
-        var transactionScope = _resolutionScope.CreateChildScope(r => r
-            .RegisterType<IQueryApiTransactionContextTracker, QueryApiTransactionContextTracker>(singleton: true)
-            .RegisterType<IHttpRequestEnricher, QueryApiClusterAffinityEnricher>());
+        var composition = new QueryApiTransactionComposition(
+            _driverContext,
+            _sessionContext,
+            _authTokenManager,
+            _loggerFactory,
+            _sessionTracker,
+            _httpTransport,
+            _serverInfo,
+            _bookmarkTracker);
 
-        var transaction = transactionScope.Resolve<IScopedTransaction>();
-        transaction.Disposed += GetTransactionDisposedHandler(transactionScope);
+        var transaction = composition.Transaction();
+        transaction.Disposed += GetTransactionDisposedHandler(composition);
 
         try
         {
@@ -55,20 +81,21 @@ internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
         }
         catch
         {
-            await transactionScope.DisposeAsync().ConfigureAwait(false);
+            composition.Dispose();
             throw;
         }
 
         return transaction;
     }
 
-    private static AsyncEventHandler GetTransactionDisposedHandler(IAsyncDisposable transactionScope)
+    private static AsyncEventHandler GetTransactionDisposedHandler(IDisposable composition)
     {
         return TransactionDisposed;
 
-        async Task TransactionDisposed(object? o, EventArgs eventArgs)
+        Task TransactionDisposed(object? o, EventArgs eventArgs)
         {
-            await transactionScope.DisposeAsync().ConfigureAwait(false);
+            composition.Dispose();
+            return Task.CompletedTask;
         }
     }
 }
