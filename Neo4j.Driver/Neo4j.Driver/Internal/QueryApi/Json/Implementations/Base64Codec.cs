@@ -17,11 +17,9 @@
 
 using System;
 using System.Text;
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class Base64Codec : IBase64Encoder, IBase64Decoder
 {
     public string Encode(string input) => Encode(Encoding.UTF8.GetBytes(input));

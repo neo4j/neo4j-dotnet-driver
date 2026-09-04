@@ -16,11 +16,9 @@
 #nullable enable
 
 using System.Net.Http.Headers;
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class QueryApiClusterAffinityExtractor : IClusterAffinityExtractor
 {
     private const string HeaderName = "neo4j-cluster-affinity";

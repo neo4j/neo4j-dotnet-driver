@@ -17,12 +17,10 @@
 
 using System;
 using System.Text.Json;
-using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal sealed class JsonEnvelopeWriter : IJsonEnvelopeWriter
 {
     public IDisposable OpenTypedEnvelope(Utf8JsonWriter writer, string typeDescriptor)

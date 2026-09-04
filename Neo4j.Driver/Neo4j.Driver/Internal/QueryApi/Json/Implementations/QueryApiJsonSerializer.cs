@@ -23,11 +23,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class QueryApiJsonSerializer : IQueryApiJsonSerializer, IJsonDeserializer
 {
     private static readonly JsonNamingPolicy DefaultNamingPolicy = JsonNamingPolicy.CamelCase;

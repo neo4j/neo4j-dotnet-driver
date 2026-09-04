@@ -21,7 +21,6 @@ using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class QueryApiProtocolAdapter : IQueryApiProtocolAdapter
 {
     private readonly IConnectivityVerifier _connectivityVerifier;

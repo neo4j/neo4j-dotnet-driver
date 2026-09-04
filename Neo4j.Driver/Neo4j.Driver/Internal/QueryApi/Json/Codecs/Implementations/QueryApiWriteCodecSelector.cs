@@ -18,11 +18,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class QueryApiWriteCodecSelector : IQueryApiWriteCodecSelector
 {
     private readonly IEnumerable<IQueryApiTypeCodec> _codecs;

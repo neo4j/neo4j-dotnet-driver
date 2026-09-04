@@ -19,12 +19,10 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal sealed class QueryApiRelationshipCodec : IQueryApiTypeCodec
 {
     public bool CanRead(string typeName)

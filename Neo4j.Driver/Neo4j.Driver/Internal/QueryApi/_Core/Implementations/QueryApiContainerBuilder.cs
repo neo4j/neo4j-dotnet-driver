@@ -18,7 +18,6 @@ using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class QueryApiContainerBuilder : IQueryApiContainerBuilder
 {
     public IServiceResolver BuildContainer(DriverContext driverContext)

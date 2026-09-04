@@ -18,11 +18,9 @@
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal sealed class QueryApiParameterDictionaryConverter : 
     JsonConverter<QueryApiParameterDictionary>,
     IQueryApiJsonConverter

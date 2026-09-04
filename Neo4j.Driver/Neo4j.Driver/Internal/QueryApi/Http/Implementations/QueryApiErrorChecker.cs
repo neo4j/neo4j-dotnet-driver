@@ -19,12 +19,10 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class QueryApiErrorChecker : IQueryApiErrorChecker
 {
     private readonly IJsonDeserializer _jsonDeserializer;

@@ -17,11 +17,9 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class RequiredMediaVersionCalculator : IRequiredMediaVersionCalculator
 {
     private readonly IQueryApiWriteCodecSelector _selector;

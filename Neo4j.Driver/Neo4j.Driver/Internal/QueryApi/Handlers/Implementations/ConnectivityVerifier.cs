@@ -20,7 +20,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
@@ -29,7 +28,6 @@ namespace Neo4j.Driver.Internal.QueryApi;
 /// advertises both the Query API endpoint and the server version. Spec: https://neo4j.com/docs/http-api/current/discovery/
 /// Decision: always hit discovery even when the driver is warm; do not run a dummy query.
 /// </summary>
-[AutoRegister]
 internal class ConnectivityVerifier : IConnectivityVerifier
 {
     private readonly IQueryApiHttpTransport _httpTransport;

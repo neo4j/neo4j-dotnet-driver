@@ -16,11 +16,9 @@
 #nullable enable
 
 using System;
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class QueryApiUrlBuilder : IQueryApiUrlBuilder
 {
     private readonly string _base;

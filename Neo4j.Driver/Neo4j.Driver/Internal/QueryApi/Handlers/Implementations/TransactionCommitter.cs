@@ -17,11 +17,9 @@
 
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class TransactionCommitter : ITransactionCommitter
 {
     private readonly IBookmarkTracker _bookmarkTracker;

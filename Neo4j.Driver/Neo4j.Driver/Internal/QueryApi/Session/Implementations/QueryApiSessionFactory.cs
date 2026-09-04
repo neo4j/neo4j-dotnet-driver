@@ -20,7 +20,6 @@ using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class QueryApiSessionFactory : IQueryApiSessionFactory
 {
     private readonly IResolutionScope _resolutionScope;

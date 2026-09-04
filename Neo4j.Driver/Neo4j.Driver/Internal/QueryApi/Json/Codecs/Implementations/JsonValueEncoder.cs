@@ -16,11 +16,9 @@
 #nullable enable
 
 using System.Text.Json.Nodes;
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class JsonValueEncoder : IJsonValueEncoder
 {
     private readonly IQueryApiWriteCodecSelector _selector;

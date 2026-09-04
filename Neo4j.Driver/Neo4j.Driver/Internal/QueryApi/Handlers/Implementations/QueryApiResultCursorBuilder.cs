@@ -20,11 +20,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal.Result;
 
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class QueryApiResultCursorBuilder : IQueryApiResultCursorBuilder
 {
     private readonly IJsonValueDecoder _jsonValueDecoder;

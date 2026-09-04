@@ -17,11 +17,9 @@
 
 using System;
 using System.Linq;
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class SessionIdGenerator : ISessionIdGenerator
 {
     private const string Chars = "0123456789abcdef";

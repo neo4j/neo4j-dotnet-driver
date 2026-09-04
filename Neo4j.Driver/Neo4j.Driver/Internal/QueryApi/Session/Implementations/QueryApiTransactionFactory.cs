@@ -22,7 +22,6 @@ using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
 {
     private readonly ILogger _logger;

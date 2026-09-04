@@ -19,12 +19,10 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class QueryApiResultCursor : IResultCursor, IAsyncEnumerator<IRecord>
 {
     private readonly string _database;

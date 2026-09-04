@@ -22,12 +22,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Neo4j.Driver.Internal.DependencyInjection;
 using static Neo4j.Driver.Internal.QueryApi.QueryApiCodecHelper;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class QueryApiListCodec : IQueryApiContainerCodec
 {
     public IEnumerable<object?> GetChildValues(object value)

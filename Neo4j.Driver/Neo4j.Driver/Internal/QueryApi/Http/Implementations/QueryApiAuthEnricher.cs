@@ -21,11 +21,9 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Auth;
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class QueryApiAuthEnricher : IHttpRequestEnricher
 {
     private readonly IAuthTokenManager _authTokenManager;

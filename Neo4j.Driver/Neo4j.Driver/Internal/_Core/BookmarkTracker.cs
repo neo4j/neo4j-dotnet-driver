@@ -13,11 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal;
 
-[AutoRegister(singleton: true)]
 internal class BookmarkTracker : IBookmarkTracker
 {
     private Bookmarks _bookmarks;

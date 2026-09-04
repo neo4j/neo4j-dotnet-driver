@@ -19,11 +19,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class JsonValueDecoder : IJsonValueDecoder
 {
     private readonly IEnumerable<IQueryApiTypeCodec> _codecs;

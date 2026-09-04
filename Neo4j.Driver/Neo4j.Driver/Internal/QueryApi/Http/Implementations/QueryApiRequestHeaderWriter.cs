@@ -17,11 +17,9 @@
 
 using System.Net.Http;
 using System.Net.Http.Headers;
-using Neo4j.Driver.Internal.DependencyInjection;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal class QueryApiRequestHeaderWriter : IQueryApiRequestHeaderWriter
 {
     public void ApplyMediaType(HttpRequestMessage request, QueryApiMediaVersion version)

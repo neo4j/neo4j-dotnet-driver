@@ -18,13 +18,11 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using Neo4j.Driver.Internal.DependencyInjection;
 using static Neo4j.Driver.Internal.QueryApi.QueryApiCodecHelper;
 using static Neo4j.Driver.Internal.QueryApi.QueryApiTemporalCodecHelper;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal sealed class QueryApiDateCodec : IQueryApiTypeCodec
 {
     private static readonly Regex DateRegex =

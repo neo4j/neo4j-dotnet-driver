@@ -19,12 +19,10 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using Neo4j.Driver.Internal.DependencyInjection;
 using static Neo4j.Driver.Internal.QueryApi.QueryApiCodecHelper;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-[AutoRegister]
 internal sealed class QueryApiPointCodec : IQueryApiTypeCodec
 {
     // One coordinate: optional +/-, then Infinity/NaN or a decimal with optional fraction and exponent
