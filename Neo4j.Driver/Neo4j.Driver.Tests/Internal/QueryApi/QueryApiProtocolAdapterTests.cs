@@ -20,7 +20,6 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi;
 using Xunit;
 
@@ -29,39 +28,39 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 public class QueryApiProtocolAdapterTests
 {
     private readonly Mock<IConnectivityVerifier> _connectivityVerifier = new();
-    private readonly Mock<IResolutionScope> _scope = new();
+    private readonly Mock<IQueryApiDriverComposition> _composition = new();
     private readonly Mock<IQueryApiSessionFactory> _sessionFactory = new();
 
     private QueryApiProtocolAdapter CreateAdapter() =>
-        new(_connectivityVerifier.Object, _sessionFactory.Object, _scope.Object);
+        new(_connectivityVerifier.Object, _sessionFactory.Object, _composition.Object);
 
     [Fact]
     public void Constructor_NullConnectivityVerifier_Throws()
     {
-        var act = () => new QueryApiProtocolAdapter(null!, _sessionFactory.Object, _scope.Object);
+        var act = () => new QueryApiProtocolAdapter(null!, _sessionFactory.Object, _composition.Object);
         act.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("connectivityVerifier");
     }
 
     [Fact]
     public void Constructor_NullSessionFactory_Throws()
     {
-        var act = () => new QueryApiProtocolAdapter(_connectivityVerifier.Object, null!, _scope.Object);
+        var act = () => new QueryApiProtocolAdapter(_connectivityVerifier.Object, null!, _composition.Object);
         act.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("sessionFactory");
     }
 
     [Fact]
-    public void Constructor_NullScope_Throws()
+    public void Constructor_NullComposition_Throws()
     {
         var act = () => new QueryApiProtocolAdapter(_connectivityVerifier.Object, _sessionFactory.Object, null!);
-        act.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("scope");
+        act.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("composition");
     }
 
     [Fact]
-    public async Task DisposeAsync_DisposesScope()
+    public async Task DisposeAsync_DisposesComposition()
     {
         await CreateAdapter().DisposeAsync();
 
-        _scope.Verify(s => s.DisposeAsync(), Times.Once);
+        _composition.Verify(c => c.DisposeAsync(), Times.Once);
     }
 
     [Fact]

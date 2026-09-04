@@ -23,35 +23,12 @@ namespace Neo4j.Driver.Internal.QueryApi;
 
 internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
 {
-    private readonly IAuthTokenManager _authTokenManager;
-    private readonly IBookmarkTracker _bookmarkTracker;
-    private readonly DriverContext _driverContext;
-    private readonly IQueryApiHttpTransport _httpTransport;
     private readonly ILogger _logger;
-    private readonly ILoggerFactory _loggerFactory;
-    private readonly IServerInfo _serverInfo;
-    private readonly ISessionContext _sessionContext;
-    private readonly ILoggingContextTracker _sessionTracker;
+    private readonly Func<IQueryApiTransactionScope> _scopeFactory;
 
-    public QueryApiTransactionFactory(
-        DriverContext driverContext,
-        ISessionContext sessionContext,
-        IAuthTokenManager authTokenManager,
-        ILoggerFactory loggerFactory,
-        ILoggingContextTracker sessionTracker,
-        IQueryApiHttpTransport httpTransport,
-        IServerInfo serverInfo,
-        IBookmarkTracker bookmarkTracker,
-        ILogger logger)
+    public QueryApiTransactionFactory(Func<IQueryApiTransactionScope> scopeFactory, ILogger logger)
     {
-        _driverContext = driverContext;
-        _sessionContext = sessionContext;
-        _authTokenManager = authTokenManager;
-        _loggerFactory = loggerFactory;
-        _sessionTracker = sessionTracker;
-        _httpTransport = httpTransport;
-        _serverInfo = serverInfo;
-        _bookmarkTracker = bookmarkTracker;
+        _scopeFactory = scopeFactory;
         _logger = logger;
     }
 
@@ -62,18 +39,9 @@ internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
     {
         _logger.LogDebug("Opening {mode} transaction", mode);
 
-        var composition = new QueryApiTransactionComposition(
-            _driverContext,
-            _sessionContext,
-            _authTokenManager,
-            _loggerFactory,
-            _sessionTracker,
-            _httpTransport,
-            _serverInfo,
-            _bookmarkTracker);
-
-        var transaction = composition.Transaction();
-        transaction.Disposed += GetTransactionDisposedHandler(composition);
+        var scope = _scopeFactory();
+        var transaction = scope.Transaction();
+        transaction.Disposed += GetTransactionDisposedHandler(scope);
 
         try
         {
@@ -81,20 +49,20 @@ internal class QueryApiTransactionFactory : IQueryApiTransactionFactory
         }
         catch
         {
-            composition.Dispose();
+            scope.Dispose();
             throw;
         }
 
         return transaction;
     }
 
-    private static AsyncEventHandler GetTransactionDisposedHandler(IDisposable composition)
+    private static AsyncEventHandler GetTransactionDisposedHandler(IDisposable scope)
     {
         return TransactionDisposed;
 
         Task TransactionDisposed(object? o, EventArgs eventArgs)
         {
-            composition.Dispose();
+            scope.Dispose();
             return Task.CompletedTask;
         }
     }

@@ -15,11 +15,13 @@
 
 #nullable enable
 
+using System;
+using System.Threading.Tasks;
+
 namespace Neo4j.Driver.Internal.QueryApi;
 
 internal class QueryApiSessionFactory : IQueryApiSessionFactory
 {
-    private readonly IBookmarkTracker _bookmarkTracker;
     private readonly ILoggingContextTracker _driverTracker;
     private readonly IQueryApiHttpTransport _httpTransport;
     private readonly ILogger _logger;
@@ -33,7 +35,6 @@ internal class QueryApiSessionFactory : IQueryApiSessionFactory
         ILoggerFactory loggerFactory,
         IQueryApiHttpTransport httpTransport,
         IServerInfo serverInfo,
-        IBookmarkTracker bookmarkTracker,
         ILogger logger)
     {
         _sessionIdGenerator = sessionIdGenerator;
@@ -41,7 +42,6 @@ internal class QueryApiSessionFactory : IQueryApiSessionFactory
         _loggerFactory = loggerFactory;
         _httpTransport = httpTransport;
         _serverInfo = serverInfo;
-        _bookmarkTracker = bookmarkTracker;
         _logger = logger;
     }
 
@@ -63,9 +63,21 @@ internal class QueryApiSessionFactory : IQueryApiSessionFactory
             sessionTracker,
             _loggerFactory,
             _httpTransport,
-            _serverInfo,
-            _bookmarkTracker);
+            _serverInfo);
 
-        return composition.Session();
+        var session = composition.Session();
+        session.Disposed += GetSessionDisposedHandler(composition);
+        return session;
+    }
+
+    private static AsyncEventHandler GetSessionDisposedHandler(IDisposable composition)
+    {
+        return SessionDisposed;
+
+        Task SessionDisposed(object? o, EventArgs eventArgs)
+        {
+            composition.Dispose();
+            return Task.CompletedTask;
+        }
     }
 }

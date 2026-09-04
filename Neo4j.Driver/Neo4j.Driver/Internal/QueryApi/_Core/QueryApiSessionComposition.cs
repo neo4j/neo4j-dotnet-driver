@@ -15,12 +15,20 @@
 
 #nullable enable
 
+using System;
 using System.Diagnostics.CodeAnalysis;
 using Pure.DI;
+using static Pure.DI.Lifetime;
 
 namespace Neo4j.Driver.Internal.QueryApi;
 
-internal partial class QueryApiSessionComposition
+
+internal interface IQueryApiTransactionScope : IDisposable
+{
+    IScopedTransaction Transaction();
+}
+
+internal partial class QueryApiSessionComposition : IQueryApiTransactionScope
 {
     [SuppressMessage("ReSharper", "UnusedMember.Local", Justification = "Used to setup DI")]
     private static void Setup()
@@ -34,15 +42,29 @@ internal partial class QueryApiSessionComposition
             .Arg<ILoggerFactory>("loggerFactory")
             .Arg<IQueryApiHttpTransport>("httpTransport")
             .Arg<IServerInfo>("serverInfo")
-            .Arg<IBookmarkTracker>("bookmarkTracker")
 
             .Bind<DriverContext>().To((SessionConfig c) => c.DriverContext)
+            .Bind<ISessionContext>().As(Singleton).To<QueryApiSessionContext>()
+            .Bind<IBookmarkTracker>().As(Singleton).To<BookmarkTracker>()
 
-            .Bind<ISessionContext>().To<QueryApiSessionContext>()
             .Bind<IAutoCommitRunner>().To<AutoCommitRunner>()
             .Bind<IQueryApiTransactionFactory>().To<QueryApiTransactionFactory>()
+            .Bind<IQueryApiTransactionScope>().To((QueryApiSessionComposition c) => new QueryApiSessionComposition(c))
 
             .Bind<IInternalAsyncSession>().To<QueryApiSession>()
-            .Root<IInternalAsyncSession>("Session", kind: RootKinds.Public | RootKinds.Method);
+            .Root<IInternalAsyncSession>("Session", kind: RootKinds.Public | RootKinds.Method)
+
+            .Bind<IQueryApiTransactionContextTracker>().As(Scoped).To<QueryApiTransactionContextTracker>()
+            .Bind<IHttpRequestEnricher>(nameof(QueryApiClusterAffinityEnricher))
+            .To<QueryApiClusterAffinityEnricher>()
+
+            .Bind<IClusterAffinityExtractor>().To<QueryApiClusterAffinityExtractor>()
+            .Bind<ITransactionBeginner>().To<TransactionBeginner>()
+            .Bind<ITransactionCommitter>().To<TransactionCommitter>()
+            .Bind<ITransactionRollback>().To<TransactionRollbacker>()
+            .Bind<ITransactionRunner>().To<TransactionRunner>()
+
+            .Bind<IScopedTransaction>().To<QueryApiTransaction>()
+            .Root<IScopedTransaction>("Transaction", kind: RootKinds.Public | RootKinds.Method);
     }
 }

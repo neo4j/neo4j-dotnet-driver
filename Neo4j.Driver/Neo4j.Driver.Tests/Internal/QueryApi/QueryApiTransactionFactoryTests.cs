@@ -22,7 +22,6 @@ using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.DependencyInjection;
 using Neo4j.Driver.Internal.QueryApi;
 using Neo4j.Driver.Tests.Internal.Core;
 using Xunit;
@@ -32,9 +31,8 @@ namespace Neo4j.Driver.Tests.Internal.QueryApi;
 public class QueryApiTransactionFactoryTests
 {
     private readonly AutoMocker _autoMocker = AutoMockerExtensions.ForTesting<QueryApiTransaction>();
-    private readonly Mock<IResolutionScope> _sessionScope = new();
+    private readonly Mock<IQueryApiTransactionScope> _transactionScope = new();
     private readonly QueryApiTransaction _transaction;
-    private readonly Mock<IResolutionScope> _transactionScope = new();
 
     public QueryApiTransactionFactoryTests()
     {
@@ -43,23 +41,18 @@ public class QueryApiTransactionFactoryTests
             .Returns(Task.CompletedTask);
         _transaction = _autoMocker.CreateInstance<QueryApiTransaction>();
 
-        _sessionScope
-            .Setup(s => s.CreateChildScope(It.IsAny<Action<IServiceRegistry>>()))
-            .Returns(_transactionScope.Object);
-
-        _transactionScope.Setup(s => s.Resolve<IScopedTransaction>()).Returns(_transaction);
-        _transactionScope.Setup(s => s.DisposeAsync()).Returns(ValueTask.CompletedTask);
+        _transactionScope.Setup(s => s.Transaction()).Returns(_transaction);
     }
 
     private Mock<ITransactionBeginner> Beginner => _autoMocker.GetMock<ITransactionBeginner>();
 
     private QueryApiTransactionFactory CreateFactory()
     {
-        return new QueryApiTransactionFactory(_sessionScope.Object, new Mock<ILogger>().Object);
+        return new QueryApiTransactionFactory(() => _transactionScope.Object, new TestLogger(typeof(QueryApiTransactionFactory)));
     }
 
     [Fact]
-    public async Task BeginTransactionAsync_ReturnsTransactionResolvedFromTransactionScope()
+    public async Task BeginTransactionAsync_ReturnsTransactionFromTheTransactionScope()
     {
         var result = await CreateFactory().BeginTransactionAsync(AccessMode.Write, null);
 
@@ -81,7 +74,7 @@ public class QueryApiTransactionFactoryTests
 
         await transaction.DisposeAsync();
 
-        _transactionScope.Verify(s => s.DisposeAsync(), Times.Once);
+        _transactionScope.Verify(s => s.Dispose(), Times.Once);
     }
 
     [Fact]
@@ -89,7 +82,7 @@ public class QueryApiTransactionFactoryTests
     {
         await CreateFactory().BeginTransactionAsync(AccessMode.Write, null);
 
-        _transactionScope.Verify(s => s.DisposeAsync(), Times.Never);
+        _transactionScope.Verify(s => s.Dispose(), Times.Never);
     }
 
     [Fact]
@@ -102,6 +95,6 @@ public class QueryApiTransactionFactoryTests
         var act = () => CreateFactory().BeginTransactionAsync(AccessMode.Write, null);
 
         await act.Should().ThrowAsync<ClientException>();
-        _transactionScope.Verify(s => s.DisposeAsync(), Times.Once);
+        _transactionScope.Verify(s => s.Dispose(), Times.Once);
     }
 }
