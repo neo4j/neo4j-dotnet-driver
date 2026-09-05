@@ -68,6 +68,15 @@ internal class JsonCypherParameterParser
             };
         }
 
+        if (parameter["name"].Value<string>() == "CypherPoint")
+        {
+            return new CypherToNativeObject
+            {
+                name = parameter["name"].Value<string>(),
+                data = parameter["data"].ToObject<PointParameterValue>()
+            };
+        }
+
         if (parameter["name"].Value<string>() == "CypherVector")
         {
             return new CypherToNativeObject()

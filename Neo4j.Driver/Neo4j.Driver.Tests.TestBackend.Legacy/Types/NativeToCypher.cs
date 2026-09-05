@@ -57,7 +57,7 @@ internal static class NativeToCypher
         { typeof(ZonedDateTime), CypherDateTime },
         { typeof(LocalDateTime), CypherDateTime },
         { typeof(Duration), CypherDuration },
-        { typeof(Point), CypherTODO },
+        { typeof(Point), CypherPoint },
 
         { typeof(INode), CypherNode },
         { typeof(IRelationship), CypherRelationship },
@@ -182,15 +182,44 @@ internal static class NativeToCypher
 
     public static NativeToCypherObject CypherDouble(string cypherType, object obj)
     {
-        var d = (double)obj;
-        object value = d switch
+        return new NativeToCypherObject
+            { name = cypherType, data = new NativeToCypherObject.DataType { value = DoubleOrSpecial((double)obj) } };
+    }
+
+    private static object DoubleOrSpecial(double d)
+    {
+        return d switch
         {
             double.NaN => "NaN",
             double.PositiveInfinity => "+Infinity",
             double.NegativeInfinity => "-Infinity",
             _ => d
         };
-        return new NativeToCypherObject { name = cypherType, data = new NativeToCypherObject.DataType { value = value } };
+    }
+
+    public static NativeToCypherObject CypherPoint(string cypherType, object obj)
+    {
+        var point = (Point)obj;
+        var system = point.SrId switch
+        {
+            7203 or 9157 => "cartesian",
+            4326 or 4979 => "wgs84",
+            _ => throw new ArgumentOutOfRangeException(nameof(obj), $"Unsupported SRID: {point.SrId}")
+        };
+
+        var data = new Dictionary<string, object>
+        {
+            ["system"] = system,
+            ["x"] = DoubleOrSpecial(point.X),
+            ["y"] = DoubleOrSpecial(point.Y)
+        };
+
+        if (point.Dimension == Point.ThreeD)
+        {
+            data["z"] = DoubleOrSpecial(point.Z);
+        }
+
+        return new NativeToCypherObject { name = "CypherPoint", data = data };
     }
 
     public static NativeToCypherObject CypherBytes(string cypherType, object obj)

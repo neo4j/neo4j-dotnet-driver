@@ -15,7 +15,7 @@
 
 using System;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.Routing;
+using Neo4j.Driver.Internal.QueryApi;
 using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver;
@@ -240,34 +240,38 @@ public static class GraphDatabase
         uri = uri ?? throw new ArgumentNullException(nameof(uri));
         authTokenManager = authTokenManager ?? throw new ArgumentNullException(nameof(authTokenManager));
 
-        Neo4jUri.EnsureNoRoutingContextOnBolt(uri);
-
         var builder = Config.Builder;
         action?.Invoke(builder);
         var config = builder.Build();
 
         var context = new DriverContext(uri, authTokenManager, config);
-        var connectionFactory = new PooledConnectionFactory(context);
-
-        return CreateDriver(connectionFactory, context);
+        return CreateDriver(context);
     }
 
-    internal static IDriver CreateDriver(
-        IPooledConnectionFactory connectionFactory,
-        DriverContext context)
+    internal static IDriver CreateDriver(DriverContext context)
     {
-        var parsedUri = Neo4jUri.ParseBoltUri(context.InitialUri, Neo4jUri.DefaultBoltPort);
-        IConnectionProvider connectionProvider = Neo4jUri.IsRoutingUri(parsedUri)
-            ? new LoadBalancer(
-                parsedUri,
-                connectionFactory,
-                context)
-            : new ConnectionPool(
-                parsedUri,
-                connectionFactory,
-                context);
-
-        var server = new BoltProtocolAdapter(connectionProvider, context);
-        return new Internal.Driver(parsedUri, server, context);
+        return context.InitialUri switch
+        {
+            { Scheme: "neo4j" or "neo4j+s" or "bolt" or "bolt+s"} => GetBoltDriver(context),
+            
+            { Scheme: "http" or "https" } => GetQueryApiDriver(context),
+            
+            _ => throw new ArgumentException($"Unsupported URI scheme: {context.InitialUri.Scheme}")
+        };
     }
+
+    private static Internal.Driver GetQueryApiDriver(DriverContext driverContext)
+    {
+        var adapter = new QueryApiDriverComposition(driverContext).ProtocolAdapter();
+        return new Internal.Driver(driverContext.InitialUri, adapter, driverContext);
+    }
+
+    private static Internal.Driver GetBoltDriver(DriverContext driverContext)
+    {
+        Neo4jUri.EnsureNoRoutingContextOnBolt(driverContext.InitialUri);
+        var parsedUri = Neo4jUri.ParseBoltUri(driverContext.InitialUri, Neo4jUri.DefaultBoltPort);
+        var adapter =  new BoltProtocolAdapter(parsedUri, driverContext);
+        return new Internal.Driver(parsedUri, adapter, driverContext);
+    }
+    
 }

@@ -13,30 +13,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Reflection;
-using AutoFixture;
-using AutoFixture.Kernel;
-using Neo4j.Driver.Internal;
 
-namespace Neo4j.Driver.Tests.Internal.Core;
+namespace Neo4j.Driver.Internal;
 
-internal class LoggerSpecimenBuilder : ISpecimenBuilder
+internal class BookmarkTracker : IBookmarkTracker
 {
-    public object Create(object request, ISpecimenContext context)
-    {
-        if (request is ParameterInfo p && p.ParameterType == typeof(ILogger))
-        {
-            return new TestLogger(p.Member.DeclaringType!);
-        }
+    private Bookmarks _bookmarks;
 
-        return new NoSpecimen();
-    }
-}
-
-internal class LoggingCustomization : ICustomization
-{
-    public void Customize(IFixture fixture)
+    public BookmarkTracker(SessionConfig config)
     {
-        fixture.Customizations.Add(new LoggerSpecimenBuilder());
+        _bookmarks = config.Bookmarks != null
+            ? Bookmarks.From(config.Bookmarks)
+            : Bookmarks.Empty;
     }
+
+    public Bookmarks CurrentBookmarks => _bookmarks;
+
+    public void UpdateBookmarks(string[] bookmarks)
+    {
+        _bookmarks = Bookmarks.From(bookmarks);
+    }
+
 }

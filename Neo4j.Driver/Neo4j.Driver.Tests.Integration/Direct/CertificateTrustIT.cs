@@ -174,9 +174,7 @@ public sealed class CertificateTrustIT : IClassFixture<CertificateTrustIT.Certif
             config,
             resolver);
 
-        var connectionFactory = new PooledConnectionFactory(driverContext);
-
-        return GraphDatabase.CreateDriver(connectionFactory, driverContext);
+        return GraphDatabase.CreateDriver(driverContext);
     }
 
     private sealed class CustomHostResolver : IHostResolver

@@ -26,7 +26,7 @@ namespace Neo4j.Driver;
 /// builder-style methods. The default <see cref="SessionConfig"/> defines a <see cref="AccessMode.Write"/> session with
 /// the server default database using default fetch size specified in <see cref="Config.FetchSize"/>.
 /// </summary>
-public sealed class SessionConfig
+public class SessionConfig
 {
     internal static readonly SessionConfig Default = new();
     private IEnumerable<Bookmarks> _bookmarks;
