@@ -51,6 +51,13 @@ internal class DriverEncryptionObjectStore : IDriverEncryptionObjectStore
         return repository;
     }
 
+    public IReadOnlyList<ITestkitEncapsulatedKeyRepository> GetAllRepositories(IDriver driver)
+    {
+        return _objectsByDriver.TryGetValue(driver, out var objects)
+            ? objects.RepositoriesByProfileName.Values.ToList()
+            : [];
+    }
+
     private DriverEncryptionObjects GetObjects(IDriver driver)
     {
         return _objectsByDriver.TryGetValue(driver, out var objects)

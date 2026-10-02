@@ -224,3 +224,9 @@ internal class EncapsulatedKeyRepositoryErrorCompletedHandler : MessageHandler<E
         };
     }
 }
+
+/// <summary>
+/// Tells the testkit frontend that a repository's owning driver has closed, so it can drop that
+/// repository's storage. One-way: sent by <c>DriverCloseHandler</c>, never replied to.
+/// </summary>
+internal record EncapsulatedKeyRepositoryClosed(string RepositoryId) : IProtocolMessage;

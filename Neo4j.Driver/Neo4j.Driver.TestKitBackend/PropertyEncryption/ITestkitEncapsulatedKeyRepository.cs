@@ -19,6 +19,12 @@ namespace Neo4j.Driver.TestKitBackend.PropertyEncryption;
 
 internal interface ITestkitEncapsulatedKeyRepository : IEncapsulatedKeyRecordRepository
 {
+    /// <summary>
+    /// This repository's id on the wire, so <c>DriverCloseHandler</c> can tell the testkit frontend
+    /// which repositories to forget when the owning driver closes.
+    /// </summary>
+    string RepositoryId { get; }
+
     Task<EncapsulatedKeyRecord> ImportAsync(
         string id,
         string alias,

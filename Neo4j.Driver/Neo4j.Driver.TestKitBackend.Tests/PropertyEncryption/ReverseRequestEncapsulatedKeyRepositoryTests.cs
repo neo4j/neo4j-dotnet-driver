@@ -64,6 +64,12 @@ public class ReverseRequestEncapsulatedKeyRepositoryTests
     }
 
     [Fact]
+    public void RepositoryId_exposes_the_id_it_was_constructed_with()
+    {
+        Subject().RepositoryId.Should().Be(RepositoryId);
+    }
+
+    [Fact]
     public async Task FindByIdAsync_returns_null_when_the_repository_has_no_match()
     {
         CaptureRequest<EncapsulatedKeyRepositoryRecord?>(null);
