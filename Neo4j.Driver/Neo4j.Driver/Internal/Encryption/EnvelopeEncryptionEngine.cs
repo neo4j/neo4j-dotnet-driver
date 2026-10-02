@@ -153,6 +153,11 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
             throw new UnsupportedEncryptionProfileTypeException(structure.ProfileType);
         }
 
+        if (structure.ProfileVersion != EnvelopeProfileVersion)
+        {
+            throw new UnsupportedEncryptionProfileVersionException(structure.ProfileVersion);
+        }
+
         if (_baselineCompatibilityGuard.IsUnsupportedBaselineType(structure, out var unsupported))
         {
             return unsupported;

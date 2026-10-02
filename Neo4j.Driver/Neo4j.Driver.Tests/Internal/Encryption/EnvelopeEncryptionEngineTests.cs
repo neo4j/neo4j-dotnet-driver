@@ -249,6 +249,37 @@ public class EnvelopeEncryptionEngineTests
     }
 
     [Fact]
+    public async Task TryStartDecrypt_WithAProfileVersionTheDriverCannotHandle_ThrowsNamingThatVersion()
+    {
+        var encrypted = new byte[] { 0xEE };
+        var structure = new EncryptedStructure(
+            "ENVELOPE",
+            2,
+            ProfileName,
+            [0xC0, 0xD0],
+            "INTEGER",
+            1,
+            0,
+            new Dictionary<string, object>());
+
+        _autoMocker.GetMock<IEncryptedValueBytesCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
+
+        var subject = _autoMocker.CreateInstance<EnvelopeEncryptionEngine>();
+        subject.TryStartDecrypt(
+            Profile(),
+            encrypted,
+            aad: null,
+            TestContext.Current.CancellationToken,
+            out var decryptedTask);
+
+        var act = async () => await decryptedTask!;
+
+        await act.Should()
+            .ThrowAsync<UnsupportedEncryptionProfileVersionException>()
+            .WithMessage("*2*");
+    }
+
+    [Fact]
     public async Task TryStartDecrypt_GuardReportsUnsupportedBaselineType_ReturnsItWithoutDecrypting()
     {
         var encrypted = new byte[] { 0xEE };
