@@ -19,7 +19,7 @@ namespace Neo4j.Driver.TestKitBackend.PropertyEncryption;
 
 internal interface ITestkitEncapsulatedKeyRepository : IEncapsulatedKeyRecordRepository
 {
-    EncapsulatedKeyRecord Import(
+    Task<EncapsulatedKeyRecord> ImportAsync(
         string id,
         string alias,
         byte[] encapsulation,

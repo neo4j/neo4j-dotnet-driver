@@ -48,9 +48,10 @@ internal class ImportEncapsulatedKeyHandler : MessageHandler<ImportEncapsulatedK
 
     public override async Task ProcessAsync(ImportEncapsulatedKeyRequest message)
     {
-        var key = _driverEncryptionObjectStore
+        var key = await _driverEncryptionObjectStore
             .GetRepository(message.Driver, message.ProfileName)
-            .Import(message.Id, message.Alias, message.Encapsulation, message.Metadata);
+            .ImportAsync(message.Id, message.Alias, message.Encapsulation, message.Metadata)
+            .ConfigureAwait(false);
 
         await _responseWriter.WriteAsync(new EncapsulatedKeyResponse(key.Id, key.Alias));
     }

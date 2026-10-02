@@ -82,7 +82,7 @@ public class TestkitEncapsulatedKeyRepositoryTests
     [Fact]
     public async Task Imports_a_key_under_the_id_it_was_given()
     {
-        var imported = _repository.Import("testkit-key", "k1", Encapsulation, Metadata);
+        var imported = await _repository.ImportAsync("testkit-key", "k1", Encapsulation, Metadata);
 
         var found = await FindById("testkit-key");
 
@@ -93,7 +93,7 @@ public class TestkitEncapsulatedKeyRepositoryTests
     [Fact]
     public async Task Binds_the_alias_of_an_imported_key()
     {
-        var imported = _repository.Import("testkit-key", "k1", Encapsulation, Metadata);
+        var imported = await _repository.ImportAsync("testkit-key", "k1", Encapsulation, Metadata);
 
         var found = await FindByAlias("k1");
 
@@ -131,8 +131,8 @@ public class TestkitEncapsulatedKeyRepositoryTests
     {
         await Create("k1");
 
-        var act = () => _repository.Import("testkit-key", "k1", Encapsulation, Metadata);
+        var act = () => _repository.ImportAsync("testkit-key", "k1", Encapsulation, Metadata);
 
-        act.Should().Throw<EncapsulatedAliasInUseException>().WithMessage("*k1*");
+        await act.Should().ThrowAsync<EncapsulatedAliasInUseException>().WithMessage("*k1*");
     }
 }

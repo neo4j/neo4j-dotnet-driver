@@ -22,7 +22,7 @@ internal class TestkitEncapsulatedKeyRepository : ITestkitEncapsulatedKeyReposit
     private readonly Lock _lock = new();
     private readonly Dictionary<string, EncapsulatedKeyRecord> _keysById = new();
 
-    public EncapsulatedKeyRecord Import(
+    public Task<EncapsulatedKeyRecord> ImportAsync(
         string id,
         string alias,
         byte[] encapsulation,
@@ -30,7 +30,7 @@ internal class TestkitEncapsulatedKeyRepository : ITestkitEncapsulatedKeyReposit
     {
         lock (_lock)
         {
-            return Store(id, alias, encapsulation, metadata);
+            return Task.FromResult(Store(id, alias, encapsulation, metadata));
         }
     }
 

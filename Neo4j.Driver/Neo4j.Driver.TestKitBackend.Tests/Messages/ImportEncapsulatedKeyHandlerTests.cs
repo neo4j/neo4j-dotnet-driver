@@ -39,8 +39,8 @@ public class ImportEncapsulatedKeyHandlerTests
             .Setup(s => s.GetRepository(driver, "p1"))
             .Returns(repositoryMock.Object);
 
-        repositoryMock.Setup(r => r.Import("key-1", "k1", Encapsulation.Value, Metadata))
-            .Returns(new EncapsulatedKeyRecord("key-1", "k1", [], new Dictionary<string, string>()));
+        repositoryMock.Setup(r => r.ImportAsync("key-1", "k1", Encapsulation.Value, Metadata))
+            .ReturnsAsync(new EncapsulatedKeyRecord("key-1", "k1", [], new Dictionary<string, string>()));
 
         var handler = _autoMocker.CreateInstance<ImportEncapsulatedKeyHandler>();
         var request = new ImportEncapsulatedKeyRequest
@@ -68,8 +68,8 @@ public class ImportEncapsulatedKeyHandlerTests
             .Setup(s => s.GetRepository(driver))
             .Returns(repositoryMock.Object);
 
-        repositoryMock.Setup(r => r.Import("key-1", "k1", Encapsulation.Value, Metadata))
-            .Returns(new EncapsulatedKeyRecord("key-1", "k1", [], new Dictionary<string, string>()));
+        repositoryMock.Setup(r => r.ImportAsync("key-1", "k1", Encapsulation.Value, Metadata))
+            .ReturnsAsync(new EncapsulatedKeyRecord("key-1", "k1", [], new Dictionary<string, string>()));
 
         var handler = _autoMocker.CreateInstance<ImportEncapsulatedKeyHandler>();
         var request = new ImportEncapsulatedKeyRequest
