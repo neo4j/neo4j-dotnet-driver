@@ -24,7 +24,12 @@ internal class ReverseRequestEncapsulatedKeyRepository : ITestkitEncapsulatedKey
     private readonly IOutboundRoundTrip _roundTrip;
     private readonly string _repositoryId;
 
-    public ReverseRequestEncapsulatedKeyRepository(IOutboundRoundTrip roundTrip, string repositoryId)
+    public ReverseRequestEncapsulatedKeyRepository(IOutboundRoundTrip roundTrip)
+        : this(roundTrip, Guid.NewGuid().ToString("N"))
+    {
+    }
+
+    internal ReverseRequestEncapsulatedKeyRepository(IOutboundRoundTrip roundTrip, string repositoryId)
     {
         _roundTrip = roundTrip;
         _repositoryId = repositoryId;
