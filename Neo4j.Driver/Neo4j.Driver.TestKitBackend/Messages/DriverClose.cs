@@ -36,12 +36,12 @@ internal class DriverCloseHandler : MessageHandler<DriverCloseRequest>
 
     public DriverCloseHandler(
         IResponseWriter responseWriter,
-        ILogger logger,
-        IDriverEncryptionObjectStore driverEncryptionObjectStore)
+        IDriverEncryptionObjectStore driverEncryptionObjectStore,
+        ILogger logger)
     {
         _responseWriter = responseWriter;
-        _logger = logger;
         _driverEncryptionObjectStore = driverEncryptionObjectStore;
+        _logger = logger;
     }
 
     public override async Task ProcessAsync(DriverCloseRequest message)

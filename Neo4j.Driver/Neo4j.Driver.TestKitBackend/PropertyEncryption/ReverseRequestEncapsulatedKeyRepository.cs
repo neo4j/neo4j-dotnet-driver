@@ -38,21 +38,21 @@ internal class ReverseRequestEncapsulatedKeyRepository : ITestkitEncapsulatedKey
 
     public async Task<EncapsulatedKeyRecord?> FindByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        var wire = await _roundTrip
+        var repositoryRecord = await _roundTrip
             .SendExpectingAsync<EncapsulatedKeyRepositoryRecord?>(new EncapsulatedKeyRepositoryFindByIdRequest(RepositoryId, id))
             .ConfigureAwait(false);
 
-        return wire?.ToRecord();
+        return repositoryRecord?.ToRecord();
     }
 
     public async Task<EncapsulatedKeyRecord?> FindByAliasAsync(string alias, CancellationToken cancellationToken = default)
     {
-        var wire = await _roundTrip
+        var repositoryRecord = await _roundTrip
             .SendExpectingAsync<EncapsulatedKeyRepositoryRecord?>(
                 new EncapsulatedKeyRepositoryFindByAliasRequest(RepositoryId, alias))
             .ConfigureAwait(false);
 
-        return wire?.ToRecord();
+        return repositoryRecord?.ToRecord();
     }
 
     public async Task<EncapsulatedKeyRecord> CreateAsync(
@@ -61,12 +61,12 @@ internal class ReverseRequestEncapsulatedKeyRepository : ITestkitEncapsulatedKey
         IReadOnlyDictionary<string, string> metadata,
         CancellationToken cancellationToken = default)
     {
-        var wire = await _roundTrip
+        var repositoryRecord = await _roundTrip
             .SendExpectingAsync<EncapsulatedKeyRepositoryRecord>(
                 new EncapsulatedKeyRepositoryCreateRequest(RepositoryId, alias, encapsulation, metadata))
             .ConfigureAwait(false);
 
-        return wire.ToRecord();
+        return repositoryRecord.ToRecord();
     }
 
     public async Task SetAliasByIdAsync(string id, string? alias, CancellationToken cancellationToken = default)
@@ -89,11 +89,11 @@ internal class ReverseRequestEncapsulatedKeyRepository : ITestkitEncapsulatedKey
         byte[] encapsulation,
         IReadOnlyDictionary<string, string> metadata)
     {
-        var wire = await _roundTrip
+        var repositoryRecord = await _roundTrip
             .SendExpectingAsync<EncapsulatedKeyRepositoryRecord>(
                 new EncapsulatedKeyRepositoryImportRequest(RepositoryId, id, alias, encapsulation, metadata))
             .ConfigureAwait(false);
 
-        return wire.ToRecord();
+        return repositoryRecord.ToRecord();
     }
 }
