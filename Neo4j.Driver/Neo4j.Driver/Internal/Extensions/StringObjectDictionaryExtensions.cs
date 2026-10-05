@@ -29,11 +29,8 @@ internal static class StringObjectDictionaryExtensions
             string key,
             Func<string, Exception> exceptionFact)
         {
-            return dict.TryGetValue(key, out var value)
-                ? value is T castValue
-                    ? castValue
-                    : throw exceptionFact(
-                        $"Expected key '{key}' to be of type '{typeof(T)}', but was '{value.GetType()}'.")
+            return dict.TryGetValue<T>(key, out var value, exceptionFact)
+                ? value
                 : throw exceptionFact($"Expected key '{key}' to be present in the dictionary, but could not find.");
         }
 
@@ -84,8 +81,9 @@ internal static class StringObjectDictionaryExtensions
                     return true;
                 }
 
+                var actualType = uncastValue?.GetType().ToString() ?? "null";
                 throw exceptionFactory(
-                    $"Expected key '{key}' to be of type '{typeof(T)}', but was '{uncastValue!.GetType()}'.");
+                    $"Expected key '{key}' to be of type '{typeof(T)}', but was '{actualType}'.");
             }
 
             value = default;
