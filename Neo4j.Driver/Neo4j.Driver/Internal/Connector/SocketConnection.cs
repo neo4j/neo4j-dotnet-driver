@@ -295,6 +295,8 @@ internal sealed class SocketConnection : IConnection
     }
 
     public bool IsOpen => _client.IsOpen;
+
+    public bool SystemReportsDead() => _client.SystemReportsDead();
     public IServerInfo Server => _serverInfo;
 
     public bool UtcEncodedDateTime { get; private set; }

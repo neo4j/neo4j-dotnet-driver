@@ -66,6 +66,8 @@ internal sealed class SocketClient : ISocketClient
 
     public bool IsOpen => _closedMarker == 0;
 
+    public bool SystemReportsDead() => _tcpSocketClient.SystemReportsDead();
+
     public async Task ConnectAsync(
         CancellationToken cancellationToken = default)
     {
