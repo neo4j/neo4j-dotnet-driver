@@ -91,6 +91,7 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
         "Feature:Impersonation",
         "Feature:TLS:1.2",
         "Optimization:AuthPipelining",
+        "Optimization:DeadConnectionDetection",
         "Optimization:EagerTransactionBegin",
         "Optimization:ExecuteQueryPipelining",
         "Optimization:HomeDatabaseCache",

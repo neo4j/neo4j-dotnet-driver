@@ -31,6 +31,7 @@ internal interface ISocketClient : IAsyncDisposable
     Task SendAsync(IEnumerable<IRequestMessage> messages, CancellationToken cancellationToken = default);
     Task ReceiveAsync(IResponsePipeline responsePipeline, CancellationToken cancellationToken = default);
     Task ReceiveOneAsync(IResponsePipeline responsePipeline, CancellationToken cancellationToken = default);
+    bool SystemReportsDead();
     void SetReadTimeoutInSeconds(int seconds);
     void UseUtcEncoded();
 }

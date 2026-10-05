@@ -480,6 +480,65 @@ public class ConnectionPoolTests
             conn.Should().NotBe(closedMock.Object);
         }
 
+        [Fact]
+        public async Task ShouldValidateAnIdleConnectionAsComingFromThePool()
+        {
+            var idle = new BlockingCollection<IPooledConnection> { PooledConnectionStub() };
+            var validator = new RecordingConnectionValidator();
+            var pool = new ConnectionPool(
+                new MockedConnectionFactory(),
+                idle,
+                driverContext: TestDriverContext.MockContext,
+                validator: validator);
+
+            await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
+
+            validator.FromPoolValues.Should().Equal(true);
+        }
+
+        [Fact]
+        public async Task ShouldValidateANewlyCreatedConnectionAsNotComingFromThePool()
+        {
+            var validator = new RecordingConnectionValidator();
+            var pool = new ConnectionPool(
+                new MockedConnectionFactory(),
+                driverContext: TestDriverContext.MockContext,
+                validator: validator);
+
+            await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
+
+            validator.FromPoolValues.Should().Equal(false);
+        }
+
+        [Fact]
+        public async Task ShouldValidateAnIdleConnectionTakenWhileWaitingOnAFullPoolAsComingFromThePool()
+        {
+            var validator = new RecordingConnectionValidator();
+            var pool = new ConnectionPool(
+                new MockedConnectionFactory(),
+                driverContext: TestDriverContext.With(config: x => x.WithMaxConnectionPoolSize(1)),
+                validator: validator);
+            var first = await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
+            var waiting = pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
+
+            var waitingBeforeRelease = waiting.IsCompleted;
+            await first.CloseAsync();
+            await waiting;
+
+            waitingBeforeRelease.Should().BeFalse();
+            validator.FromPoolValues.Should().Equal(false, true);
+        }
+
+        private static IPooledConnection PooledConnectionStub()
+        {
+            var mock = new Mock<IPooledConnection>();
+            mock.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
+            mock.Setup(x => x.IdleTimer).Returns(new StopwatchBasedTimer());
+            mock.Setup(x => x.IsOpen).Returns(true);
+            mock.Setup(x => x.LifetimeTimer).Returns(MockedTimer);
+            return mock.Object;
+        }
+
         private Mock<IConnectionValidator> MockValidator(Action<Mock<IConnectionValidator>> setup = null)
         {
             var validator = new Mock<IConnectionValidator>();
@@ -490,7 +549,7 @@ public class ConnectionPoolTests
             else
             {
                 validator.Setup(x => x.OnReleaseAsync(It.IsAny<IPooledConnection>())).ReturnsAsync(true);
-                validator.Setup(x => x.GetConnectionLifetimeStatus(It.IsAny<IPooledConnection>()))
+                validator.Setup(x => x.GetConnectionLifetimeStatus(It.IsAny<IPooledConnection>(), It.IsAny<bool>()))
                     .Returns(AcquireStatus.Healthy);
             }
 
@@ -1930,7 +1989,7 @@ public class ConnectionPoolTests
     private sealed class LivenessProbeValidator : IConnectionValidator
     {
         public Task<bool> OnReleaseAsync(IPooledConnection connection) => Task.FromResult(true);
-        public AcquireStatus GetConnectionLifetimeStatus(IPooledConnection connection) => AcquireStatus.RequiresLivenessProbe;
+        public AcquireStatus GetConnectionLifetimeStatus(IPooledConnection connection, bool fromPool) => AcquireStatus.RequiresLivenessProbe;
     }
 
     private sealed class BlockingReleaseValidator : IConnectionValidator
@@ -1950,8 +2009,24 @@ public class ConnectionPoolTests
             return _mayFinish.Task;
         }
 
-        public AcquireStatus GetConnectionLifetimeStatus(IPooledConnection connection)
+        public AcquireStatus GetConnectionLifetimeStatus(IPooledConnection connection, bool fromPool)
         {
+            return AcquireStatus.Healthy;
+        }
+    }
+
+    private class RecordingConnectionValidator : IConnectionValidator
+    {
+        public List<bool> FromPoolValues { get; } = new();
+
+        public Task<bool> OnReleaseAsync(IPooledConnection connection)
+        {
+            return Task.FromResult(true);
+        }
+
+        public AcquireStatus GetConnectionLifetimeStatus(IPooledConnection connection, bool fromPool)
+        {
+            FromPoolValues.Add(fromPool);
             return AcquireStatus.Healthy;
         }
     }
@@ -1970,7 +2045,7 @@ public class ConnectionPoolTests
             return Task.FromResult(_isValid);
         }
 
-        public AcquireStatus GetConnectionLifetimeStatus(IPooledConnection connection)
+        public AcquireStatus GetConnectionLifetimeStatus(IPooledConnection connection, bool fromPool)
         {
             return _isValid ? AcquireStatus.Healthy : AcquireStatus.Unhealthy;
         }
