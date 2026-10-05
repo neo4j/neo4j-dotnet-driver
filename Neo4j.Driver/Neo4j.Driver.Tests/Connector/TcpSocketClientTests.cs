@@ -16,7 +16,11 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -247,6 +251,127 @@ public class TcpSocketClientTests
         }
 
         private bool WaitForReportedDead(TcpSocketClient client)
+        {
+            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+            while (DateTime.UtcNow < deadline)
+            {
+                if (client.SystemReportsDead())
+                {
+                    return true;
+                }
+
+                Thread.Sleep(10);
+            }
+
+            return false;
+        }
+    }
+
+    public class SystemReportsDeadMethodOverTls
+    {
+        [Theory]
+        [InlineData(SslProtocols.Tls12)]
+        [InlineData(SslProtocols.Tls13)]
+        public async Task ShouldReportAliveAfterARoundTripOnAnEncryptedConnection(SslProtocols protocol)
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            try
+            {
+                var (client, server) = await ConnectedEncryptedPairAsync(listener, protocol);
+
+                await client.WriterStream.WriteAsync(new byte[] { 1 });
+                await client.WriterStream.FlushAsync();
+                await server.ReadAsync(new byte[1]);
+                await server.WriteAsync(new byte[] { 2 });
+                await server.FlushAsync();
+                await client.ReaderStream.ReadAsync(new byte[1]);
+
+                var reportedDead = client.SystemReportsDead();
+
+                reportedDead.Should().BeFalse();
+            }
+            finally
+            {
+                listener.Stop();
+            }
+        }
+
+        [Theory]
+        [InlineData(SslProtocols.Tls12)]
+        [InlineData(SslProtocols.Tls13)]
+        public async Task ShouldReportDeadWhenThePeerSendsCloseNotifyAndKeepsTheSocketOpen(SslProtocols protocol)
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            try
+            {
+                var (client, server) = await ConnectedEncryptedPairAsync(listener, protocol);
+
+                await server.ShutdownAsync();
+
+                var reportedDead = WaitForReportedDead(client);
+
+                reportedDead.Should().BeTrue();
+            }
+            finally
+            {
+                listener.Stop();
+            }
+        }
+
+        private static async Task<(TcpSocketClient Client, SslStream Server)> ConnectedEncryptedPairAsync(
+            TcpListener listener,
+            SslProtocols protocol)
+        {
+            var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+            var client = new TcpSocketClient(
+                new DriverContext(
+                    new Uri($"bolt+ssc://127.0.0.1:{port}"),
+                    new StaticAuthTokenManager(AuthTokens.None),
+                    new Config { ConnectionTimeout = TimeSpan.FromSeconds(10), TlsVersion = protocol }));
+
+            var accepting = listener.AcceptSocketAsync();
+            var connecting = client.ConnectAsync(new Uri($"bolt+ssc://127.0.0.1:{port}"));
+            var accepted = await accepting;
+            var server = new SslStream(new NetworkStream(accepted, true));
+            var serverAuthenticating = server.AuthenticateAsServerAsync(
+                new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = SelfSignedCertificate(),
+                    EnabledSslProtocols = protocol
+                });
+
+            try
+            {
+                await connecting;
+            }
+            catch (ServiceUnavailableException e) when (e.GetBaseException() is PlatformNotSupportedException)
+            {
+                server.Dispose();
+                Assert.Skip($"{protocol} is not supported on this platform");
+            }
+
+            await serverAuthenticating;
+
+            return (client, server);
+        }
+
+        private static X509Certificate2 SelfSignedCertificate()
+        {
+            using var key = RSA.Create(2048);
+            var request = new CertificateRequest("CN=localhost", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            using var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
+
+            var pfx = certificate.Export(X509ContentType.Pfx);
+#if NET9_0_OR_GREATER
+            return X509CertificateLoader.LoadPkcs12(pfx, null);
+#else
+            return new X509Certificate2(pfx);
+#endif
+        }
+
+        private static bool WaitForReportedDead(TcpSocketClient client)
         {
             var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(2);
             while (DateTime.UtcNow < deadline)
