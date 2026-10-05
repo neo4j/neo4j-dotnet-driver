@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -128,6 +129,20 @@ public class ConnectionValidatorTests
             var (conn, _, _) = Mock();
             conn.Setup(x => x.IsOpen).Returns(true);
             conn.Setup(x => x.SystemReportsDead()).Returns(true);
+
+            var validator = NewConnectionValidator(TimeSpan.MaxValue, TimeSpan.MaxValue);
+
+            var status = validator.GetConnectionLifetimeStatus(conn.Object, true);
+
+            status.Should().Be(AcquireStatus.Unhealthy);
+        }
+
+        [Fact]
+        public void ShouldBeUnhealthyWhenAskingTheSystemAboutAPooledConnectionThrows()
+        {
+            var (conn, _, _) = Mock();
+            conn.Setup(x => x.IsOpen).Returns(true);
+            conn.Setup(x => x.SystemReportsDead()).Throws<SocketException>();
 
             var validator = NewConnectionValidator(TimeSpan.MaxValue, TimeSpan.MaxValue);
 

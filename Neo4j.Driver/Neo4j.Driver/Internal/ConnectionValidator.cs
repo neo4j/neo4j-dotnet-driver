@@ -110,7 +110,19 @@ internal class ConnectionValidator : IConnectionValidator
 
     private bool WasClosedWhilePooled(IPooledConnection connection, bool fromPool)
     {
-        return fromPool && connection.SystemReportsDead();
+        if (!fromPool)
+        {
+            return false;
+        }
+
+        try
+        {
+            return connection.SystemReportsDead();
+        }
+        catch
+        {
+            return true;
+        }
     }
 
     private bool MarkedStale(IPooledConnection connection)
