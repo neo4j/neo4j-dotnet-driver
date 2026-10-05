@@ -218,7 +218,6 @@ internal class EncapsulatedKeyRepositoryErrorCompletedHandler : MessageHandler<E
         return message.ErrorType switch
         {
             "KeyNotFound" => new EncapsulatedKeyNotFoundException(detail),
-            "AliasNotFound" => new EncapsulatedAliasNotFoundException(detail),
             "AliasInUse" => new EncapsulatedAliasInUseException(detail),
             _ => new EncapsulatedKeyRepositoryException($"Unknown repository error '{message.ErrorType}'.")
         };

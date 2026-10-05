@@ -181,7 +181,6 @@ public class ReverseRequestEncapsulatedKeyRepositoryTests
 
     [Theory]
     [InlineData("KeyNotFound", typeof(EncapsulatedKeyNotFoundException))]
-    [InlineData("AliasNotFound", typeof(EncapsulatedAliasNotFoundException))]
     [InlineData("AliasInUse", typeof(EncapsulatedAliasInUseException))]
     public void ErrorCompleted_fails_the_expectation_with_the_matching_exception_type(
         string errorType,
