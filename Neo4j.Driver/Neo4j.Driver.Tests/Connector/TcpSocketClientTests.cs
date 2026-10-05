@@ -210,6 +210,28 @@ public class TcpSocketClientTests
             }
         }
 
+        [Fact]
+        public async Task ShouldReportDeadWhenThePeerSendsUnsolicitedBytes()
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            try
+            {
+                var client = await ConnectedClientAsync(listener);
+                using var accepted = await listener.AcceptSocketAsync();
+
+                await accepted.SendAsync(new byte[] { 0x17, 0x03, 0x03 }, SocketFlags.None);
+
+                var reportedDead = WaitForReportedDead(client);
+
+                reportedDead.Should().BeTrue();
+            }
+            finally
+            {
+                listener.Stop();
+            }
+        }
+
         private async Task<TcpSocketClient> ConnectedClientAsync(TcpListener listener)
         {
             var client = new TcpSocketClient(
