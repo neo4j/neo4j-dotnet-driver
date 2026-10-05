@@ -16,6 +16,7 @@
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.PropertyEncryption;
 using Neo4j.Driver.TestKitBackend.Serialization;
 
@@ -33,14 +34,17 @@ internal class DriverCloseHandler : MessageHandler<DriverCloseRequest>
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
     private readonly IDriverEncryptionObjectStore _driverEncryptionObjectStore;
+    private readonly IOutboundRoundTrip _roundTrip;
 
     public DriverCloseHandler(
         IResponseWriter responseWriter,
         IDriverEncryptionObjectStore driverEncryptionObjectStore,
+        IOutboundRoundTrip roundTrip,
         ILogger logger)
     {
         _responseWriter = responseWriter;
         _driverEncryptionObjectStore = driverEncryptionObjectStore;
+        _roundTrip = roundTrip;
         _logger = logger;
     }
 
@@ -48,7 +52,9 @@ internal class DriverCloseHandler : MessageHandler<DriverCloseRequest>
     {
         foreach (var repository in _driverEncryptionObjectStore.GetAllRepositories(message.Driver))
         {
-            await _responseWriter.WriteAsync(new EncapsulatedKeyRepositoryClosed(repository.RepositoryId));
+            await _roundTrip
+                .SendExpectingAsync<bool>(new EncapsulatedKeyRepositoryClosed(repository.RepositoryId))
+                .ConfigureAwait(false);
         }
 
         await message.Driver.DisposeAsync();

@@ -13,9 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Dispatch;
+using Neo4j.Driver.TestKitBackend.Expectations;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.PropertyEncryption;
 using Xunit;
@@ -31,6 +34,9 @@ public class DriverCloseHandlerTests
         _autoMocker.GetMock<IDriverEncryptionObjectStore>()
             .Setup(s => s.GetAllRepositories(It.IsAny<IDriver>()))
             .Returns([]);
+        _autoMocker.GetMock<IOutboundRoundTrip>()
+            .Setup(r => r.SendExpectingAsync<bool>(It.IsAny<IProtocolMessage>()))
+            .ReturnsAsync(true);
     }
 
     [Fact]
@@ -58,13 +64,19 @@ public class DriverCloseHandlerTests
             .Setup(s => s.GetAllRepositories(driverMock.Object))
             .Returns([repository1, repository2]);
 
+        var sentRequests = new List<IProtocolMessage>();
+        _autoMocker.GetMock<IOutboundRoundTrip>()
+            .Setup(r => r.SendExpectingAsync<bool>(It.IsAny<IProtocolMessage>()))
+            .Callback<IProtocolMessage>(sentRequests.Add)
+            .ReturnsAsync(true);
+
         var handler = _autoMocker.CreateInstance<DriverCloseHandler>();
         var request = new DriverCloseRequest { Driver = driverMock.Object, DriverId = "driver-1" };
 
         await handler.ProcessAsync(request);
 
-        var responseWriterMock = _autoMocker.GetMock<IResponseWriter>();
-        responseWriterMock.Verify(w => w.WriteAsync(new EncapsulatedKeyRepositoryClosed("repo-1")), Times.Once);
-        responseWriterMock.Verify(w => w.WriteAsync(new EncapsulatedKeyRepositoryClosed("repo-2")), Times.Once);
+        sentRequests.Should()
+            .ContainEquivalentOf(new EncapsulatedKeyRepositoryClosed("repo-1"))
+            .And.ContainEquivalentOf(new EncapsulatedKeyRepositoryClosed("repo-2"));
     }
 }
