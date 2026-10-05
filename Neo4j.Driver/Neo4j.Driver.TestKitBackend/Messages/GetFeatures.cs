@@ -87,6 +87,7 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
         "Feature:Bolt:6.1",
         "Feature:Bolt:HandshakeManifestV1",
         "Feature:Bolt:Patch:UTC",
+        "Feature:HTTP:QueryAPI:2.0",
         "Feature:IdempotentRetries",
         "Feature:Impersonation",
         "Feature:TLS:1.2",

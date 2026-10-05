@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver;
@@ -62,12 +61,21 @@ public abstract class Vector : IValue, IVector, IEquatable<IVector>
     /// <summary>
     /// Gets the elements of the vector as an array of objects, regardless of their underlying type.
     /// </summary>
-    public IEnumerable<object> UntypedValues { get; protected set; }
+    public IEnumerable<object> UntypedValues { get; }
 
     /// <summary>
     /// Gets the original byte stream from which the vector was deserialized, if applicable.
     /// </summary>
     public byte[] OriginalByteStream { get; protected set; }
+
+    /// <summary>
+    /// Constructor for derived classes.
+    /// </summary>
+    /// <param name="untypedValues"></param>
+    protected Vector(IEnumerable<object> untypedValues = null)
+    {
+        UntypedValues = untypedValues;
+    }
 
     /// <summary>
     /// Creates a new <see cref="Vector{T}"/> instance from the specified collection of values.
@@ -102,11 +110,6 @@ public abstract class Vector : IValue, IVector, IEquatable<IVector>
         return (Vector)genericMethod.Invoke(null, [values, originalByteStream]);
     }
 
-    internal static Vector CreateDynamic(IEnumerable<object> values, Type elementType, byte[] originalByteStream = null)
-    {
-        return CreateDynamic(values.Select(v => v.AsType(elementType)).ToArray(), originalByteStream);
-    }
-
     /// <summary>
     /// Gets the type of the elements contained in the vector.
     /// </summary>
@@ -124,6 +127,24 @@ public abstract class Vector : IValue, IVector, IEquatable<IVector>
     }
 
     /// <inheritdoc />
+    public override bool Equals(object obj)
+    {
+        return obj is IVector other && Equals(other);
+    }
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        foreach (var value in UntypedValues)
+        {
+            hash.Add(value);
+        }
+
+        return hash.ToHashCode();
+    }
+
+    /// <inheritdoc />
     public override string ToString()
     {
         var elementType = GetTypeString(ElementType);
@@ -133,8 +154,8 @@ public abstract class Vector : IValue, IVector, IEquatable<IVector>
 
     private static string GetTypeString(Type type)
     {
-        return IsSupported(type)
-            ? TypeNameMap[type]
+        return TypeNameMap.TryGetValue(type, out var typeName)
+            ? typeName
             : throw new NotSupportedException($"Type {type.Name} is not supported");
     }
 

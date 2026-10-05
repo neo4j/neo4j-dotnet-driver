@@ -24,7 +24,7 @@ using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal;
 
-internal sealed class DriverContext
+internal sealed class DriverContext : IDriverUri
 {
     internal DriverContext(
         Uri initialUri,
@@ -33,14 +33,23 @@ internal sealed class DriverContext
         IHostResolver customHostResolver = null)
     {
         InitialUri = initialUri;
-        RoutingContext = Neo4jUri.ParseRoutingContext(initialUri, Neo4jUri.DefaultBoltPort);
         AuthTokenManager = authTokenManager;
         Config = config;
-        EncryptionManager = EncryptionManager.Create(
-            initialUri,
-            config.NullableEncryptionLevel,
-            config.TrustManager,
-            config.Neo4JLogger);
+
+        if (initialUri.Scheme is "http" or "https")
+        {
+            RoutingContext = null;
+            EncryptionManager = null;
+        }
+        else
+        {
+            RoutingContext = Neo4jUri.ParseRoutingContext(initialUri, Neo4jUri.DefaultBoltPort);
+            EncryptionManager = EncryptionManager.Create(
+                initialUri,
+                config.NullableEncryptionLevel,
+                config.TrustManager,
+                config.Neo4JLogger);
+        }
 
         DriverBookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
 

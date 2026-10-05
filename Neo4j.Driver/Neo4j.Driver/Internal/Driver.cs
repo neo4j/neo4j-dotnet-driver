@@ -44,7 +44,7 @@ internal sealed class Driver : IInternalDriver
     internal DriverContext Context { get; }
 
     private bool IsClosed => _closedMarker > 0;
-    public bool Encrypted => Context.EncryptionManager.UseTls;
+    public bool Encrypted => Context.EncryptionManager?.UseTls ?? false;
     public Config Config => Context.Config;
 
     public IBookmarkManager GetExecutableQueryBookmarkManager()
@@ -128,7 +128,12 @@ internal sealed class Driver : IInternalDriver
 
     public Task<bool> SupportsSessionAuthAsync()
     {
-        return _server.SupportsReAuthAsync();
+        if (_server is IReauthSupported irs)
+        {
+            return irs.SupportsReAuthAsync();
+        }
+
+        return Task.FromResult(true);
     }
 
     public void Dispose()
@@ -183,16 +188,26 @@ internal sealed class Driver : IInternalDriver
         }
     }
 
-    //Non public facing api. Used for testing with testkit only
+    //Non-public facing api. Used for testing with testkit only
     public IRoutingTable GetRoutingTable(string database)
     {
-        return _server.GetRoutingTable(database);
+        if (_server is IRoutingSupported rs)
+        {
+            return rs.GetRoutingTable(database);
+        }
+
+        return new RoutingTable(database, []);
     }
 
     //Non public facing api. Used for testing with testkit only
     public Task<IRoutingTable> ForceRoutingTableUpdateAsync(string database, Bookmarks bookmarks)
     {
-        return _server.ForceRoutingTableUpdateAsync(database, bookmarks);
+        if (_server is IRoutingSupported rs)
+        {
+            return rs.ForceRoutingTableUpdateAsync(database, bookmarks);
+        }
+
+        return Task.FromResult<IRoutingTable>(new RoutingTable(database, []));
     }
 
     private void Close()

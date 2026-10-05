@@ -37,10 +37,7 @@ public class Vector<T> : Vector, IVector<T> where T : struct
     /// </exception>
     public Vector()
     {
-        if (!IsSupported(typeof(T)))
-        {
-            throw new NotSupportedException($"Type {typeof(T).Name} is not supported for Vector.");
-        }
+        EnsureSupported();
     }
 
     /// <summary>
@@ -50,11 +47,25 @@ public class Vector<T> : Vector, IVector<T> where T : struct
     /// <param name="originalByteStream">The original byte stream from which the vector was deserialized, if applicable.</param>
     /// <exception cref="ArgumentException">Thrown if <paramref name="values"/> is null or empty.</exception>
     /// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> is not a supported numeric type.</exception>
-    public Vector(T[] values, byte[] originalByteStream = null) : this()
+    public Vector(T[] values, byte[] originalByteStream = null) : base(ToUntypedValues(values))
     {
-        Values = values ?? throw new ArgumentException("Values cannot be null.", nameof(values));
+        EnsureSupported();
+        Values = values;
         OriginalByteStream = originalByteStream;
-        UntypedValues = Values.Select(x => (object)x);
+    }
+
+    private static void EnsureSupported()
+    {
+        if (!IsSupported(typeof(T)))
+        {
+            throw new NotSupportedException($"Type {typeof(T).Name} is not supported for Vector.");
+        }
+    }
+
+    private static object[] ToUntypedValues(T[] values)
+    {
+        values = values ?? throw new ArgumentException("Values cannot be null.", nameof(values));
+        return [..values.Select(x => (object)x)];
     }
 
     /// <summary>
@@ -68,7 +79,7 @@ public class Vector<T> : Vector, IVector<T> where T : struct
     /// <inheritdoc />
     public IEnumerator<T> GetEnumerator() => Values.GetEnumerator();
 
-    /// <inheritdoc />
+    /// <inheritdoc cref="Count"/>
     public override int Count => Values.Count;
 
     /// <inheritdoc />

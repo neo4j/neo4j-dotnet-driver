@@ -15,7 +15,6 @@
 
 using System;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Routing;
 
 namespace Neo4j.Driver.Internal;
 
@@ -32,8 +31,5 @@ internal interface IProtocolAdapter : IAsyncDisposable
         bool telemetryEnabled);
 
     Task<bool> SupportsMultiDbAsync();
-    Task<bool> SupportsReAuthAsync();
     Task<IServerInfo> VerifyConnectivityAndGetInfoAsync();
-    IRoutingTable GetRoutingTable(string database);
-    Task<IRoutingTable> ForceRoutingTableUpdateAsync(string database, Bookmarks bookmarks);
 }

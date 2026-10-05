@@ -1,0 +1,128 @@
+// Copyright (c) "Neo4j"
+// Neo4j Sweden AB [https://neo4j.com]
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#nullable enable
+
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using FluentAssertions;
+using Moq;
+using Moq.AutoMock;
+using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.QueryApi;
+using Neo4j.Driver.Tests.Internal.Core;
+using Xunit;
+
+namespace Neo4j.Driver.Tests.Internal.QueryApi;
+
+/// <summary>
+/// Committing a transaction finalises all statements run within it and returns updated bookmarks. Spec:
+/// https://neo4j.com/docs/query-api/current/#query-api-commit-transaction
+/// </summary>
+public class TransactionCommitterTests
+{
+    private const string TxId = "tx-1";
+
+    private readonly AutoMocker _autoMocker = AutoMockerExtensions.ForTesting<TransactionCommitter>();
+
+    public TransactionCommitterTests()
+    {
+        _autoMocker.GetMock<IQueryApiTransactionContextTracker>()
+            .SetupGet(x => x.Context)
+            .Returns(new QueryApiTransactionContext(TxId, null));
+    }
+
+    private void SetupChain(TransactionCommitter.ResponseBody? body = null)
+    {
+        body ??= new TransactionCommitter.ResponseBody();
+        var request = new HttpRequestMessage();
+
+        _autoMocker.GetMock<IQueryApiRequestBuilder>()
+            .Setup(x => x.PostAsync(
+                $"query/v2/tx/{TxId}/commit",
+                It.IsAny<IQueryApiRequestBody>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request);
+
+        _autoMocker.GetMock<IQueryApiClient>()
+            .Setup(x => x.ExecuteAsync<TransactionCommitter.ResponseBody>(
+                request,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new QueryApiResult<TransactionCommitter.ResponseBody>(body, new HttpResponseMessage().Headers));
+    }
+
+    private BookmarkTracker UseRealBookmarkTracker()
+    {
+        var tracker = new BookmarkTracker(SessionConfig.Builder.Build());
+        _autoMocker.Use<IBookmarkTracker>(tracker);
+        return tracker;
+    }
+
+    [Fact]
+    public async Task CommitAsync_UpdatesBookmarkTracker_WithServerBookmarks()
+    {
+        // Spec: commit response bookmarks must be applied to the session's tracker for causal chaining
+        SetupChain(new TransactionCommitter.ResponseBody
+        {
+            Bookmarks = ["neo4j:bookmark:v1:tx300", "neo4j:bookmark:v1:tx301"]
+        });
+
+        var tracker = UseRealBookmarkTracker();
+
+        var subject = _autoMocker.CreateInstance<TransactionCommitter>();
+        await subject.CommitAsync(TestContext.Current.CancellationToken);
+
+        tracker.CurrentBookmarks.Values.Should().Equal("neo4j:bookmark:v1:tx300", "neo4j:bookmark:v1:tx301");
+    }
+
+    [Fact]
+    public async Task CommitAsync_UpdatesBookmarkTracker_WithEmptyArray_WhenBodyHasNoBookmarks()
+    {
+        SetupChain();
+
+        var tracker = UseRealBookmarkTracker();
+        tracker.UpdateBookmarks(["pre-existing"]);
+
+        var subject = _autoMocker.CreateInstance<TransactionCommitter>();
+        await subject.CommitAsync(TestContext.Current.CancellationToken);
+
+        tracker.CurrentBookmarks.Values.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CommitAsync_Throws_WhenExecuteAsyncThrows()
+    {
+        var request = new HttpRequestMessage();
+
+        _autoMocker.GetMock<IQueryApiRequestBuilder>()
+            .Setup(x => x.PostAsync(
+                $"query/v2/tx/{TxId}/commit",
+                It.IsAny<IQueryApiRequestBody>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(request);
+
+        _autoMocker.GetMock<IQueryApiClient>()
+            .Setup(x => x.ExecuteAsync<TransactionCommitter.ResponseBody>(
+                request,
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ServiceUnavailableException("HTTP 503"));
+
+        var subject = _autoMocker.CreateInstance<TransactionCommitter>();
+        var act = () => subject.CommitAsync(TestContext.Current.CancellationToken);
+
+        await act.Should().ThrowAsync<ServiceUnavailableException>();
+    }
+}

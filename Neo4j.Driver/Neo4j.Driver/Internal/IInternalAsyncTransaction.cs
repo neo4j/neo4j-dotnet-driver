@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System;
+using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal;
 
@@ -21,4 +22,11 @@ internal interface IInternalAsyncTransaction : IAsyncTransaction
 {
     bool IsOpen { get; }
     bool IsErrored(out Exception ex);
+
+    Task RollbackIfOpenAsync()
+    {
+        return IsOpen
+            ? RollbackAsync()
+            : Task.CompletedTask;
+    }
 }

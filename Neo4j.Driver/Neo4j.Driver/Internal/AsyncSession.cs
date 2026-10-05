@@ -26,6 +26,9 @@ namespace Neo4j.Driver.Internal;
 
 internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
 {
+    // satisfies IInternalAsyncSession, not used here
+    public event AsyncEventHandler Disposed;
+
     private readonly IBookmarkManager _bookmarkManager;
 
     // If the connection is ever successfully created, 
@@ -68,7 +71,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         _neo4JLogger = neo4JLogger;
         _retryLogic = retryLogic;
         _reactive = reactive;
-        _driverContext = config.DriverContext;;
+        _driverContext = config.DriverContext;
 
         _database = config.Database;
         _defaultMode = config.DefaultAccessMode;
@@ -466,9 +469,6 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
 
         if (disposing)
         {
-            //Dispose managed resources
-
-            //call it synchronously
             CloseAsync().GetAwaiter().GetResult();
         }
 
@@ -480,6 +480,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     {
         await CloseAsync().ConfigureAwait(false);
         await base.DisposeAsyncCore().ConfigureAwait(false);
+        await Disposed.FireAsync().ConfigureAwait(false);
     }
 
     public async Task<bool> VerifyConnectivityAsync()

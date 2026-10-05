@@ -54,13 +54,24 @@ public static class DefaultInstallation
 
     public static string BoltUri => BoltHeader + BoltHost + ":" + BoltPort;
 
-    public static IDriver NewBoltDriver(Uri boltUri, IAuthToken authToken)
+    /// <summary>
+    /// Selects the protocol the integration suites run against. Defaults to Bolt; set
+    /// <c>TEST_NEO4J_PROTOCOL=queryapi</c> to run over the HTTP Query API instead. Both protocols
+    /// are covered by running the suite once per value, e.g. in a CI matrix.
+    /// </summary>
+    public static bool UseQueryApi =>
+        string.Equals(
+            Environment.GetEnvironmentVariable("TEST_NEO4J_PROTOCOL"),
+            "queryapi",
+            StringComparison.OrdinalIgnoreCase);
+
+    public static IDriver NewDriver(Uri uri, IAuthToken authToken)
     {
         var configuredLevelStr = Environment.GetEnvironmentVariable("NEOLOGLEVEL");
         var logger = Enum.TryParse<ExtendedLogLevel>(configuredLevelStr ?? "", true, out var configuredLevel)
             ? new TestNeo4JLogger(Console.WriteLine, configuredLevel)
             : new TestNeo4JLogger(s => Debug.WriteLine(s), ExtendedLogLevel.Debug);
 
-        return GraphDatabase.Driver(boltUri, authToken, o => { o.WithLogger(logger); });
+        return GraphDatabase.Driver(uri, authToken, o => { o.WithLogger(logger); });
     }
 }
