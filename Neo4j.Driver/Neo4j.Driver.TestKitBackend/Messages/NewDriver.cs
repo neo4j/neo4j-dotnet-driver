@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.TestKitBackend.Connection;
@@ -49,7 +50,11 @@ internal record NewDriverRequest : IProtocolMessage
     public IReadOnlyList<PropertyEncryptionProfileInput>? PropertyEncryptionProfiles { get; init; }
 }
 
-internal record DriverResponse(string Id) : IProtocolMessage;
+internal record DriverResponse(string Id) : IProtocolMessage
+{
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? KeyRepositories { get; init; }
+}
 
 internal class NewDriverHandler : MessageHandler<NewDriverRequest>
 {
@@ -106,7 +111,10 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
 
         var id = _objectStore.Store(driver);
         _logger.LogDebug("Created driver with id '{Id}'", id);
-        await _responseWriter.WriteAsync(new DriverResponse(id));
+        var keyRepositories = encryptionSetup?.RepositoriesByProfileName.Values
+            .Select(r => r.RepositoryId)
+            .ToList();
+        await _responseWriter.WriteAsync(new DriverResponse(id) { KeyRepositories = keyRepositories });
 
         return;
 

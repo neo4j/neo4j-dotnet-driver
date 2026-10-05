@@ -224,31 +224,3 @@ internal class EncapsulatedKeyRepositoryErrorCompletedHandler : MessageHandler<E
         };
     }
 }
-
-/// <summary>
-/// Tells the testkit frontend that a repository's owning driver has closed, so it can drop that
-/// repository's storage. Sent by <c>DriverCloseHandler</c>.
-/// </summary>
-internal record EncapsulatedKeyRepositoryClosed(string RepositoryId) : IProtocolMessage;
-
-internal record EncapsulatedKeyRepositoryClosedCompleted : IProtocolMessage
-{
-    public required string RequestId { get; init; }
-}
-
-internal class
-    EncapsulatedKeyRepositoryClosedCompletedHandler : MessageHandler<EncapsulatedKeyRepositoryClosedCompleted>
-{
-    private readonly IExpectationStore _expectationStore;
-
-    public EncapsulatedKeyRepositoryClosedCompletedHandler(IExpectationStore expectationStore)
-    {
-        _expectationStore = expectationStore;
-    }
-
-    public override Task ProcessAsync(EncapsulatedKeyRepositoryClosedCompleted message)
-    {
-        _expectationStore.Fulfil(message.RequestId, true);
-        return Task.CompletedTask;
-    }
-}

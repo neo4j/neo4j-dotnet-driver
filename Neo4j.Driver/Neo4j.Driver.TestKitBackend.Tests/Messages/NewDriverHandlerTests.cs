@@ -18,6 +18,7 @@ using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.TestKitBackend.Connection;
+using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Messages;
 using Neo4j.Driver.TestKitBackend.ObjectStorage;
 using Neo4j.Driver.TestKitBackend.PropertyEncryption;
@@ -136,8 +137,8 @@ public class NewDriverHandlerTests
             [Profile("profile-a"), Profile("profile-b")],
             new Dictionary<string, ITestkitEncapsulatedKeyRepository>
             {
-                ["profile-a"] = Mock.Of<ITestkitEncapsulatedKeyRepository>(),
-                ["profile-b"] = Mock.Of<ITestkitEncapsulatedKeyRepository>()
+                ["profile-a"] = Mock.Of<ITestkitEncapsulatedKeyRepository>(r => r.RepositoryId == "repo-aaa"),
+                ["profile-b"] = Mock.Of<ITestkitEncapsulatedKeyRepository>(r => r.RepositoryId == "repo-bbb")
             });
 
         _autoMocker.GetMock<IDriverEncryptionSetup>()
@@ -180,6 +181,22 @@ public class NewDriverHandlerTests
 
         _autoMocker.GetMock<IDriverEncryptionObjectStore>()
             .Verify(s => s.StoreObjects(created!, setup), Times.Once);
+    }
+
+    [Fact]
+    public async Task Tells_the_frontend_which_repositories_the_driver_owns()
+    {
+        PrepareReturnsSetupForTheRequestedProfiles();
+        StoreCreatedDriverAs("driver-1");
+        var handler = _autoMocker.CreateInstance<NewDriverHandler>();
+        DriverResponse? response = null;
+        _autoMocker.GetMock<IResponseWriter>()
+            .Setup(w => w.WriteAsync(It.IsAny<IProtocolMessage>()))
+            .Callback((IProtocolMessage m) => response = (DriverResponse)m);
+
+        await handler.ProcessAsync(RequestWithEncryptionProfiles());
+
+        response!.KeyRepositories.Should().Equal("repo-aaa", "repo-bbb");
     }
 
     [Fact]
