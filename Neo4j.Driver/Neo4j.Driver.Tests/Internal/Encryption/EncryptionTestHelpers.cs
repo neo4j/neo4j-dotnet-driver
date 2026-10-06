@@ -38,11 +38,13 @@ internal static class EncryptionTestHelpers
 
 internal class SequentialRandom : ICryptoRandomProvider
 {
+    private byte _next;
+
     public void Fill(Span<byte> buffer)
     {
         for (var i = 0; i < buffer.Length; i++)
         {
-            buffer[i] = (byte)i;
+            buffer[i] = _next++;
         }
     }
 }

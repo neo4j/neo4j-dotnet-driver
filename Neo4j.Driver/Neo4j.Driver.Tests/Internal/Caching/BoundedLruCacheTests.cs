@@ -105,13 +105,13 @@ public class BoundedLruCacheTests
 
         subject.Set("a", "1");
         _now += TimeSpan.FromSeconds(16);
+        var foundWhenExpired = subject.TryGet("a", out _);
 
-        subject.TryGet("a", out _).Should().BeFalse();
+        _now -= TimeSpan.FromSeconds(16);
+        var foundAfterRewinding = subject.TryGet("a", out _);
 
-        _now = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        subject.Set("a", "2");
-        subject.TryGet("a", out var value).Should().BeTrue();
-        value.Should().Be("2");
+        foundWhenExpired.Should().BeFalse();
+        foundAfterRewinding.Should().BeFalse();
     }
 
     [Fact]

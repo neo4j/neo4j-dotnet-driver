@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Preview.Encryption;
@@ -77,7 +78,7 @@ public class KeyEncapsulationServicesTests
             encapsulated.Metadata,
             TestContext.Current.CancellationToken);
 
-        await act.Should().ThrowAsync<Exception>();
+        await act.Should().ThrowAsync<AuthenticationTagMismatchException>();
     }
 
     [Fact]

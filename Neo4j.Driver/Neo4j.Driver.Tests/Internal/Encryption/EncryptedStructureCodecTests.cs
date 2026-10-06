@@ -99,7 +99,7 @@ public class EncryptedStructureCodecTests
     {
         var structure = Sample() with
         {
-            Metadata = new Dictionary<string, object> { ["zulu"] = 1L, ["alpha"] = 2L }
+            Metadata = new Dictionary<string, object> { ["a"] = 1L, ["B"] = 2L }
         };
         var writer = new Mock<IPackStreamWriter>();
 
@@ -115,7 +115,7 @@ public class EncryptedStructureCodecTests
 
         writer.Verify(
             w => w.Write(
-                It.Is<IDictionary<string, object>>(d => d.Keys.SequenceEqual(new[] { "alpha", "zulu" }))),
+                It.Is<IDictionary<string, object>>(d => d.Keys.SequenceEqual(new[] { "B", "a" }))),
             Times.Once);
     }
 

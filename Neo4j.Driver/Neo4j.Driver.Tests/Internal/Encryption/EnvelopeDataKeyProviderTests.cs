@@ -275,24 +275,20 @@ public class EnvelopeDataKeyProviderTests
     }
 
     [Fact]
-    public async Task GetDataKey_ByAliasWhoseIndexedKeyIsNotCached_DropsTheStaleMapping()
+    public async Task GetDataKey_ByAnIndexedAliasThatNoLongerExists_DropsTheStaleMapping()
     {
         var aliasIndex = StubAliasIndexHit("main", "key-1");
 
-        _repository.Setup(r => r.FindByIdAsync("key-1", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Key());
-
         _repository.Setup(r => r.FindByAliasAsync("main", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Key());
-
-        StubDecapsulate();
+            .ReturnsAsync((EncapsulatedKeyRecord?)null);
 
         var subject = _autoMocker.CreateInstance<EnvelopeDataKeyProvider>();
-        await subject.GetDataKeyAsync(
+        var act = async () => await subject.GetDataKeyAsync(
             Profile(),
             new KeyReference("main", KeyReferenceType.Alias),
             TestContext.Current.CancellationToken);
 
+        await act.Should().ThrowAsync<EncapsulatedAliasNotFoundException>();
         aliasIndex.Verify(c => c.Remove(It.IsAny<IEnvelopeEncryptionProfile>(), "main"));
     }
 

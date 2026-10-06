@@ -38,7 +38,7 @@ public class LocalKeyEncapsulationServiceTests
     private static readonly byte[] Kek = Sequence(32, seed: 0x50);
 
     private static readonly byte[] Dek = Sequence(DekLength);
-    private static readonly byte[] Iv = Sequence(IvLength);
+    private static readonly byte[] Iv = Sequence(IvLength, seed: DekLength);
 
     private readonly AutoMocker _autoMock = new(MockBehavior.Loose);
 

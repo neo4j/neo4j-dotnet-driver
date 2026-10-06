@@ -97,7 +97,6 @@ public class EncryptionKeyCacheTests
     [Fact]
     public void Set_WhenTheKeyCacheIsDisabled_StoresNothing()
     {
-        var profile = Profile(keyCache: null, aliasIndex: null);
         var disabled = new Mock<IEnvelopeEncryptionProfile>();
         disabled.SetupGet(p => p.Name).Returns("profile");
         disabled.SetupGet(p => p.KeyCacheConfig).Returns((CacheConfig?)null);
@@ -108,7 +107,6 @@ public class EncryptionKeyCacheTests
 
         found.Should().BeFalse();
         key.Should().BeNull();
-        profile.Name.Should().Be("profile");
     }
 
     [Fact]
