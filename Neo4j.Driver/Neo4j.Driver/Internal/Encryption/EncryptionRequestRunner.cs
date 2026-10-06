@@ -28,19 +28,22 @@ internal class EncryptionRequestRunner : IEncryptionRequestRunner
     private readonly IPlaintextCodec _plaintextCodec;
     private readonly IEncryptedValueBytesCodec _encryptedValueBytesCodec;
     private readonly IEncryptionErrorPolicy _errorPolicy;
+    private readonly IPropertyTypeInspector _propertyTypeInspector;
 
     public EncryptionRequestRunner(
         IEncryptionProfileRegistry registry,
         IEncryptionEngineDispatcher dispatcher,
         IPlaintextCodec plaintextCodec,
         IEncryptedValueBytesCodec encryptedValueBytesCodec,
-        IEncryptionErrorPolicy errorPolicy)
+        IEncryptionErrorPolicy errorPolicy,
+        IPropertyTypeInspector propertyTypeInspector)
     {
         _registry = registry;
         _dispatcher = dispatcher;
         _plaintextCodec = plaintextCodec;
         _encryptedValueBytesCodec = encryptedValueBytesCodec;
         _errorPolicy = errorPolicy;
+        _propertyTypeInspector = propertyTypeInspector;
     }
 
     public async Task<byte[]> EncryptToBytesAsync(EncryptRequest request, CancellationToken cancellationToken)
@@ -48,7 +51,7 @@ internal class EncryptionRequestRunner : IEncryptionRequestRunner
         try
         {
             var profile = _registry.Get(request.ProfileName);
-            var aad = request.Aad is null ? null : _plaintextCodec.Serialize(request.Aad);
+            var aad = request.Aad is null ? null : SerializeAad(request.Aad);
             return await _dispatcher
                 .DispatchEncryptAsync(profile, request.Value, request.KeyReference, aad, request.Iv, cancellationToken)
                 .ConfigureAwait(false);
@@ -66,7 +69,7 @@ internal class EncryptionRequestRunner : IEncryptionRequestRunner
         {
             var profileName = _encryptedValueBytesCodec.PeekProfileName(request.Value);
             var profile = _registry.Get(profileName);
-            var aad = request.Aad is null ? null : _plaintextCodec.Serialize(request.Aad);
+            var aad = request.Aad is null ? null : SerializeAad(request.Aad);
 
             return await _dispatcher
                 .DispatchDecryptAsync(profile, request.Value, aad, cancellationToken)
@@ -77,5 +80,11 @@ internal class EncryptionRequestRunner : IEncryptionRequestRunner
             _errorPolicy.Throw("decryption", e, cancellationToken);
             throw;
         }
+    }
+
+    private byte[] SerializeAad(object aad)
+    {
+        _propertyTypeInspector.ValidateAad(aad);
+        return _plaintextCodec.Serialize(aad);
     }
 }

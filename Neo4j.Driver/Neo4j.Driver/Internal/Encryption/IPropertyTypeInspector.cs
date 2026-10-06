@@ -20,4 +20,5 @@ namespace Neo4j.Driver.Internal.Encryption;
 internal interface IPropertyTypeInspector
 {
     PropertyTypeInfo GetPropertyTypeInfo(object? value);
+    void ValidateAad(object aad);
 }

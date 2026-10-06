@@ -194,6 +194,60 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task EncryptThenDecrypt_WithANonStringAad_RoundTripsWhenTheSameAadIsSupplied()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var aad = new LocalDate(2026, 10, 6);
+
+        var encrypted = await _propertyEncryption.EncryptRequest()
+            .FromValue("date-bound")
+            .WithAad(aad)
+            .UsingKeyAlias("main")
+            .EncryptToBytesAsync(token);
+
+        var decrypted = await _propertyEncryption.DecryptRequest()
+            .FromValue(encrypted)
+            .WithAad(aad)
+            .DecryptAsync(token);
+
+        decrypted.Should().Be("date-bound");
+    }
+
+    [Fact]
+    public async Task Encrypt_WithAnAadTypeTheAdrDoesNotAllow_RejectsTheAad()
+    {
+        var token = TestContext.Current.CancellationToken;
+
+        var act = () => _propertyEncryption.EncryptRequest()
+            .FromValue("hello")
+            .WithAad(1.5)
+            .UsingKeyAlias("main")
+            .EncryptToBytesAsync(token);
+
+        var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
+        thrown.Which.InnerException.Should().BeOfType<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task Decrypt_WithAnAadTypeTheAdrDoesNotAllow_RejectsTheAad()
+    {
+        var token = TestContext.Current.CancellationToken;
+
+        var encrypted = await _propertyEncryption.EncryptRequest()
+            .FromValue("hello")
+            .UsingKeyAlias("main")
+            .EncryptToBytesAsync(token);
+
+        var act = () => _propertyEncryption.DecryptRequest()
+            .FromValue(encrypted)
+            .WithAad(new List<object> { "row-42" })
+            .DecryptAsync(token);
+
+        var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
+        thrown.Which.InnerException.Should().BeOfType<ArgumentException>();
+    }
+
+    [Fact]
     public async Task Decrypt_WithTheWrongAad_Throws()
     {
         var token = TestContext.Current.CancellationToken;

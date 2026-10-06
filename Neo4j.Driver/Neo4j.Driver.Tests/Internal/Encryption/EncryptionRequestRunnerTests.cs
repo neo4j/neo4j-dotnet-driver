@@ -262,4 +262,34 @@ public class EncryptionRequestRunnerTests
         var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
         thrown.Which.Should().BeSameAs(wrapped);
     }
+
+    [Fact]
+    public async Task EncryptToBytesAsync_RejectsAnAadTypeTheInspectorRejects()
+    {
+        var aad = 1.5;
+        var rejection = new ArgumentException("unsupported aad");
+        _autoMocker.GetMock<IPropertyTypeInspector>().Setup(i => i.ValidateAad(aad)).Throws(rejection);
+
+        var request = new EncryptRequest("hello", aad, null, new KeyReference("id-1", KeyReferenceType.Id));
+        var act = () => CreateSubject().EncryptToBytesAsync(request, TestContext.Current.CancellationToken);
+
+        var thrown = await act.Should().ThrowAsync<ArgumentException>();
+        thrown.Which.Should().BeSameAs(rejection);
+    }
+
+    [Fact]
+    public async Task DecryptAsync_RejectsAnAadTypeTheInspectorRejects()
+    {
+        var encrypted = new byte[] { 0xEE };
+        var aad = 1.5;
+        var rejection = new ArgumentException("unsupported aad");
+        _encryptedValueBytesCodec.Setup(c => c.PeekProfileName(encrypted)).Returns("profile-a");
+        _autoMocker.GetMock<IPropertyTypeInspector>().Setup(i => i.ValidateAad(aad)).Throws(rejection);
+
+        var request = new DecryptRequest(encrypted, aad);
+        var act = () => CreateSubject().DecryptAsync(request, TestContext.Current.CancellationToken);
+
+        var thrown = await act.Should().ThrowAsync<ArgumentException>();
+        thrown.Which.Should().BeSameAs(rejection);
+    }
 }

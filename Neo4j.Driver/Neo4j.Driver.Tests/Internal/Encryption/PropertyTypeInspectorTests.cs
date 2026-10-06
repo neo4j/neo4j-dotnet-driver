@@ -39,6 +39,50 @@ public class PropertyTypeInspectorTests
         };
     }
 
+    public static TheoryData<object> SupportedAadValues()
+    {
+        return new()
+        {
+            true,
+            5L,
+            5,
+            (short)5,
+            (sbyte)5,
+            (byte)5,
+            "row-42",
+            new byte[] { 1, 2, 3 },
+            new LocalDate(2026, 10, 6),
+            new DateOnly(2026, 10, 6),
+            new LocalTime(12, 30, 0),
+            new TimeOnly(12, 30, 0),
+            new OffsetTime(12, 30, 0, 3600),
+            new Point(7203, 1.0, 2.0),
+            new Point(9157, 1.0, 2.0, 3.0),
+            Guid.Parse("6f1c4e0a-3b8d-4c2e-9a5f-1d2e3f4a5b6c")
+        };
+    }
+
+    public static TheoryData<object> UnsupportedAadValues()
+    {
+        return new()
+        {
+            1.5,
+            1.5f,
+            1.5m,
+            'c',
+            new List<object> { "a" },
+            new[] { "a" },
+            new Dictionary<string, object> { ["k"] = 1L },
+            new DateTime(2026, 10, 6, 12, 30, 0, DateTimeKind.Utc),
+            new DateTimeOffset(2026, 10, 6, 12, 30, 0, TimeSpan.Zero),
+            new LocalDateTime(2026, 10, 6, 12, 30, 0),
+            new ZonedDateTime(new DateTimeOffset(2026, 10, 6, 12, 30, 0, TimeSpan.Zero)),
+            new Duration(60),
+            TimeSpan.FromSeconds(60),
+            new object()
+        };
+    }
+
     public static TheoryData<object> HeterogeneousLists()
     {
         return new()
@@ -141,6 +185,24 @@ public class PropertyTypeInspectorTests
     public void GetPropertyTypeInfo_Throws_ForANullInsideAList()
     {
         var act = () => _subject.GetPropertyTypeInfo(new List<object?> { 1L, null });
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Theory]
+    [MemberData(nameof(SupportedAadValues))]
+    public void ValidateAad_Accepts_TheAadTypesTheAdrAllows(object aad)
+    {
+        var act = () => _subject.ValidateAad(aad);
+
+        act.Should().NotThrow();
+    }
+
+    [Theory]
+    [MemberData(nameof(UnsupportedAadValues))]
+    public void ValidateAad_Throws_ForTypesTheAdrDoesNotAllowAsAad(object aad)
+    {
+        var act = () => _subject.ValidateAad(aad);
 
         act.Should().Throw<ArgumentException>();
     }

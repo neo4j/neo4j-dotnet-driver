@@ -51,6 +51,19 @@ internal class PropertyTypeInspector : IPropertyTypeInspector
         };
     }
 
+    public void ValidateAad(object aad)
+    {
+        var isSupported = aad is bool or long or int or short or sbyte or byte or string or byte[]
+            or LocalDate or DateOnly or LocalTime or TimeOnly or OffsetTime or Point or Guid;
+
+        if (!isSupported)
+        {
+            throw new ArgumentException(
+                $"Value of type '{aad.GetType().FullName}' is not a supported AAD type.",
+                nameof(aad));
+        }
+    }
+
     private static PropertyTypeInfo GetListTypeInfo(IEnumerable list)
     {
         PropertyTypeInfo? elementInfo = null;
