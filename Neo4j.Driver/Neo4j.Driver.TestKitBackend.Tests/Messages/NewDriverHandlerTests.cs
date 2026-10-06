@@ -137,8 +137,8 @@ public class NewDriverHandlerTests
             [Profile("profile-a"), Profile("profile-b")],
             new Dictionary<string, ITestKitEncapsulatedKeyRepository>
             {
-                ["profile-a"] = Mock.Of<ITestKitEncapsulatedKeyRepository>(r => r.RepositoryId() == "repo-aaa"),
-                ["profile-b"] = Mock.Of<ITestKitEncapsulatedKeyRepository>(r => r.RepositoryId() == "repo-bbb")
+                ["profile-b"] = Mock.Of<ITestKitEncapsulatedKeyRepository>(r => r.RepositoryId() == "repo-bbb"),
+                ["profile-a"] = Mock.Of<ITestKitEncapsulatedKeyRepository>(r => r.RepositoryId() == "repo-aaa")
             });
 
         _autoMocker.GetMock<IDriverEncryptionSetup>()
@@ -186,7 +186,7 @@ public class NewDriverHandlerTests
     }
 
     [Fact]
-    public async Task Tells_the_frontend_which_repositories_the_driver_owns()
+    public async Task Tells_the_frontend_which_repositories_the_driver_owns_in_profile_order()
     {
         PrepareReturnsSetupForTheRequestedProfiles();
         StoreCreatedDriverAs("driver-1");

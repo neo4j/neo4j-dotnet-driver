@@ -111,8 +111,8 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
 
         var id = _objectStore.Store(driver);
         _logger.LogDebug("Created driver with id '{Id}'", id);
-        var keyRepositories = encryptionSetup?.RepositoriesByProfileName.Values
-            .Select(r => r.RepositoryId())
+        var keyRepositories = encryptionSetup?.Profiles
+            .Select(profile => encryptionSetup.RepositoriesByProfileName[profile.Name].RepositoryId())
             .ToList();
         await _responseWriter.WriteAsync(new DriverResponse(id) { KeyRepositories = keyRepositories });
 
