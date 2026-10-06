@@ -28,12 +28,14 @@ internal class DecryptRequestBuilder :
     IDecryptRequestExecuteStep
 {
     private readonly IEncryptionRequestRunner _runner;
+    private readonly IPropertyTypeInspector _propertyTypeInspector;
     private byte[]? _value;
     private object? _aad;
 
-    public DecryptRequestBuilder(IEncryptionRequestRunner runner)
+    public DecryptRequestBuilder(IEncryptionRequestRunner runner, IPropertyTypeInspector propertyTypeInspector)
     {
         _runner = runner;
+        _propertyTypeInspector = propertyTypeInspector;
     }
 
     public IDecryptRequestAadStep FromValue(byte[] value)
@@ -46,6 +48,7 @@ internal class DecryptRequestBuilder :
     public IDecryptRequestExecuteStep WithAad(object aad)
     {
         ArgumentNullException.ThrowIfNull(aad);
+        _propertyTypeInspector.ValidateAad(aad);
         _aad = aad;
         return this;
     }

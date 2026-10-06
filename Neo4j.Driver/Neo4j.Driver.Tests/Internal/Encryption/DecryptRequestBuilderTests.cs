@@ -19,14 +19,31 @@ using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Preview.Encryption;
+using Neo4j.Driver.Tests.Internal.Core;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.Encryption;
 
 public class DecryptRequestBuilderTests
 {
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<DecryptRequestBuilder>();
+    private readonly Mock<IEncryptionRequestRunner> _runner;
+    private readonly Mock<IPropertyTypeInspector> _propertyTypeInspector;
+
+    public DecryptRequestBuilderTests()
+    {
+        _runner = _autoMocker.GetMock<IEncryptionRequestRunner>();
+        _propertyTypeInspector = _autoMocker.GetMock<IPropertyTypeInspector>();
+    }
+
+    private DecryptRequestBuilder CreateSubject()
+    {
+        return _autoMocker.CreateInstance<DecryptRequestBuilder>();
+    }
+
     [Fact]
     public async Task DecryptAsync_WithAad_AssemblesRequestAndReturnsRunnerResult()
     {
@@ -34,10 +51,9 @@ public class DecryptRequestBuilderTests
         var encrypted = new byte[] { 0xEE };
         var aad = new { context = "row-42" };
         object expected = 5L;
-        var runner = new Mock<IEncryptionRequestRunner>();
-        runner.Setup(r => r.DecryptAsync(new DecryptRequest(encrypted, aad), token)).ReturnsAsync(expected);
+        _runner.Setup(r => r.DecryptAsync(new DecryptRequest(encrypted, aad), token)).ReturnsAsync(expected);
 
-        var builder = new DecryptRequestBuilder(runner.Object);
+        var builder = CreateSubject();
 
         var result = await builder.FromValue(encrypted).WithAad(aad).DecryptAsync(token);
 
@@ -50,10 +66,9 @@ public class DecryptRequestBuilderTests
         var token = TestContext.Current.CancellationToken;
         var encrypted = new byte[] { 0xEE };
         object expected = "decrypted-value";
-        var runner = new Mock<IEncryptionRequestRunner>();
-        runner.Setup(r => r.DecryptAsync(new DecryptRequest(encrypted, null), token)).ReturnsAsync(expected);
+        _runner.Setup(r => r.DecryptAsync(new DecryptRequest(encrypted, null), token)).ReturnsAsync(expected);
 
-        var builder = new DecryptRequestBuilder(runner.Object);
+        var builder = CreateSubject();
 
         var result = await builder.FromValue(encrypted).WithPersistedAad().DecryptAsync(token);
 
@@ -63,7 +78,7 @@ public class DecryptRequestBuilderTests
     [Fact]
     public void WithAad_WithANullAad_Throws()
     {
-        var builder = new DecryptRequestBuilder(Mock.Of<IEncryptionRequestRunner>());
+        var builder = CreateSubject();
 
         var act = () => builder.FromValue([0xEE]).WithAad(null!);
 
@@ -71,9 +86,22 @@ public class DecryptRequestBuilderTests
     }
 
     [Fact]
+    public void WithAad_WithAnAadTypeTheInspectorRejects_ThrowsImmediately()
+    {
+        var aad = 1.5;
+        var rejection = new ArgumentException("unsupported aad");
+        _propertyTypeInspector.Setup(i => i.ValidateAad(aad)).Throws(rejection);
+        var builder = CreateSubject();
+
+        var act = () => builder.FromValue([0xEE]).WithAad(aad);
+
+        act.Should().Throw<ArgumentException>().Which.Should().BeSameAs(rejection);
+    }
+
+    [Fact]
     public void FromValue_WithANullValue_Throws()
     {
-        var builder = new DecryptRequestBuilder(Mock.Of<IEncryptionRequestRunner>());
+        var builder = CreateSubject();
 
         var act = () => builder.FromValue(null!);
 

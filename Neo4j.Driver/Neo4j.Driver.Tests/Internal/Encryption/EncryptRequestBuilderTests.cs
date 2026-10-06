@@ -19,26 +19,42 @@ using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Preview.Encryption;
+using Neo4j.Driver.Tests.Internal.Core;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.Encryption;
 
 public class EncryptRequestBuilderTests
 {
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<EncryptRequestBuilder>();
+    private readonly Mock<IEncryptionRequestRunner> _runner;
+    private readonly Mock<IPropertyTypeInspector> _propertyTypeInspector;
+
+    public EncryptRequestBuilderTests()
+    {
+        _runner = _autoMocker.GetMock<IEncryptionRequestRunner>();
+        _propertyTypeInspector = _autoMocker.GetMock<IPropertyTypeInspector>();
+    }
+
+    private EncryptRequestBuilder CreateSubject()
+    {
+        return _autoMocker.CreateInstance<EncryptRequestBuilder>();
+    }
+
     [Fact]
     public async Task EncryptToBytesAsync_UsingKeyId_AssemblesRequestFromMandatoryStagesOnly()
     {
         var token = TestContext.Current.CancellationToken;
         var expected = new byte[] { 1, 2, 3 };
-        var runner = new Mock<IEncryptionRequestRunner>();
-        runner.Setup(r => r.EncryptToBytesAsync(
+        _runner.Setup(r => r.EncryptToBytesAsync(
                 new EncryptRequest("hello", null, null, new KeyReference("id-1", KeyReferenceType.Id)),
                 token))
             .ReturnsAsync(expected);
 
-        var builder = new EncryptRequestBuilder(runner.Object);
+        var builder = CreateSubject();
 
         var result = await builder.FromValue("hello").UsingKeyId("id-1").EncryptToBytesAsync(token);
 
@@ -50,13 +66,12 @@ public class EncryptRequestBuilderTests
     {
         var token = TestContext.Current.CancellationToken;
         var expected = new byte[] { 4, 5 };
-        var runner = new Mock<IEncryptionRequestRunner>();
-        runner.Setup(r => r.EncryptToBytesAsync(
+        _runner.Setup(r => r.EncryptToBytesAsync(
                 new EncryptRequest(5L, null, null, new KeyReference("alias-1", KeyReferenceType.Alias)),
                 token))
             .ReturnsAsync(expected);
 
-        var builder = new EncryptRequestBuilder(runner.Object);
+        var builder = CreateSubject();
 
         var result = await builder.FromValue(5L).UsingKeyAlias("alias-1").EncryptToBytesAsync(token);
 
@@ -69,13 +84,12 @@ public class EncryptRequestBuilderTests
         var token = TestContext.Current.CancellationToken;
         var expected = new byte[] { 6 };
         var aad = new { context = "row-42" };
-        var runner = new Mock<IEncryptionRequestRunner>();
-        runner.Setup(r => r.EncryptToBytesAsync(
+        _runner.Setup(r => r.EncryptToBytesAsync(
                 new EncryptRequest("hello", aad, "profile-b", new KeyReference("id-1", KeyReferenceType.Id)),
                 token))
             .ReturnsAsync(expected);
 
-        var builder = new EncryptRequestBuilder(runner.Object);
+        var builder = CreateSubject();
 
         var result = await builder.FromValue("hello")
             .WithAad(aad)
@@ -91,13 +105,12 @@ public class EncryptRequestBuilderTests
         var token = TestContext.Current.CancellationToken;
         var iv = new byte[] { 0x70, 0x71 };
         var expected = new byte[] { 7 };
-        var runner = new Mock<IEncryptionRequestRunner>();
-        runner.Setup(r => r.EncryptToBytesAsync(
+        _runner.Setup(r => r.EncryptToBytesAsync(
                 new EncryptRequest("hello", null, null, new KeyReference("id-1", KeyReferenceType.Id), iv),
                 token))
             .ReturnsAsync(expected);
 
-        var step = new EncryptRequestBuilder(runner.Object).FromValue("hello");
+        var step = CreateSubject().FromValue("hello");
         ((IInternalEncryptRequest)step).UseFixedIv(iv);
 
         var result = await step.UsingKeyId("id-1").EncryptToBytesAsync(token);
@@ -108,7 +121,7 @@ public class EncryptRequestBuilderTests
     [Fact]
     public void WithAad_WithANullAad_Throws()
     {
-        var builder = new EncryptRequestBuilder(Mock.Of<IEncryptionRequestRunner>());
+        var builder = CreateSubject();
 
         var act = () => builder.FromValue("hello").WithAad(null!);
 
@@ -116,9 +129,22 @@ public class EncryptRequestBuilderTests
     }
 
     [Fact]
+    public void WithAad_WithAnAadTypeTheInspectorRejects_ThrowsImmediately()
+    {
+        var aad = 1.5;
+        var rejection = new ArgumentException("unsupported aad");
+        _propertyTypeInspector.Setup(i => i.ValidateAad(aad)).Throws(rejection);
+        var builder = CreateSubject();
+
+        var act = () => builder.FromValue("hello").WithAad(aad);
+
+        act.Should().Throw<ArgumentException>().Which.Should().BeSameAs(rejection);
+    }
+
+    [Fact]
     public void UsingKeyAlias_WithANullAlias_Throws()
     {
-        var builder = new EncryptRequestBuilder(Mock.Of<IEncryptionRequestRunner>());
+        var builder = CreateSubject();
 
         var act = () => builder.FromValue("hello").UsingKeyAlias(null!);
 
@@ -128,7 +154,7 @@ public class EncryptRequestBuilderTests
     [Fact]
     public void UsingKeyId_WithANullId_Throws()
     {
-        var builder = new EncryptRequestBuilder(Mock.Of<IEncryptionRequestRunner>());
+        var builder = CreateSubject();
 
         var act = () => builder.FromValue("hello").UsingKeyId(null!);
 
@@ -138,7 +164,7 @@ public class EncryptRequestBuilderTests
     [Fact]
     public void UsingProfile_WithANullProfileName_Throws()
     {
-        var builder = new EncryptRequestBuilder(Mock.Of<IEncryptionRequestRunner>());
+        var builder = CreateSubject();
 
         var act = () => builder.FromValue("hello").UsingProfile(null!);
 

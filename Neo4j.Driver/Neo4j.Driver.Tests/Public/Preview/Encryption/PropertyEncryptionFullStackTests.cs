@@ -214,37 +214,23 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Encrypt_WithAnAadTypeTheAdrDoesNotAllow_RejectsTheAad()
+    public void Encrypt_WithAnAadTypeTheAdrDoesNotAllow_ThrowsImmediately()
     {
-        var token = TestContext.Current.CancellationToken;
+        var keyStep = _propertyEncryption.EncryptRequest().FromValue("hello");
 
-        var act = () => _propertyEncryption.EncryptRequest()
-            .FromValue("hello")
-            .WithAad(1.5)
-            .UsingKeyAlias("main")
-            .EncryptToBytesAsync(token);
+        var act = () => keyStep.WithAad(1.5);
 
-        var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
-        thrown.Which.InnerException.Should().BeOfType<ArgumentException>();
+        act.Should().Throw<ArgumentException>();
     }
 
     [Fact]
-    public async Task Decrypt_WithAnAadTypeTheAdrDoesNotAllow_RejectsTheAad()
+    public void Decrypt_WithAnAadTypeTheAdrDoesNotAllow_ThrowsImmediately()
     {
-        var token = TestContext.Current.CancellationToken;
+        var aadStep = _propertyEncryption.DecryptRequest().FromValue([0x01]);
 
-        var encrypted = await _propertyEncryption.EncryptRequest()
-            .FromValue("hello")
-            .UsingKeyAlias("main")
-            .EncryptToBytesAsync(token);
+        var act = () => aadStep.WithAad(new List<object> { "row-42" });
 
-        var act = () => _propertyEncryption.DecryptRequest()
-            .FromValue(encrypted)
-            .WithAad(new List<object> { "row-42" })
-            .DecryptAsync(token);
-
-        var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
-        thrown.Which.InnerException.Should().BeOfType<ArgumentException>();
+        act.Should().Throw<ArgumentException>();
     }
 
     [Fact]

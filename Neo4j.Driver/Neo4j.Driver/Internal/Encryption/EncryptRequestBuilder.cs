@@ -29,15 +29,17 @@ internal class EncryptRequestBuilder :
     IInternalEncryptRequest
 {
     private readonly IEncryptionRequestRunner _runner;
+    private readonly IPropertyTypeInspector _propertyTypeInspector;
     private object? _value;
     private object? _aad;
     private string? _profileName;
     private KeyReference? _keyReference;
     private byte[]? _iv;
 
-    public EncryptRequestBuilder(IEncryptionRequestRunner runner)
+    public EncryptRequestBuilder(IEncryptionRequestRunner runner, IPropertyTypeInspector propertyTypeInspector)
     {
         _runner = runner;
+        _propertyTypeInspector = propertyTypeInspector;
     }
 
     public IEncryptRequestKeyStep FromValue(object? value)
@@ -49,6 +51,7 @@ internal class EncryptRequestBuilder :
     public IEncryptRequestKeyStep WithAad(object aad)
     {
         ArgumentNullException.ThrowIfNull(aad);
+        _propertyTypeInspector.ValidateAad(aad);
         _aad = aad;
         return this;
     }

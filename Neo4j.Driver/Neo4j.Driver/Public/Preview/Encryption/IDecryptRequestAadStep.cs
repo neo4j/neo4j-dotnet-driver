@@ -32,14 +32,15 @@ public interface IDecryptRequestAadStep
     /// The AAD value: a <see cref="bool"/>, an integer, a <see cref="string"/>, a <see cref="byte"/> array, a
     /// <see cref="LocalDate"/> or <see cref="System.DateOnly"/>, a <see cref="LocalTime"/> or
     /// <see cref="System.TimeOnly"/>, an <see cref="OffsetTime"/>, a <see cref="Point"/>, or a
-    /// <see cref="System.Guid"/>. A value of any other type makes the request fail with a
-    /// <see cref="PropertyEncryptionException"/>.
+    /// <see cref="System.Guid"/>.
     /// </param>
     /// <remarks>
     /// Decryption needs the same AAD bytes, and the driver does not normalise values to produce them. Consider
     /// normalising a <see cref="string"/> AAD, for example to Unicode Normalization Form C (NFC) with
     /// <see cref="System.Text.NormalizationForm.FormC"/>, both when encrypting and when decrypting.
     /// </remarks>
+    /// <exception cref="System.ArgumentNullException"><paramref name="aad"/> is <see langword="null"/>.</exception>
+    /// <exception cref="System.ArgumentException"><paramref name="aad"/> is of a type not listed above.</exception>
     /// <returns>The next stage of the request.</returns>
     IDecryptRequestExecuteStep WithAad(object aad);
 
