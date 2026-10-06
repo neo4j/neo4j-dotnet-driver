@@ -15,9 +15,9 @@
 
 #nullable enable
 
-namespace Neo4j.Driver.Internal.Encryption;
+namespace Neo4j.Driver.Tests.TestUtil;
 
-internal interface IKeyIdGenerator
+public interface IKeyIdGenerator
 {
     string Get();
 }

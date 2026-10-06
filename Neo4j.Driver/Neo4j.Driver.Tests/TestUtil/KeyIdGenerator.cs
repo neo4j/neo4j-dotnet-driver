@@ -17,9 +17,9 @@
 
 using System;
 
-namespace Neo4j.Driver.Internal.Encryption;
+namespace Neo4j.Driver.Tests.TestUtil;
 
-internal class KeyIdGenerator : IKeyIdGenerator
+public class KeyIdGenerator : IKeyIdGenerator
 {
     public string Get()
     {

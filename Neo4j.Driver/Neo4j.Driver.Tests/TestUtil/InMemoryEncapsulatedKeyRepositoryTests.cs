@@ -21,12 +21,10 @@ using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
 using Moq.Language;
-using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Preview.Encryption;
-using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.Internal.Encryption;
+namespace Neo4j.Driver.Tests.TestUtil;
 
 public class InMemoryEncapsulatedKeyRepositoryTests
 {

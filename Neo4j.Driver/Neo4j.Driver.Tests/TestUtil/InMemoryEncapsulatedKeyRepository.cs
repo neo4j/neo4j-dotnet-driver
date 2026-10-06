@@ -20,9 +20,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Preview.Encryption;
 
-namespace Neo4j.Driver.Internal.Encryption;
+namespace Neo4j.Driver.Tests.TestUtil;
 
-internal class InMemoryEncapsulatedKeyRepository : IEncapsulatedKeyRecordRepository
+public class InMemoryEncapsulatedKeyRepository : IEncapsulatedKeyRecordRepository
 {
     private readonly IKeyIdGenerator _keyIdGenerator;
     private readonly object _lock = new();

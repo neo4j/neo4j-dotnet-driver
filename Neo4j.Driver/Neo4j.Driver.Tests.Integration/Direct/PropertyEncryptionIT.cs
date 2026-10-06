@@ -17,9 +17,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Preview.Encryption;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
