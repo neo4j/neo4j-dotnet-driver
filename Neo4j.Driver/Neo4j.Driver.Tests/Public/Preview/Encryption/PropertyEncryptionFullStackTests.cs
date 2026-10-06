@@ -271,6 +271,45 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Decrypt_WithBytesTrailingTheStructure_Throws()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var encrypted = await EncryptByAliasAsync("value", token);
+        byte[] withTrailingByte = [..encrypted, 0x01];
+
+        var act = () => _propertyEncryption.DecryptRequest()
+            .FromValue(withTrailingByte)
+            .WithPersistedAad()
+            .DecryptAsync(token);
+
+        await act.Should().ThrowAsync<ProtocolException>();
+    }
+
+    [Fact]
+    public async Task Decrypt_WithAStructureOfNineFields_Throws()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var encrypted = await EncryptByAliasAsync("value", token);
+        byte[] withNinthField = [..encrypted, 0x01];
+        withNinthField[1] = 0xB9;
+
+        var act = () => _propertyEncryption.DecryptRequest()
+            .FromValue(withNinthField)
+            .WithPersistedAad()
+            .DecryptAsync(token);
+
+        await act.Should().ThrowAsync<ProtocolException>();
+    }
+
+    private Task<byte[]> EncryptByAliasAsync(object value, CancellationToken token)
+    {
+        return _propertyEncryption.EncryptRequest()
+            .FromValue(value)
+            .UsingKeyAlias("main")
+            .EncryptToBytesAsync(token);
+    }
+
+    [Fact]
     public async Task Decrypt_WithTamperedCiphertext_Throws()
     {
         var token = TestContext.Current.CancellationToken;

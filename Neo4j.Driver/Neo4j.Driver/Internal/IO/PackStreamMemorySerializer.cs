@@ -40,6 +40,15 @@ internal class PackStreamMemorySerializer : IPackStreamMemorySerializer
 
     public T Deserialize<T>(MessageFormat format, byte[] bytes, Func<IPackStreamReader, T> read)
     {
-        return read(_readerWriterFactory.CreateReader(format, new MemoryStream(bytes)));
+        var stream = new MemoryStream(bytes);
+        var result = read(_readerWriterFactory.CreateReader(format, stream));
+
+        var unreadByteCount = stream.Length - stream.Position;
+        if (unreadByteCount > 0)
+        {
+            throw new ProtocolException($"Expected the value to end, but {unreadByteCount} bytes remained.");
+        }
+
+        return result;
     }
 }

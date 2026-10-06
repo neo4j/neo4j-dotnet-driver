@@ -69,7 +69,7 @@ internal class EncryptedStructureCodec : IEncryptedStructureCodec
 
     private static EncryptedStructure ReadStructure(IPackStreamReader reader)
     {
-        ReadAndValidateSignature(reader);
+        ReadAndValidateHeader(reader);
 
         return new EncryptedStructure(
             ProfileType: reader.ReadString(),
@@ -82,9 +82,15 @@ internal class EncryptedStructureCodec : IEncryptedStructureCodec
             Metadata: reader.ReadMap());
     }
 
-    private static void ReadAndValidateSignature(IPackStreamReader reader)
+    private static void ReadAndValidateHeader(IPackStreamReader reader)
     {
-        reader.ReadStructHeader();
+        var fieldCount = reader.ReadStructHeader();
+        if (fieldCount != FieldCount)
+        {
+            throw new ProtocolException(
+                $"Expected an Encrypted structure of {FieldCount} fields, but got: {fieldCount}");
+        }
+
         var signature = reader.ReadStructSignature();
         if (signature != EncryptedSignature)
         {
