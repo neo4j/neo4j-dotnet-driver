@@ -212,6 +212,24 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
         await act.Should().ThrowAsync<PropertyEncryptionException>();
     }
 
+    [Theory]
+    [InlineData("01")]
+    [InlineData("01B865")]
+    [InlineData("01B86588454E56454C4F5045")]
+    [InlineData("01B86588454E56454C4F5045CB0000000100000001")]
+    public async Task Decrypt_WithMalformedBytes_Throws(string hex)
+    {
+        var token = TestContext.Current.CancellationToken;
+        var malformed = Convert.FromHexString(hex);
+
+        var act = () => _propertyEncryption.DecryptRequest()
+            .FromValue(malformed)
+            .WithPersistedAad()
+            .DecryptAsync(token);
+
+        await act.Should().ThrowAsync<PropertyEncryptionException>();
+    }
+
     [Fact]
     public async Task Decrypt_WithTamperedCiphertext_Throws()
     {

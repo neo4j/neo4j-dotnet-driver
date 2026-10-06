@@ -15,7 +15,6 @@
 
 #nullable enable
 
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,12 +25,10 @@ namespace Neo4j.Driver.Internal.Encryption;
 internal class EncryptionEngineDispatcher : IEncryptionEngineDispatcher
 {
     private readonly IEnumerable<IEncryptionEngine> _engines;
-    private readonly IEncryptionErrorPolicy _errorPolicy;
 
-    public EncryptionEngineDispatcher(IEnumerable<IEncryptionEngine> engines, IEncryptionErrorPolicy errorPolicy)
+    public EncryptionEngineDispatcher(IEnumerable<IEncryptionEngine> engines)
     {
         _engines = engines;
-        _errorPolicy = errorPolicy;
     }
 
     public async Task<byte[]> DispatchEncryptAsync(
@@ -42,23 +39,15 @@ internal class EncryptionEngineDispatcher : IEncryptionEngineDispatcher
         byte[]? iv,
         CancellationToken cancellationToken)
     {
-        try
+        foreach (var engine in _engines)
         {
-            foreach (var engine in _engines)
+            if (engine.TryStartEncrypt(profile, value, keyRef, aad, iv, cancellationToken, out var task))
             {
-                if (engine.TryStartEncrypt(profile, value, keyRef, aad, iv, cancellationToken, out var task))
-                {
-                    return await task.ConfigureAwait(false);
-                }
+                return await task.ConfigureAwait(false);
             }
+        }
 
-            throw new EncryptionEngineNotFoundException(profile.Name);
-        }
-        catch (Exception e)
-        {
-            _errorPolicy.Throw("encryption", e, cancellationToken);
-            throw;
-        }
+        throw new EncryptionEngineNotFoundException(profile.Name);
     }
 
     public async Task<object?> DispatchDecryptAsync(
@@ -67,22 +56,14 @@ internal class EncryptionEngineDispatcher : IEncryptionEngineDispatcher
         byte[]? aad,
         CancellationToken cancellationToken)
     {
-        try
+        foreach (var engine in _engines)
         {
-            foreach (var engine in _engines)
+            if (engine.TryStartDecrypt(profile, encrypted, aad, cancellationToken, out var task))
             {
-                if (engine.TryStartDecrypt(profile, encrypted, aad, cancellationToken, out var task))
-                {
-                    return await task.ConfigureAwait(false);
-                }
+                return await task.ConfigureAwait(false);
             }
+        }
 
-            throw new EncryptionEngineNotFoundException(profile.Name);
-        }
-        catch (Exception e)
-        {
-            _errorPolicy.Throw("decryption", e, cancellationToken);
-            throw;
-        }
+        throw new EncryptionEngineNotFoundException(profile.Name);
     }
 }

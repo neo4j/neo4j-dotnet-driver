@@ -21,10 +21,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Moq.AutoMock;
 using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Preview.Encryption;
-using Neo4j.Driver.Tests.Internal.Core;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.Encryption;
@@ -35,11 +33,9 @@ public class EncryptionEngineDispatcherTests
         Mock.Of<IInternalEncryptionProfile>(p => p.Name == "profile-a");
     private static readonly KeyReference KeyRef = new("key-1", KeyReferenceType.Id);
 
-    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<EncryptionEngineDispatcher>();
-
-    private static EncryptionEngineDispatcher CreateSubjectWithRealErrorPolicy(params IEncryptionEngine[] engines)
+    private static EncryptionEngineDispatcher CreateSubject(params IEncryptionEngine[] engines)
     {
-        return new EncryptionEngineDispatcher(engines, new EncryptionErrorPolicy());
+        return new EncryptionEngineDispatcher(engines);
     }
 
     [Fact]
@@ -59,7 +55,7 @@ public class EncryptionEngineDispatcherTests
                 out encryptionTask))
             .Returns(true);
 
-        var dispatcher = CreateSubjectWithRealErrorPolicy(engine.Object);
+        var dispatcher = CreateSubject(engine.Object);
 
         var result = await dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, null, CancellationToken.None);
 
@@ -95,7 +91,7 @@ public class EncryptionEngineDispatcherTests
                 out yesTask))
             .Returns(true);
 
-        var dispatcher = CreateSubjectWithRealErrorPolicy(rejecting.Object, accepting.Object);
+        var dispatcher = CreateSubject(rejecting.Object, accepting.Object);
 
         var result = await dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, null, CancellationToken.None);
 
@@ -118,7 +114,7 @@ public class EncryptionEngineDispatcherTests
                 out noTask))
             .Returns(false);
 
-        var dispatcher = CreateSubjectWithRealErrorPolicy(engine.Object);
+        var dispatcher = CreateSubject(engine.Object);
 
         var act = () => dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, null, CancellationToken.None);
 
@@ -141,7 +137,7 @@ public class EncryptionEngineDispatcherTests
                 out decryptionTask))
             .Returns(true);
 
-        var dispatcher = CreateSubjectWithRealErrorPolicy(engine.Object);
+        var dispatcher = CreateSubject(engine.Object);
 
         var result = await dispatcher.DispatchDecryptAsync(Profile, encrypted, null, CancellationToken.None);
 
@@ -163,71 +159,10 @@ public class EncryptionEngineDispatcherTests
                 out noTask))
             .Returns(false);
 
-        var dispatcher = CreateSubjectWithRealErrorPolicy(engine.Object);
+        var dispatcher = CreateSubject(engine.Object);
 
         var act = () => dispatcher.DispatchDecryptAsync(Profile, encrypted, null, CancellationToken.None);
 
         await act.Should().ThrowAsync<EncryptionEngineNotFoundException>();
-    }
-
-    [Fact]
-    public async Task DispatchEncryptAsync_ExceptionFromTheAcceptingEngine_DelegatesToTheErrorPolicy()
-    {
-        var cause = new InvalidOperationException("kes blew up");
-        Task<byte[]>? failingTask = Task.FromException<byte[]>(cause);
-
-        var engine = new Mock<IEncryptionEngine>();
-        engine.Setup(e => e.TryStartEncrypt(
-                Profile,
-                "value",
-                KeyRef,
-                null,
-                null,
-                It.IsAny<CancellationToken>(),
-                out failingTask))
-            .Returns(true);
-
-        var wrapped = new PropertyEncryptionException("wrapped", cause);
-        _autoMocker.Use<IEnumerable<IEncryptionEngine>>([engine.Object]);
-        _autoMocker.GetMock<IEncryptionErrorPolicy>()
-            .Setup(p => p.Throw("encryption", cause, It.IsAny<CancellationToken>()))
-            .Throws(wrapped);
-
-        var dispatcher = _autoMocker.CreateInstance<EncryptionEngineDispatcher>();
-
-        var act = () => dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, null, CancellationToken.None);
-
-        var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
-        thrown.Which.Should().BeSameAs(wrapped);
-    }
-
-    [Fact]
-    public async Task DispatchDecryptAsync_ExceptionFromTheAcceptingEngine_DelegatesToTheErrorPolicy()
-    {
-        var encrypted = new byte[] { 4, 5, 6 };
-        var cause = new InvalidOperationException("kes blew up");
-        Task<object?>? failingTask = Task.FromException<object?>(cause);
-
-        var engine = new Mock<IEncryptionEngine>();
-        engine.Setup(e => e.TryStartDecrypt(
-                Profile,
-                encrypted,
-                null,
-                It.IsAny<CancellationToken>(),
-                out failingTask))
-            .Returns(true);
-
-        var wrapped = new PropertyEncryptionException("wrapped", cause);
-        _autoMocker.Use<IEnumerable<IEncryptionEngine>>([engine.Object]);
-        _autoMocker.GetMock<IEncryptionErrorPolicy>()
-            .Setup(p => p.Throw("decryption", cause, It.IsAny<CancellationToken>()))
-            .Throws(wrapped);
-
-        var dispatcher = _autoMocker.CreateInstance<EncryptionEngineDispatcher>();
-
-        var act = () => dispatcher.DispatchDecryptAsync(Profile, encrypted, null, CancellationToken.None);
-
-        var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
-        thrown.Which.Should().BeSameAs(wrapped);
     }
 }

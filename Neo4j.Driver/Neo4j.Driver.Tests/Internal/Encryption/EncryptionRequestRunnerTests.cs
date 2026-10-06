@@ -15,6 +15,9 @@
 
 #nullable enable
 
+using System;
+using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -167,5 +170,96 @@ public class EncryptionRequestRunnerTests
 
         var awaiting = () => task;
         await awaiting.Should().ThrowAsync<EncryptionProfileNotFoundException>();
+    }
+
+    [Fact]
+    public async Task DecryptAsync_WhenTheProfileNameCannotBeRead_DelegatesToTheErrorPolicy()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var encrypted = new byte[] { 0x01 };
+        var cause = new EndOfStreamException();
+        var wrapped = new PropertyEncryptionException("wrapped", cause);
+
+        _encryptedValueBytesCodec.Setup(c => c.PeekProfileName(encrypted)).Throws(cause);
+        _autoMocker.GetMock<IEncryptionErrorPolicy>()
+            .Setup(p => p.Throw("decryption", cause, token))
+            .Throws(wrapped);
+
+        var request = new DecryptRequest(encrypted, null);
+        var act = () => CreateSubject().DecryptAsync(request, token);
+
+        var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
+        thrown.Which.Should().BeSameAs(wrapped);
+    }
+
+    [Fact]
+    public async Task EncryptToBytesAsync_WhenTheAadCannotBeSerialized_DelegatesToTheErrorPolicy()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var aad = new object();
+        var cause = new InvalidOperationException("unserializable");
+        var wrapped = new PropertyEncryptionException("wrapped", cause);
+
+        _plaintextCodec.Setup(c => c.Serialize(aad)).Throws(cause);
+        _autoMocker.GetMock<IEncryptionErrorPolicy>()
+            .Setup(p => p.Throw("encryption", cause, token))
+            .Throws(wrapped);
+
+        var request = new EncryptRequest("hello", aad, null, new KeyReference("id-1", KeyReferenceType.Id));
+        var act = () => CreateSubject().EncryptToBytesAsync(request, token);
+
+        var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
+        thrown.Which.Should().BeSameAs(wrapped);
+    }
+
+    [Fact]
+    public async Task EncryptToBytesAsync_WhenDispatchFails_DelegatesToTheErrorPolicy()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var keyRef = new KeyReference("id-1", KeyReferenceType.Id);
+        var cause = new InvalidOperationException("kes blew up");
+        var wrapped = new PropertyEncryptionException("wrapped", cause);
+
+        _dispatcher
+            .Setup(d => d.DispatchEncryptAsync(
+                It.IsAny<IInternalEncryptionProfile>(),
+                "hello",
+                keyRef,
+                null,
+                null,
+                token))
+            .ThrowsAsync(cause);
+        _autoMocker.GetMock<IEncryptionErrorPolicy>()
+            .Setup(p => p.Throw("encryption", cause, token))
+            .Throws(wrapped);
+
+        var request = new EncryptRequest("hello", null, null, keyRef);
+        var act = () => CreateSubject().EncryptToBytesAsync(request, token);
+
+        var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
+        thrown.Which.Should().BeSameAs(wrapped);
+    }
+
+    [Fact]
+    public async Task DecryptAsync_WhenDispatchFails_DelegatesToTheErrorPolicy()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var encrypted = new byte[] { 0xEE };
+        var cause = new InvalidOperationException("kes blew up");
+        var wrapped = new PropertyEncryptionException("wrapped", cause);
+
+        _encryptedValueBytesCodec.Setup(c => c.PeekProfileName(encrypted)).Returns("profile-a");
+        _dispatcher
+            .Setup(d => d.DispatchDecryptAsync(It.IsAny<IInternalEncryptionProfile>(), encrypted, null, token))
+            .ThrowsAsync(cause);
+        _autoMocker.GetMock<IEncryptionErrorPolicy>()
+            .Setup(p => p.Throw("decryption", cause, token))
+            .Throws(wrapped);
+
+        var request = new DecryptRequest(encrypted, null);
+        var act = () => CreateSubject().DecryptAsync(request, token);
+
+        var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
+        thrown.Which.Should().BeSameAs(wrapped);
     }
 }

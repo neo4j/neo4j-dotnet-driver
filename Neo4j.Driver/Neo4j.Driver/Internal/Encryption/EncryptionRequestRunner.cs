@@ -15,6 +15,7 @@
 
 #nullable enable
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,36 +27,55 @@ internal class EncryptionRequestRunner : IEncryptionRequestRunner
     private readonly IEncryptionEngineDispatcher _dispatcher;
     private readonly IPlaintextCodec _plaintextCodec;
     private readonly IEncryptedValueBytesCodec _encryptedValueBytesCodec;
+    private readonly IEncryptionErrorPolicy _errorPolicy;
 
     public EncryptionRequestRunner(
         IEncryptionProfileRegistry registry,
         IEncryptionEngineDispatcher dispatcher,
         IPlaintextCodec plaintextCodec,
-        IEncryptedValueBytesCodec encryptedValueBytesCodec)
+        IEncryptedValueBytesCodec encryptedValueBytesCodec,
+        IEncryptionErrorPolicy errorPolicy)
     {
         _registry = registry;
         _dispatcher = dispatcher;
         _plaintextCodec = plaintextCodec;
         _encryptedValueBytesCodec = encryptedValueBytesCodec;
+        _errorPolicy = errorPolicy;
     }
 
     public async Task<byte[]> EncryptToBytesAsync(EncryptRequest request, CancellationToken cancellationToken)
     {
-        var profile = _registry.Get(request.ProfileName);
-        var aad = request.Aad is null ? null : _plaintextCodec.Serialize(request.Aad);
-        return await _dispatcher
-            .DispatchEncryptAsync(profile, request.Value, request.KeyReference, aad, request.Iv, cancellationToken)
-            .ConfigureAwait(false);
+        try
+        {
+            var profile = _registry.Get(request.ProfileName);
+            var aad = request.Aad is null ? null : _plaintextCodec.Serialize(request.Aad);
+            return await _dispatcher
+                .DispatchEncryptAsync(profile, request.Value, request.KeyReference, aad, request.Iv, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            _errorPolicy.Throw("encryption", e, cancellationToken);
+            throw;
+        }
     }
 
     public async Task<object?> DecryptAsync(DecryptRequest request, CancellationToken cancellationToken)
     {
-        var profileName = _encryptedValueBytesCodec.PeekProfileName(request.Value);
-        var profile = _registry.Get(profileName);
-        var aad = request.Aad is null ? null : _plaintextCodec.Serialize(request.Aad);
+        try
+        {
+            var profileName = _encryptedValueBytesCodec.PeekProfileName(request.Value);
+            var profile = _registry.Get(profileName);
+            var aad = request.Aad is null ? null : _plaintextCodec.Serialize(request.Aad);
 
-        return await _dispatcher
-            .DispatchDecryptAsync(profile, request.Value, aad, cancellationToken)
-            .ConfigureAwait(false);
+            return await _dispatcher
+                .DispatchDecryptAsync(profile, request.Value, aad, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            _errorPolicy.Throw("decryption", e, cancellationToken);
+            throw;
+        }
     }
 }
