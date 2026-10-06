@@ -75,6 +75,18 @@ public class BoundedLruCacheTests
     }
 
     [Fact]
+    public void TryGet_TtlBeyondTheLatestRepresentableTime_ReturnsCachedValue()
+    {
+        var subject = CreateSubject(capacity: 10, ttl: TimeSpan.MaxValue);
+
+        subject.Set("a", "1");
+        var found = subject.TryGet("a", out var value);
+
+        found.Should().BeTrue();
+        value.Should().Be("1");
+    }
+
+    [Fact]
     public void TryGet_NoTtlConfigured_NeverExpires()
     {
         var subject = CreateSubject(capacity: 10, ttl: null);

@@ -76,8 +76,7 @@ internal class BoundedLruCache<TKey, TValue> : IBoundedCache<TKey, TValue> where
                 _index.Remove(key);
             }
 
-            var expiresAt = _ttl.HasValue ? _clock.Now() + _ttl.Value : (DateTime?)null;
-            var node = _entries.AddFirst(new CacheEntry(key, value, expiresAt));
+            var node = _entries.AddFirst(new CacheEntry(key, value, ExpiryFromNow()));
             _index[key] = node;
 
             if (_index.Count > _capacity)
@@ -99,6 +98,18 @@ internal class BoundedLruCache<TKey, TValue> : IBoundedCache<TKey, TValue> where
                 _index.Remove(key);
             }
         }
+    }
+
+    private DateTime? ExpiryFromNow()
+    {
+        if (!_ttl.HasValue)
+        {
+            return null;
+        }
+
+        var now = _clock.Now();
+        var latestReachableTtl = DateTime.MaxValue - now;
+        return _ttl.Value >= latestReachableTtl ? DateTime.MaxValue : now + _ttl.Value;
     }
 
     private void PurgeExpiredEntries()
