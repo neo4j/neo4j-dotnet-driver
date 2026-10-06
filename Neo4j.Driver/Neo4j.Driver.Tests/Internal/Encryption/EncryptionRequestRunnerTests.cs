@@ -141,4 +141,31 @@ public class EncryptionRequestRunnerTests
 
         result.Should().BeSameAs(expected);
     }
+
+    [Fact]
+    public async Task EncryptToBytesAsync_FaultsTheReturnedTask_WhenTheProfileCannotBeResolved()
+    {
+        var keyRef = new KeyReference("id-1", KeyReferenceType.Id);
+        _registry.Setup(r => r.Get("missing")).Throws(new EncryptionProfileNotFoundException("missing"));
+
+        var request = new EncryptRequest("hello", null, "missing", keyRef);
+        var task = CreateSubject().EncryptToBytesAsync(request, TestContext.Current.CancellationToken);
+
+        var awaiting = () => task;
+        await awaiting.Should().ThrowAsync<EncryptionProfileNotFoundException>();
+    }
+
+    [Fact]
+    public async Task DecryptAsync_FaultsTheReturnedTask_WhenTheProfileCannotBeResolved()
+    {
+        var encrypted = new byte[] { 0xEE };
+        _encryptedValueBytesCodec.Setup(c => c.PeekProfileName(encrypted)).Returns("missing");
+        _registry.Setup(r => r.Get("missing")).Throws(new EncryptionProfileNotFoundException("missing"));
+
+        var request = new DecryptRequest(encrypted, null);
+        var task = CreateSubject().DecryptAsync(request, TestContext.Current.CancellationToken);
+
+        var awaiting = () => task;
+        await awaiting.Should().ThrowAsync<EncryptionProfileNotFoundException>();
+    }
 }

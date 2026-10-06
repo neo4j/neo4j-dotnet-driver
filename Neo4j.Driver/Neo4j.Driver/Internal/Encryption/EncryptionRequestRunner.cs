@@ -39,19 +39,23 @@ internal class EncryptionRequestRunner : IEncryptionRequestRunner
         _encryptedValueBytesCodec = encryptedValueBytesCodec;
     }
 
-    public Task<byte[]> EncryptToBytesAsync(EncryptRequest request, CancellationToken cancellationToken)
+    public async Task<byte[]> EncryptToBytesAsync(EncryptRequest request, CancellationToken cancellationToken)
     {
         var profile = _registry.Get(request.ProfileName);
         var aad = request.Aad is null ? null : _plaintextCodec.Serialize(request.Aad);
-        return _dispatcher.DispatchEncryptAsync(profile, request.Value, request.KeyReference, aad, request.Iv, cancellationToken);
+        return await _dispatcher
+            .DispatchEncryptAsync(profile, request.Value, request.KeyReference, aad, request.Iv, cancellationToken)
+            .ConfigureAwait(false);
     }
 
-    public Task<object?> DecryptAsync(DecryptRequest request, CancellationToken cancellationToken)
+    public async Task<object?> DecryptAsync(DecryptRequest request, CancellationToken cancellationToken)
     {
         var profileName = _encryptedValueBytesCodec.PeekProfileName(request.Value);
         var profile = _registry.Get(profileName);
         var aad = request.Aad is null ? null : _plaintextCodec.Serialize(request.Aad);
 
-        return _dispatcher.DispatchDecryptAsync(profile, request.Value, aad, cancellationToken);
+        return await _dispatcher
+            .DispatchDecryptAsync(profile, request.Value, aad, cancellationToken)
+            .ConfigureAwait(false);
     }
 }
