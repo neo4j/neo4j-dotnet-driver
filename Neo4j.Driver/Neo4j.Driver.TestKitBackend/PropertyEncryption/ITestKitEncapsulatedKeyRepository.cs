@@ -17,9 +17,9 @@ using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.TestKitBackend.PropertyEncryption;
 
-internal interface ITestkitEncapsulatedKeyRepository : IEncapsulatedKeyRecordRepository
+internal interface ITestKitEncapsulatedKeyRepository : IEncapsulatedKeyRecordRepository
 {
-    string RepositoryId { get; }
+    string RepositoryId();
 
     Task<EncapsulatedKeyRecord> ImportAsync(
         string id,

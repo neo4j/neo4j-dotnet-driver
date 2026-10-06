@@ -20,14 +20,18 @@ namespace Neo4j.Driver.TestKitBackend.PropertyEncryption;
 [RegistrationLifetime(RegistrationLifetime.PerLifetimeScope)]
 internal class DriverEncryptionObjectStore : IDriverEncryptionObjectStore
 {
+    private readonly Lock _lock = new();
     private readonly Dictionary<IDriver, DriverEncryptionObjects> _objectsByDriver = new();
 
     public void StoreObjects(IDriver driver, DriverEncryptionObjects objects)
     {
-        _objectsByDriver[driver] = objects;
+        lock (_lock)
+        {
+            _objectsByDriver[driver] = objects;
+        }
     }
 
-    public ITestkitEncapsulatedKeyRepository GetRepository(IDriver driver, string? profileName = null)
+    public ITestKitEncapsulatedKeyRepository GetRepository(IDriver driver, string? profileName = null)
     {
         var repositories = GetObjects(driver).RepositoriesByProfileName;
 
@@ -53,8 +57,11 @@ internal class DriverEncryptionObjectStore : IDriverEncryptionObjectStore
 
     private DriverEncryptionObjects GetObjects(IDriver driver)
     {
-        return _objectsByDriver.TryGetValue(driver, out var objects)
-            ? objects
-            : throw new TestKitProtocolException("The driver was created without property-encryption profiles.");
+        lock (_lock)
+        {
+            return _objectsByDriver.TryGetValue(driver, out var objects)
+                ? objects
+                : throw new TestKitProtocolException("The driver was created without property-encryption profiles.");
+        }
     }
 }

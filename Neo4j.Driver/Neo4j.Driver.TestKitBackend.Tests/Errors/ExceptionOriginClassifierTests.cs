@@ -59,6 +59,8 @@ public class ExceptionOriginClassifierTests
     {
         var exception = new ClientException("simulating a driver-defined failure from a user collaborator");
 
-        _classifier.OriginatesInDriver(exception).Should().BeTrue();
+        var originatesInDriver = _classifier.OriginatesInDriver(exception);
+
+        originatesInDriver.Should().BeTrue();
     }
 }

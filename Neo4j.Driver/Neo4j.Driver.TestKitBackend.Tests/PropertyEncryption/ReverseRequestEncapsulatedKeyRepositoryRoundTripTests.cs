@@ -70,4 +70,17 @@ public class ReverseRequestEncapsulatedKeyRepositoryRoundTripTests
 
         result.Should().BeNull();
     }
+
+    [Fact]
+    public async Task DeleteByIdAsync_completes_when_the_frontend_acknowledges_it()
+    {
+        var handler = new EncapsulatedKeyRepositoryDeleteCompletedHandler(_expectationStore);
+        ReplyToEachRequestWith(
+            requestId => handler.ProcessAsync(new EncapsulatedKeyRepositoryDeleteCompleted { RequestId = requestId }));
+
+        var act = () => _autoMocker.CreateInstance<ReverseRequestEncapsulatedKeyRepository>()
+            .DeleteByIdAsync("key-1", TestContext.Current.CancellationToken);
+
+        await act.Should().NotThrowAsync();
+    }
 }

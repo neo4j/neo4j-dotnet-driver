@@ -21,7 +21,10 @@ internal readonly struct HexBytes(byte[] value) : IEquatable<HexBytes>
 
     public static implicit operator byte[](HexBytes hex) => hex.Value;
 
-    public static implicit operator HexBytes(byte[] value) => new(value);
+    public static implicit operator HexBytes(byte[] value)
+    {
+        return new HexBytes(value);
+    }
 
     public bool Equals(HexBytes other)
     {

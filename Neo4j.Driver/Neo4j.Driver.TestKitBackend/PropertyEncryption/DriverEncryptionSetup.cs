@@ -22,7 +22,7 @@ internal record PropertyEncryptionProfileInput(string Name, HexBytes? Kek = null
 
 internal record DriverEncryptionObjects(
     IReadOnlyList<IPropertyEncryptionProfile> Profiles,
-    IReadOnlyDictionary<string, ITestkitEncapsulatedKeyRepository> RepositoriesByProfileName);
+    IReadOnlyDictionary<string, ITestKitEncapsulatedKeyRepository> RepositoriesByProfileName);
 
 internal interface IDriverEncryptionSetup
 {
@@ -32,11 +32,11 @@ internal interface IDriverEncryptionSetup
 internal class DriverEncryptionSetup : IDriverEncryptionSetup
 {
     private readonly Func<byte[]?, IKeyEncapsulationService> _keyEncapsulationServiceFactory;
-    private readonly Func<ITestkitEncapsulatedKeyRepository> _repositoryFactory;
+    private readonly Func<ITestKitEncapsulatedKeyRepository> _repositoryFactory;
 
     public DriverEncryptionSetup(
         Func<byte[]?, IKeyEncapsulationService> keyEncapsulationServiceFactory,
-        Func<ITestkitEncapsulatedKeyRepository> repositoryFactory)
+        Func<ITestKitEncapsulatedKeyRepository> repositoryFactory)
     {
         _keyEncapsulationServiceFactory = keyEncapsulationServiceFactory;
         _repositoryFactory = repositoryFactory;
@@ -44,7 +44,7 @@ internal class DriverEncryptionSetup : IDriverEncryptionSetup
 
     public DriverEncryptionObjects Prepare(IReadOnlyList<PropertyEncryptionProfileInput> profiles)
     {
-        var repositories = new Dictionary<string, ITestkitEncapsulatedKeyRepository>();
+        var repositories = new Dictionary<string, ITestKitEncapsulatedKeyRepository>();
         var resultProfiles = new List<IPropertyEncryptionProfile>();
 
         foreach (var profile in profiles)

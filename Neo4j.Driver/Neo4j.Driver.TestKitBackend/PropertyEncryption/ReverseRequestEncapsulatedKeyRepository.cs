@@ -19,9 +19,10 @@ using Neo4j.Driver.TestKitBackend.Messages;
 
 namespace Neo4j.Driver.TestKitBackend.PropertyEncryption;
 
-internal class ReverseRequestEncapsulatedKeyRepository : ITestkitEncapsulatedKeyRepository
+internal class ReverseRequestEncapsulatedKeyRepository : ITestKitEncapsulatedKeyRepository
 {
     private readonly IOutboundRoundTrip _roundTrip;
+    private readonly string _repositoryId;
 
     public ReverseRequestEncapsulatedKeyRepository(IOutboundRoundTrip roundTrip)
         : this(roundTrip, Guid.NewGuid().ToString("N"))
@@ -31,27 +32,26 @@ internal class ReverseRequestEncapsulatedKeyRepository : ITestkitEncapsulatedKey
     internal ReverseRequestEncapsulatedKeyRepository(IOutboundRoundTrip roundTrip, string repositoryId)
     {
         _roundTrip = roundTrip;
-        RepositoryId = repositoryId;
+        _repositoryId = repositoryId;
     }
 
-    public string RepositoryId { get; }
+    public string RepositoryId()
+    {
+        return _repositoryId;
+    }
 
     public async Task<EncapsulatedKeyRecord?> FindByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        var reply = await _roundTrip
-            .SendExpectingAsync<EncapsulatedKeyRepositoryFindByIdCompleted>(
-                new EncapsulatedKeyRepositoryFindByIdRequest(RepositoryId, id))
-            .ConfigureAwait(false);
+        var reply = await _roundTrip.SendExpectingAsync<EncapsulatedKeyRepositoryFindByIdCompleted>(
+            new EncapsulatedKeyRepositoryFindByIdRequest(_repositoryId, id));
 
         return reply.Record?.ToRecord();
     }
 
     public async Task<EncapsulatedKeyRecord?> FindByAliasAsync(string alias, CancellationToken cancellationToken = default)
     {
-        var reply = await _roundTrip
-            .SendExpectingAsync<EncapsulatedKeyRepositoryFindByAliasCompleted>(
-                new EncapsulatedKeyRepositoryFindByAliasRequest(RepositoryId, alias))
-            .ConfigureAwait(false);
+        var reply = await _roundTrip.SendExpectingAsync<EncapsulatedKeyRepositoryFindByAliasCompleted>(
+            new EncapsulatedKeyRepositoryFindByAliasRequest(_repositoryId, alias));
 
         return reply.Record?.ToRecord();
     }
@@ -62,26 +62,22 @@ internal class ReverseRequestEncapsulatedKeyRepository : ITestkitEncapsulatedKey
         IReadOnlyDictionary<string, string> metadata,
         CancellationToken cancellationToken = default)
     {
-        var repositoryRecord = await _roundTrip
-            .SendExpectingAsync<EncapsulatedKeyRepositoryRecord>(
-                new EncapsulatedKeyRepositoryCreateRequest(RepositoryId, alias, encapsulation, metadata))
-            .ConfigureAwait(false);
+        var reply = await _roundTrip.SendExpectingAsync<EncapsulatedKeyRepositoryCreateCompleted>(
+            new EncapsulatedKeyRepositoryCreateRequest(_repositoryId, alias, encapsulation, metadata));
 
-        return repositoryRecord.ToRecord();
+        return reply.Record.ToRecord();
     }
 
     public async Task SetAliasByIdAsync(string id, string? alias, CancellationToken cancellationToken = default)
     {
-        await _roundTrip
-            .SendExpectingAsync<bool>(new EncapsulatedKeyRepositorySetAliasRequest(RepositoryId, id, alias))
-            .ConfigureAwait(false);
+        await _roundTrip.SendExpectingAsync<EncapsulatedKeyRepositorySetAliasCompleted>(
+            new EncapsulatedKeyRepositorySetAliasRequest(_repositoryId, id, alias));
     }
 
     public async Task DeleteByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        await _roundTrip
-            .SendExpectingAsync<bool>(new EncapsulatedKeyRepositoryDeleteRequest(RepositoryId, id))
-            .ConfigureAwait(false);
+        await _roundTrip.SendExpectingAsync<EncapsulatedKeyRepositoryDeleteCompleted>(
+            new EncapsulatedKeyRepositoryDeleteRequest(_repositoryId, id));
     }
 
     public async Task<EncapsulatedKeyRecord> ImportAsync(
@@ -90,11 +86,9 @@ internal class ReverseRequestEncapsulatedKeyRepository : ITestkitEncapsulatedKey
         byte[] encapsulation,
         IReadOnlyDictionary<string, string> metadata)
     {
-        var repositoryRecord = await _roundTrip
-            .SendExpectingAsync<EncapsulatedKeyRepositoryRecord>(
-                new EncapsulatedKeyRepositoryImportRequest(RepositoryId, id, alias, encapsulation, metadata))
-            .ConfigureAwait(false);
+        var reply = await _roundTrip.SendExpectingAsync<EncapsulatedKeyRepositoryImportCompleted>(
+            new EncapsulatedKeyRepositoryImportRequest(_repositoryId, id, alias, encapsulation, metadata));
 
-        return repositoryRecord.ToRecord();
+        return reply.Record.ToRecord();
     }
 }

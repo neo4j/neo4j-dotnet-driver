@@ -32,13 +32,13 @@ public class ReverseRequestEncapsulatedKeyRepositoryTests
     private static readonly Dictionary<string, string> Metadata = new() { ["iv"] = "abc" };
 
     private readonly Mock<IOutboundRoundTrip> _roundTripMock = new();
+    private readonly Mock<IExpectationStore> _expectationStoreMock = new();
+    private IProtocolMessage? _lastRequest;
 
     private ReverseRequestEncapsulatedKeyRepository Subject()
     {
         return new ReverseRequestEncapsulatedKeyRepository(_roundTripMock.Object, RepositoryId);
     }
-
-    private IProtocolMessage? _lastRequest;
 
     private void CaptureRequest<T>(T returning)
     {
@@ -61,12 +61,6 @@ public class ReverseRequestEncapsulatedKeyRepositoryTests
         request.KeyId.Should().Be("k1");
 
         result.Should().Be(new EncapsulatedKeyRecord("k1", "a1", Encapsulation, Metadata));
-    }
-
-    [Fact]
-    public void RepositoryId_exposes_the_id_it_was_constructed_with()
-    {
-        Subject().RepositoryId.Should().Be(RepositoryId);
     }
 
     [Fact]
@@ -98,7 +92,7 @@ public class ReverseRequestEncapsulatedKeyRepositoryTests
     public async Task CreateAsync_sends_a_create_request_and_parses_the_reply()
     {
         var wire = new EncapsulatedKeyRepositoryRecord("k1", "a1", Encapsulation, Metadata);
-        CaptureRequest(wire);
+        CaptureRequest(new EncapsulatedKeyRepositoryCreateCompleted { RequestId = "req-1", Record = wire });
 
         var result = await Subject().CreateAsync(
             "a1",
@@ -117,7 +111,7 @@ public class ReverseRequestEncapsulatedKeyRepositoryTests
     public async Task ImportAsync_sends_an_import_request_and_parses_the_reply()
     {
         var wire = new EncapsulatedKeyRepositoryRecord("fixed-id", "a1", Encapsulation, Metadata);
-        CaptureRequest(wire);
+        CaptureRequest(new EncapsulatedKeyRepositoryImportCompleted { RequestId = "req-1", Record = wire });
 
         var result = await Subject().ImportAsync("fixed-id", "a1", Encapsulation, Metadata);
 
@@ -132,7 +126,7 @@ public class ReverseRequestEncapsulatedKeyRepositoryTests
     [Fact]
     public async Task SetAliasByIdAsync_sends_a_set_alias_request()
     {
-        CaptureRequest(true);
+        CaptureRequest(new EncapsulatedKeyRepositorySetAliasCompleted { RequestId = "req-1" });
 
         await Subject().SetAliasByIdAsync("k1", "a2", TestContext.Current.CancellationToken);
 
@@ -145,7 +139,7 @@ public class ReverseRequestEncapsulatedKeyRepositoryTests
     [Fact]
     public async Task DeleteByIdAsync_sends_a_delete_request()
     {
-        CaptureRequest(true);
+        CaptureRequest(new EncapsulatedKeyRepositoryDeleteCompleted { RequestId = "req-1" });
 
         await Subject().DeleteByIdAsync("k1", TestContext.Current.CancellationToken);
 
@@ -154,27 +148,14 @@ public class ReverseRequestEncapsulatedKeyRepositoryTests
         request.KeyId.Should().Be("k1");
     }
 
-    [Fact]
-    public void DeleteCompleted_fulfils_the_expectation_with_true()
-    {
-        var expectationsMock = new Mock<IExpectationStore>();
-        var handler = new EncapsulatedKeyRepositoryDeleteCompletedHandler(expectationsMock.Object);
-        var message = new EncapsulatedKeyRepositoryDeleteCompleted { RequestId = "req-1" };
-
-        handler.ProcessAsync(message);
-
-        expectationsMock.Verify(e => e.Fulfil("req-1", true), Times.Once);
-    }
-
     [Theory]
     [InlineData("KeyNotFound", typeof(EncapsulatedKeyNotFoundException))]
     [InlineData("AliasInUse", typeof(EncapsulatedAliasInUseException))]
-    public void ErrorCompleted_fails_the_expectation_with_the_matching_exception_type(
+    public async Task ErrorCompleted_fails_the_expectation_with_the_matching_exception_type(
         string errorType,
         Type expectedExceptionType)
     {
-        var expectationsMock = new Mock<IExpectationStore>();
-        var handler = new EncapsulatedKeyRepositoryErrorCompletedHandler(expectationsMock.Object);
+        var handler = new EncapsulatedKeyRepositoryErrorCompletedHandler(_expectationStoreMock.Object);
         var message = new EncapsulatedKeyRepositoryErrorCompleted
         {
             RequestId = "req-1",
@@ -183,12 +164,32 @@ public class ReverseRequestEncapsulatedKeyRepositoryTests
         };
 
         Exception? failedWith = null;
-        expectationsMock.Setup(e => e.Fail("req-1", It.IsAny<Exception>())).Callback<string, Exception>(
-            (_, ex) => failedWith = ex);
+        _expectationStoreMock.Setup(e => e.Fail("req-1", It.IsAny<Exception>()))
+            .Callback<string, Exception>((_, ex) => failedWith = ex);
 
-        handler.ProcessAsync(message);
+        await handler.ProcessAsync(message);
 
-        failedWith.Should().NotBeNull();
-        failedWith!.GetType().Should().Be(expectedExceptionType);
+        failedWith.Should().BeOfType(expectedExceptionType);
+    }
+
+    [Fact]
+    public async Task ErrorCompleted_with_an_unknown_error_type_keeps_the_detail()
+    {
+        var handler = new EncapsulatedKeyRepositoryErrorCompletedHandler(_expectationStoreMock.Object);
+        var message = new EncapsulatedKeyRepositoryErrorCompleted
+        {
+            RequestId = "req-1",
+            ErrorType = "UnknownRepository",
+            Detail = "repo-9"
+        };
+
+        Exception? failedWith = null;
+        _expectationStoreMock.Setup(e => e.Fail("req-1", It.IsAny<Exception>()))
+            .Callback<string, Exception>((_, ex) => failedWith = ex);
+
+        await handler.ProcessAsync(message);
+
+        failedWith.Should().BeOfType<EncapsulatedKeyRepositoryException>()
+            .Which.Message.Should().Contain("UnknownRepository").And.Contain("repo-9");
     }
 }

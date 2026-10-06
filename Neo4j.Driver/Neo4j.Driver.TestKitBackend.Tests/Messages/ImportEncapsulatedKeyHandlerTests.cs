@@ -34,7 +34,7 @@ public class ImportEncapsulatedKeyHandlerTests
     public async Task Imports_using_the_named_profiles_repository()
     {
         var driver = Mock.Of<IDriver>();
-        var repositoryMock = new Mock<ITestkitEncapsulatedKeyRepository>();
+        var repositoryMock = new Mock<ITestKitEncapsulatedKeyRepository>();
         _autoMocker.GetMock<IDriverEncryptionObjectStore>()
             .Setup(s => s.GetRepository(driver, "p1"))
             .Returns(repositoryMock.Object);
@@ -63,7 +63,7 @@ public class ImportEncapsulatedKeyHandlerTests
     public async Task Imports_using_the_sole_repository_when_no_profile_name_is_given()
     {
         var driver = Mock.Of<IDriver>();
-        var repositoryMock = new Mock<ITestkitEncapsulatedKeyRepository>();
+        var repositoryMock = new Mock<ITestKitEncapsulatedKeyRepository>();
         _autoMocker.GetMock<IDriverEncryptionObjectStore>()
             .Setup(s => s.GetRepository(driver))
             .Returns(repositoryMock.Object);

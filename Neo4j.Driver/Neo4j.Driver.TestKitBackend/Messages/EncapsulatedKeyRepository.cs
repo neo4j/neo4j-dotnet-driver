@@ -32,53 +32,59 @@ internal record EncapsulatedKeyRepositoryRecord(
     }
 }
 
+internal interface IEncapsulatedKeyRepositoryReply : IProtocolMessage
+{
+    string RequestId { get; }
+}
+
+internal abstract class EncapsulatedKeyRepositoryReplyHandler<TReply> : MessageHandler<TReply>
+    where TReply : IEncapsulatedKeyRepositoryReply
+{
+    private readonly IExpectationStore _expectationStore;
+
+    protected EncapsulatedKeyRepositoryReplyHandler(IExpectationStore expectationStore)
+    {
+        _expectationStore = expectationStore;
+    }
+
+    public override Task ProcessAsync(TReply message)
+    {
+        _expectationStore.Fulfil(message.RequestId, message);
+        return Task.CompletedTask;
+    }
+}
+
 internal record EncapsulatedKeyRepositoryFindByIdRequest(string RepositoryId, string KeyId) : IProtocolMessage;
 
-internal record EncapsulatedKeyRepositoryFindByIdCompleted : IProtocolMessage
+internal record EncapsulatedKeyRepositoryFindByIdCompleted : IEncapsulatedKeyRepositoryReply
 {
     public required string RequestId { get; init; }
     public EncapsulatedKeyRepositoryRecord? Record { get; init; }
 }
 
-internal class
-    EncapsulatedKeyRepositoryFindByIdCompletedHandler : MessageHandler<EncapsulatedKeyRepositoryFindByIdCompleted>
+internal class EncapsulatedKeyRepositoryFindByIdCompletedHandler
+    : EncapsulatedKeyRepositoryReplyHandler<EncapsulatedKeyRepositoryFindByIdCompleted>
 {
-    private readonly IExpectationStore _expectationStore;
-
     public EncapsulatedKeyRepositoryFindByIdCompletedHandler(IExpectationStore expectationStore)
+        : base(expectationStore)
     {
-        _expectationStore = expectationStore;
-    }
-
-    public override Task ProcessAsync(EncapsulatedKeyRepositoryFindByIdCompleted message)
-    {
-        _expectationStore.Fulfil(message.RequestId, message);
-        return Task.CompletedTask;
     }
 }
 
 internal record EncapsulatedKeyRepositoryFindByAliasRequest(string RepositoryId, string Alias) : IProtocolMessage;
 
-internal record EncapsulatedKeyRepositoryFindByAliasCompleted : IProtocolMessage
+internal record EncapsulatedKeyRepositoryFindByAliasCompleted : IEncapsulatedKeyRepositoryReply
 {
     public required string RequestId { get; init; }
     public EncapsulatedKeyRepositoryRecord? Record { get; init; }
 }
 
-internal class
-    EncapsulatedKeyRepositoryFindByAliasCompletedHandler : MessageHandler<EncapsulatedKeyRepositoryFindByAliasCompleted>
+internal class EncapsulatedKeyRepositoryFindByAliasCompletedHandler
+    : EncapsulatedKeyRepositoryReplyHandler<EncapsulatedKeyRepositoryFindByAliasCompleted>
 {
-    private readonly IExpectationStore _expectationStore;
-
     public EncapsulatedKeyRepositoryFindByAliasCompletedHandler(IExpectationStore expectationStore)
+        : base(expectationStore)
     {
-        _expectationStore = expectationStore;
-    }
-
-    public override Task ProcessAsync(EncapsulatedKeyRepositoryFindByAliasCompleted message)
-    {
-        _expectationStore.Fulfil(message.RequestId, message);
-        return Task.CompletedTask;
     }
 }
 
@@ -88,26 +94,18 @@ internal record EncapsulatedKeyRepositoryCreateRequest(
     HexBytes Encapsulation,
     IReadOnlyDictionary<string, string> Metadata) : IProtocolMessage;
 
-internal record EncapsulatedKeyRepositoryCreateCompleted : IProtocolMessage
+internal record EncapsulatedKeyRepositoryCreateCompleted : IEncapsulatedKeyRepositoryReply
 {
     public required string RequestId { get; init; }
     public required EncapsulatedKeyRepositoryRecord Record { get; init; }
 }
 
-internal class
-    EncapsulatedKeyRepositoryCreateCompletedHandler : MessageHandler<EncapsulatedKeyRepositoryCreateCompleted>
+internal class EncapsulatedKeyRepositoryCreateCompletedHandler
+    : EncapsulatedKeyRepositoryReplyHandler<EncapsulatedKeyRepositoryCreateCompleted>
 {
-    private readonly IExpectationStore _expectationStore;
-
     public EncapsulatedKeyRepositoryCreateCompletedHandler(IExpectationStore expectationStore)
+        : base(expectationStore)
     {
-        _expectationStore = expectationStore;
-    }
-
-    public override Task ProcessAsync(EncapsulatedKeyRepositoryCreateCompleted message)
-    {
-        _expectationStore.Fulfil(message.RequestId, message.Record);
-        return Task.CompletedTask;
     }
 }
 
@@ -118,75 +116,51 @@ internal record EncapsulatedKeyRepositoryImportRequest(
     HexBytes Encapsulation,
     IReadOnlyDictionary<string, string> Metadata) : IProtocolMessage;
 
-internal record EncapsulatedKeyRepositoryImportCompleted : IProtocolMessage
+internal record EncapsulatedKeyRepositoryImportCompleted : IEncapsulatedKeyRepositoryReply
 {
     public required string RequestId { get; init; }
     public required EncapsulatedKeyRepositoryRecord Record { get; init; }
 }
 
-internal class
-    EncapsulatedKeyRepositoryImportCompletedHandler : MessageHandler<EncapsulatedKeyRepositoryImportCompleted>
+internal class EncapsulatedKeyRepositoryImportCompletedHandler
+    : EncapsulatedKeyRepositoryReplyHandler<EncapsulatedKeyRepositoryImportCompleted>
 {
-    private readonly IExpectationStore _expectationStore;
-
     public EncapsulatedKeyRepositoryImportCompletedHandler(IExpectationStore expectationStore)
+        : base(expectationStore)
     {
-        _expectationStore = expectationStore;
-    }
-
-    public override Task ProcessAsync(EncapsulatedKeyRepositoryImportCompleted message)
-    {
-        _expectationStore.Fulfil(message.RequestId, message.Record);
-        return Task.CompletedTask;
     }
 }
 
 internal record EncapsulatedKeyRepositorySetAliasRequest(string RepositoryId, string KeyId, string? Alias)
     : IProtocolMessage;
 
-internal record EncapsulatedKeyRepositorySetAliasCompleted : IProtocolMessage
+internal record EncapsulatedKeyRepositorySetAliasCompleted : IEncapsulatedKeyRepositoryReply
 {
     public required string RequestId { get; init; }
 }
 
-internal class
-    EncapsulatedKeyRepositorySetAliasCompletedHandler : MessageHandler<EncapsulatedKeyRepositorySetAliasCompleted>
+internal class EncapsulatedKeyRepositorySetAliasCompletedHandler
+    : EncapsulatedKeyRepositoryReplyHandler<EncapsulatedKeyRepositorySetAliasCompleted>
 {
-    private readonly IExpectationStore _expectationStore;
-
     public EncapsulatedKeyRepositorySetAliasCompletedHandler(IExpectationStore expectationStore)
+        : base(expectationStore)
     {
-        _expectationStore = expectationStore;
-    }
-
-    public override Task ProcessAsync(EncapsulatedKeyRepositorySetAliasCompleted message)
-    {
-        _expectationStore.Fulfil(message.RequestId, true);
-        return Task.CompletedTask;
     }
 }
 
 internal record EncapsulatedKeyRepositoryDeleteRequest(string RepositoryId, string KeyId) : IProtocolMessage;
 
-internal record EncapsulatedKeyRepositoryDeleteCompleted : IProtocolMessage
+internal record EncapsulatedKeyRepositoryDeleteCompleted : IEncapsulatedKeyRepositoryReply
 {
     public required string RequestId { get; init; }
 }
 
-internal class
-    EncapsulatedKeyRepositoryDeleteCompletedHandler : MessageHandler<EncapsulatedKeyRepositoryDeleteCompleted>
+internal class EncapsulatedKeyRepositoryDeleteCompletedHandler
+    : EncapsulatedKeyRepositoryReplyHandler<EncapsulatedKeyRepositoryDeleteCompleted>
 {
-    private readonly IExpectationStore _expectationStore;
-
     public EncapsulatedKeyRepositoryDeleteCompletedHandler(IExpectationStore expectationStore)
+        : base(expectationStore)
     {
-        _expectationStore = expectationStore;
-    }
-
-    public override Task ProcessAsync(EncapsulatedKeyRepositoryDeleteCompleted message)
-    {
-        _expectationStore.Fulfil(message.RequestId, true);
-        return Task.CompletedTask;
     }
 }
 
@@ -219,7 +193,7 @@ internal class EncapsulatedKeyRepositoryErrorCompletedHandler : MessageHandler<E
         {
             "KeyNotFound" => new EncapsulatedKeyNotFoundException(detail),
             "AliasInUse" => new EncapsulatedAliasInUseException(detail),
-            _ => new EncapsulatedKeyRepositoryException($"Unknown repository error '{message.ErrorType}'.")
+            _ => new EncapsulatedKeyRepositoryException($"Unknown repository error '{message.ErrorType}': {detail}")
         };
     }
 }

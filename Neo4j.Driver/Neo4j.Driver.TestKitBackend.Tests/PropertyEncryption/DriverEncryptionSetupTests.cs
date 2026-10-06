@@ -30,7 +30,7 @@ public class DriverEncryptionSetupTests
     public DriverEncryptionSetupTests()
     {
         _autoMocker.Use<Func<byte[]?, IKeyEncapsulationService>>(_ => Mock.Of<IKeyEncapsulationService>());
-        _autoMocker.Use<Func<ITestkitEncapsulatedKeyRepository>>(() => Mock.Of<ITestkitEncapsulatedKeyRepository>());
+        _autoMocker.Use<Func<ITestKitEncapsulatedKeyRepository>>(() => Mock.Of<ITestKitEncapsulatedKeyRepository>());
     }
 
     private DriverEncryptionObjects Prepare(params PropertyEncryptionProfileInput[] profiles)
@@ -77,10 +77,10 @@ public class DriverEncryptionSetupTests
     [Fact]
     public void Keys_the_repository_dictionary_by_profile_name()
     {
-        var repository1 = Mock.Of<ITestkitEncapsulatedKeyRepository>();
-        var repository2 = Mock.Of<ITestkitEncapsulatedKeyRepository>();
-        var repositories = new Queue<ITestkitEncapsulatedKeyRepository>(new[] { repository1, repository2 });
-        _autoMocker.Use<Func<ITestkitEncapsulatedKeyRepository>>(repositories.Dequeue);
+        var repository1 = Mock.Of<ITestKitEncapsulatedKeyRepository>();
+        var repository2 = Mock.Of<ITestKitEncapsulatedKeyRepository>();
+        var repositories = new Queue<ITestKitEncapsulatedKeyRepository>(new[] { repository1, repository2 });
+        _autoMocker.Use<Func<ITestKitEncapsulatedKeyRepository>>(repositories.Dequeue);
 
         var result = Prepare(
             new PropertyEncryptionProfileInput("profile-1", null),

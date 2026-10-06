@@ -27,7 +27,9 @@ public class HexBytesTests
         var a = new HexBytes([1, 2, 3]);
         var b = new HexBytes([1, 2, 3]);
 
-        a.Equals(b).Should().BeTrue();
+        var equal = a.Equals(b);
+
+        equal.Should().BeTrue();
     }
 
     [Fact]
@@ -36,6 +38,8 @@ public class HexBytesTests
         var a = new HexBytes([1, 2, 3]);
         var b = new HexBytes([1, 2, 4]);
 
-        a.Equals(b).Should().BeFalse();
+        var equal = a.Equals(b);
+
+        equal.Should().BeFalse();
     }
 }

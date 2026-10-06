@@ -18,16 +18,16 @@ using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.TestKitBackend.PropertyEncryption;
 
-internal class TestkitKeyEncapsulationService : IKeyEncapsulationService
+internal class TestKitKeyEncapsulationService : IKeyEncapsulationService
 {
-    private const string IvOption = "iv";
+    private const string IvMetadataKey = "iv";
     private const int KeyLength = 32;
     private const int IvLength = 12;
     private const int TagLength = 16;
 
     private readonly byte[] _kek;
 
-    public TestkitKeyEncapsulationService(byte[]? kek)
+    public TestKitKeyEncapsulationService(byte[]? kek)
     {
         _kek = kek ?? RandomNumberGenerator.GetBytes(KeyLength);
     }
@@ -49,7 +49,7 @@ internal class TestkitKeyEncapsulationService : IKeyEncapsulationService
             encapsulation.AsSpan(0, dataKey.Length),
             encapsulation.AsSpan(dataKey.Length));
 
-        var metadata = new Dictionary<string, string> { [IvOption] = Convert.ToBase64String(iv) };
+        var metadata = new Dictionary<string, string> { [IvMetadataKey] = Convert.ToBase64String(iv) };
 
         return Task.FromResult(new KeyEncapsulationResult(encapsulation, metadata, dataKey));
     }
@@ -60,9 +60,9 @@ internal class TestkitKeyEncapsulationService : IKeyEncapsulationService
         CancellationToken cancellationToken = default)
     {
         Span<byte> iv = stackalloc byte[IvLength];
-        if (!Convert.TryFromBase64String(metadata[IvOption], iv, out var ivLength) || ivLength != IvLength)
+        if (!Convert.TryFromBase64String(metadata[IvMetadataKey], iv, out var ivLength) || ivLength != IvLength)
         {
-            throw new ArgumentException($"The '{IvOption}' option is not a {IvLength}-byte base64 value.");
+            throw new ArgumentException($"The '{IvMetadataKey}' option is not a {IvLength}-byte base64 value.");
         }
 
         var dataKey = new byte[encapsulation.Length - TagLength];

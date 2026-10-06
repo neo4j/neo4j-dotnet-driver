@@ -20,24 +20,24 @@ using Xunit;
 
 namespace Neo4j.Driver.TestKitBackend.Tests.PropertyEncryption;
 
-public class TestkitKeyEncapsulationServiceTests
+public class TestKitKeyEncapsulationServiceTests
 {
     private static readonly byte[] Kek = Enumerable.Range(0, 32).Select(i => (byte)i).ToArray();
     private static readonly byte[] OtherKek = Enumerable.Range(100, 32).Select(i => (byte)i).ToArray();
 
     private static readonly IKeyEncapsulationOptions NoOptions = new EmptyOptions();
 
-    private static TestkitKeyEncapsulationService Service(byte[]? kek = null)
+    private static TestKitKeyEncapsulationService Service(byte[]? kek = null)
     {
-        return new TestkitKeyEncapsulationService(kek ?? Kek);
+        return new TestKitKeyEncapsulationService(kek ?? Kek);
     }
 
-    private static Task<KeyEncapsulationResult> Encapsulate(TestkitKeyEncapsulationService service)
+    private static Task<KeyEncapsulationResult> Encapsulate(TestKitKeyEncapsulationService service)
     {
         return service.EncapsulateAsync(NoOptions, TestContext.Current.CancellationToken);
     }
 
-    private static Task<byte[]> Decapsulate(TestkitKeyEncapsulationService service, KeyEncapsulationResult result)
+    private static Task<byte[]> Decapsulate(TestKitKeyEncapsulationService service, KeyEncapsulationResult result)
     {
         return service.DecapsulateAsync(
             result.Encapsulation,
@@ -78,7 +78,7 @@ public class TestkitKeyEncapsulationServiceTests
     }
 
     [Fact]
-    public async Task Records_the_wrap_iv_in_the_options()
+    public async Task Records_the_wrap_iv_in_the_metadata()
     {
         var encapsulated = await Encapsulate(Service());
 
@@ -110,9 +110,9 @@ public class TestkitKeyEncapsulationServiceTests
     [Fact]
     public async Task Generates_its_own_kek_when_none_is_supplied()
     {
-        var encapsulated = await Encapsulate(new TestkitKeyEncapsulationService(null));
+        var encapsulated = await Encapsulate(new TestKitKeyEncapsulationService(null));
 
-        var act = () => Decapsulate(new TestkitKeyEncapsulationService(null), encapsulated);
+        var act = () => Decapsulate(new TestKitKeyEncapsulationService(null), encapsulated);
 
         await act.Should().ThrowAsync<System.Security.Cryptography.CryptographicException>();
     }

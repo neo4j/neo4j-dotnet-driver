@@ -30,7 +30,7 @@ public class DriverEncryptionObjectStoreTests
     {
         var repositories = profileNames.ToDictionary(
             name => name,
-            _ => Mock.Of<ITestkitEncapsulatedKeyRepository>());
+            _ => Mock.Of<ITestKitEncapsulatedKeyRepository>());
 
         var objects = new DriverEncryptionObjects([], repositories);
         _store.StoreObjects(driver, objects);
@@ -106,5 +106,33 @@ public class DriverEncryptionObjectStoreTests
         var act = () => _store.GetRepository(_driver);
 
         act.Should().Throw<TestKitProtocolException>();
+    }
+
+    [Fact]
+    public async Task Stores_every_driver_when_drivers_are_created_concurrently()
+    {
+        var drivers = Enumerable.Range(0, 2000).Select(_ => Mock.Of<IDriver>()).ToArray();
+        var repositories = new Dictionary<string, ITestKitEncapsulatedKeyRepository>
+        {
+            ["p1"] = Mock.Of<ITestKitEncapsulatedKeyRepository>()
+        };
+
+        await Task.WhenAll(
+            drivers.Select(driver => Task.Run(() => _store.StoreObjects(driver, new([], repositories)))));
+        var stored = drivers.Count(driver => TryGetRepository(driver) is not null);
+
+        stored.Should().Be(drivers.Length);
+    }
+
+    private ITestKitEncapsulatedKeyRepository? TryGetRepository(IDriver driver)
+    {
+        try
+        {
+            return _store.GetRepository(driver, "p1");
+        }
+        catch (TestKitProtocolException)
+        {
+            return null;
+        }
     }
 }

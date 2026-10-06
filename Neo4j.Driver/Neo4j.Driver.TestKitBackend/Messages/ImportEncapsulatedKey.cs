@@ -50,8 +50,7 @@ internal class ImportEncapsulatedKeyHandler : MessageHandler<ImportEncapsulatedK
     {
         var key = await _driverEncryptionObjectStore
             .GetRepository(message.Driver, message.ProfileName)
-            .ImportAsync(message.Id, message.Alias, message.Encapsulation, message.Metadata)
-            .ConfigureAwait(false);
+            .ImportAsync(message.Id, message.Alias, message.Encapsulation, message.Metadata);
 
         await _responseWriter.WriteAsync(new EncapsulatedKeyResponse(key.Id, key.Alias));
     }

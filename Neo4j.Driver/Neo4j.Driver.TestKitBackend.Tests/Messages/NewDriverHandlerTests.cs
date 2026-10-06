@@ -135,10 +135,10 @@ public class NewDriverHandlerTests
     {
         var setup = new DriverEncryptionObjects(
             [Profile("profile-a"), Profile("profile-b")],
-            new Dictionary<string, ITestkitEncapsulatedKeyRepository>
+            new Dictionary<string, ITestKitEncapsulatedKeyRepository>
             {
-                ["profile-a"] = Mock.Of<ITestkitEncapsulatedKeyRepository>(r => r.RepositoryId == "repo-aaa"),
-                ["profile-b"] = Mock.Of<ITestkitEncapsulatedKeyRepository>(r => r.RepositoryId == "repo-bbb")
+                ["profile-a"] = Mock.Of<ITestKitEncapsulatedKeyRepository>(r => r.RepositoryId() == "repo-aaa"),
+                ["profile-b"] = Mock.Of<ITestKitEncapsulatedKeyRepository>(r => r.RepositoryId() == "repo-bbb")
             });
 
         _autoMocker.GetMock<IDriverEncryptionSetup>()
@@ -148,39 +148,41 @@ public class NewDriverHandlerTests
         return setup;
     }
 
+    private IDriver? _createdDriver;
+
+    private void CaptureTheCreatedDriver()
+    {
+        _autoMocker.GetMock<IObjectStore>()
+            .Setup(r => r.Store(It.IsAny<IDriver>()))
+            .Callback((IDriver driver) => _createdDriver = driver)
+            .Returns("driver-1");
+    }
+
     [Fact]
     public async Task Configures_the_driver_with_the_prepared_encryption_profiles()
     {
         var setup = PrepareReturnsSetupForTheRequestedProfiles();
-        IDriver? created = null;
-        _autoMocker.GetMock<IObjectStore>()
-            .Setup(r => r.Store(It.IsAny<IDriver>()))
-            .Callback((IDriver driver) => created = driver)
-            .Returns((IDriver driver) => "driver-1");
+        CaptureTheCreatedDriver();
 
         var handler = _autoMocker.CreateInstance<NewDriverHandler>();
 
         await handler.ProcessAsync(RequestWithEncryptionProfiles());
 
-        created!.Config.Preview_PropertyEncryptionProfiles.Should().Equal(setup.Profiles);
+        _createdDriver!.Config.Preview_PropertyEncryptionProfiles.Should().Equal(setup.Profiles);
     }
 
     [Fact]
     public async Task Stores_the_encryption_objects_against_the_created_driver()
     {
         var setup = PrepareReturnsSetupForTheRequestedProfiles();
-        IDriver? created = null;
-        _autoMocker.GetMock<IObjectStore>()
-            .Setup(r => r.Store(It.IsAny<IDriver>()))
-            .Callback((IDriver driver) => created = driver)
-            .Returns((IDriver driver) => "driver-1");
+        CaptureTheCreatedDriver();
 
         var handler = _autoMocker.CreateInstance<NewDriverHandler>();
 
         await handler.ProcessAsync(RequestWithEncryptionProfiles());
 
         _autoMocker.GetMock<IDriverEncryptionObjectStore>()
-            .Verify(s => s.StoreObjects(created!, setup), Times.Once);
+            .Verify(s => s.StoreObjects(_createdDriver!, setup), Times.Once);
     }
 
     [Fact]
@@ -202,17 +204,13 @@ public class NewDriverHandlerTests
     [Fact]
     public async Task Leaves_the_driver_unencrypted_when_the_request_specifies_no_profiles()
     {
-        IDriver? created = null;
-        _autoMocker.GetMock<IObjectStore>()
-            .Setup(r => r.Store(It.IsAny<IDriver>()))
-            .Callback((IDriver driver) => created = driver)
-            .Returns((IDriver driver) => "driver-1");
+        CaptureTheCreatedDriver();
 
         var handler = _autoMocker.CreateInstance<NewDriverHandler>();
 
         await handler.ProcessAsync(MinimalRequest());
 
-        created!.Config.Preview_PropertyEncryptionProfiles.Should().BeEmpty();
+        _createdDriver!.Config.Preview_PropertyEncryptionProfiles.Should().BeEmpty();
         _autoMocker.GetMock<IDriverEncryptionObjectStore>()
             .Verify(
                 s => s.StoreObjects(It.IsAny<IDriver>(), It.IsAny<DriverEncryptionObjects>()),
