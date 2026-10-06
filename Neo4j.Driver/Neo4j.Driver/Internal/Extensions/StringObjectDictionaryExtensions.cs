@@ -61,11 +61,6 @@ internal static class StringObjectDictionaryExtensions
             return false;
         }
 
-        public bool TryGetValue<T>(string key, [NotNullWhen(true)] out T? value)
-        {
-            return dict.TryGetValue<T>(key, out value, m => new InvalidOperationException(m));
-        }
-
         public bool TryGetValue<T>(
             string key,
             [NotNullWhen(true)] out T? value,
