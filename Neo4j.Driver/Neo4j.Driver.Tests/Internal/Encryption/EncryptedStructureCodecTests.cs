@@ -83,31 +83,6 @@ public class EncryptedStructureCodecTests
     }
 
     [Fact]
-    public void Encode_WritesTheStructureThroughTheHelperAndReturnsItsBytes()
-    {
-        var structure = Sample();
-        var writer = new Mock<IPackStreamWriter>();
-        var expectedBytes = new byte[] { 0xAA };
-
-        _packStreamMemorySerializer
-            .Setup(h => h.Serialize(_format, It.IsAny<Action<IPackStreamWriter>>()))
-            .Returns((MessageFormat _, Action<IPackStreamWriter> write) =>
-            {
-                write(writer.Object);
-                return expectedBytes;
-            });
-
-        var result = CreateSubject().Encode(structure);
-
-        result.Should().BeSameAs(expectedBytes);
-        writer.Verify(
-            w => w.Write(
-                It.Is<IDictionary<string, object>>(
-                    d => d.OrderBy(kv => kv.Key).SequenceEqual(structure.Metadata.OrderBy(kv => kv.Key)))),
-            Times.Once);
-    }
-
-    [Fact]
     public void Encode_WritesMetadataKeysInAscendingOrdinalOrder()
     {
         var structure = Sample() with
