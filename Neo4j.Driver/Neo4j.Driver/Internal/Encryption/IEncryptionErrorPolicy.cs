@@ -17,11 +17,12 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
 internal interface IEncryptionErrorPolicy
 {
     [DoesNotReturn]
-    void Throw(string operationName, Exception exception);
+    void Throw(string operationName, Exception exception, CancellationToken cancellationToken);
 }

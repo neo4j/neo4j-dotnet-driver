@@ -18,6 +18,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
+using System.Threading;
 using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
@@ -25,9 +26,10 @@ namespace Neo4j.Driver.Internal.Encryption;
 internal class EncryptionErrorPolicy : IEncryptionErrorPolicy
 {
     [DoesNotReturn]
-    public void Throw(string operationName, Exception exception)
+    public void Throw(string operationName, Exception exception, CancellationToken cancellationToken)
     {
-        if (exception is Neo4jException)
+        var callerCancelled = exception is OperationCanceledException && cancellationToken.IsCancellationRequested;
+        if (exception is Neo4jException || callerCancelled)
         {
             ExceptionDispatchInfo.Capture(exception).Throw();
         }

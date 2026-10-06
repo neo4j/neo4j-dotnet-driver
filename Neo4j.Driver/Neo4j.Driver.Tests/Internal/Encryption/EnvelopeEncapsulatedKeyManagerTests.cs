@@ -165,13 +165,13 @@ public class EnvelopeEncapsulatedKeyManagerTests
         var wrapped = new PropertyEncryptionException("wrapped", cause);
 
         _kes.Setup(k => k.EncapsulateAsync(It.IsAny<IKeyEncapsulationOptions>(), token)).ThrowsAsync(cause);
-        _errorPolicy.Setup(p => p.Throw("key creation", cause)).Throws(wrapped);
+        _errorPolicy.Setup(p => p.Throw("key creation", cause, It.IsAny<CancellationToken>())).Throws(wrapped);
 
         var act = () => CreateSubject().CreateAsync("alias-1", cancellationToken: token);
 
         var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
         thrown.Which.Should().BeSameAs(wrapped);
-        _errorPolicy.Verify(p => p.Throw("key creation", cause), Times.Once);
+        _errorPolicy.Verify(p => p.Throw("key creation", cause, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     public static TheoryData<string, Func<IEncapsulatedKeyManager, CancellationToken, Task>> RepositoryOperations =>
@@ -196,12 +196,12 @@ public class EnvelopeEncapsulatedKeyManagerTests
         _repository.Setup(r => r.FindByAliasAsync(It.IsAny<string>(), token)).ThrowsAsync(cause);
         _repository.Setup(r => r.SetAliasByIdAsync(It.IsAny<string>(), It.IsAny<string?>(), token)).ThrowsAsync(cause);
         _repository.Setup(r => r.DeleteByIdAsync(It.IsAny<string>(), token)).ThrowsAsync(cause);
-        _errorPolicy.Setup(p => p.Throw(operationName, cause)).Throws(wrapped);
+        _errorPolicy.Setup(p => p.Throw(operationName, cause, It.IsAny<CancellationToken>())).Throws(wrapped);
 
         var act = () => operation(CreateSubject(), token);
 
         var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
         thrown.Which.Should().BeSameAs(wrapped);
-        _errorPolicy.Verify(p => p.Throw(operationName, cause), Times.Once);
+        _errorPolicy.Verify(p => p.Throw(operationName, cause, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

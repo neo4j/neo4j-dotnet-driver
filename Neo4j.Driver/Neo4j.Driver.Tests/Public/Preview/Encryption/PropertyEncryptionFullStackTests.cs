@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
@@ -266,6 +267,16 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
             .EncryptToBytesAsync(token);
 
         await act.Should().ThrowAsync<EncapsulatedAliasNotFoundException>();
+    }
+
+    [Fact]
+    public async Task CreateKey_WithACancelledToken_ThrowsOperationCanceled()
+    {
+        var cancelled = new CancellationToken(canceled: true);
+
+        var act = () => _propertyEncryption.KeyManager().CreateAsync("other", cancellationToken: cancelled);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
     }
 
     [Fact]

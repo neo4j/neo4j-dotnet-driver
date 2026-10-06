@@ -184,7 +184,7 @@ public class EncryptionEngineDispatcherTests
 
         var wrapped = new PropertyEncryptionException("wrapped", cause);
         var errorPolicy = new Mock<IEncryptionErrorPolicy>();
-        errorPolicy.Setup(p => p.Throw("encryption", cause)).Throws(wrapped);
+        errorPolicy.Setup(p => p.Throw("encryption", cause, It.IsAny<CancellationToken>())).Throws(wrapped);
 
         var dispatcher = new EncryptionEngineDispatcher([engine.Object], errorPolicy.Object);
 
@@ -192,7 +192,7 @@ public class EncryptionEngineDispatcherTests
 
         var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
         thrown.Which.Should().BeSameAs(wrapped);
-        errorPolicy.Verify(p => p.Throw("encryption", cause), Times.Once);
+        errorPolicy.Verify(p => p.Throw("encryption", cause, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -213,7 +213,7 @@ public class EncryptionEngineDispatcherTests
 
         var wrapped = new PropertyEncryptionException("wrapped", cause);
         var errorPolicy = new Mock<IEncryptionErrorPolicy>();
-        errorPolicy.Setup(p => p.Throw("decryption", cause)).Throws(wrapped);
+        errorPolicy.Setup(p => p.Throw("decryption", cause, It.IsAny<CancellationToken>())).Throws(wrapped);
 
         var dispatcher = new EncryptionEngineDispatcher([engine.Object], errorPolicy.Object);
 
@@ -221,6 +221,6 @@ public class EncryptionEngineDispatcherTests
 
         var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
         thrown.Which.Should().BeSameAs(wrapped);
-        errorPolicy.Verify(p => p.Throw("decryption", cause), Times.Once);
+        errorPolicy.Verify(p => p.Throw("decryption", cause, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

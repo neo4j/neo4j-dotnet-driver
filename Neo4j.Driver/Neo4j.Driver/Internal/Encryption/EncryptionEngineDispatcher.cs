@@ -56,7 +56,7 @@ internal class EncryptionEngineDispatcher : IEncryptionEngineDispatcher
         }
         catch (Exception e)
         {
-            _errorPolicy.Throw("encryption", e);
+            _errorPolicy.Throw("encryption", e, cancellationToken);
             throw;
         }
     }
@@ -81,7 +81,7 @@ internal class EncryptionEngineDispatcher : IEncryptionEngineDispatcher
         }
         catch (Exception e)
         {
-            _errorPolicy.Throw("decryption", e);
+            _errorPolicy.Throw("decryption", e, cancellationToken);
             throw;
         }
     }

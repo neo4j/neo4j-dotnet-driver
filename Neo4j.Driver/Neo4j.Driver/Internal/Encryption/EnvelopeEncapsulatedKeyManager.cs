@@ -59,7 +59,7 @@ internal class EnvelopeEncapsulatedKeyManager : IEncapsulatedKeyManager
         }
         catch (Exception e)
         {
-            _errorPolicy.Throw("key creation", e);
+            _errorPolicy.Throw("key creation", e, cancellationToken);
             throw;
         }
     }
@@ -72,7 +72,7 @@ internal class EnvelopeEncapsulatedKeyManager : IEncapsulatedKeyManager
         }
         catch (Exception e)
         {
-            _errorPolicy.Throw("key lookup", e);
+            _errorPolicy.Throw("key lookup", e, cancellationToken);
             throw;
         }
     }
@@ -85,7 +85,7 @@ internal class EnvelopeEncapsulatedKeyManager : IEncapsulatedKeyManager
         }
         catch (Exception e)
         {
-            _errorPolicy.Throw("alias update", e);
+            _errorPolicy.Throw("alias update", e, cancellationToken);
             throw;
         }
     }
@@ -103,7 +103,7 @@ internal class EnvelopeEncapsulatedKeyManager : IEncapsulatedKeyManager
         }
         catch (Exception e)
         {
-            _errorPolicy.Throw("key deletion", e);
+            _errorPolicy.Throw("key deletion", e, cancellationToken);
             throw;
         }
     }
