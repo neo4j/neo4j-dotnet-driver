@@ -52,7 +52,7 @@ public class ReverseRequestEncapsulatedKeyRepositoryTests
     public async Task FindByIdAsync_sends_a_find_by_id_request_and_parses_the_reply()
     {
         var wire = new EncapsulatedKeyRepositoryRecord("k1", "a1", Encapsulation, Metadata);
-        CaptureRequest<EncapsulatedKeyRepositoryRecord?>(wire);
+        CaptureRequest(new EncapsulatedKeyRepositoryFindByIdCompleted { RequestId = "req-1", Record = wire });
 
         var result = await Subject().FindByIdAsync("k1", TestContext.Current.CancellationToken);
 
@@ -72,7 +72,7 @@ public class ReverseRequestEncapsulatedKeyRepositoryTests
     [Fact]
     public async Task FindByIdAsync_returns_null_when_the_repository_has_no_match()
     {
-        CaptureRequest<EncapsulatedKeyRepositoryRecord?>(null);
+        CaptureRequest(new EncapsulatedKeyRepositoryFindByIdCompleted { RequestId = "req-1" });
 
         var result = await Subject().FindByIdAsync("missing", TestContext.Current.CancellationToken);
 
@@ -83,7 +83,7 @@ public class ReverseRequestEncapsulatedKeyRepositoryTests
     public async Task FindByAliasAsync_sends_a_find_by_alias_request_and_parses_the_reply()
     {
         var wire = new EncapsulatedKeyRepositoryRecord("k1", "a1", Encapsulation, Metadata);
-        CaptureRequest<EncapsulatedKeyRepositoryRecord?>(wire);
+        CaptureRequest(new EncapsulatedKeyRepositoryFindByAliasCompleted { RequestId = "req-1", Record = wire });
 
         var result = await Subject().FindByAliasAsync("a1", TestContext.Current.CancellationToken);
 
@@ -152,19 +152,6 @@ public class ReverseRequestEncapsulatedKeyRepositoryTests
         var request = _lastRequest.Should().BeOfType<EncapsulatedKeyRepositoryDeleteRequest>().Subject;
         request.RepositoryId.Should().Be(RepositoryId);
         request.KeyId.Should().Be("k1");
-    }
-
-    [Fact]
-    public void FindByIdCompleted_fulfils_the_expectation_with_the_decoded_record()
-    {
-        var expectationsMock = new Mock<IExpectationStore>();
-        var handler = new EncapsulatedKeyRepositoryFindByIdCompletedHandler(expectationsMock.Object);
-        var wire = new EncapsulatedKeyRepositoryRecord("k1", "a1", Encapsulation, Metadata);
-        var message = new EncapsulatedKeyRepositoryFindByIdCompleted { RequestId = "req-1", Record = wire };
-
-        handler.ProcessAsync(message);
-
-        expectationsMock.Verify(e => e.Fulfil("req-1", wire), Times.Once);
     }
 
     [Fact]

@@ -52,7 +52,7 @@ internal class
 
     public override Task ProcessAsync(EncapsulatedKeyRepositoryFindByIdCompleted message)
     {
-        _expectationStore.Fulfil(message.RequestId, message.Record);
+        _expectationStore.Fulfil(message.RequestId, message);
         return Task.CompletedTask;
     }
 }
@@ -77,7 +77,7 @@ internal class
 
     public override Task ProcessAsync(EncapsulatedKeyRepositoryFindByAliasCompleted message)
     {
-        _expectationStore.Fulfil(message.RequestId, message.Record);
+        _expectationStore.Fulfil(message.RequestId, message);
         return Task.CompletedTask;
     }
 }

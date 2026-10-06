@@ -38,21 +38,22 @@ internal class ReverseRequestEncapsulatedKeyRepository : ITestkitEncapsulatedKey
 
     public async Task<EncapsulatedKeyRecord?> FindByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        var repositoryRecord = await _roundTrip
-            .SendExpectingAsync<EncapsulatedKeyRepositoryRecord?>(new EncapsulatedKeyRepositoryFindByIdRequest(RepositoryId, id))
+        var reply = await _roundTrip
+            .SendExpectingAsync<EncapsulatedKeyRepositoryFindByIdCompleted>(
+                new EncapsulatedKeyRepositoryFindByIdRequest(RepositoryId, id))
             .ConfigureAwait(false);
 
-        return repositoryRecord?.ToRecord();
+        return reply.Record?.ToRecord();
     }
 
     public async Task<EncapsulatedKeyRecord?> FindByAliasAsync(string alias, CancellationToken cancellationToken = default)
     {
-        var repositoryRecord = await _roundTrip
-            .SendExpectingAsync<EncapsulatedKeyRepositoryRecord?>(
+        var reply = await _roundTrip
+            .SendExpectingAsync<EncapsulatedKeyRepositoryFindByAliasCompleted>(
                 new EncapsulatedKeyRepositoryFindByAliasRequest(RepositoryId, alias))
             .ConfigureAwait(false);
 
-        return repositoryRecord?.ToRecord();
+        return reply.Record?.ToRecord();
     }
 
     public async Task<EncapsulatedKeyRecord> CreateAsync(
