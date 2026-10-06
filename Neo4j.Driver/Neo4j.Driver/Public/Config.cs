@@ -260,7 +260,11 @@ public class Config
     /// </summary>
     public ITlsNegotiator TlsNegotiator { get; internal set; }
 
-    internal IReadOnlyList<IPropertyEncryptionProfile> Preview_PropertyEncryptionProfiles { get; set; } = [];
+    /// <summary>
+    /// The property encryption profiles available through <c>driver.PropertyEncryption()</c>. This property is part
+    /// of the Encryption Preview feature, and is subject to change or removal.
+    /// </summary>
+    public IReadOnlyList<IPropertyEncryptionProfile> PropertyEncryptionProfiles { get; internal set; } = [];
 }
 
 /// <summary>The configuration for the driver's underlying message reading from the network.</summary>

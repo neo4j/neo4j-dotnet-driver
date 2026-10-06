@@ -21,7 +21,7 @@ namespace Neo4j.Driver.Preview.Encryption;
 
 /// <summary>
 /// Extension methods that attach the client-side property encryption API to
-/// <see cref="IDriver"/>, <see cref="Config"/>, and <see cref="ConfigBuilder"/>. This class is part
+/// <see cref="IDriver"/> and <see cref="ConfigBuilder"/>. This class is part
 /// of the Encryption Preview feature, and is subject to change or removal.
 /// </summary>
 public static class EncryptionPreviewExtensions
@@ -45,19 +45,6 @@ public static class EncryptionPreviewExtensions
             }
 
             return internalDriver.PropertyEncryption();
-        }
-    }
-
-    extension(Config config)
-    {
-        /// <summary>
-        /// Gets the property encryption profiles configured for the driver. This method is part of the
-        /// Encryption Preview feature, and is subject to change or removal.
-        /// </summary>
-        /// <returns>A read-only list of property encryption profiles.</returns>
-        public IReadOnlyList<IPropertyEncryptionProfile> PropertyEncryptionProfiles()
-        {
-            return config.Preview_PropertyEncryptionProfiles;
         }
     }
 

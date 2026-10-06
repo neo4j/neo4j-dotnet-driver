@@ -649,7 +649,7 @@ public sealed class ConfigBuilder
                 nameof(propertyEncryptionProfiles));
         }
 
-        _config.Preview_PropertyEncryptionProfiles = [..propertyEncryptionProfiles];
+        _config.PropertyEncryptionProfiles = [..propertyEncryptionProfiles];
         return this;
     }
 }

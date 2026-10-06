@@ -77,7 +77,7 @@ public class ConfigTests
         {
             var config = new Config();
 
-            config.PropertyEncryptionProfiles().Should().BeEmpty();
+            config.PropertyEncryptionProfiles.Should().BeEmpty();
         }
 
         [Fact]
@@ -488,7 +488,7 @@ public class ConfigTests
             var profile = new ValidProfile("profile-1");
             var config = Config.Builder.WithPropertyEncryptionProfiles([profile]).Build();
 
-            config.PropertyEncryptionProfiles().Should().ContainSingle().Which.Should().Be(profile);
+            config.PropertyEncryptionProfiles.Should().ContainSingle().Which.Should().Be(profile);
         }
 
         private class AttackerProfile : IPropertyEncryptionProfile
@@ -512,7 +512,7 @@ public class ConfigTests
 
             profiles.Add(new ValidProfile("profile-2"));
 
-            config.PropertyEncryptionProfiles().Should().ContainSingle();
+            config.PropertyEncryptionProfiles.Should().ContainSingle();
         }
 
         [Fact]

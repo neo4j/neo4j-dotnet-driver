@@ -168,7 +168,7 @@ public class NewDriverHandlerTests
 
         await handler.ProcessAsync(RequestWithEncryptionProfiles());
 
-        _createdDriver!.Config.Preview_PropertyEncryptionProfiles.Should().Equal(setup.Profiles);
+        _createdDriver!.Config.PropertyEncryptionProfiles.Should().Equal(setup.Profiles);
     }
 
     [Fact]
@@ -210,7 +210,7 @@ public class NewDriverHandlerTests
 
         await handler.ProcessAsync(MinimalRequest());
 
-        _createdDriver!.Config.Preview_PropertyEncryptionProfiles.Should().BeEmpty();
+        _createdDriver!.Config.PropertyEncryptionProfiles.Should().BeEmpty();
         _autoMocker.GetMock<IDriverEncryptionObjectStore>()
             .Verify(
                 s => s.StoreObjects(It.IsAny<IDriver>(), It.IsAny<DriverEncryptionObjects>()),

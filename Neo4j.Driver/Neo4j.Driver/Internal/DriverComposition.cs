@@ -48,7 +48,7 @@ internal partial class DriverComposition : IDriverComposition
                 ctx =>
                 {
                     ctx.Inject<DriverContext>(out var driverContext);
-                    return driverContext.Config.Preview_PropertyEncryptionProfiles
+                    return driverContext.Config.PropertyEncryptionProfiles
                         .Cast<IInternalEncryptionProfile>();
                 })
 
