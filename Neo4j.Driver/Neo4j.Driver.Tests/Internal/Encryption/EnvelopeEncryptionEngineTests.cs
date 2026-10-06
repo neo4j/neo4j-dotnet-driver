@@ -160,7 +160,6 @@ public class EnvelopeEncryptionEngineTests
     [InlineData(new byte[] { 0x99 })]
     public async Task TryStartDecrypt_ResolvesKeyByIdAndUsesSuppliedAadElsePersisted(byte[]? suppliedAad)
     {
-        var encrypted = new byte[] { 0xEE };
         var cipherOutput = new byte[] { 0xC0, 0xD0 };
         var persistedAad = new byte[] { 0xAA };
         var structureMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
@@ -185,7 +184,6 @@ public class EnvelopeEncryptionEngineTests
         const long value = 5L;
         var profile = Profile();
 
-        _autoMocker.GetMock<IEncryptedValueBytesCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
         _autoMocker.GetMock<IEnvelopeMetadataExtractor>().Setup(e => e.Extract(structureMetadata)).Returns(envelopeMetadata);
 
         _autoMocker.GetMock<IEnvelopeDataKeyProvider>()
@@ -205,7 +203,7 @@ public class EnvelopeEncryptionEngineTests
         var subject = _autoMocker.CreateInstance<EnvelopeEncryptionEngine>();
         var started = subject.TryStartDecrypt(
             profile,
-            encrypted,
+            structure,
             suppliedAad,
             TestContext.Current.CancellationToken,
             out var decryptedTask);
@@ -219,7 +217,6 @@ public class EnvelopeEncryptionEngineTests
     [Fact]
     public async Task TryStartDecrypt_WithAProfileTypeTheDriverCannotHandle_ThrowsNamingThatType()
     {
-        var encrypted = new byte[] { 0xEE };
         var structure = new EncryptedStructure(
             "STATIC_KEYS",
             1,
@@ -230,12 +227,11 @@ public class EnvelopeEncryptionEngineTests
             0,
             new Dictionary<string, object>());
 
-        _autoMocker.GetMock<IEncryptedValueBytesCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
 
         var subject = _autoMocker.CreateInstance<EnvelopeEncryptionEngine>();
         subject.TryStartDecrypt(
             Profile(),
-            encrypted,
+            structure,
             aad: null,
             TestContext.Current.CancellationToken,
             out var decryptedTask);
@@ -250,7 +246,6 @@ public class EnvelopeEncryptionEngineTests
     [Fact]
     public async Task TryStartDecrypt_WithAProfileVersionTheDriverCannotHandle_ThrowsNamingThatVersion()
     {
-        var encrypted = new byte[] { 0xEE };
         var structure = new EncryptedStructure(
             "ENVELOPE",
             2,
@@ -261,12 +256,11 @@ public class EnvelopeEncryptionEngineTests
             0,
             new Dictionary<string, object>());
 
-        _autoMocker.GetMock<IEncryptedValueBytesCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
 
         var subject = _autoMocker.CreateInstance<EnvelopeEncryptionEngine>();
         subject.TryStartDecrypt(
             Profile(),
-            encrypted,
+            structure,
             aad: null,
             TestContext.Current.CancellationToken,
             out var decryptedTask);
@@ -281,7 +275,6 @@ public class EnvelopeEncryptionEngineTests
     [Fact]
     public async Task TryStartDecrypt_GuardReportsUnsupportedBaselineType_ReturnsItWithoutDecrypting()
     {
-        var encrypted = new byte[] { 0xEE };
         var structure = new EncryptedStructure(
             "ENVELOPE",
             1,
@@ -292,7 +285,6 @@ public class EnvelopeEncryptionEngineTests
             0,
             new Dictionary<string, object>());
 
-        _autoMocker.GetMock<IEncryptedValueBytesCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
 
         var unsupported = new UnsupportedType("VECTOR", 7, 0, null);
         UnsupportedType? guardResult = unsupported;
@@ -303,7 +295,7 @@ public class EnvelopeEncryptionEngineTests
         var subject = _autoMocker.CreateInstance<EnvelopeEncryptionEngine>();
         var started = subject.TryStartDecrypt(
             Profile(),
-            encrypted,
+            structure,
             aad: null,
             TestContext.Current.CancellationToken,
             out var decryptedTask);
@@ -317,7 +309,6 @@ public class EnvelopeEncryptionEngineTests
     [Fact]
     public async Task TryStartDecrypt_PersistedAadOnly_PassesTheRawNullAadToTheGuardNotTheResolvedAad()
     {
-        var encrypted = new byte[] { 0xEE };
         var cipherOutput = new byte[] { 0xC0, 0xD0 };
         var persistedAad = new byte[] { 0xAA };
         var structureMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
@@ -342,7 +333,6 @@ public class EnvelopeEncryptionEngineTests
         const long value = 5L;
         var profile = Profile();
 
-        _autoMocker.GetMock<IEncryptedValueBytesCodec>().Setup(c => c.Decode(Matches(encrypted))).Returns(structure);
         _autoMocker.GetMock<IEnvelopeMetadataExtractor>().Setup(e => e.Extract(structureMetadata)).Returns(envelopeMetadata);
 
         _autoMocker.GetMock<IBaselineCompatibilityGuard>()
@@ -367,7 +357,7 @@ public class EnvelopeEncryptionEngineTests
         var subject = _autoMocker.CreateInstance<EnvelopeEncryptionEngine>();
         var started = subject.TryStartDecrypt(
             profile,
-            encrypted,
+            structure,
             aad: null,
             TestContext.Current.CancellationToken,
             out var decryptedTask);
@@ -403,7 +393,7 @@ public class EnvelopeEncryptionEngineTests
 
         var result = subject.TryStartDecrypt(
             Mock.Of<IInternalEncryptionProfile>(),
-            [0xEE],
+            new EncryptedStructure("ENVELOPE", 1, ProfileName, [], "INTEGER", 1, 0, new Dictionary<string, object>()),
             aad: null,
             TestContext.Current.CancellationToken,
             out var decrypted);

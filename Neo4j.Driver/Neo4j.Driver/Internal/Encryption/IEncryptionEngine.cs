@@ -34,7 +34,7 @@ internal interface IEncryptionEngine
 
     bool TryStartDecrypt(
         IInternalEncryptionProfile profile,
-        byte[] encrypted,
+        EncryptedStructure structure,
         byte[]? aad,
         CancellationToken cancellationToken,
         [NotNullWhen(true)] out Task<object?>? decryptionTask);

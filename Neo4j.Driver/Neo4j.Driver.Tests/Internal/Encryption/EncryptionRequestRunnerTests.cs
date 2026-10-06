@@ -16,6 +16,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -48,6 +49,11 @@ public class EncryptionRequestRunnerTests
     private EncryptionRequestRunner CreateSubject()
     {
         return _autoMocker.CreateInstance<EncryptionRequestRunner>();
+    }
+
+    private static EncryptedStructure StructureForProfile(string profileName)
+    {
+        return new EncryptedStructure("ENVELOPE", 1, profileName, [], "STRING", 1, 0, new Dictionary<string, object>());
     }
 
     [Fact]
@@ -89,7 +95,7 @@ public class EncryptionRequestRunnerTests
     }
 
     [Fact]
-    public async Task DecryptAsync_WithExplicitAad_PeeksTheProfileNameAndDispatchesWithSerializedAad()
+    public async Task DecryptAsync_WithExplicitAad_DecodesOnceAndDispatchesTheStructureWithSerializedAad()
     {
         var token = TestContext.Current.CancellationToken;
         var encrypted = new byte[] { 0xEE };
@@ -98,10 +104,11 @@ public class EncryptionRequestRunnerTests
         var aadBytes = new byte[] { 0xAA };
         object expected = 5L;
 
-        _encryptedValueBytesCodec.Setup(c => c.PeekProfileName(encrypted)).Returns("profile-a");
+        var structure = StructureForProfile("profile-a");
+        _encryptedValueBytesCodec.Setup(c => c.Decode(encrypted)).Returns(structure);
         _registry.Setup(r => r.Get("profile-a")).Returns(profile);
         _plaintextCodec.Setup(c => c.Serialize(aad)).Returns(aadBytes);
-        _dispatcher.Setup(d => d.DispatchDecryptAsync(profile, encrypted, aadBytes, token)).ReturnsAsync(expected);
+        _dispatcher.Setup(d => d.DispatchDecryptAsync(profile, structure, aadBytes, token)).ReturnsAsync(expected);
 
         var request = new DecryptRequest(encrypted, aad);
         var result = await CreateSubject().DecryptAsync(request, token);
@@ -117,9 +124,10 @@ public class EncryptionRequestRunnerTests
         var profile = Mock.Of<IInternalEncryptionProfile>();
         object expected = "decrypted-value";
 
-        _encryptedValueBytesCodec.Setup(c => c.PeekProfileName(encrypted)).Returns("profile-a");
+        var structure = StructureForProfile("profile-a");
+        _encryptedValueBytesCodec.Setup(c => c.Decode(encrypted)).Returns(structure);
         _registry.Setup(r => r.Get("profile-a")).Returns(profile);
-        _dispatcher.Setup(d => d.DispatchDecryptAsync(profile, encrypted, null, token)).ReturnsAsync(expected);
+        _dispatcher.Setup(d => d.DispatchDecryptAsync(profile, structure, null, token)).ReturnsAsync(expected);
 
         var request = new DecryptRequest(encrypted, null);
         var result = await CreateSubject().DecryptAsync(request, token);
@@ -162,7 +170,8 @@ public class EncryptionRequestRunnerTests
     public async Task DecryptAsync_FaultsTheReturnedTask_WhenTheProfileCannotBeResolved()
     {
         var encrypted = new byte[] { 0xEE };
-        _encryptedValueBytesCodec.Setup(c => c.PeekProfileName(encrypted)).Returns("missing");
+        var structure = StructureForProfile("missing");
+        _encryptedValueBytesCodec.Setup(c => c.Decode(encrypted)).Returns(structure);
         _registry.Setup(r => r.Get("missing")).Throws(new EncryptionProfileNotFoundException("missing"));
 
         var request = new DecryptRequest(encrypted, null);
@@ -173,14 +182,14 @@ public class EncryptionRequestRunnerTests
     }
 
     [Fact]
-    public async Task DecryptAsync_WhenTheProfileNameCannotBeRead_DelegatesToTheErrorPolicy()
+    public async Task DecryptAsync_WhenTheValueCannotBeDecoded_DelegatesToTheErrorPolicy()
     {
         var token = TestContext.Current.CancellationToken;
         var encrypted = new byte[] { 0x01 };
         var cause = new EndOfStreamException();
         var wrapped = new PropertyEncryptionException("wrapped", cause);
 
-        _encryptedValueBytesCodec.Setup(c => c.PeekProfileName(encrypted)).Throws(cause);
+        _encryptedValueBytesCodec.Setup(c => c.Decode(encrypted)).Throws(cause);
         _autoMocker.GetMock<IEncryptionErrorPolicy>()
             .Setup(p => p.Throw("decryption", cause, token))
             .Throws(wrapped);
@@ -248,9 +257,10 @@ public class EncryptionRequestRunnerTests
         var cause = new InvalidOperationException("kes blew up");
         var wrapped = new PropertyEncryptionException("wrapped", cause);
 
-        _encryptedValueBytesCodec.Setup(c => c.PeekProfileName(encrypted)).Returns("profile-a");
+        var structure = StructureForProfile("profile-a");
+        _encryptedValueBytesCodec.Setup(c => c.Decode(encrypted)).Returns(structure);
         _dispatcher
-            .Setup(d => d.DispatchDecryptAsync(It.IsAny<IInternalEncryptionProfile>(), encrypted, null, token))
+            .Setup(d => d.DispatchDecryptAsync(It.IsAny<IInternalEncryptionProfile>(), structure, null, token))
             .ThrowsAsync(cause);
         _autoMocker.GetMock<IEncryptionErrorPolicy>()
             .Setup(p => p.Throw("decryption", cause, token))

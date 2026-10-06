@@ -118,31 +118,4 @@ public class EncryptedStructureCodecTests
 
         act.Should().Throw<ProtocolException>();
     }
-
-    [Fact]
-    public void PeekProfileName_SkipsTheProfileTypeAndVersion()
-    {
-        var reader = new Mock<IPackStreamReader>(MockBehavior.Strict);
-        reader.Setup(r => r.ReadStructHeader()).Returns(1L);
-        reader.Setup(r => r.ReadStructSignature()).Returns((byte)0x65);
-        reader.SetupSequence(r => r.ReadString()).Returns("ENVELOPE").Returns("Envelope");
-        reader.Setup(r => r.ReadInteger()).Returns(1);
-        StubHelperReadString(reader.Object);
-
-        var result = CreateSubject().PeekProfileName([]);
-
-        result.Should().Be("Envelope");
-    }
-
-    [Fact]
-    public void PeekProfileName_WrongSignature_ThrowsProtocolException()
-    {
-        var reader = new Mock<IPackStreamReader>();
-        reader.Setup(r => r.ReadStructSignature()).Returns((byte)0x99);
-        StubHelperReadString(reader.Object);
-
-        var act = () => CreateSubject().PeekProfileName([]);
-
-        act.Should().Throw<ProtocolException>();
-    }
 }

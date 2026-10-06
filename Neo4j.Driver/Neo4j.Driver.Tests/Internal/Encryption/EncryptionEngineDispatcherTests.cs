@@ -124,14 +124,14 @@ public class EncryptionEngineDispatcherTests
     [Fact]
     public async Task DispatchDecryptAsync_ReturnsResultFromTheAcceptingEngine()
     {
-        var encrypted = new byte[] { 4, 5, 6 };
+        var structure = new EncryptedStructure("ENVELOPE", 1, "p", [], "STRING", 1, 0, new Dictionary<string, object>());
         object expected = "decrypted-value";
         Task<object?>? decryptionTask = Task.FromResult<object?>(expected);
 
         var engine = new Mock<IEncryptionEngine>();
         engine.Setup(e => e.TryStartDecrypt(
                 Profile,
-                encrypted,
+                structure,
                 null,
                 It.IsAny<CancellationToken>(),
                 out decryptionTask))
@@ -139,7 +139,7 @@ public class EncryptionEngineDispatcherTests
 
         var dispatcher = CreateSubject(engine.Object);
 
-        var result = await dispatcher.DispatchDecryptAsync(Profile, encrypted, null, CancellationToken.None);
+        var result = await dispatcher.DispatchDecryptAsync(Profile, structure, null, CancellationToken.None);
 
         result.Should().BeSameAs(expected);
     }
@@ -147,13 +147,13 @@ public class EncryptionEngineDispatcherTests
     [Fact]
     public async Task DispatchDecryptAsync_ThrowsWhenNoEngineAccepts()
     {
-        var encrypted = new byte[] { 4, 5, 6 };
+        var structure = new EncryptedStructure("ENVELOPE", 1, "p", [], "STRING", 1, 0, new Dictionary<string, object>());
         Task<object?>? noTask = null;
 
         var engine = new Mock<IEncryptionEngine>();
         engine.Setup(e => e.TryStartDecrypt(
                 Profile,
-                encrypted,
+                structure,
                 null,
                 It.IsAny<CancellationToken>(),
                 out noTask))
@@ -161,7 +161,7 @@ public class EncryptionEngineDispatcherTests
 
         var dispatcher = CreateSubject(engine.Object);
 
-        var act = () => dispatcher.DispatchDecryptAsync(Profile, encrypted, null, CancellationToken.None);
+        var act = () => dispatcher.DispatchDecryptAsync(Profile, structure, null, CancellationToken.None);
 
         await act.Should().ThrowAsync<EncryptionEngineNotFoundException>();
     }

@@ -67,11 +67,6 @@ internal class EncryptedStructureCodec : IEncryptedStructureCodec
         return _packStreamMemorySerializer.Deserialize(_format, bytes, ReadStructure);
     }
 
-    public string PeekProfileName(byte[] bytes)
-    {
-        return _packStreamMemorySerializer.Deserialize(_format, bytes, ReadProfileName);
-    }
-
     private static EncryptedStructure ReadStructure(IPackStreamReader reader)
     {
         ReadAndValidateSignature(reader);
@@ -85,14 +80,6 @@ internal class EncryptedStructureCodec : IEncryptedStructureCodec
             TypeSerializationSchemeMajor: reader.ReadInteger(),
             TypeSerializationSchemeMinor: reader.ReadInteger(),
             Metadata: reader.ReadMap());
-    }
-
-    private static string ReadProfileName(IPackStreamReader reader)
-    {
-        ReadAndValidateSignature(reader);
-        reader.ReadString();
-        reader.ReadInteger();
-        return reader.ReadString();
     }
 
     private static void ReadAndValidateSignature(IPackStreamReader reader)

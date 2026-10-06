@@ -64,12 +64,12 @@ internal class EncryptionRequestRunner : IEncryptionRequestRunner
     {
         try
         {
-            var profileName = _encryptedValueBytesCodec.PeekProfileName(request.Value);
-            var profile = _registry.Get(profileName);
+            var structure = _encryptedValueBytesCodec.Decode(request.Value);
+            var profile = _registry.Get(structure.ProfileName);
             var aad = request.Aad is null ? null : _plaintextCodec.Serialize(request.Aad);
 
             return await _dispatcher
-                .DispatchDecryptAsync(profile, request.Value, aad, cancellationToken)
+                .DispatchDecryptAsync(profile, structure, aad, cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (Exception e)

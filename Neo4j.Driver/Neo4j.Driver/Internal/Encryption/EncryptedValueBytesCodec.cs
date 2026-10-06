@@ -45,12 +45,6 @@ internal class EncryptedValueBytesCodec : IEncryptedValueBytesCodec
         return _structureCodec.Decode(bytes[1..]);
     }
 
-    public string PeekProfileName(byte[] bytes)
-    {
-        ValidateEncodingVersion(bytes);
-        return _structureCodec.PeekProfileName(bytes[1..]);
-    }
-
     private static void ValidateEncodingVersion(byte[] bytes)
     {
         if (bytes.Length == 0 || bytes[0] != EncodingVersion)

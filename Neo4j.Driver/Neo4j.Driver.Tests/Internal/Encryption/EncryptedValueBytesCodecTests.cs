@@ -92,30 +92,4 @@ public class EncryptedValueBytesCodecTests
 
         act.Should().Throw<ProtocolException>();
     }
-
-    [Fact]
-    public void PeekProfileName_StripsTheEncodingVersionByteAndDelegatesToTheStructureCodec()
-    {
-        _structureCodec.Setup(c => c.PeekProfileName(Matches(new byte[] { 0xAA, 0xBB }))).Returns("Envelope");
-
-        var result = CreateSubject().PeekProfileName([0x01, 0xAA, 0xBB]);
-
-        result.Should().Be("Envelope");
-    }
-
-    [Fact]
-    public void PeekProfileName_WrongEncodingVersion_ThrowsProtocolException()
-    {
-        var act = () => CreateSubject().PeekProfileName([0x02, 0xAA, 0xBB]);
-
-        act.Should().Throw<ProtocolException>();
-    }
-
-    [Fact]
-    public void PeekProfileName_EmptyBytes_ThrowsProtocolException()
-    {
-        var act = () => CreateSubject().PeekProfileName([]);
-
-        act.Should().Throw<ProtocolException>();
-    }
 }

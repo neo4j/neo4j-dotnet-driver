@@ -32,7 +32,7 @@ internal interface IEncryptionEngineDispatcher
 
     Task<object?> DispatchDecryptAsync(
         IInternalEncryptionProfile profile,
-        byte[] encrypted,
+        EncryptedStructure structure,
         byte[]? aad,
         CancellationToken cancellationToken);
 }

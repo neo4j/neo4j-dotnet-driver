@@ -83,7 +83,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
 
     public bool TryStartDecrypt(
         IInternalEncryptionProfile profile,
-        byte[] encrypted,
+        EncryptedStructure structure,
         byte[]? aad,
         CancellationToken cancellationToken,
         [NotNullWhen(true)] out Task<object?>? decryptionTask)
@@ -94,7 +94,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
             return false;
         }
 
-        decryptionTask = DecryptAsync(envelopeProfile, encrypted, aad, cancellationToken);
+        decryptionTask = DecryptAsync(envelopeProfile, structure, aad, cancellationToken);
         return true;
     }
 
@@ -140,12 +140,10 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
 
     private async Task<object?> DecryptAsync(
         IEnvelopeEncryptionProfile profile,
-        byte[] encrypted,
+        EncryptedStructure structure,
         byte[]? aad,
         CancellationToken cancellationToken)
     {
-        var structure = _encryptedValueBytesCodec.Decode(encrypted);
-
         if (structure.ProfileType != EnvelopeProfileType)
         {
             throw new UnsupportedEncryptionProfileTypeException(structure.ProfileType);

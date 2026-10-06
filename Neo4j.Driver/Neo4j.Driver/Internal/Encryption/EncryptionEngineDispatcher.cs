@@ -52,13 +52,13 @@ internal class EncryptionEngineDispatcher : IEncryptionEngineDispatcher
 
     public async Task<object?> DispatchDecryptAsync(
         IInternalEncryptionProfile profile,
-        byte[] encrypted,
+        EncryptedStructure structure,
         byte[]? aad,
         CancellationToken cancellationToken)
     {
         foreach (var engine in _engines)
         {
-            if (engine.TryStartDecrypt(profile, encrypted, aad, cancellationToken, out var task))
+            if (engine.TryStartDecrypt(profile, structure, aad, cancellationToken, out var task))
             {
                 return await task.ConfigureAwait(false);
             }
