@@ -15,6 +15,9 @@
 
 #nullable enable
 
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Preview.Encryption;
@@ -25,6 +28,7 @@ internal class EnvelopeDataKeyProvider : IEnvelopeDataKeyProvider
 {
     private readonly IAliasToKeyIdCache _aliasToKeyIdCache;
     private readonly IEncryptionKeyCache _encryptionKeyCache;
+    private readonly ConcurrentDictionary<(string ProfileName, string KeyId), Task<byte[]>> _decapsulationsInFlight = new();
 
     public EnvelopeDataKeyProvider(IAliasToKeyIdCache aliasToKeyIdCache, IEncryptionKeyCache encryptionKeyCache)
     {
@@ -94,8 +98,48 @@ internal class EnvelopeDataKeyProvider : IEnvelopeDataKeyProvider
             return new DataKeyResult(key.Id, cachedDek);
         }
 
+        var dek = await DecapsulateOnceAsync(profile, key).WaitAsync(cancellationToken).ConfigureAwait(false);
+        return new DataKeyResult(key.Id, dek);
+    }
+
+    private Task<byte[]> DecapsulateOnceAsync(IEnvelopeEncryptionProfile profile, EncapsulatedKeyRecord key)
+    {
+        var slot = (profile.Name, key.Id);
+        var decapsulation = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var inFlight = _decapsulationsInFlight.GetOrAdd(slot, decapsulation.Task);
+
+        if (inFlight == decapsulation.Task)
+        {
+            _ = CompleteDecapsulationAsync(decapsulation, slot, profile, key);
+        }
+
+        return inFlight;
+    }
+
+    private async Task CompleteDecapsulationAsync(
+        TaskCompletionSource<byte[]> decapsulation,
+        (string ProfileName, string KeyId) slot,
+        IEnvelopeEncryptionProfile profile,
+        EncapsulatedKeyRecord key)
+    {
+        try
+        {
+            decapsulation.SetResult(await DecapsulateAndCacheAsync(profile, key).ConfigureAwait(false));
+        }
+        catch (Exception e)
+        {
+            decapsulation.SetException(e);
+        }
+        finally
+        {
+            _decapsulationsInFlight.TryRemove(KeyValuePair.Create(slot, decapsulation.Task));
+        }
+    }
+
+    private async Task<byte[]> DecapsulateAndCacheAsync(IEnvelopeEncryptionProfile profile, EncapsulatedKeyRecord key)
+    {
         var dek = await profile.KeyEncapsulationService
-            .DecapsulateAsync(key.Encapsulation, key.Metadata, cancellationToken)
+            .DecapsulateAsync(key.Encapsulation, key.Metadata, CancellationToken.None)
             .ConfigureAwait(false);
 
         if (dek.Length != AesGcmConstants.KeyLengthInBytes)
@@ -106,7 +150,6 @@ internal class EnvelopeDataKeyProvider : IEnvelopeDataKeyProvider
         }
 
         _encryptionKeyCache.Set(profile, key.Id, dek);
-
-        return new DataKeyResult(key.Id, dek);
+        return dek;
     }
 }

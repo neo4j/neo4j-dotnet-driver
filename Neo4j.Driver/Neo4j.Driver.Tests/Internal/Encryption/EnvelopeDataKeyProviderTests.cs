@@ -15,6 +15,7 @@
 
 #nullable enable
 
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -354,6 +355,86 @@ public class EnvelopeDataKeyProviderTests
             TestContext.Current.CancellationToken);
 
         result.KeyId.Should().Be("key-1");
+        result.DataKey.Should().BeSameAs(Dek);
+    }
+
+    private TaskCompletionSource<byte[]> StubAPendingDecapsulation()
+    {
+        _repository.Setup(r => r.FindByIdAsync("key-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Key());
+
+        var pending = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _kes.Setup(k => k.DecapsulateAsync(
+                Matches(Encapsulation),
+                It.IsAny<IReadOnlyDictionary<string, string>>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(pending.Task);
+
+        return pending;
+    }
+
+    [Fact]
+    public async Task GetDataKey_ConcurrentRequestsForAColdKey_DecapsulateItOnce()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var pending = StubAPendingDecapsulation();
+        var profile = Profile();
+        var keyRef = new KeyReference("key-1", KeyReferenceType.Id);
+        var subject = _autoMocker.CreateInstance<EnvelopeDataKeyProvider>();
+
+        var first = subject.GetDataKeyAsync(profile, keyRef, token);
+        var second = subject.GetDataKeyAsync(profile, keyRef, token);
+        pending.SetResult(Dek);
+        var results = await Task.WhenAll(first, second);
+
+        results.Should().OnlyContain(r => r.DataKey == Dek);
+        _kes.Verify(
+            k => k.DecapsulateAsync(
+                It.IsAny<byte[]>(),
+                It.IsAny<IReadOnlyDictionary<string, string>>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task GetDataKey_WhenOneOfTwoWaitingCallersCancels_TheOtherStillGetsTheKey()
+    {
+        var pending = StubAPendingDecapsulation();
+        var profile = Profile();
+        var keyRef = new KeyReference("key-1", KeyReferenceType.Id);
+        var subject = _autoMocker.CreateInstance<EnvelopeDataKeyProvider>();
+        using var cancelling = new CancellationTokenSource();
+
+        var cancelled = subject.GetDataKeyAsync(profile, keyRef, cancelling.Token);
+        var surviving = subject.GetDataKeyAsync(profile, keyRef, TestContext.Current.CancellationToken);
+        await cancelling.CancelAsync();
+        pending.SetResult(Dek);
+
+        var awaitingCancelled = () => cancelled;
+        await awaitingCancelled.Should().ThrowAsync<OperationCanceledException>();
+        var result = await surviving;
+        result.DataKey.Should().BeSameAs(Dek);
+    }
+
+    [Fact]
+    public async Task GetDataKey_AfterAFailedDecapsulation_TriesAgain()
+    {
+        var token = TestContext.Current.CancellationToken;
+        _repository.Setup(r => r.FindByIdAsync("key-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Key());
+        _kes.SetupSequence(k => k.DecapsulateAsync(
+                Matches(Encapsulation),
+                It.IsAny<IReadOnlyDictionary<string, string>>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("kms unavailable"))
+            .ReturnsAsync(Dek);
+        var keyRef = new KeyReference("key-1", KeyReferenceType.Id);
+        var subject = _autoMocker.CreateInstance<EnvelopeDataKeyProvider>();
+
+        var failing = () => subject.GetDataKeyAsync(Profile(), keyRef, token);
+        await failing.Should().ThrowAsync<InvalidOperationException>();
+        var result = await subject.GetDataKeyAsync(Profile(), keyRef, token);
+
         result.DataKey.Should().BeSameAs(Dek);
     }
 }
