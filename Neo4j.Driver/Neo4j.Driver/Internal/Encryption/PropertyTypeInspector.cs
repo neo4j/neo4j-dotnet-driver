@@ -40,12 +40,7 @@ internal class PropertyTypeInspector : IPropertyTypeInspector
             double or float => new PropertyTypeInfo("FLOAT", Baseline1_0),
             string => new PropertyTypeInfo("STRING", Baseline1_0),
             byte[] => new PropertyTypeInfo("BYTES", Baseline1_0),
-
-            // if this isn't explicitly disallowed, an empty dictionary
-            // would pass the next check and be treated as a valid property type
-            IDictionary => throw Unsupported(value),
-
-            IEnumerable e when allowList => GetListTypeInfo(e),
+            IList list when allowList => GetListTypeInfo(list),
 
             _ => throw Unsupported(value)
         };
@@ -64,7 +59,7 @@ internal class PropertyTypeInspector : IPropertyTypeInspector
         }
     }
 
-    private static PropertyTypeInfo GetListTypeInfo(IEnumerable list)
+    private static PropertyTypeInfo GetListTypeInfo(IList list)
     {
         PropertyTypeInfo? elementInfo = null;
 

@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Encryption;
 using Xunit;
@@ -35,7 +36,8 @@ public class PropertyTypeInspectorTests
         {
             new Dictionary<string, object> { ["k"] = 1L },
             new object(),
-            new List<object> { new List<long> { 1L } }
+            new List<object> { new List<long> { 1L } },
+            Enumerable.Range(1, 2).Select(i => (long)i)
         };
     }
 
