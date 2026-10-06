@@ -35,7 +35,7 @@ public class DecryptRequestBuilderTests
         var aad = new { context = "row-42" };
         object expected = 5L;
         var runner = new Mock<IEncryptionRequestRunner>();
-        runner.Setup(r => r.DecryptAsync(new DecryptRequest(encrypted, aad, false), token)).ReturnsAsync(expected);
+        runner.Setup(r => r.DecryptAsync(new DecryptRequest(encrypted, aad), token)).ReturnsAsync(expected);
 
         var builder = new DecryptRequestBuilder(runner.Object);
 
@@ -45,13 +45,13 @@ public class DecryptRequestBuilderTests
     }
 
     [Fact]
-    public async Task DecryptAsync_WithPersistedAad_SetsUsePersistedAadAndLeavesAadNull()
+    public async Task DecryptAsync_WithPersistedAad_LeavesAadNull()
     {
         var token = TestContext.Current.CancellationToken;
         var encrypted = new byte[] { 0xEE };
         object expected = "decrypted-value";
         var runner = new Mock<IEncryptionRequestRunner>();
-        runner.Setup(r => r.DecryptAsync(new DecryptRequest(encrypted, null, true), token)).ReturnsAsync(expected);
+        runner.Setup(r => r.DecryptAsync(new DecryptRequest(encrypted, null), token)).ReturnsAsync(expected);
 
         var builder = new DecryptRequestBuilder(runner.Object);
 

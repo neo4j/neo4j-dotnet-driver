@@ -28,31 +28,36 @@ internal class EnvelopeMetadataExtractor : IEnvelopeMetadataExtractor
 
     public EnvelopeMetadata Extract(IDictionary<string, object> metadata)
     {
+        var keyId = metadata.GetMandatoryValue<string>(EnvelopeMetadataKeys.KeyId, ExtractionError);
+        var iv = metadata.GetMandatoryValue<byte[]>(EnvelopeMetadataKeys.Iv, ExtractionError);
         var aad = metadata.GetOptionalValue<byte[]>(EnvelopeMetadataKeys.Aad, [], ExtractionError);
-        var keyId = metadata.GetMandatoryValue<string>(EnvelopeMetadataKeys.KeyId, m => new MetadataExtractionException(m));
-        var iv = metadata.GetMandatoryValue<byte[]>(EnvelopeMetadataKeys.Iv, m => new MetadataExtractionException(m));
-        
-        var aadEncodingSchemeMajor = metadata.GetOptionalValue(
+        var aadEncodingSchemeMajor = GetOptionalInt(
+            metadata,
             EnvelopeMetadataKeys.AadEncodingSchemeMajor,
-            DefaultAadEncodingSchemeMajor,
-            ExtractionError);
+            DefaultAadEncodingSchemeMajor);
 
-        var aadEncodingSchemeMinor = metadata.GetOptionalValue(
+        var aadEncodingSchemeMinor = GetOptionalInt(
+            metadata,
             EnvelopeMetadataKeys.AadEncodingSchemeMinor,
-            DefaultAadEncodingSchemeMinor,
-            ExtractionError);
+            DefaultAadEncodingSchemeMinor);
 
-        return new EnvelopeMetadata(
-            keyId,
-            iv,
-            aad,
-            (int)aadEncodingSchemeMajor,
-            (int)aadEncodingSchemeMinor);
+        return new EnvelopeMetadata(keyId, iv, aad, aadEncodingSchemeMajor, aadEncodingSchemeMinor);
+    }
 
-        static Exception ExtractionError(string message)
+    private static int GetOptionalInt(IDictionary<string, object> metadata, string key, long defaultValue)
+    {
+        var value = metadata.GetOptionalValue(key, defaultValue, ExtractionError);
+        if (value is < int.MinValue or > int.MaxValue)
         {
-            return new MetadataExtractionException(message);
+            throw ExtractionError($"Expected key '{key}' to fit in a 32-bit integer, but was {value}.");
         }
+
+        return (int)value;
+    }
+
+    private static Exception ExtractionError(string message)
+    {
+        return new MetadataExtractionException(message);
     }
 }
 

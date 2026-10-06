@@ -47,7 +47,8 @@ public class EncryptionProfileRegistryTests
 
         var act = () => registry.Get("missing");
 
-        act.Should().Throw<EncryptionProfileNotFoundException>();
+        act.Should().Throw<EncryptionProfileNotFoundException>()
+            .WithMessage("No encryption profile found with name 'missing'.");
     }
 
     [Fact]
@@ -66,7 +67,8 @@ public class EncryptionProfileRegistryTests
 
         var act = () => registry.Get(null);
 
-        act.Should().Throw<DefaultEncryptionProfileNotFoundException>();
+        act.Should().Throw<DefaultEncryptionProfileNotFoundException>()
+            .WithMessage("No profile name was given, and no encryption profile is configured.");
     }
 
     [Fact]

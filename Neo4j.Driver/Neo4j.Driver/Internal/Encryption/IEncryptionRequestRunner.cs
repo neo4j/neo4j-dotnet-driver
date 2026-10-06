@@ -33,4 +33,4 @@ internal record EncryptRequest(
     KeyReference KeyReference,
     byte[]? Iv = null);
 
-internal record DecryptRequest(byte[] Value, object? Aad, bool UsePersistedAad);
+internal record DecryptRequest(byte[] Value, object? Aad);

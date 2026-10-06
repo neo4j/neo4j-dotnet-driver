@@ -93,7 +93,7 @@ public class EncryptionRequestRunnerTests
         _plaintextCodec.Setup(c => c.Serialize(aad)).Returns(aadBytes);
         _dispatcher.Setup(d => d.DispatchDecryptAsync(profile, encrypted, aadBytes, token)).ReturnsAsync(expected);
 
-        var request = new DecryptRequest(encrypted, aad, UsePersistedAad: false);
+        var request = new DecryptRequest(encrypted, aad);
         var result = await CreateSubject().DecryptAsync(request, token);
 
         result.Should().BeSameAs(expected);
@@ -111,7 +111,7 @@ public class EncryptionRequestRunnerTests
         _registry.Setup(r => r.Get("profile-a")).Returns(profile);
         _dispatcher.Setup(d => d.DispatchDecryptAsync(profile, encrypted, null, token)).ReturnsAsync(expected);
 
-        var request = new DecryptRequest(encrypted, null, UsePersistedAad: true);
+        var request = new DecryptRequest(encrypted, null);
         var result = await CreateSubject().DecryptAsync(request, token);
 
         result.Should().BeSameAs(expected);

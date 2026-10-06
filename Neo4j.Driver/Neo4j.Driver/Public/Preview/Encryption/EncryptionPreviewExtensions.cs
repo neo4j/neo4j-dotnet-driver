@@ -51,11 +51,8 @@ public static class EncryptionPreviewExtensions
     extension(Config config)
     {
         /// <summary>
-        /// Gets the list of property encryption profiles configured for the Neo4j driver.
-        /// This property provides access to the encryption profiles that define how properties
-        /// are encrypted and decrypted when interacting with the Neo4j database. Each profile specifies
-        /// the encryption algorithms, key management strategies, and other relevant settings for property encryption.
-        /// This property is part of the Encryption Preview feature, and is subject to change or removal.
+        /// Gets the property encryption profiles configured for the driver. This property is part of the
+        /// Encryption Preview feature, and is subject to change or removal.
         /// </summary>
         /// <value>A read-only list of property encryption profiles.</value>
         public IReadOnlyList<IPropertyEncryptionProfile> PropertyEncryptionProfiles =>
@@ -65,11 +62,11 @@ public static class EncryptionPreviewExtensions
     extension(ConfigBuilder configBuilder)
     {
         /// <summary>
-        /// Configures the Neo4j driver with encryption profiles for property-level encryption.
-        /// Encryption profiles define how specific properties should be encrypted when stored in the database.
-        /// This method is part of the Encryption Preview feature, and is subject to change or removal.
+        /// Configures the property encryption profiles available through
+        /// <c>driver.PropertyEncryption()</c>. This method is part of the Encryption Preview feature, and
+        /// is subject to change or removal.
         /// </summary>
-        /// <param name="propertyEncryptionProfiles">A read-only list of property encryption profiles to be used for encrypting and decrypting properties.</param>
+        /// <param name="propertyEncryptionProfiles">The profiles, each with a unique name.</param>
         /// <returns>The current <see cref="ConfigBuilder"/> instance to allow method chaining.</returns>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="propertyEncryptionProfiles"/> is <see langword="null"/> or contains a <see langword="null"/> element.

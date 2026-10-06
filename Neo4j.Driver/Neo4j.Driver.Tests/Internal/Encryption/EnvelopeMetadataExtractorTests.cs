@@ -113,4 +113,17 @@ public class EnvelopeMetadataExtractorTests
 
         _subject.Extract(metadata).Aad.Should().BeEmpty();
     }
+
+    [Theory]
+    [InlineData("aad_encoding_scheme_major")]
+    [InlineData("aad_encoding_scheme_minor")]
+    public void Extract_AadEncodingSchemeBeyondTheIntRange_Throws(string key)
+    {
+        var metadata = ValidMetadata();
+        metadata[key] = (long)int.MaxValue + 2;
+
+        var act = () => _subject.Extract(metadata);
+
+        act.Should().Throw<MetadataExtractionException>().WithMessage($"*'{key}'*");
+    }
 }

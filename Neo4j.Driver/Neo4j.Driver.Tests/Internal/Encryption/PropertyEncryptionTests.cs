@@ -59,7 +59,7 @@ public class PropertyEncryptionTests
         var token = TestContext.Current.CancellationToken;
         var encrypted = new byte[] { 0xEE };
         object expected = "decrypted-value";
-        _runner.Setup(r => r.DecryptAsync(new DecryptRequest(encrypted, null, true), token)).ReturnsAsync(expected);
+        _runner.Setup(r => r.DecryptAsync(new DecryptRequest(encrypted, null), token)).ReturnsAsync(expected);
 
         var result = await CreateSubject().DecryptRequest()
             .FromValue(encrypted)

@@ -15,22 +15,40 @@
 
 #nullable enable
 
+using System;
+
 namespace Neo4j.Driver.Preview.Encryption;
 
 /// <summary>
 /// Thrown when no encryption profile with the requested name is configured. This exception is part
 /// of the Encryption Preview feature, and is subject to change or removal.
 /// </summary>
-/// <param name="name">The requested profile name.</param>
-public class EncryptionProfileNotFoundException(string name)
-    : PropertyEncryptionException($"No encryption profile found with name {name}");
+public class EncryptionProfileNotFoundException : PropertyEncryptionException
+{
+    /// <summary>
+    /// Create a new <see cref="EncryptionProfileNotFoundException"/> for a profile name. This constructor
+    /// is part of the Encryption Preview feature, and is subject to change or removal.
+    /// </summary>
+    /// <param name="name">The requested profile name.</param>
+    public EncryptionProfileNotFoundException(string name)
+        : this($"No encryption profile found with name '{name}'.", null)
+    {
+    }
+
+    private protected EncryptionProfileNotFoundException(string message, Exception? innerException)
+        : base(message, innerException)
+    {
+    }
+}
 
 /// <summary>
 /// Thrown when no profile name was given and no sole configured profile exists to serve as the default.
 /// This exception is part of the Encryption Preview feature, and is subject to change or removal.
 /// </summary>
 public class DefaultEncryptionProfileNotFoundException()
-    : EncryptionProfileNotFoundException("(default)");
+    : EncryptionProfileNotFoundException(
+        "No profile name was given, and no encryption profile is configured.",
+        null);
 
 /// <summary>
 /// Thrown when no profile name was given and more than one profile is configured. This exception is

@@ -30,7 +30,6 @@ internal class DecryptRequestBuilder :
     private readonly IEncryptionRequestRunner _runner;
     private byte[]? _value;
     private object? _aad;
-    private bool _usePersistedAad;
 
     public DecryptRequestBuilder(IEncryptionRequestRunner runner)
     {
@@ -48,20 +47,18 @@ internal class DecryptRequestBuilder :
     {
         ArgumentNullException.ThrowIfNull(aad);
         _aad = aad;
-        _usePersistedAad = false;
         return this;
     }
 
     public IDecryptRequestExecuteStep WithPersistedAad()
     {
         _aad = null;
-        _usePersistedAad = true;
         return this;
     }
 
     public Task<object?> DecryptAsync(CancellationToken cancellationToken = default)
     {
-        var request = new DecryptRequest(_value!, _aad, _usePersistedAad);
+        var request = new DecryptRequest(_value!, _aad);
         return _runner.DecryptAsync(request, cancellationToken);
     }
 }

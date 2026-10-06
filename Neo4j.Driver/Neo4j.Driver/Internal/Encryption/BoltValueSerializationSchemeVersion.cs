@@ -33,5 +33,8 @@ internal readonly record struct BoltValueSerializationSchemeVersion(int Major, i
         return right > left;
     }
 
-    public override string ToString() => $"{Major}.{Minor}";
+    public override string ToString()
+    {
+        return $"{Major}.{Minor}";
+    }
 }

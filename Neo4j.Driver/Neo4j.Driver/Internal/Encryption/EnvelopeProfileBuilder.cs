@@ -28,6 +28,8 @@ internal class EnvelopeProfileBuilder : IEnvelopeProfileBuilder
     private readonly string _name;
     private readonly IKeyEncapsulationService _keyEncapsulationService;
     private readonly IEncapsulatedKeyRecordRepository _keyRepository;
+    private CacheConfig? _keyCache = DefaultKeyCache;
+    private CacheConfig? _keyAliasIndex = DefaultKeyAliasIndex;
 
     public EnvelopeProfileBuilder(
         string name,
@@ -38,9 +40,6 @@ internal class EnvelopeProfileBuilder : IEnvelopeProfileBuilder
         _keyEncapsulationService = keyEncapsulationService;
         _keyRepository = keyRepository;
     }
-
-    private CacheConfig? _keyCache = DefaultKeyCache;
-    private CacheConfig? _keyAliasIndex = DefaultKeyAliasIndex;
 
     public IEnvelopeProfileBuilder WithKeyCache(int maxSize, TimeSpan ttl)
     {

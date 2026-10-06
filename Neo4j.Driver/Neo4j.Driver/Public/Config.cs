@@ -54,6 +54,8 @@ public class Config
     /// <summary>This const defines the value of infinite interval in terms of configuration properties.</summary>
     public static readonly TimeSpan InfiniteInterval = TimeSpan.FromMilliseconds(-1);
 
+    private int _maxIdleConnPoolSize = Infinite;
+
     static Config()
     {
         var version = Assembly.GetExecutingAssembly().GetName().Version;
@@ -96,9 +98,9 @@ public class Config
     /// <remarks>Also see <see cref="MaxConnectionPoolSize"/></remarks>
     public int MaxIdleConnectionPoolSize
     {
-        get => field == Infinite ? MaxConnectionPoolSize : field;
-        internal set;
-    } = Infinite;
+        get => _maxIdleConnPoolSize == Infinite ? MaxConnectionPoolSize : _maxIdleConnPoolSize;
+        internal set => _maxIdleConnPoolSize = value;
+    }
 
     /// <summary>The max connection pool size.</summary>
     /// <remarks>
@@ -157,6 +159,7 @@ public class Config
     /// given time will be closed once it is seen. Use <see cref="InfiniteInterval"/> to disable connection lifetime checking.
     /// </summary>
     public TimeSpan MaxConnectionLifetime { get; internal set; } = TimeSpan.FromHours(1);
+    
 
     /// <summary>
     /// Gets or internal sets a custom server address resolver used by the routing driver to resolve the initial
