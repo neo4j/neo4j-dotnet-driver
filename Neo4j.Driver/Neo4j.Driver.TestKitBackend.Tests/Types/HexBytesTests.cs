@@ -42,4 +42,20 @@ public class HexBytesTests
 
         equal.Should().BeFalse();
     }
+
+    [Fact]
+    public void Equality_operators_compare_by_content()
+    {
+        var a = new HexBytes([1, 2, 3]);
+        var sameContent = new HexBytes([1, 2, 3]);
+        var otherContent = new HexBytes([1, 2, 4]);
+
+        var equalToSame = a == sameContent;
+        var notEqualToOther = a != otherContent;
+        var equalToOther = a == otherContent;
+
+        equalToSame.Should().BeTrue();
+        notEqualToOther.Should().BeTrue();
+        equalToOther.Should().BeFalse();
+    }
 }

@@ -26,6 +26,16 @@ internal readonly struct HexBytes(byte[] value) : IEquatable<HexBytes>
         return new HexBytes(value);
     }
 
+    public static bool operator ==(HexBytes left, HexBytes right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(HexBytes left, HexBytes right)
+    {
+        return !left.Equals(right);
+    }
+
     public bool Equals(HexBytes other)
     {
         return Value.AsSpan().SequenceEqual(other.Value);
