@@ -15,41 +15,19 @@
 
 #nullable enable
 
-using System.Diagnostics.CodeAnalysis;
-using Neo4j.Driver.Internal.Caching;
 using Neo4j.Driver.Internal.Services;
+using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-internal class EncryptionKeyCache : IEncryptionKeyCache
+internal class EncryptionKeyCache : ProfileScopedCache<byte[]>, IEncryptionKeyCache
 {
-    private readonly PerProfileBoundedCache<byte[]> _cache;
-
-    public EncryptionKeyCache(IDateTimeProvider clock)
+    public EncryptionKeyCache(IDateTimeProvider clock) : base(clock)
     {
-        _cache = new PerProfileBoundedCache<byte[]>(clock);
     }
 
-    public bool TryGet(IEnvelopeEncryptionProfile profile, string keyId, [NotNullWhen(true)] out byte[]? value)
+    protected override CacheConfig? ConfigFor(IEnvelopeEncryptionProfile profile)
     {
-        var config = profile.KeyCacheConfig;
-        if (config is null)
-        {
-            value = null;
-            return false;
-        }
-
-        return _cache.TryGet(profile.Name, config, keyId, out value);
-    }
-
-    public void Set(IEnvelopeEncryptionProfile profile, string keyId, byte[] value)
-    {
-        var config = profile.KeyCacheConfig;
-        if (config is null)
-        {
-            return;
-        }
-
-        _cache.Set(profile.Name, config, keyId, value);
+        return profile.KeyCacheConfig;
     }
 }

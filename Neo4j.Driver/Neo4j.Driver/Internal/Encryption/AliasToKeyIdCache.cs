@@ -15,46 +15,19 @@
 
 #nullable enable
 
-using System.Diagnostics.CodeAnalysis;
-using Neo4j.Driver.Internal.Caching;
 using Neo4j.Driver.Internal.Services;
+using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
-internal class AliasToKeyIdCache : IAliasToKeyIdCache
+internal class AliasToKeyIdCache : ProfileScopedCache<string>, IAliasToKeyIdCache
 {
-    private readonly PerProfileBoundedCache<string> _cache;
-
-    public AliasToKeyIdCache(IDateTimeProvider clock)
+    public AliasToKeyIdCache(IDateTimeProvider clock) : base(clock)
     {
-        _cache = new PerProfileBoundedCache<string>(clock);
     }
 
-    public bool TryGet(IEnvelopeEncryptionProfile profile, string alias, [NotNullWhen(true)] out string? value)
+    protected override CacheConfig? ConfigFor(IEnvelopeEncryptionProfile profile)
     {
-        var config = profile.KeyAliasIndexConfig;
-        if (config is null)
-        {
-            value = null;
-            return false;
-        }
-
-        return _cache.TryGet(profile.Name, config, alias, out value);
-    }
-
-    public void Set(IEnvelopeEncryptionProfile profile, string alias, string value)
-    {
-        var config = profile.KeyAliasIndexConfig;
-        if (config is null)
-        {
-            return;
-        }
-
-        _cache.Set(profile.Name, config, alias, value);
-    }
-
-    public void Remove(IEnvelopeEncryptionProfile profile, string alias)
-    {
-        _cache.Remove(profile.Name, alias);
+        return profile.KeyAliasIndexConfig;
     }
 }
