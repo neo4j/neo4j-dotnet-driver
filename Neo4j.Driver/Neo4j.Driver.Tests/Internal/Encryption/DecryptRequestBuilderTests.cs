@@ -69,4 +69,14 @@ public class DecryptRequestBuilderTests
 
         act.Should().Throw<ArgumentNullException>();
     }
+
+    [Fact]
+    public void FromValue_WithANullValue_Throws()
+    {
+        var builder = new DecryptRequestBuilder(Mock.Of<IEncryptionRequestRunner>());
+
+        var act = () => builder.FromValue(null!);
+
+        act.Should().Throw<ArgumentNullException>();
+    }
 }

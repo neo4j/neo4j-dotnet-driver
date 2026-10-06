@@ -622,6 +622,13 @@ public sealed class ConfigBuilder
     {
         ArgumentNullException.ThrowIfNull(propertyEncryptionProfiles);
 
+        if (propertyEncryptionProfiles.Any(x => x is null))
+        {
+            throw new ArgumentNullException(
+                nameof(propertyEncryptionProfiles),
+                "Encryption profiles must not contain null.");
+        }
+
         if(!propertyEncryptionProfiles.All(x => x is IInternalEncryptionProfile))
         {
             throw new ArgumentException(
@@ -641,7 +648,7 @@ public sealed class ConfigBuilder
                 , nameof(propertyEncryptionProfiles));
         }
 
-        _config.Preview_PropertyEncryptionProfiles = propertyEncryptionProfiles;
+        _config.Preview_PropertyEncryptionProfiles = [..propertyEncryptionProfiles];
         return this;
     }
 }

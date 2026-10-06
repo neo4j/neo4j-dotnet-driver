@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Security;
 using System.Security.Authentication;
@@ -509,6 +510,25 @@ public class ConfigTests
             var profile = new AttackerProfile();
             var act = () => Config.Builder.WithPropertyEncryptionProfiles([profile]).Build();
             act.Should().Throw<ArgumentException>();
+        }
+
+        [Fact]
+        public void WithPropertyEncryptionProfiles_KeepsItsOwnCopyOfTheProfiles()
+        {
+            var profiles = new List<IPropertyEncryptionProfile> { new ValidProfile("profile-1") };
+            var config = Config.Builder.WithPropertyEncryptionProfiles(profiles).Build();
+
+            profiles.Add(new ValidProfile("profile-2"));
+
+            config.PropertyEncryptionProfiles.Should().ContainSingle();
+        }
+
+        [Fact]
+        public void WithPropertyEncryptionProfiles_ShouldThrowWhenAProfileIsNull()
+        {
+            var act = () => Config.Builder.WithPropertyEncryptionProfiles([null!]);
+
+            act.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("propertyEncryptionProfiles");
         }
 
         [Fact]

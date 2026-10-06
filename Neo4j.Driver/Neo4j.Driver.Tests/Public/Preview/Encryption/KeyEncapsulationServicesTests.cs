@@ -81,6 +81,20 @@ public class KeyEncapsulationServicesTests
     }
 
     [Fact]
+    public async Task Local_IsUnaffectedByLaterChangesToTheCallersMasterKey()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var masterKey = Sequence(32, seed: 0x50);
+        var subject = KeyEncapsulationServices.Local(masterKey);
+        var encapsulated = await subject.EncapsulateAsync(new NoOptions(), token);
+
+        Array.Clear(masterKey);
+
+        var unwrapped = await subject.DecapsulateAsync(encapsulated.Encapsulation, encapsulated.Metadata, token);
+        unwrapped.Should().Equal(encapsulated.Key);
+    }
+
+    [Fact]
     public void Local_WithANullMasterKey_Throws()
     {
         var act = () => KeyEncapsulationServices.Local(null!);

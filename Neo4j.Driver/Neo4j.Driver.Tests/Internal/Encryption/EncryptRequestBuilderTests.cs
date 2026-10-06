@@ -114,4 +114,34 @@ public class EncryptRequestBuilderTests
 
         act.Should().Throw<ArgumentNullException>();
     }
+
+    [Fact]
+    public void UsingKeyAlias_WithANullAlias_Throws()
+    {
+        var builder = new EncryptRequestBuilder(Mock.Of<IEncryptionRequestRunner>());
+
+        var act = () => builder.FromValue("hello").UsingKeyAlias(null!);
+
+        act.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void UsingKeyId_WithANullId_Throws()
+    {
+        var builder = new EncryptRequestBuilder(Mock.Of<IEncryptionRequestRunner>());
+
+        var act = () => builder.FromValue("hello").UsingKeyId(null!);
+
+        act.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void UsingProfile_WithANullProfileName_Throws()
+    {
+        var builder = new EncryptRequestBuilder(Mock.Of<IEncryptionRequestRunner>());
+
+        var act = () => builder.FromValue("hello").UsingProfile(null!);
+
+        act.Should().Throw<ArgumentNullException>();
+    }
 }

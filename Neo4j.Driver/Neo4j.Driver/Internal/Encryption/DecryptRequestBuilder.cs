@@ -39,6 +39,7 @@ internal class DecryptRequestBuilder :
 
     public IDecryptRequestAadStep FromValue(byte[] value)
     {
+        ArgumentNullException.ThrowIfNull(value);
         _value = value;
         return this;
     }

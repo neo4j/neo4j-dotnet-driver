@@ -34,9 +34,17 @@ public static class EncryptionPreviewExtensions
         /// Encryption Preview feature, and is subject to change or removal.
         /// </summary>
         /// <returns>The <see cref="IPropertyEncryption"/> entry point for this driver.</returns>
+        /// <exception cref="ArgumentException">The driver was not created by <see cref="GraphDatabase"/>.</exception>
         public IPropertyEncryption PropertyEncryption()
         {
-            return ((IInternalDriver)driver).PropertyEncryption();
+            if (driver is not IInternalDriver internalDriver)
+            {
+                throw new ArgumentException(
+                    "Property encryption is only available on a driver created by GraphDatabase.Driver.",
+                    nameof(driver));
+            }
+
+            return internalDriver.PropertyEncryption();
         }
     }
 
@@ -63,7 +71,9 @@ public static class EncryptionPreviewExtensions
         /// </summary>
         /// <param name="propertyEncryptionProfiles">A read-only list of property encryption profiles to be used for encrypting and decrypting properties.</param>
         /// <returns>The current <see cref="ConfigBuilder"/> instance to allow method chaining.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="propertyEncryptionProfiles"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="propertyEncryptionProfiles"/> is <see langword="null"/> or contains a <see langword="null"/> element.
+        /// </exception>
         /// <exception cref="ArgumentException">
         /// An element of <paramref name="propertyEncryptionProfiles"/> was not created via
         /// <see cref="PropertyEncryptionProfile"/>.

@@ -55,18 +55,21 @@ internal class EncryptRequestBuilder :
 
     public IEncryptRequestKeyStep UsingProfile(string profileName)
     {
+        ArgumentNullException.ThrowIfNull(profileName);
         _profileName = profileName;
         return this;
     }
 
     public IEncryptRequestExecuteStep UsingKeyAlias(string alias)
     {
+        ArgumentNullException.ThrowIfNull(alias);
         _keyReference = new KeyReference(alias, KeyReferenceType.Alias);
         return this;
     }
 
     public IEncryptRequestExecuteStep UsingKeyId(string id)
     {
+        ArgumentNullException.ThrowIfNull(id);
         _keyReference = new KeyReference(id, KeyReferenceType.Id);
         return this;
     }

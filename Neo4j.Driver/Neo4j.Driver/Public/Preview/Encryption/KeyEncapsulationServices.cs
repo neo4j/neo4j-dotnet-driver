@@ -47,7 +47,7 @@ public static class KeyEncapsulationServices
         }
 
         return new LocalKeyEncapsulationService(
-            masterKey,
+            [..masterKey],
             new AesGcmCipher(),
             new CryptoRandomProvider(),
             new Base64Codec());
