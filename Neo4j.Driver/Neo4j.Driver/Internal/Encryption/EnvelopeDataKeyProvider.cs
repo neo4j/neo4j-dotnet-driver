@@ -98,6 +98,13 @@ internal class EnvelopeDataKeyProvider : IEnvelopeDataKeyProvider
             .DecapsulateAsync(key.Encapsulation, key.Metadata, cancellationToken)
             .ConfigureAwait(false);
 
+        if (dek.Length != AesGcmConstants.KeyLengthInBytes)
+        {
+            throw new PropertyEncryptionException(
+                $"The data encryption key '{key.Id}' must be {AesGcmConstants.KeyLengthInBytes} bytes for " +
+                $"AES-256, but was {dek.Length}.");
+        }
+
         _encryptionKeyCache.Set(profile, key.Id, dek);
 
         return new DataKeyResult(key.Id, dek);

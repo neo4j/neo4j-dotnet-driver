@@ -138,6 +138,49 @@ public class EnvelopeDataKeyProviderTests
         await act.Should().ThrowAsync<EncapsulatedKeyNotFoundException>().WithMessage("*key-1*");
     }
 
+    private void StubDecapsulateToAnAes128Key()
+    {
+        _repository.Setup(r => r.FindByIdAsync("key-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Key());
+
+        _kes.Setup(k => k.DecapsulateAsync(
+                Matches(Encapsulation),
+                It.IsAny<IReadOnlyDictionary<string, string>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Sequence(16, seed: 0x30));
+    }
+
+    [Fact]
+    public async Task GetDataKey_WhenTheDecapsulatedKeyIsNotAes256_Throws()
+    {
+        StubDecapsulateToAnAes128Key();
+
+        var subject = _autoMocker.CreateInstance<EnvelopeDataKeyProvider>();
+        var act = async () => await subject.GetDataKeyAsync(
+            Profile(),
+            new KeyReference("key-1", KeyReferenceType.Id),
+            TestContext.Current.CancellationToken);
+
+        await act.Should().ThrowAsync<PropertyEncryptionException>().WithMessage("*key-1*16*");
+    }
+
+    [Fact]
+    public async Task GetDataKey_WhenTheDecapsulatedKeyIsNotAes256_DoesNotCacheIt()
+    {
+        StubDecapsulateToAnAes128Key();
+
+        var subject = _autoMocker.CreateInstance<EnvelopeDataKeyProvider>();
+        var act = async () => await subject.GetDataKeyAsync(
+            Profile(),
+            new KeyReference("key-1", KeyReferenceType.Id),
+            TestContext.Current.CancellationToken);
+
+        await act.Should().ThrowAsync<PropertyEncryptionException>();
+        _autoMocker.GetMock<IEncryptionKeyCache>().Verify(
+            c => c.Set(It.IsAny<IEnvelopeEncryptionProfile>(), It.IsAny<string>(), It.IsAny<byte[]>()),
+            Times.Never);
+    }
+
     [Fact]
     public async Task GetDataKey_ByAliasWithColdCaches_PrimesBothCaches()
     {
