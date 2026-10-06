@@ -24,8 +24,6 @@ namespace Neo4j.Driver.Internal.Encryption;
 
 internal class LocalKeyEncapsulationService : IKeyEncapsulationService
 {
-    private const int DekSizeInBytes = 32;
-    private const int IvSizeInBytes = 12;
     private const string IvOption = "iv";
 
     private readonly byte[] _kek;
@@ -51,10 +49,10 @@ internal class LocalKeyEncapsulationService : IKeyEncapsulationService
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var dek = new byte[DekSizeInBytes];
+        var dek = new byte[AesGcmConstants.KeyLengthInBytes];
         _randomProvider.Fill(dek);
 
-        var iv = new byte[IvSizeInBytes];
+        var iv = new byte[AesGcmConstants.IvLengthInBytes];
         _randomProvider.Fill(iv);
 
         var wrapped = _aeadCipher.Encrypt(_kek, iv, dek, aad: []).CipherOutput;

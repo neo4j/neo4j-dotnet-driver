@@ -22,19 +22,17 @@ namespace Neo4j.Driver.Internal.Encryption;
 
 internal class AesGcmCipher : IAeadCipher
 {
-    private const int TagSizeInBytes = 16;
-
     public byte[] Decrypt(byte[] key, byte[] iv, byte[] cipherOutput, byte[] aad)
     {
-        if (cipherOutput.Length < TagSizeInBytes)
+        if (cipherOutput.Length < AesGcmConstants.TagLengthInBytes)
         {
             throw new ProtocolException(
-                $"Cipher output must be at least {TagSizeInBytes} bytes to contain an authentication tag, " +
+                $"Cipher output must be at least {AesGcmConstants.TagLengthInBytes} bytes to contain an authentication tag, " +
                 $"but was {cipherOutput.Length} bytes.");
         }
 
-        using var aesGcm = new AesGcm(key, TagSizeInBytes);
-        var cipherTextLength = cipherOutput.Length - TagSizeInBytes;
+        using var aesGcm = new AesGcm(key, AesGcmConstants.TagLengthInBytes);
+        var cipherTextLength = cipherOutput.Length - AesGcmConstants.TagLengthInBytes;
         var plaintext = new byte[cipherTextLength];
         var cipherText = cipherOutput.AsSpan(0, cipherTextLength);
         var tag = cipherOutput.AsSpan(cipherTextLength);
@@ -45,11 +43,11 @@ internal class AesGcmCipher : IAeadCipher
 
     public CipherResult Encrypt(byte[] key, byte[] iv, byte[] msg, byte[] aad)
     {
-        using var aesGcm = new AesGcm(key, TagSizeInBytes);
-        var cipherOutputBuffer = new byte[msg.Length + TagSizeInBytes];
+        using var aesGcm = new AesGcm(key, AesGcmConstants.TagLengthInBytes);
+        var cipherOutputBuffer = new byte[msg.Length + AesGcmConstants.TagLengthInBytes];
         var cipherTextBuffer = cipherOutputBuffer.AsSpan(0, msg.Length);
         var tagBuffer = cipherOutputBuffer.AsSpan(msg.Length);
         aesGcm.Encrypt(iv, msg, cipherTextBuffer, tagBuffer, aad);
-        return new CipherResult(cipherOutputBuffer, TagSizeInBytes);
+        return new CipherResult(cipherOutputBuffer, AesGcmConstants.TagLengthInBytes);
     }
 }

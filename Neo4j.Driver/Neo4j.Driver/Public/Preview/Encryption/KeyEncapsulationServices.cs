@@ -27,8 +27,6 @@ namespace Neo4j.Driver.Preview.Encryption;
 /// </summary>
 public static class KeyEncapsulationServices
 {
-    private const int Aes256KeyLength = 32;
-
     /// <summary>
     /// Creates a service that wraps and unwraps data encryption keys with a local AES-256 key
     /// encryption key held in memory. This method is part of the Encryption Preview feature, and is
@@ -41,10 +39,10 @@ public static class KeyEncapsulationServices
     public static IKeyEncapsulationService Local(byte[] masterKey)
     {
         ArgumentNullException.ThrowIfNull(masterKey);
-        if (masterKey.Length != Aes256KeyLength)
+        if (masterKey.Length != AesGcmConstants.KeyLengthInBytes)
         {
             throw new ArgumentException(
-                $"An AES-256 master key must be {Aes256KeyLength} bytes long, but was {masterKey.Length}.",
+                $"An AES-256 master key must be {AesGcmConstants.KeyLengthInBytes} bytes long, but was {masterKey.Length}.",
                 nameof(masterKey));
         }
 
