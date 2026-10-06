@@ -55,6 +55,28 @@ public class PropertyTypeInspectorTests
         info.Baseline.Should().Be(Baseline1_0);
     }
 
+    [Theory]
+    [InlineData((sbyte)5, "INTEGER")]
+    [InlineData((byte)5, "INTEGER")]
+    [InlineData((short)5, "INTEGER")]
+    [InlineData(5, "INTEGER")]
+    [InlineData(1.5f, "FLOAT")]
+    public void GetPropertyTypeInfo_ReturnsTheSamePropertyType_ForNarrowerClrNumerics(object value, string expectedName)
+    {
+        var info = _subject.GetPropertyTypeInfo(value);
+
+        info.Name.Should().Be(expectedName);
+        info.Baseline.Should().Be(Baseline1_0);
+    }
+
+    [Fact]
+    public void GetPropertyTypeInfo_TreatsIntAndLongElementsAsOneListType()
+    {
+        var info = _subject.GetPropertyTypeInfo(new List<object> { 1, 2L });
+
+        info.Name.Should().Be("LIST");
+    }
+
     [Fact]
     public void GetPropertyTypeInfo_ReturnsBytesAndBaseline1_0_ForByteArray()
     {

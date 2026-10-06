@@ -36,8 +36,8 @@ internal class PropertyTypeInspector : IPropertyTypeInspector
             null when allowNull => new PropertyTypeInfo("NULL", Baseline1_0),
 
             bool => new PropertyTypeInfo("BOOLEAN", Baseline1_0),
-            long => new PropertyTypeInfo("INTEGER", Baseline1_0),
-            double => new PropertyTypeInfo("FLOAT", Baseline1_0),
+            long or int or short or sbyte or byte => new PropertyTypeInfo("INTEGER", Baseline1_0),
+            double or float => new PropertyTypeInfo("FLOAT", Baseline1_0),
             string => new PropertyTypeInfo("STRING", Baseline1_0),
             byte[] => new PropertyTypeInfo("BYTES", Baseline1_0),
 
