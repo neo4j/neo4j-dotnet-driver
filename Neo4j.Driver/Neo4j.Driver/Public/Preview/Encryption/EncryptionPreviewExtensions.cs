@@ -51,12 +51,14 @@ public static class EncryptionPreviewExtensions
     extension(Config config)
     {
         /// <summary>
-        /// Gets the property encryption profiles configured for the driver. This property is part of the
+        /// Gets the property encryption profiles configured for the driver. This method is part of the
         /// Encryption Preview feature, and is subject to change or removal.
         /// </summary>
-        /// <value>A read-only list of property encryption profiles.</value>
-        public IReadOnlyList<IPropertyEncryptionProfile> PropertyEncryptionProfiles =>
-            config.Preview_PropertyEncryptionProfiles;
+        /// <returns>A read-only list of property encryption profiles.</returns>
+        public IReadOnlyList<IPropertyEncryptionProfile> PropertyEncryptionProfiles()
+        {
+            return config.Preview_PropertyEncryptionProfiles;
+        }
     }
 
     extension(ConfigBuilder configBuilder)
