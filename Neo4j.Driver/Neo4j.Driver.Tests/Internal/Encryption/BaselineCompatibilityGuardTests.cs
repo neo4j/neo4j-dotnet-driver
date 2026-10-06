@@ -47,8 +47,7 @@ public class BaselineCompatibilityGuardTests
             [1, 2, 3],
             [0xAA],
             aadProtocolMajor,
-            aadProtocolMinor,
-            new Dictionary<string, object>());
+            aadProtocolMinor);
     }
 
     [Theory]

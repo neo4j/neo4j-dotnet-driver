@@ -24,5 +24,4 @@ internal static class EnvelopeMetadataKeys
     public const string Aad = "aad";
     public const string AadEncodingSchemeMajor = "aad_encoding_scheme_major";
     public const string AadEncodingSchemeMinor = "aad_encoding_scheme_minor";
-    public const string OptionsPrefix = "opt.";
 }

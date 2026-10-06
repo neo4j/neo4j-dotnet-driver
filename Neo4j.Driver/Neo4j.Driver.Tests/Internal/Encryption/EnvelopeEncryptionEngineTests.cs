@@ -178,8 +178,7 @@ public class EnvelopeEncryptionEngineTests
             Iv,
             persistedAad,
             1,
-            0,
-            new Dictionary<string, object>());
+            0);
 
         var dataKey = Sequence(32, seed: 0x40);
         var plaintext = new byte[] { 0x10, 0x11 };
@@ -336,8 +335,7 @@ public class EnvelopeEncryptionEngineTests
             Iv,
             persistedAad,
             1,
-            0,
-            new Dictionary<string, object>());
+            0);
 
         var dataKey = Sequence(32, seed: 0x40);
         var plaintext = new byte[] { 0x10, 0x11 };

@@ -15,7 +15,6 @@
 
 #nullable enable
 
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
@@ -123,8 +122,7 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
             iv,
             aad,
             AadEncodingSchemeMajor,
-            AadEncodingSchemeMinor,
-            new Dictionary<string, object>());
+            AadEncodingSchemeMinor);
 
         var metadata = _envelopeMetadataBuilder.Build(envelopeMetadata);
         var structure = new EncryptedStructure(

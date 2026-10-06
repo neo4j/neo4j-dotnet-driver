@@ -46,7 +46,6 @@ public class EnvelopeMetadataExtractorTests
         result.Aad.Should().Equal(4, 5);
         result.AadEncodingSchemeMajor.Should().Be(6);
         result.AadEncodingSchemeMinor.Should().Be(0);
-        result.EncapsulationOptions.Should().BeEmpty();
     }
 
     [Fact]
@@ -113,19 +112,5 @@ public class EnvelopeMetadataExtractorTests
         metadata.Remove("aad");
 
         _subject.Extract(metadata).Aad.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void Extract_OptPrefixedKeys_AreFlatMappedWithPrefixStripped()
-    {
-        var metadata = ValidMetadata();
-        metadata["opt.region"] = "eu-west-1";
-        metadata["opt.kekId"] = "kek-42";
-
-        var result = _subject.Extract(metadata);
-
-        result.EncapsulationOptions.Should().HaveCount(2);
-        result.EncapsulationOptions["region"].Should().Be("eu-west-1");
-        result.EncapsulationOptions["kekId"].Should().Be("kek-42");
     }
 }

@@ -15,8 +15,6 @@
 
 #nullable enable
 
-#nullable enable
-
 using System.Collections.Generic;
 
 namespace Neo4j.Driver.Preview.Encryption;

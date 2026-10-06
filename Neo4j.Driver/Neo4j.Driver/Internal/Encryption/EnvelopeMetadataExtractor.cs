@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
@@ -30,7 +29,6 @@ internal class EnvelopeMetadataExtractor : IEnvelopeMetadataExtractor
     public EnvelopeMetadata Extract(IDictionary<string, object> metadata)
     {
         var aad = metadata.GetOptionalValue<byte[]>(EnvelopeMetadataKeys.Aad, [], ExtractionError);
-        var options = ExtractEncapsulationOptions(metadata);
         var keyId = metadata.GetMandatoryValue<string>(EnvelopeMetadataKeys.KeyId, m => new MetadataExtractionException(m));
         var iv = metadata.GetMandatoryValue<byte[]>(EnvelopeMetadataKeys.Iv, m => new MetadataExtractionException(m));
         
@@ -49,33 +47,12 @@ internal class EnvelopeMetadataExtractor : IEnvelopeMetadataExtractor
             iv,
             aad,
             (int)aadEncodingSchemeMajor,
-            (int)aadEncodingSchemeMinor,
-            options);
+            (int)aadEncodingSchemeMinor);
 
         static Exception ExtractionError(string message)
         {
             return new MetadataExtractionException(message);
         }
-    }
-
-    private static Dictionary<string, object> ExtractEncapsulationOptions(IDictionary<string, object> metadata)
-    {
-        const string optItemRegex = @"^opt\.(.*)$";
-
-        var options = new Dictionary<string, object>();
-        foreach (var (key, value) in metadata)
-        {
-            var match = Regex.Match(key, optItemRegex);
-            if (!match.Success)
-            {
-                continue;
-            }
-
-            var newKey = match.Groups[1].Value;
-            options[newKey] = value;
-        }
-
-        return options;
     }
 }
 
@@ -84,5 +61,4 @@ internal record EnvelopeMetadata(
     byte[] Iv,
     byte[] Aad,
     int AadEncodingSchemeMajor,
-    int AadEncodingSchemeMinor,
-    IDictionary<string, object> EncapsulationOptions);
+    int AadEncodingSchemeMinor);

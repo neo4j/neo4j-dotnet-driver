@@ -15,8 +15,6 @@
 
 #nullable enable
 
-#nullable enable
-
 namespace Neo4j.Driver.Preview.Encryption;
 
 /// <summary>

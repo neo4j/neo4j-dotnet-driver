@@ -15,8 +15,6 @@
 
 #nullable enable
 
-#nullable enable
-
 using System;
 using FluentAssertions;
 using Moq;

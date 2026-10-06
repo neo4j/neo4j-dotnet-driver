@@ -34,8 +34,7 @@ public class EnvelopeMetadataBuilderTests
             new byte[] { 1, 2, 3 },
             new byte[] { 4, 5 },
             6,
-            0,
-            new Dictionary<string, object>());
+            0);
 
         var result = _subject.Build(metadata);
 
@@ -57,28 +56,10 @@ public class EnvelopeMetadataBuilderTests
             new byte[] { 1, 2, 3 },
             [],
             6,
-            0,
-            new Dictionary<string, object>());
+            0);
 
         var result = _subject.Build(metadata);
 
         result.Keys.Should().BeEquivalentTo("key_id", "iv");
-    }
-
-    [Fact]
-    public void Build_DoesNotIncludeEncapsulationOptions()
-    {
-        var metadata = new EnvelopeMetadata(
-            "key-1",
-            new byte[] { 1, 2, 3 },
-            new byte[] { 4, 5 },
-            6,
-            0,
-            new Dictionary<string, object> { ["region"] = "eu-west-1" });
-
-        var result = _subject.Build(metadata);
-
-        result.Should().NotContainKey("opt.region");
-        result.Should().HaveCount(5);
     }
 }

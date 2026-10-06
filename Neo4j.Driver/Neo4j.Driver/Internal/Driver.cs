@@ -103,7 +103,7 @@ internal sealed class Driver : IInternalDriver
     public Task CloseAsync()
     {
         return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0
-            ? ShutdownAsync().AsTask()
+            ? _server.DisposeAsync().AsTask()
             : Task.CompletedTask;
     }
 
@@ -148,13 +148,8 @@ internal sealed class Driver : IInternalDriver
     public ValueTask DisposeAsync()
     {
         return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0
-            ? ShutdownAsync()
+            ? _server.DisposeAsync()
             : new ValueTask(Task.CompletedTask);
-    }
-
-    private async ValueTask ShutdownAsync()
-    {
-        await _server.DisposeAsync().ConfigureAwait(false);
     }
 
     public async Task<ExecutionSummary> GetRowsAsync(
