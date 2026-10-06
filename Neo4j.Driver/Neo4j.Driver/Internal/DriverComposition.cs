@@ -76,6 +76,9 @@ internal partial class DriverComposition : IDriverComposition
             .Bind<IPlaintextCodec>().As(Singleton).To<PlaintextCodec>()
             .Bind<IPropertyTypeInspector>().As(Singleton).To<PropertyTypeInspector>()
 
+            .Bind<IEncryptRequestValueStep>().To<EncryptRequestBuilder>()
+            .Bind<IDecryptRequestValueStep>().To<DecryptRequestBuilder>()
+
             .Bind<IPropertyEncryption>().As(Singleton).To<PropertyEncryption>()
             .Root<IPropertyEncryption>("PropertyEncryption", kind: RootKinds.Public | RootKinds.Method);
     }

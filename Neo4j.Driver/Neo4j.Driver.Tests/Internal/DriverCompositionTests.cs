@@ -30,4 +30,26 @@ public class DriverCompositionTests
         composition.Should().NotBeAssignableTo<IDisposable>();
         composition.Should().NotBeAssignableTo<IAsyncDisposable>();
     }
+
+    [Fact]
+    public void Gives_each_encrypt_request_its_own_builder()
+    {
+        var propertyEncryption = new DriverComposition(TestDriverContext.MockContext).PropertyEncryption();
+
+        var first = propertyEncryption.EncryptRequest();
+        var second = propertyEncryption.EncryptRequest();
+
+        first.Should().NotBeSameAs(second);
+    }
+
+    [Fact]
+    public void Gives_each_decrypt_request_its_own_builder()
+    {
+        var propertyEncryption = new DriverComposition(TestDriverContext.MockContext).PropertyEncryption();
+
+        var first = propertyEncryption.DecryptRequest();
+        var second = propertyEncryption.DecryptRequest();
+
+        first.Should().NotBeSameAs(second);
+    }
 }

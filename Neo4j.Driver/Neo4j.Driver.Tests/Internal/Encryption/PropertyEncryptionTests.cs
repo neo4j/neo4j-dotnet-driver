@@ -29,13 +29,11 @@ namespace Neo4j.Driver.Tests.Internal.Encryption;
 public class PropertyEncryptionTests
 {
     private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<PropertyEncryption>();
-    private readonly Mock<IEncryptionRequestRunner> _runner;
     private readonly Mock<IEncryptionProfileRegistry> _registry;
     private readonly Mock<IEncapsulatedKeyManagerFactory> _keyManagerFactory;
 
     public PropertyEncryptionTests()
     {
-        _runner = _autoMocker.GetMock<IEncryptionRequestRunner>();
         _registry = _autoMocker.GetMock<IEncryptionProfileRegistry>();
         _keyManagerFactory = _autoMocker.GetMock<IEncapsulatedKeyManagerFactory>();
     }
@@ -43,40 +41,6 @@ public class PropertyEncryptionTests
     private PropertyEncryption CreateSubject()
     {
         return _autoMocker.CreateInstance<PropertyEncryption>();
-    }
-
-    [Fact]
-    public async Task EncryptRequest_ReturnsABuilderWiredToTheInjectedRunner()
-    {
-        var token = TestContext.Current.CancellationToken;
-        var expected = new byte[] { 1 };
-        _runner.Setup(r => r.EncryptToBytesAsync(
-                new EncryptRequest("hello", null, null, new KeyReference("id-1", KeyReferenceType.Id)),
-                token))
-            .ReturnsAsync(expected);
-
-        var result = await CreateSubject().EncryptRequest()
-            .FromValue("hello")
-            .UsingKeyId("id-1")
-            .EncryptToBytesAsync(token);
-
-        result.Should().BeSameAs(expected);
-    }
-
-    [Fact]
-    public async Task DecryptRequest_ReturnsABuilderWiredToTheInjectedRunner()
-    {
-        var token = TestContext.Current.CancellationToken;
-        var encrypted = new byte[] { 0xEE };
-        object expected = "decrypted-value";
-        _runner.Setup(r => r.DecryptAsync(new DecryptRequest(encrypted, null), token)).ReturnsAsync(expected);
-
-        var result = await CreateSubject().DecryptRequest()
-            .FromValue(encrypted)
-            .WithPersistedAad()
-            .DecryptAsync(token);
-
-        result.Should().BeSameAs(expected);
     }
 
     [Fact]

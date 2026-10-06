@@ -15,34 +15,38 @@
 
 #nullable enable
 
+using System;
 using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
 internal class PropertyEncryption : IPropertyEncryption
 {
-    private readonly IEncryptionRequestRunner _runner;
+    private readonly Func<IEncryptRequestValueStep> _encryptRequestFactory;
+    private readonly Func<IDecryptRequestValueStep> _decryptRequestFactory;
     private readonly IEncryptionProfileRegistry _registry;
     private readonly IEncapsulatedKeyManagerFactory _keyManagerFactory;
 
     public PropertyEncryption(
-        IEncryptionRequestRunner runner,
+        Func<IEncryptRequestValueStep> encryptRequestFactory,
+        Func<IDecryptRequestValueStep> decryptRequestFactory,
         IEncryptionProfileRegistry registry,
         IEncapsulatedKeyManagerFactory keyManagerFactory)
     {
-        _runner = runner;
+        _encryptRequestFactory = encryptRequestFactory;
+        _decryptRequestFactory = decryptRequestFactory;
         _registry = registry;
         _keyManagerFactory = keyManagerFactory;
     }
 
     public IEncryptRequestValueStep EncryptRequest()
     {
-        return new EncryptRequestBuilder(_runner);
+        return _encryptRequestFactory();
     }
 
     public IDecryptRequestValueStep DecryptRequest()
     {
-        return new DecryptRequestBuilder(_runner);
+        return _decryptRequestFactory();
     }
 
     public IEncapsulatedKeyManager KeyManager(string? profileName = null)
