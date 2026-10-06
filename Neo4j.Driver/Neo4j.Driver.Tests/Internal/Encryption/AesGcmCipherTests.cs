@@ -15,81 +15,30 @@
 
 #nullable enable
 
-using System;
-using System.Security.Cryptography;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Encryption;
 using Xunit;
+using static Neo4j.Driver.Tests.Internal.Encryption.EncryptionTestHelpers;
 
 namespace Neo4j.Driver.Tests.Internal.Encryption;
 
 public class AesGcmCipherTests
 {
+    private static readonly byte[] Key = Sequence(32, seed: 0x10);
+    private static readonly byte[] Iv = Sequence(12, seed: 0x40);
+    private static readonly byte[] Plaintext = Sequence(32, seed: 0x80);
+
     private readonly AesGcmCipher _subject = new();
-
-    private static readonly byte[] Key = new byte[32];
-    private static readonly byte[] Iv  = new byte[12];
-
-    static AesGcmCipherTests()
-    {
-        Random.Shared.NextBytes(Key);
-        Random.Shared.NextBytes(Iv);
-    }
-
-    [Fact]
-    public void Encrypt_SameInputs_ProducesStableOutput()
-    {
-        var plaintext = new byte[32];
-        Random.Shared.NextBytes(plaintext);
-
-        var first  = _subject.Encrypt(Key, Iv, plaintext, aad: []);
-        var second = _subject.Encrypt(Key, Iv, plaintext, aad: []);
-
-        first.CipherText.ToArray().Should().Equal(second.CipherText.ToArray());
-        first.Tag.ToArray().Should().Equal(second.Tag.ToArray());
-    }
 
     [Fact]
     public void Encrypt_DifferentIvs_ProduceDifferentOutput()
     {
-        var iv2 = new byte[12];
-        Random.Shared.NextBytes(iv2);
-        var plaintext = new byte[32];
-        Random.Shared.NextBytes(plaintext);
+        var otherIv = Sequence(12, seed: 0x60);
 
-        var result1 = _subject.Encrypt(Key, Iv, plaintext, aad: []);
-        var result2 = _subject.Encrypt(Key, iv2, plaintext, aad: []);
+        var first = _subject.Encrypt(Key, Iv, Plaintext, aad: []);
+        var second = _subject.Encrypt(Key, otherIv, Plaintext, aad: []);
 
-        result1.CipherText.ToArray().Should().NotEqual(result2.CipherText.ToArray());
-    }
-
-    [Fact]
-    public void EncryptThenDecrypt_RecoverPlaintext()
-    {
-        var plaintext = new byte[64];
-        Random.Shared.NextBytes(plaintext);
-        var aad = new byte[8];
-        Random.Shared.NextBytes(aad);
-
-        var result = _subject.Encrypt(Key, Iv, plaintext, aad);
-        var cipherOutput = result.CipherOutput;
-
-        _subject.Decrypt(Key, Iv, cipherOutput, aad).Should().Equal(plaintext);
-    }
-
-    [Fact]
-    public void Decrypt_CorruptedTag_Throws()
-    {
-        var plaintext = new byte[32];
-        Random.Shared.NextBytes(plaintext);
-
-        var result = _subject.Encrypt(Key, Iv, plaintext, aad: []);
-        var cipherOutput = result.CipherOutput;
-        cipherOutput[^1] ^= 0xff;
-
-        var act = () => _subject.Decrypt(Key, Iv, cipherOutput, aad: []);
-
-        act.Should().Throw<AuthenticationTagMismatchException>();
+        first.CipherText.ToArray().Should().NotEqual(second.CipherText.ToArray());
     }
 
     [Fact]

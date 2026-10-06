@@ -18,6 +18,8 @@
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Tests.Internal.Core;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Preview.Encryption;
 using Xunit;
@@ -26,13 +28,21 @@ namespace Neo4j.Driver.Tests.Internal.Encryption;
 
 public class PropertyEncryptionTests
 {
-    private readonly Mock<IEncryptionRequestRunner> _runner = new();
-    private readonly Mock<IEncryptionProfileRegistry> _registry = new();
-    private readonly Mock<IEncapsulatedKeyManagerFactory> _keyManagerFactory = new();
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<PropertyEncryption>();
+    private readonly Mock<IEncryptionRequestRunner> _runner;
+    private readonly Mock<IEncryptionProfileRegistry> _registry;
+    private readonly Mock<IEncapsulatedKeyManagerFactory> _keyManagerFactory;
+
+    public PropertyEncryptionTests()
+    {
+        _runner = _autoMocker.GetMock<IEncryptionRequestRunner>();
+        _registry = _autoMocker.GetMock<IEncryptionProfileRegistry>();
+        _keyManagerFactory = _autoMocker.GetMock<IEncapsulatedKeyManagerFactory>();
+    }
 
     private PropertyEncryption CreateSubject()
     {
-        return new PropertyEncryption(_runner.Object, _registry.Object, _keyManagerFactory.Object);
+        return _autoMocker.CreateInstance<PropertyEncryption>();
     }
 
     [Fact]

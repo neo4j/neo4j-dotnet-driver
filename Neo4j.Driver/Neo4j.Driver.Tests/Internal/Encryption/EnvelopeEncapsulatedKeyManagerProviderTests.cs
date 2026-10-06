@@ -56,9 +56,9 @@ public class EnvelopeEncapsulatedKeyManagerProviderTests
         var profile = Mock.Of<IEnvelopeEncryptionProfile>(
             p => p.KeyEncapsulationService == kes.Object && p.KeyRepository == repository.Object);
 
-        var started = CreateSubject().TryCreateKeyManager(profile, out var manager);
+        var accepted = CreateSubject().TryCreateKeyManager(profile, out var manager);
 
-        started.Should().BeTrue();
+        accepted.Should().BeTrue();
         var result = await manager!.CreateAsync("alias-1", cancellationToken: TestContext.Current.CancellationToken);
 
         result.Should().BeSameAs(stored);

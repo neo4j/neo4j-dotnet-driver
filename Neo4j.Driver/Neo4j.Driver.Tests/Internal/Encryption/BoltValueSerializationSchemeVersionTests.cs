@@ -29,7 +29,9 @@ public class BoltValueSerializationSchemeVersionTests
         var higher = new BoltValueSerializationSchemeVersion(7, 0);
         var lower = new BoltValueSerializationSchemeVersion(6, 9);
 
-        (higher > lower).Should().BeTrue();
+        var isGreater = higher > lower;
+
+        isGreater.Should().BeTrue();
     }
 
     [Fact]
@@ -38,7 +40,9 @@ public class BoltValueSerializationSchemeVersionTests
         var lower = new BoltValueSerializationSchemeVersion(6, 9);
         var higher = new BoltValueSerializationSchemeVersion(7, 0);
 
-        (lower > higher).Should().BeFalse();
+        var isGreater = lower > higher;
+
+        isGreater.Should().BeFalse();
     }
 
     [Fact]
@@ -47,7 +51,9 @@ public class BoltValueSerializationSchemeVersionTests
         var higher = new BoltValueSerializationSchemeVersion(6, 2);
         var lower = new BoltValueSerializationSchemeVersion(6, 1);
 
-        (higher > lower).Should().BeTrue();
+        var isGreater = higher > lower;
+
+        isGreater.Should().BeTrue();
     }
 
     [Fact]
@@ -56,6 +62,8 @@ public class BoltValueSerializationSchemeVersionTests
         var a = new BoltValueSerializationSchemeVersion(6, 1);
         var b = new BoltValueSerializationSchemeVersion(6, 1);
 
-        (a > b).Should().BeFalse();
+        var isGreater = a > b;
+
+        isGreater.Should().BeFalse();
     }
 }

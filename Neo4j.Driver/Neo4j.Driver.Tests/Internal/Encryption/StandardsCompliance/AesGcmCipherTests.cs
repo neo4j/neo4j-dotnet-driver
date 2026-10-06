@@ -45,7 +45,9 @@ public class AesGcmCipherTests
         cipherResult.CipherText.ToArray().Should().Equal(expectedCt);
         cipherResult.Tag.ToArray().Should().Equal(expectedTag);
 
-        _subject.Decrypt(key, iv, cipherResult.CipherOutput, aad).Should().Equal(msg);
+        var decrypted = _subject.Decrypt(key, iv, cipherResult.CipherOutput, aad);
+
+        decrypted.Should().Equal(msg);
     }
 
     // https://github.com/C2SP/wycheproof/blob/master/testvectors_v1/aes_gcm_test.json tcId=92 (Ktv)
@@ -60,7 +62,9 @@ public class AesGcmCipherTests
         var cipherResult = _subject.Encrypt(key, iv, msg: [], aad);
 
         cipherResult.Tag.ToArray().Should().Equal(expectedTag);
-        _subject.Decrypt(key, iv, cipherResult.CipherOutput, aad).Should().BeEmpty();
+        var decrypted = _subject.Decrypt(key, iv, cipherResult.CipherOutput, aad);
+
+        decrypted.Should().BeEmpty();
     }
 
     // https://github.com/C2SP/wycheproof/blob/master/testvectors_v1/aes_gcm_test.json tcId=93
@@ -74,7 +78,9 @@ public class AesGcmCipherTests
         var cipherResult = _subject.Encrypt(key, iv, msg: [], aad: []);
 
         cipherResult.Tag.ToArray().Should().Equal(expectedTag);
-        _subject.Decrypt(key, iv, cipherResult.CipherOutput, aad: []).Should().BeEmpty();
+        var decrypted = _subject.Decrypt(key, iv, cipherResult.CipherOutput, aad: []);
+
+        decrypted.Should().BeEmpty();
     }
 
     // https://github.com/C2SP/wycheproof/blob/master/testvectors_v1/aes_gcm_test.json tcId=94
@@ -92,7 +98,9 @@ public class AesGcmCipherTests
         cipherResult.CipherText.ToArray().Should().Equal(expectedCt);
         cipherResult.Tag.ToArray().Should().Equal(expectedTag);
 
-        _subject.Decrypt(key, iv, cipherResult.CipherOutput, aad: []).Should().Equal(msg);
+        var decrypted = _subject.Decrypt(key, iv, cipherResult.CipherOutput, aad: []);
+
+        decrypted.Should().Equal(msg);
     }
 
     [Fact]

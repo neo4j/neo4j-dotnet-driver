@@ -15,7 +15,6 @@
 
 #nullable enable
 
-using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Encryption;
@@ -31,34 +30,16 @@ public class EncryptedValueBytesConformanceTests
             new MessageFormatFactory(TestDriverContext.MockContext),
             new PackStreamMemorySerializer(new PackStreamReaderWriterFactory())));
 
-    private static EncryptedStructure KnownAnswerStructure() => new(
-        ProfileType: "ENVELOPE",
-        ProfileVersion: 1,
-        ProfileName: "env",
-        CipherOutput: [0xFF],
-        TypeName: "Int",
-        TypeSerializationSchemeMajor: 6,
-        TypeSerializationSchemeMinor: 0,
-        Metadata: new Dictionary<string, object>());
-
     private static readonly byte[] KnownAnswerBytes =
     [
         0x01, // Encrypted Value Encoding Version
-        0xB8, 0x65, // struct header: TinyStruct[8], Encrypted signature
-        0x88, 0x45, 0x4E, 0x56, 0x45, 0x4C, 0x4F, 0x50, 0x45, // profileType = "ENVELOPE" (TinyString[8])
-        0x01, // profileVersion = 1
-        0x83, 0x65, 0x6E, 0x76, // profileName = "env" (TinyString[3])
-        0xCC, 0x01, 0xFF, // cipherOutput = [0xFF] (Bytes8[1])
-        0x83, 0x49, 0x6E, 0x74, // typeName = "Int" (TinyString[3])
-        0x06, // typeSerializationSchemeMajor = 6
-        0x00, // typeSerializationSchemeMinor = 0
-        0xA0 // metadata = {} (TinyMap[0])
+        ..EncryptedStructureConformanceTests.KnownAnswerBytes
     ];
 
     [Fact]
     public void Encode_ProducesTheExactKnownAnswerByteSequence()
     {
-        var bytes = _subject.Encode(KnownAnswerStructure());
+        var bytes = _subject.Encode(EncryptedStructureConformanceTests.KnownAnswerStructure());
 
         bytes.Should().Equal(KnownAnswerBytes);
     }
@@ -69,6 +50,6 @@ public class EncryptedValueBytesConformanceTests
         var result = _subject.Decode(KnownAnswerBytes);
 
         result.Should()
-            .BeEquivalentTo(KnownAnswerStructure(), opt => opt.ComparingByMembers<EncryptedStructure>());
+            .BeEquivalentTo(EncryptedStructureConformanceTests.KnownAnswerStructure(), opt => opt.ComparingByMembers<EncryptedStructure>());
     }
 }

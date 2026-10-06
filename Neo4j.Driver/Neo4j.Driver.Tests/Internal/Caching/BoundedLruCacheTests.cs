@@ -81,8 +81,9 @@ public class BoundedLruCacheTests
 
         subject.Set("a", "1");
         _now += TimeSpan.FromDays(365);
+        var found = subject.TryGet("a", out var value);
 
-        subject.TryGet("a", out var value).Should().BeTrue();
+        found.Should().BeTrue();
         value.Should().Be("1");
     }
 
@@ -93,8 +94,9 @@ public class BoundedLruCacheTests
 
         subject.Set("a", "1");
         _now += TimeSpan.FromSeconds(10);
+        var found = subject.TryGet("a", out var value);
 
-        subject.TryGet("a", out var value).Should().BeTrue();
+        found.Should().BeTrue();
         value.Should().Be("1");
     }
 
@@ -122,10 +124,13 @@ public class BoundedLruCacheTests
         subject.Set("a", "1");
         subject.Set("b", "2");
         subject.Set("c", "3");
+        var foundA = subject.TryGet("a", out _);
+        var foundB = subject.TryGet("b", out _);
+        var foundC = subject.TryGet("c", out _);
 
-        subject.TryGet("a", out _).Should().BeFalse();
-        subject.TryGet("b", out _).Should().BeTrue();
-        subject.TryGet("c", out _).Should().BeTrue();
+        foundA.Should().BeFalse();
+        foundB.Should().BeTrue();
+        foundC.Should().BeTrue();
     }
 
     [Fact]
@@ -135,12 +140,15 @@ public class BoundedLruCacheTests
 
         subject.Set("a", "1");
         subject.Set("b", "2");
-        subject.TryGet("a", out _); // "a" is now more recently used than "b"
-        subject.Set("c", "3"); // should evict "b", not "a"
+        subject.TryGet("a", out _);
+        subject.Set("c", "3");
+        var foundA = subject.TryGet("a", out _);
+        var foundB = subject.TryGet("b", out _);
+        var foundC = subject.TryGet("c", out _);
 
-        subject.TryGet("a", out _).Should().BeTrue();
-        subject.TryGet("b", out _).Should().BeFalse();
-        subject.TryGet("c", out _).Should().BeTrue();
+        foundA.Should().BeTrue();
+        foundB.Should().BeFalse();
+        foundC.Should().BeTrue();
     }
 
     [Fact]
@@ -197,9 +205,11 @@ public class BoundedLruCacheTests
         subject.Set("a", "1");
         subject.Set("b", "2");
         subject.Set("a", "1-updated");
+        var foundA = subject.TryGet("a", out var value);
+        var foundB = subject.TryGet("b", out _);
 
-        subject.TryGet("a", out var value).Should().BeTrue();
+        foundA.Should().BeTrue();
         value.Should().Be("1-updated");
-        subject.TryGet("b", out _).Should().BeTrue();
+        foundB.Should().BeTrue();
     }
 }

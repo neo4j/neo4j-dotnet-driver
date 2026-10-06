@@ -37,7 +37,9 @@ public class EncryptionProfileRegistryTests
         var wanted = Profile("b");
         var registry = new EncryptionProfileRegistry([Profile("a"), wanted, Profile("c")]);
 
-        registry.Get("b").Should().BeSameAs(wanted);
+        var profile = registry.Get("b");
+
+        profile.Should().BeSameAs(wanted);
     }
 
     [Fact]
@@ -57,7 +59,9 @@ public class EncryptionProfileRegistryTests
         var only = Profile("a");
         var registry = new EncryptionProfileRegistry([only]);
 
-        registry.Get(null).Should().BeSameAs(only);
+        var profile = registry.Get(null);
+
+        profile.Should().BeSameAs(only);
     }
 
     [Fact]

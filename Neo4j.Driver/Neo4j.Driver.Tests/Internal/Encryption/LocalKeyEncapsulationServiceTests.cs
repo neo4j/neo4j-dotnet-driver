@@ -70,7 +70,7 @@ public class LocalKeyEncapsulationServiceTests
             .Setup(b => b.Encode(Matches(Iv)))
             .Returns("encoded-iv");
 
-        var result = await CreateSubject().EncapsulateAsync(new NoOptions());
+        var result = await CreateSubject().EncapsulateAsync(new NoOptions(), TestContext.Current.CancellationToken);
 
         result.Key.Should().Equal(Dek);
         result.Encapsulation.Should().Equal(wrapped.CipherOutput);
@@ -89,7 +89,7 @@ public class LocalKeyEncapsulationServiceTests
 
         var options = new Dictionary<string, string> { ["iv"] = "stored-iv" };
 
-        var result = await CreateSubject().DecapsulateAsync(encapsulation, options);
+        var result = await CreateSubject().DecapsulateAsync(encapsulation, options, TestContext.Current.CancellationToken);
 
         result.Should().Equal(dek);
     }

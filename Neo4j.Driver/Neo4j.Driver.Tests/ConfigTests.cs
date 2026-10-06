@@ -77,7 +77,7 @@ public class ConfigTests
         {
             var config = new Config();
 
-            config.Preview_PropertyEncryptionProfiles.Should().BeEmpty();
+            config.PropertyEncryptionProfiles.Should().BeEmpty();
         }
 
         [Fact]
@@ -484,14 +484,6 @@ public class ConfigTests
 
         [Fact]
         public void WithPropertyEncryptionProfiles_ShouldSetTheProfiles()
-        {
-            var profile = new ValidProfile("profile-1");
-            var config = Config.Builder.WithPropertyEncryptionProfiles([profile]).Build();
-            config.PropertyEncryptionProfiles.Should().ContainSingle().Which.Should().Be(profile);
-        }
-
-        [Fact]
-        public void PropertyEncryptionProfiles_PublicGetter_ReturnsTheConfiguredProfiles()
         {
             var profile = new ValidProfile("profile-1");
             var config = Config.Builder.WithPropertyEncryptionProfiles([profile]).Build();

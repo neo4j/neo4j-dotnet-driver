@@ -27,14 +27,17 @@ public class EnvelopeMetadataExtractorTests
 {
     private readonly EnvelopeMetadataExtractor _subject = new();
 
-    private static Dictionary<string, object> ValidMetadata() => new()
+    private static Dictionary<string, object> ValidMetadata()
     {
-        ["key_id"] = "key-1",
-        ["iv"] = new byte[] { 1, 2, 3 },
-        ["aad"] = new byte[] { 4, 5 },
-        ["aad_encoding_scheme_major"] = 6L,
-        ["aad_encoding_scheme_minor"] = 0L
-    };
+        return new()
+        {
+            ["key_id"] = "key-1",
+            ["iv"] = new byte[] { 1, 2, 3 },
+            ["aad"] = new byte[] { 4, 5 },
+            ["aad_encoding_scheme_major"] = 6L,
+            ["aad_encoding_scheme_minor"] = 0L
+        };
+    }
 
     [Fact]
     public void Extract_AllFields_ReturnsMetadata()
@@ -111,7 +114,9 @@ public class EnvelopeMetadataExtractorTests
         var metadata = ValidMetadata();
         metadata.Remove("aad");
 
-        _subject.Extract(metadata).Aad.Should().BeEmpty();
+        var result = _subject.Extract(metadata);
+
+        result.Aad.Should().BeEmpty();
     }
 
     [Theory]

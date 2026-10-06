@@ -44,7 +44,8 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
             builder => builder.WithPropertyEncryptionProfiles([EnvelopeProfile("test-profile")]));
 
         _propertyEncryption = _driver.PropertyEncryption();
-        var key = await _propertyEncryption.KeyManager().CreateAsync("main");
+        var key = await _propertyEncryption.KeyManager()
+            .CreateAsync("main", cancellationToken: TestContext.Current.CancellationToken);
         _keyId = key.Id;
     }
 
@@ -55,31 +56,30 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
 
     private static IPropertyEncryptionProfile EnvelopeProfile(string name)
     {
-        var kes = new LocalKeyEncapsulationService(
-            Kek,
-            new AesGcmCipher(),
-            new CryptoRandomProvider(),
-            new Base64Codec());
+        var kes = KeyEncapsulationServices.Local(Kek);
 
         return PropertyEncryptionProfile
             .EnvelopeBuilder(name, kes, new InMemoryEncapsulatedKeyRepository(new KeyIdGenerator()))
             .Build();
     }
 
-    public static TheoryData<object> SupportedValues() => new()
+    public static TheoryData<object> SupportedValues()
     {
-        true,
-        false,
-        42L,
-        -1L,
-        3.25,
-        "hello",
-        "",
-        new byte[] { 0x01, 0x02, 0x03 },
-        new List<object> { 1L, 2L, 3L },
-        new List<object> { "a", "b" },
-        new List<object>()
-    };
+        return new()
+        {
+            true,
+            false,
+            42L,
+            -1L,
+            3.25,
+            "hello",
+            "",
+            new byte[] { 0x01, 0x02, 0x03 },
+            new List<object> { 1L, 2L, 3L },
+            new List<object> { "a", "b" },
+            new List<object>()
+        };
+    }
 
     [Theory]
     [MemberData(nameof(SupportedValues))]
@@ -307,7 +307,8 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
                 [EnvelopeProfile("profile-a"), EnvelopeProfile("profile-b")]));
 
         var propertyEncryption = driver.PropertyEncryption();
-        await propertyEncryption.KeyManager("profile-b").CreateAsync("b-key");
+        await propertyEncryption.KeyManager("profile-b")
+            .CreateAsync("b-key", cancellationToken: TestContext.Current.CancellationToken);
 
         var encrypted = await propertyEncryption.EncryptRequest()
             .FromValue("profile-b-value")

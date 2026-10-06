@@ -29,6 +29,8 @@ public class IvProviderTests
     {
         var provider = new IvProvider(new SequentialRandom());
 
-        provider.GetIv().Should().Equal(Sequence(12));
+        var iv = provider.GetIv();
+
+        iv.Should().Equal(Sequence(12));
     }
 }

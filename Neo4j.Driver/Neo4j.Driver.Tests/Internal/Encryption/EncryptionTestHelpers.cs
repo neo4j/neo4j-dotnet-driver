@@ -18,7 +18,6 @@
 using System;
 using System.Linq;
 using Moq;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Encryption;
 
 namespace Neo4j.Driver.Tests.Internal.Encryption;
@@ -32,7 +31,7 @@ internal static class EncryptionTestHelpers
 
     public static byte[] Sequence(byte length, byte seed = 0)
     {
-        return Enumerable.TypedRange(seed, length).ToArray();
+        return Enumerable.Range(seed, length).Select(i => (byte)i).ToArray();
     }
 }
 

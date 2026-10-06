@@ -18,6 +18,8 @@
 using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Tests.Internal.Core;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Internal.Protocol;
 using Xunit;
@@ -27,19 +29,31 @@ namespace Neo4j.Driver.Tests.Internal.Encryption;
 
 public class EncryptedValueBytesCodecTests
 {
-    private readonly Mock<IEncryptedStructureCodec> _structureCodec = new();
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<EncryptedValueBytesCodec>();
+    private readonly Mock<IEncryptedStructureCodec> _structureCodec;
 
-    private static EncryptedStructure Sample() => new(
-        ProfileType: "ENVELOPE",
-        ProfileVersion: 1,
-        ProfileName: "Envelope",
-        CipherOutput: [0xDE, 0xAD],
-        TypeName: "Integer",
-        TypeSerializationSchemeMajor: 1,
-        TypeSerializationSchemeMinor: 0,
-        Metadata: new Dictionary<string, object>());
+    public EncryptedValueBytesCodecTests()
+    {
+        _structureCodec = _autoMocker.GetMock<IEncryptedStructureCodec>();
+    }
 
-    private EncryptedValueBytesCodec CreateSubject() => new(_structureCodec.Object);
+    private static EncryptedStructure Sample()
+    {
+        return new(
+            ProfileType: "ENVELOPE",
+            ProfileVersion: 1,
+            ProfileName: "Envelope",
+            CipherOutput: [0xDE, 0xAD],
+            TypeName: "Integer",
+            TypeSerializationSchemeMajor: 1,
+            TypeSerializationSchemeMinor: 0,
+            Metadata: new Dictionary<string, object>());
+    }
+
+    private EncryptedValueBytesCodec CreateSubject()
+    {
+        return _autoMocker.CreateInstance<EncryptedValueBytesCodec>();
+    }
 
     [Fact]
     public void Encode_PrependsTheEncodingVersionByteToTheStructureCodecsBytes()

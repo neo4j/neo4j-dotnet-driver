@@ -119,8 +119,11 @@ public class EncryptionKeyCacheTests
         _subject.TryGet(profile, "key-1", out _);
         _subject.Set(profile, "key-3", [3]);
 
-        _subject.TryGet(profile, "key-2", out var evicted).Should().BeFalse();
-        _subject.TryGet(profile, "key-1", out var kept).Should().BeTrue();
+        var foundEvicted = _subject.TryGet(profile, "key-2", out var evicted);
+        var foundKept = _subject.TryGet(profile, "key-1", out var kept);
+
+        foundEvicted.Should().BeFalse();
+        foundKept.Should().BeTrue();
         evicted.Should().BeNull();
         kept.Should().Equal(1);
     }

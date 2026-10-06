@@ -64,7 +64,4 @@
       <ProjectReference Include="..\Neo4j.Driver.Tests.SimpleDriver\Neo4j.Driver.Tests.SimpleDriver.csproj" />
       <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
     </ItemGroup>
-    <ItemGroup>
-      <Folder Include="Internal\Encryption\StandardsCompliance\" />
-    </ItemGroup>
 </Project>

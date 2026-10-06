@@ -19,6 +19,8 @@ using System.Collections.Generic;
 using System.IO;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Tests.Internal.Core;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Protocol;
@@ -30,7 +32,13 @@ public class PackStreamMemorySerializerTests
 {
     private static readonly MessageFormat Format;
 
-    private readonly Mock<IPackStreamReaderWriterFactory> _factory = new();
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<PackStreamMemorySerializer>();
+    private readonly Mock<IPackStreamReaderWriterFactory> _factory;
+
+    public PackStreamMemorySerializerTests()
+    {
+        _factory = _autoMocker.GetMock<IPackStreamReaderWriterFactory>();
+    }
 
     static PackStreamMemorySerializerTests()
     {
@@ -38,10 +46,13 @@ public class PackStreamMemorySerializerTests
         Format = messageFormatFactory.CreateMessageFormat(BoltProtocolVersion.V6_0);
     }
 
-    private PackStreamMemorySerializer CreateSubject() => new(_factory.Object);
+    private PackStreamMemorySerializer CreateSubject()
+    {
+        return _autoMocker.CreateInstance<PackStreamMemorySerializer>();
+    }
 
     [Fact]
-    public void Write_InvokesTheGivenActionExactlyOnceWithTheWriterFromTheFactory()
+    public void Serialize_InvokesTheGivenActionExactlyOnceWithTheWriterFromTheFactory()
     {
         var writerFromFactory = Mock.Of<IPackStreamWriter>();
         _factory.Setup(f => f.CreateWriter(Format, It.IsAny<Stream>())).Returns(writerFromFactory);
@@ -53,7 +64,7 @@ public class PackStreamMemorySerializerTests
     }
 
     [Fact]
-    public void Write_ReturnsStreamContentToTheFactory()
+    public void Serialize_ReturnsWhatTheWriterWroteToTheStream()
     {
         _factory.Setup(f => f.CreateWriter(Format, It.IsAny<Stream>()))
             .Returns((MessageFormat _, Stream stream) =>
@@ -68,7 +79,7 @@ public class PackStreamMemorySerializerTests
     }
 
     [Fact]
-    public void Read_PassesAStreamContainingTheGivenBytesToTheFactory()
+    public void Deserialize_PassesAStreamContainingTheGivenBytesToTheFactory()
     {
         byte[]? streamContents = null;
         _factory.Setup(f => f.CreateReader(Format, It.IsAny<MemoryStream>()))
@@ -85,7 +96,7 @@ public class PackStreamMemorySerializerTests
     }
 
     [Fact]
-    public void Read_InvokesTheGivenFuncWithTheReaderFromTheFactoryAndReturnsItsResult()
+    public void Deserialize_InvokesTheGivenFuncWithTheReaderFromTheFactoryAndReturnsItsResult()
     {
         var readerFromFactory = Mock.Of<IPackStreamReader>();
         _factory.Setup(f => f.CreateReader(Format, It.IsAny<MemoryStream>())).Returns(readerFromFactory);

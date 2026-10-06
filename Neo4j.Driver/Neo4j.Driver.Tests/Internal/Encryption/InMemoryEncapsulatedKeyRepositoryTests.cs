@@ -51,65 +51,65 @@ public class InMemoryEncapsulatedKeyRepositoryTests
     }
 
     [Fact]
-    public async Task Save_UsesTheGeneratedIdAndPreservesTheStoredData()
+    public async Task Create_UsesTheGeneratedIdAndPreservesTheStoredData()
     {
         var subject = CreateSubject();
         SetGeneratedIds("key-1");
 
-        var saved = await subject.CreateAsync("primary", Encapsulation, Metadata);
+        var created = await subject.CreateAsync("primary", Encapsulation, Metadata, TestContext.Current.CancellationToken);
 
-        saved!.Id.Should().Be("key-1");
-        saved!.Alias.Should().Be("primary");
-        saved.Encapsulation.Should().Equal(Encapsulation);
-        saved.Metadata.Should().Equal(Metadata);
+        created.Id.Should().Be("key-1");
+        created.Alias.Should().Be("primary");
+        created.Encapsulation.Should().Equal(Encapsulation);
+        created.Metadata.Should().Equal(Metadata);
     }
 
     [Fact]
-    public async Task Save_WithNoAliasSavesAnUnaliasedKey()
+    public async Task Create_WithNoAlias_CreatesAnUnaliasedKey()
     {
         var subject = CreateSubject();
         SetGeneratedIds("key-1");
 
-        var saved = await subject.CreateAsync(null, Encapsulation, Metadata);
+        var created = await subject.CreateAsync(null, Encapsulation, Metadata, TestContext.Current.CancellationToken);
 
-        saved!.Alias.Should().BeNull();
+        created.Alias.Should().BeNull();
     }
 
     [Fact]
-    public async Task Save_UsesAFreshIdFromTheGeneratorForEachKey()
+    public async Task Create_UsesAFreshIdFromTheGeneratorForEachKey()
     {
         var subject = CreateSubject();
         SetGeneratedIds("key-1", "key-2");
 
-        var first = await subject.CreateAsync(null, Encapsulation, Metadata);
-        var second = await subject.CreateAsync(null, Encapsulation, Metadata);
+        var first = await subject.CreateAsync(null, Encapsulation, Metadata, TestContext.Current.CancellationToken);
+        var second = await subject.CreateAsync(null, Encapsulation, Metadata, TestContext.Current.CancellationToken);
 
         first!.Id.Should().Be("key-1");
         second!.Id.Should().Be("key-2");
     }
 
     [Fact]
-    public async Task FindById_ReturnsTheSavedKey()
+    public async Task FindById_ReturnsTheCreatedKey()
     {
         var subject = CreateSubject();
         SetGeneratedIds("key-1");
 
-        var saved = await subject.CreateAsync("primary", Encapsulation, Metadata);
+        var created = await subject.CreateAsync("primary", Encapsulation, Metadata, TestContext.Current.CancellationToken);
 
-        var found = await subject.FindByIdAsync("key-1");
+        var found = await subject.FindByIdAsync("key-1", TestContext.Current.CancellationToken);
 
-        found.Should().BeEquivalentTo(saved);
+        found.Should().BeEquivalentTo(created);
     }
 
     [Fact]
-    public async Task FindByAlias_ReturnsTheKeySavedUnderThatAlias()
+    public async Task FindByAlias_ReturnsTheKeyCreatedUnderThatAlias()
     {
         var subject = CreateSubject();
         SetGeneratedIds("key-1");
 
-        await subject.CreateAsync("primary", Encapsulation, Metadata);
+        await subject.CreateAsync("primary", Encapsulation, Metadata, TestContext.Current.CancellationToken);
 
-        var found = await subject.FindByAliasAsync("primary");
+        var found = await subject.FindByAliasAsync("primary", TestContext.Current.CancellationToken);
 
         found!.Id.Should().Be("key-1");
     }
@@ -119,7 +119,7 @@ public class InMemoryEncapsulatedKeyRepositoryTests
     {
         var subject = CreateSubject();
 
-        var found = await subject.FindByIdAsync("missing");
+        var found = await subject.FindByIdAsync("missing", TestContext.Current.CancellationToken);
 
         found.Should().BeNull();
     }
@@ -129,7 +129,7 @@ public class InMemoryEncapsulatedKeyRepositoryTests
     {
         var subject = CreateSubject();
 
-        var found = await subject.FindByAliasAsync("missing");
+        var found = await subject.FindByAliasAsync("missing", TestContext.Current.CancellationToken);
 
         found.Should().BeNull();
     }
@@ -140,11 +140,11 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1");
 
-        await subject.CreateAsync("primary", Encapsulation, Metadata);
+        await subject.CreateAsync("primary", Encapsulation, Metadata, TestContext.Current.CancellationToken);
 
-        await subject.SetAliasByIdAsync("key-1", "extra");
+        await subject.SetAliasByIdAsync("key-1", "extra", TestContext.Current.CancellationToken);
 
-        var found = await subject.FindByAliasAsync("extra");
+        var found = await subject.FindByAliasAsync("extra", TestContext.Current.CancellationToken);
         found!.Id.Should().Be("key-1");
         found!.Alias.Should().Be("extra");
     }
@@ -155,14 +155,14 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1");
 
-        await subject.CreateAsync("primary", Encapsulation, Metadata);
+        await subject.CreateAsync("primary", Encapsulation, Metadata, TestContext.Current.CancellationToken);
 
-        await subject.SetAliasByIdAsync("key-1", "extra");
+        await subject.SetAliasByIdAsync("key-1", "extra", TestContext.Current.CancellationToken);
 
-        var key = await subject.FindByIdAsync("key-1");
+        var key = await subject.FindByIdAsync("key-1", TestContext.Current.CancellationToken);
         key!.Alias.Should().Be("extra");
 
-        var gone = await subject.FindByAliasAsync("primary");
+        var gone = await subject.FindByAliasAsync("primary", TestContext.Current.CancellationToken);
         gone.Should().BeNull();
     }
 
@@ -171,7 +171,7 @@ public class InMemoryEncapsulatedKeyRepositoryTests
     {
         var subject = CreateSubject();
 
-        var act = () => subject.SetAliasByIdAsync("missing", "extra");
+        var act = () => subject.SetAliasByIdAsync("missing", "extra", TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<EncapsulatedKeyNotFoundException>();
     }
@@ -182,14 +182,14 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1");
 
-        await subject.CreateAsync("primary", Encapsulation, Metadata);
+        await subject.CreateAsync("primary", Encapsulation, Metadata, TestContext.Current.CancellationToken);
 
-        await subject.SetAliasByIdAsync("key-1", null);
+        await subject.SetAliasByIdAsync("key-1", null, TestContext.Current.CancellationToken);
 
-        var byId = await subject.FindByIdAsync("key-1");
+        var byId = await subject.FindByIdAsync("key-1", TestContext.Current.CancellationToken);
         byId!.Alias.Should().BeNull();
 
-        var gone = await subject.FindByAliasAsync("primary");
+        var gone = await subject.FindByAliasAsync("primary", TestContext.Current.CancellationToken);
         gone.Should().BeNull();
     }
 
@@ -199,11 +199,11 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1");
 
-        await subject.CreateAsync(null, Encapsulation, Metadata);
+        await subject.CreateAsync(null, Encapsulation, Metadata, TestContext.Current.CancellationToken);
 
-        await subject.SetAliasByIdAsync("key-1", null);
+        await subject.SetAliasByIdAsync("key-1", null, TestContext.Current.CancellationToken);
 
-        var key = await subject.FindByIdAsync("key-1");
+        var key = await subject.FindByIdAsync("key-1", TestContext.Current.CancellationToken);
         key!.Alias.Should().BeNull();
     }
 
@@ -213,14 +213,14 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1");
 
-        await subject.CreateAsync("primary", Encapsulation, Metadata);
+        await subject.CreateAsync("primary", Encapsulation, Metadata, TestContext.Current.CancellationToken);
 
-        await subject.DeleteByIdAsync("key-1");
+        await subject.DeleteByIdAsync("key-1", TestContext.Current.CancellationToken);
 
-        var byId = await subject.FindByIdAsync("key-1");
+        var byId = await subject.FindByIdAsync("key-1", TestContext.Current.CancellationToken);
         byId.Should().BeNull();
 
-        var byAlias = await subject.FindByAliasAsync("primary");
+        var byAlias = await subject.FindByAliasAsync("primary", TestContext.Current.CancellationToken);
         byAlias.Should().BeNull();
     }
 
@@ -229,7 +229,7 @@ public class InMemoryEncapsulatedKeyRepositoryTests
     {
         var subject = CreateSubject();
 
-        var act = () => subject.DeleteByIdAsync("missing");
+        var act = () => subject.DeleteByIdAsync("missing", TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<EncapsulatedKeyNotFoundException>();
     }
@@ -240,12 +240,12 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1", "key-2");
 
-        await subject.CreateAsync("primary", Encapsulation, Metadata);
-        await subject.DeleteByIdAsync("key-1");
+        await subject.CreateAsync("primary", Encapsulation, Metadata, TestContext.Current.CancellationToken);
+        await subject.DeleteByIdAsync("key-1", TestContext.Current.CancellationToken);
 
-        await subject.CreateAsync("primary", Encapsulation, Metadata);
+        await subject.CreateAsync("primary", Encapsulation, Metadata, TestContext.Current.CancellationToken);
 
-        var byAlias = await subject.FindByAliasAsync("primary");
+        var byAlias = await subject.FindByAliasAsync("primary", TestContext.Current.CancellationToken);
         byAlias!.Id.Should().Be("key-2");
     }
 
@@ -255,10 +255,10 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1", "key-2");
 
-        await subject.CreateAsync("shared", Encapsulation, Metadata);
-        await subject.CreateAsync(null, Encapsulation, Metadata);
+        await subject.CreateAsync("shared", Encapsulation, Metadata, TestContext.Current.CancellationToken);
+        await subject.CreateAsync(null, Encapsulation, Metadata, TestContext.Current.CancellationToken);
 
-        var act = () => subject.SetAliasByIdAsync("key-2", "shared");
+        var act = () => subject.SetAliasByIdAsync("key-2", "shared", TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<EncapsulatedAliasInUseException>().WithMessage("*shared*");
     }
@@ -269,13 +269,13 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1", "key-2");
 
-        await subject.CreateAsync("shared", Encapsulation, Metadata);
-        await subject.CreateAsync(null, Encapsulation, Metadata);
+        await subject.CreateAsync("shared", Encapsulation, Metadata, TestContext.Current.CancellationToken);
+        await subject.CreateAsync(null, Encapsulation, Metadata, TestContext.Current.CancellationToken);
 
-        await subject.SetAliasByIdAsync("key-1", null);
-        await subject.SetAliasByIdAsync("key-2", "shared");
+        await subject.SetAliasByIdAsync("key-1", null, TestContext.Current.CancellationToken);
+        await subject.SetAliasByIdAsync("key-2", "shared", TestContext.Current.CancellationToken);
 
-        var byAlias = await subject.FindByAliasAsync("shared");
+        var byAlias = await subject.FindByAliasAsync("shared", TestContext.Current.CancellationToken);
         byAlias!.Id.Should().Be("key-2");
     }
 
@@ -285,14 +285,14 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1");
 
-        await subject.CreateAsync("primary", Encapsulation, Metadata);
+        await subject.CreateAsync("primary", Encapsulation, Metadata, TestContext.Current.CancellationToken);
 
-        await subject.SetAliasByIdAsync("key-1", "primary");
+        await subject.SetAliasByIdAsync("key-1", "primary", TestContext.Current.CancellationToken);
 
-        var key = await subject.FindByIdAsync("key-1");
+        var key = await subject.FindByIdAsync("key-1", TestContext.Current.CancellationToken);
         key!.Alias.Should().Be("primary");
 
-        var byAlias = await subject.FindByAliasAsync("primary");
+        var byAlias = await subject.FindByAliasAsync("primary", TestContext.Current.CancellationToken);
         byAlias!.Id.Should().Be("key-1");
     }
 
@@ -302,9 +302,9 @@ public class InMemoryEncapsulatedKeyRepositoryTests
         var subject = CreateSubject();
         SetGeneratedIds("key-1", "key-2");
 
-        await subject.CreateAsync("shared", Encapsulation, Metadata);
+        await subject.CreateAsync("shared", Encapsulation, Metadata, TestContext.Current.CancellationToken);
 
-        var act = () => subject.CreateAsync("shared", Encapsulation, Metadata);
+        var act = () => subject.CreateAsync("shared", Encapsulation, Metadata, TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<EncapsulatedAliasInUseException>().WithMessage("*shared*");
     }

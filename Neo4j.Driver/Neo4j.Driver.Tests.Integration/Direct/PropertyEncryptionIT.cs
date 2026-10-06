@@ -17,7 +17,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Preview.Encryption;
@@ -39,11 +38,7 @@ public sealed class PropertyEncryptionIT : DirectDriverTestBase
     {
         var token = TestContext.Current.CancellationToken;
 
-        var kes = new LocalKeyEncapsulationService(
-            Kek,
-            new AesGcmCipher(),
-            new CryptoRandomProvider(),
-            new Base64Codec());
+        var kes = KeyEncapsulationServices.Local(Kek);
 
         var repository = new InMemoryEncapsulatedKeyRepository(new KeyIdGenerator());
         var profile = PropertyEncryptionProfile

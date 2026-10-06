@@ -27,7 +27,10 @@ namespace Neo4j.Driver.Tests.Internal.Encryption;
 
 public class EncryptionErrorPolicyTests
 {
-    private static EncryptionErrorPolicy CreateSubject() => new();
+    private static EncryptionErrorPolicy CreateSubject()
+    {
+        return new();
+    }
 
     [Fact]
     public void Throw_Neo4jException_RethrowsTheSameInstance()

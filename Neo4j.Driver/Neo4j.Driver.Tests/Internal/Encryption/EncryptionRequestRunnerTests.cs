@@ -18,6 +18,8 @@
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Tests.Internal.Core;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Preview.Encryption;
 using Xunit;
@@ -26,18 +28,23 @@ namespace Neo4j.Driver.Tests.Internal.Encryption;
 
 public class EncryptionRequestRunnerTests
 {
-    private readonly Mock<IEncryptionProfileRegistry> _registry = new();
-    private readonly Mock<IEncryptionEngineDispatcher> _dispatcher = new();
-    private readonly Mock<IPlaintextCodec> _plaintextCodec = new();
-    private readonly Mock<IEncryptedValueBytesCodec> _encryptedValueBytesCodec = new();
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<EncryptionRequestRunner>();
+    private readonly Mock<IEncryptionProfileRegistry> _registry;
+    private readonly Mock<IEncryptionEngineDispatcher> _dispatcher;
+    private readonly Mock<IPlaintextCodec> _plaintextCodec;
+    private readonly Mock<IEncryptedValueBytesCodec> _encryptedValueBytesCodec;
+
+    public EncryptionRequestRunnerTests()
+    {
+        _registry = _autoMocker.GetMock<IEncryptionProfileRegistry>();
+        _dispatcher = _autoMocker.GetMock<IEncryptionEngineDispatcher>();
+        _plaintextCodec = _autoMocker.GetMock<IPlaintextCodec>();
+        _encryptedValueBytesCodec = _autoMocker.GetMock<IEncryptedValueBytesCodec>();
+    }
 
     private EncryptionRequestRunner CreateSubject()
     {
-        return new EncryptionRequestRunner(
-            _registry.Object,
-            _dispatcher.Object,
-            _plaintextCodec.Object,
-            _encryptedValueBytesCodec.Object);
+        return _autoMocker.CreateInstance<EncryptionRequestRunner>();
     }
 
     [Fact]

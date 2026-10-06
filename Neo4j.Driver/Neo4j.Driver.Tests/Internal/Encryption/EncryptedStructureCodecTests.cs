@@ -20,6 +20,8 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Tests.Internal.Core;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Internal.IO;
@@ -30,29 +32,40 @@ namespace Neo4j.Driver.Tests.Internal.Encryption;
 
 public class EncryptedStructureCodecTests
 {
-    private readonly Mock<IMessageFormatFactory> _messageFormatFactory = new();
-    private readonly Mock<IPackStreamMemorySerializer> _packStreamMemorySerializer = new();
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<EncryptedStructureCodec>();
+    private readonly Mock<IMessageFormatFactory> _messageFormatFactory;
+    private readonly Mock<IPackStreamMemorySerializer> _packStreamMemorySerializer;
+
     private readonly MessageFormat _format = new MessageFormatFactory(TestDriverContext.MockContext)
         .CreateMessageFormat(BoltProtocolVersion.V6_0);
 
-    private static EncryptedStructure Sample() => new(
-        ProfileType: "ENVELOPE",
-        ProfileVersion: 1,
-        ProfileName: "Envelope",
-        CipherOutput: new byte[] { 0xDE, 0xAD, 0xBE, 0xEF },
-        TypeName: "Integer",
-        TypeSerializationSchemeMajor: 6,
-        TypeSerializationSchemeMinor: 0,
-        Metadata: new Dictionary<string, object>
-        {
-            ["keyId"] = "key-1",
-            ["iv"] = new byte[] { 1, 2, 3 }
-        });
+    public EncryptedStructureCodecTests()
+    {
+        _messageFormatFactory = _autoMocker.GetMock<IMessageFormatFactory>();
+        _packStreamMemorySerializer = _autoMocker.GetMock<IPackStreamMemorySerializer>();
+    }
+
+    private static EncryptedStructure Sample()
+    {
+        return new(
+            ProfileType: "ENVELOPE",
+            ProfileVersion: 1,
+            ProfileName: "Envelope",
+            CipherOutput: new byte[] { 0xDE, 0xAD, 0xBE, 0xEF },
+            TypeName: "Integer",
+            TypeSerializationSchemeMajor: 6,
+            TypeSerializationSchemeMinor: 0,
+            Metadata: new Dictionary<string, object>
+            {
+                ["keyId"] = "key-1",
+                ["iv"] = new byte[] { 1, 2, 3 }
+            });
+    }
 
     private EncryptedStructureCodec CreateSubject()
     {
         _messageFormatFactory.Setup(f => f.CreateMessageFormat(It.IsAny<BoltProtocolVersion>())).Returns(_format);
-        return new EncryptedStructureCodec(_messageFormatFactory.Object, _packStreamMemorySerializer.Object);
+        return _autoMocker.CreateInstance<EncryptedStructureCodec>();
     }
 
     private void StubHelperRead(IPackStreamReader reader)

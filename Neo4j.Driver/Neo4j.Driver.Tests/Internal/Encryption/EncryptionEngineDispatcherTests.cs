@@ -16,12 +16,15 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Preview.Encryption;
+using Neo4j.Driver.Tests.Internal.Core;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.Encryption;
@@ -31,6 +34,8 @@ public class EncryptionEngineDispatcherTests
     private static readonly IInternalEncryptionProfile Profile =
         Mock.Of<IInternalEncryptionProfile>(p => p.Name == "profile-a");
     private static readonly KeyReference KeyRef = new("key-1", KeyReferenceType.Id);
+
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<EncryptionEngineDispatcher>();
 
     private static EncryptionEngineDispatcher CreateSubjectWithRealErrorPolicy(params IEncryptionEngine[] engines)
     {
@@ -183,16 +188,17 @@ public class EncryptionEngineDispatcherTests
             .Returns(true);
 
         var wrapped = new PropertyEncryptionException("wrapped", cause);
-        var errorPolicy = new Mock<IEncryptionErrorPolicy>();
-        errorPolicy.Setup(p => p.Throw("encryption", cause, It.IsAny<CancellationToken>())).Throws(wrapped);
+        _autoMocker.Use<IEnumerable<IEncryptionEngine>>([engine.Object]);
+        _autoMocker.GetMock<IEncryptionErrorPolicy>()
+            .Setup(p => p.Throw("encryption", cause, It.IsAny<CancellationToken>()))
+            .Throws(wrapped);
 
-        var dispatcher = new EncryptionEngineDispatcher([engine.Object], errorPolicy.Object);
+        var dispatcher = _autoMocker.CreateInstance<EncryptionEngineDispatcher>();
 
         var act = () => dispatcher.DispatchEncryptAsync(Profile, "value", KeyRef, null, null, CancellationToken.None);
 
         var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
         thrown.Which.Should().BeSameAs(wrapped);
-        errorPolicy.Verify(p => p.Throw("encryption", cause, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -212,15 +218,16 @@ public class EncryptionEngineDispatcherTests
             .Returns(true);
 
         var wrapped = new PropertyEncryptionException("wrapped", cause);
-        var errorPolicy = new Mock<IEncryptionErrorPolicy>();
-        errorPolicy.Setup(p => p.Throw("decryption", cause, It.IsAny<CancellationToken>())).Throws(wrapped);
+        _autoMocker.Use<IEnumerable<IEncryptionEngine>>([engine.Object]);
+        _autoMocker.GetMock<IEncryptionErrorPolicy>()
+            .Setup(p => p.Throw("decryption", cause, It.IsAny<CancellationToken>()))
+            .Throws(wrapped);
 
-        var dispatcher = new EncryptionEngineDispatcher([engine.Object], errorPolicy.Object);
+        var dispatcher = _autoMocker.CreateInstance<EncryptionEngineDispatcher>();
 
         var act = () => dispatcher.DispatchDecryptAsync(Profile, encrypted, null, CancellationToken.None);
 
         var thrown = await act.Should().ThrowAsync<PropertyEncryptionException>();
         thrown.Which.Should().BeSameAs(wrapped);
-        errorPolicy.Verify(p => p.Throw("decryption", cause, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

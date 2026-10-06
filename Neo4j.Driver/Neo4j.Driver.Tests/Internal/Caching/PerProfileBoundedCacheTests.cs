@@ -27,6 +27,8 @@ namespace Neo4j.Driver.Tests.Internal.Caching;
 
 public class PerProfileBoundedCacheTests
 {
+    private static readonly CacheConfig Roomy = new(10, TimeSpan.FromDays(365));
+
     private DateTime _now = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
     private readonly Mock<IDateTimeProvider> _clock = new();
 
@@ -35,21 +37,18 @@ public class PerProfileBoundedCacheTests
         _clock.Setup(c => c.Now()).Returns(() => _now);
     }
 
-    private PerProfileBoundedCache<string> CreateSubject(int capacityPerProfile, TimeSpan? ttl)
+    private PerProfileBoundedCache<string> CreateSubject()
     {
-        _config = new CacheConfig(capacityPerProfile, ttl ?? TimeSpan.FromDays(365));
         return new PerProfileBoundedCache<string>(_clock.Object);
     }
-
-    private CacheConfig _config = new(100, TimeSpan.FromDays(365));
 
     [Fact]
     public void TryGet_AfterSet_ReturnsCachedValue()
     {
-        var subject = CreateSubject(capacityPerProfile: 10, ttl: null);
+        var subject = CreateSubject();
 
-        subject.Set("profile-a", _config, "k1", "v1");
-        var found = subject.TryGet("profile-a", _config, "k1", out var value);
+        subject.Set("profile-a", Roomy, "k1", "v1");
+        var found = subject.TryGet("profile-a", Roomy, "k1", out var value);
 
         found.Should().BeTrue();
         value.Should().Be("v1");
@@ -58,9 +57,9 @@ public class PerProfileBoundedCacheTests
     [Fact]
     public void TryGet_Miss_ReturnsFalse()
     {
-        var subject = CreateSubject(capacityPerProfile: 10, ttl: null);
+        var subject = CreateSubject();
 
-        var found = subject.TryGet("profile-a", _config, "absent", out var value);
+        var found = subject.TryGet("profile-a", Roomy, "absent", out var value);
 
         found.Should().BeFalse();
         value.Should().BeNull();
@@ -69,13 +68,12 @@ public class PerProfileBoundedCacheTests
     [Fact]
     public void TryGet_SameKeyDifferentProfiles_AreIsolated()
     {
-        var subject = CreateSubject(capacityPerProfile: 10, ttl: null);
+        var subject = CreateSubject();
 
-        subject.Set("profile-a", _config, "k1", "va");
-        subject.Set("profile-b", _config, "k1", "vb");
-
-        subject.TryGet("profile-a", _config, "k1", out var a);
-        subject.TryGet("profile-b", _config, "k1", out var b);
+        subject.Set("profile-a", Roomy, "k1", "va");
+        subject.Set("profile-b", Roomy, "k1", "vb");
+        subject.TryGet("profile-a", Roomy, "k1", out var a);
+        subject.TryGet("profile-b", Roomy, "k1", out var b);
 
         a.Should().Be("va");
         b.Should().Be("vb");
@@ -84,27 +82,33 @@ public class PerProfileBoundedCacheTests
     [Fact]
     public void Set_OverCapacityInOneProfile_DoesNotEvictAnotherProfilesEntries()
     {
-        var subject = CreateSubject(capacityPerProfile: 1, ttl: null);
+        var singleEntry = new CacheConfig(1, TimeSpan.FromDays(365));
+        var subject = CreateSubject();
 
-        subject.Set("profile-a", _config, "k1", "va1");
-        subject.Set("profile-b", _config, "k1", "vb1");
-        subject.Set("profile-a", _config, "k2", "va2"); // should evict profile-a's k1 only
+        subject.Set("profile-a", singleEntry, "k1", "va1");
+        subject.Set("profile-b", singleEntry, "k1", "vb1");
+        subject.Set("profile-a", singleEntry, "k2", "va2");
+        var foundA1 = subject.TryGet("profile-a", singleEntry, "k1", out _);
+        var foundA2 = subject.TryGet("profile-a", singleEntry, "k2", out var va2);
+        var foundB1 = subject.TryGet("profile-b", singleEntry, "k1", out var vb1);
 
-        subject.TryGet("profile-a", _config, "k1", out _).Should().BeFalse();
-        subject.TryGet("profile-a", _config, "k2", out var va2).Should().BeTrue();
+        foundA1.Should().BeFalse();
+        foundA2.Should().BeTrue();
         va2.Should().Be("va2");
-        subject.TryGet("profile-b", _config, "k1", out var vb1).Should().BeTrue();
+        foundB1.Should().BeTrue();
         vb1.Should().Be("vb1");
     }
 
     [Fact]
     public void TryGet_EntryOlderThanTtl_ReturnsFalse()
     {
-        var subject = CreateSubject(capacityPerProfile: 10, ttl: TimeSpan.FromSeconds(15));
+        var fifteenSeconds = new CacheConfig(10, TimeSpan.FromSeconds(15));
+        var subject = CreateSubject();
 
-        subject.Set("profile-a", _config, "k1", "v1");
+        subject.Set("profile-a", fifteenSeconds, "k1", "v1");
         _now += TimeSpan.FromSeconds(16);
+        var found = subject.TryGet("profile-a", fifteenSeconds, "k1", out _);
 
-        subject.TryGet("profile-a", _config, "k1", out _).Should().BeFalse();
+        found.Should().BeFalse();
     }
 }

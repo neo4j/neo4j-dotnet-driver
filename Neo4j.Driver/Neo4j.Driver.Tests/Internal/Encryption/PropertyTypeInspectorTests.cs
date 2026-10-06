@@ -29,18 +29,24 @@ public class PropertyTypeInspectorTests
 
     private readonly PropertyTypeInspector _subject = new();
 
-    public static IEnumerable<object[]> UnsupportedValues => new[]
+    public static TheoryData<object> UnsupportedValues()
     {
-        new object[] { new Dictionary<string, object> { ["k"] = 1L } },
-        new object[] { new object() },
-        new object[] { new List<object> { new List<long> { 1L } } }
-    };
+        return new()
+        {
+            new Dictionary<string, object> { ["k"] = 1L },
+            new object(),
+            new List<object> { new List<long> { 1L } }
+        };
+    }
 
-    public static IEnumerable<object[]> HeterogeneousLists => new[]
+    public static TheoryData<object> HeterogeneousLists()
     {
-        new object[] { new List<object> { 1L, "a" } },
-        new object[] { new List<object> { 1L, 2.0 } }
-    };
+        return new()
+        {
+            new List<object> { 1L, "a" },
+            new List<object> { 1L, 2.0 }
+        };
+    }
 
     [Theory]
     [InlineData(true, "BOOLEAN")]

@@ -18,6 +18,8 @@
 using System;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Tests.Internal.Core;
+using Moq.AutoMock;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Internal.IO;
@@ -28,15 +30,23 @@ namespace Neo4j.Driver.Tests.Internal.Encryption;
 
 public class PlaintextCodecTests
 {
-    private readonly Mock<IMessageFormatFactory> _messageFormatFactory = new();
-    private readonly Mock<IPackStreamMemorySerializer> _packStreamMemorySerializer = new();
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<PlaintextCodec>();
+    private readonly Mock<IMessageFormatFactory> _messageFormatFactory;
+    private readonly Mock<IPackStreamMemorySerializer> _packStreamMemorySerializer;
+
     private readonly MessageFormat _format = new MessageFormatFactory(TestDriverContext.MockContext)
         .CreateMessageFormat(BoltProtocolVersion.V6_0);
+
+    public PlaintextCodecTests()
+    {
+        _messageFormatFactory = _autoMocker.GetMock<IMessageFormatFactory>();
+        _packStreamMemorySerializer = _autoMocker.GetMock<IPackStreamMemorySerializer>();
+    }
 
     private PlaintextCodec CreateSubject()
     {
         _messageFormatFactory.Setup(f => f.CreateMessageFormat(It.IsAny<BoltProtocolVersion>())).Returns(_format);
-        return new PlaintextCodec(_messageFormatFactory.Object, _packStreamMemorySerializer.Object);
+        return _autoMocker.CreateInstance<PlaintextCodec>();
     }
 
     [Fact]
