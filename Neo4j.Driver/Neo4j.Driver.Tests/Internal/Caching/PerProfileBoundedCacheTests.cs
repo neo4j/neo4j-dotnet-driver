@@ -111,4 +111,20 @@ public class PerProfileBoundedCacheTests
 
         found.Should().BeFalse();
     }
+
+    [Fact]
+    public void Remove_DropsTheKeyFromThatProfileOnly()
+    {
+        var subject = CreateSubject();
+
+        subject.Set("profile-a", Roomy, "k1", "va");
+        subject.Set("profile-b", Roomy, "k1", "vb");
+        subject.Remove("profile-a", "k1");
+        var foundA = subject.TryGet("profile-a", Roomy, "k1", out _);
+        var foundB = subject.TryGet("profile-b", Roomy, "k1", out var b);
+
+        foundA.Should().BeFalse();
+        foundB.Should().BeTrue();
+        b.Should().Be("vb");
+    }
 }

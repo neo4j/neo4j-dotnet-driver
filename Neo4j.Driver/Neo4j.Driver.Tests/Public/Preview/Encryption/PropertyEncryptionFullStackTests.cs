@@ -288,6 +288,27 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Decrypt_WithADriverMissingTheValuesProfile_ThrowsProfileNotFound()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var encrypted = await _propertyEncryption.EncryptRequest()
+            .FromValue("value")
+            .UsingKeyAlias("main")
+            .EncryptToBytesAsync(token);
+
+        await using var otherDriver = GraphDatabase.Driver(
+            "bolt://localhost",
+            builder => builder.WithPropertyEncryptionProfiles([EnvelopeProfile("other-profile")]));
+
+        var act = () => otherDriver.PropertyEncryption().DecryptRequest()
+            .FromValue(encrypted)
+            .WithPersistedAad()
+            .DecryptAsync(token);
+
+        await act.Should().ThrowAsync<EncryptionProfileNotFoundException>().WithMessage("*'test-profile'*");
+    }
+
+    [Fact]
     public async Task CreateKey_WithACancelledToken_ThrowsOperationCanceled()
     {
         var cancelled = new CancellationToken(canceled: true);

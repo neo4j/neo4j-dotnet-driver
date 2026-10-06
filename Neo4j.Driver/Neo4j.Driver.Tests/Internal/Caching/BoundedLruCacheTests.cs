@@ -212,4 +212,31 @@ public class BoundedLruCacheTests
         value.Should().Be("1-updated");
         foundB.Should().BeTrue();
     }
+
+    [Fact]
+    public void TryGet_EntryExactlyAtItsTtl_ReturnsFalse()
+    {
+        var subject = CreateSubject(capacity: 10, ttl: TimeSpan.FromSeconds(15));
+
+        subject.Set("a", "1");
+        _now += TimeSpan.FromSeconds(15);
+        var found = subject.TryGet("a", out _);
+
+        found.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Remove_DropsOnlyThatKey()
+    {
+        var subject = CreateSubject(capacity: 10, ttl: null);
+
+        subject.Set("a", "1");
+        subject.Set("b", "2");
+        subject.Remove("a");
+        var foundA = subject.TryGet("a", out _);
+        var foundB = subject.TryGet("b", out _);
+
+        foundA.Should().BeFalse();
+        foundB.Should().BeTrue();
+    }
 }
