@@ -16,6 +16,7 @@
 #nullable enable
 
 using System;
+using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
@@ -42,14 +43,22 @@ internal class EncryptedValueBytesCodec : IEncryptedValueBytesCodec
     public EncryptedStructure Decode(byte[] bytes)
     {
         ValidateEncodingVersion(bytes);
-        return _structureCodec.Decode(bytes[1..]);
+
+        try
+        {
+            return _structureCodec.Decode(bytes[1..]);
+        }
+        catch (ProtocolException e)
+        {
+            throw new PropertyEncryptionException($"The encrypted value is malformed: {e.Message}", e);
+        }
     }
 
     private static void ValidateEncodingVersion(byte[] bytes)
     {
         if (bytes.Length == 0 || bytes[0] != EncodingVersion)
         {
-            throw new ProtocolException(
+            throw new PropertyEncryptionException(
                 $"Expected Encrypted Value Encoding Version 0x{EncodingVersion:X2}, but got: " +
                 (bytes.Length == 0 ? "an empty byte array" : $"0x{bytes[0]:X2}"));
         }

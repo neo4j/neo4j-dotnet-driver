@@ -282,7 +282,7 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
             .WithPersistedAad()
             .DecryptAsync(token);
 
-        await act.Should().ThrowAsync<ProtocolException>();
+        await act.Should().ThrowAsync<PropertyEncryptionException>();
     }
 
     [Fact]
@@ -298,7 +298,22 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
             .WithPersistedAad()
             .DecryptAsync(token);
 
-        await act.Should().ThrowAsync<ProtocolException>();
+        await act.Should().ThrowAsync<PropertyEncryptionException>();
+    }
+
+    [Fact]
+    public async Task Decrypt_WithAnUnknownEncodingVersion_Throws()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var encrypted = await EncryptByAliasAsync("value", token);
+        encrypted[0] = 0x02;
+
+        var act = () => _propertyEncryption.DecryptRequest()
+            .FromValue(encrypted)
+            .WithPersistedAad()
+            .DecryptAsync(token);
+
+        await act.Should().ThrowAsync<PropertyEncryptionException>();
     }
 
     private Task<byte[]> EncryptByAliasAsync(object value, CancellationToken token)

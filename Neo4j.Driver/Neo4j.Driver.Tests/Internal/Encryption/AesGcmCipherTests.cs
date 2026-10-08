@@ -17,6 +17,7 @@
 
 using FluentAssertions;
 using Neo4j.Driver.Internal.Encryption;
+using Neo4j.Driver.Preview.Encryption;
 using Xunit;
 using static Neo4j.Driver.Tests.Internal.Encryption.EncryptionTestHelpers;
 
@@ -42,12 +43,12 @@ public class AesGcmCipherTests
     }
 
     [Fact]
-    public void Decrypt_CipherOutputShorterThanTag_ThrowsProtocolException()
+    public void Decrypt_CipherOutputShorterThanTag_ThrowsPropertyEncryptionException()
     {
         var cipherOutput = new byte[8];
 
         var act = () => _subject.Decrypt(Key, Iv, cipherOutput, aad: []);
 
-        act.Should().Throw<ProtocolException>();
+        act.Should().Throw<PropertyEncryptionException>();
     }
 }

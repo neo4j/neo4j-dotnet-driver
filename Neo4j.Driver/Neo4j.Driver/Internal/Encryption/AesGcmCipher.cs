@@ -17,6 +17,7 @@
 
 using System;
 using System.Security.Cryptography;
+using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
 
@@ -26,7 +27,7 @@ internal class AesGcmCipher : IAeadCipher
     {
         if (cipherOutput.Length < AesGcmConstants.TagLengthInBytes)
         {
-            throw new ProtocolException(
+            throw new PropertyEncryptionException(
                 $"Cipher output must be at least {AesGcmConstants.TagLengthInBytes} bytes to contain an authentication tag, " +
                 $"but was {cipherOutput.Length} bytes.");
         }

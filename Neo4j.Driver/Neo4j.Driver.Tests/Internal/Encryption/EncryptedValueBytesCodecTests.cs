@@ -22,6 +22,7 @@ using Neo4j.Driver.Tests.Internal.Core;
 using Moq.AutoMock;
 using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Internal.Protocol;
+using Neo4j.Driver.Preview.Encryption;
 using Xunit;
 using static Neo4j.Driver.Tests.Internal.Encryption.EncryptionTestHelpers;
 
@@ -78,18 +79,29 @@ public class EncryptedValueBytesCodecTests
     }
 
     [Fact]
-    public void Decode_WrongEncodingVersion_ThrowsProtocolException()
+    public void Decode_WrongEncodingVersion_ThrowsPropertyEncryptionException()
     {
         var act = () => CreateSubject().Decode([0x02, 0xAA, 0xBB]);
 
-        act.Should().Throw<ProtocolException>();
+        act.Should().Throw<PropertyEncryptionException>();
     }
 
     [Fact]
-    public void Decode_EmptyBytes_ThrowsProtocolException()
+    public void Decode_EmptyBytes_ThrowsPropertyEncryptionException()
     {
         var act = () => CreateSubject().Decode([]);
 
-        act.Should().Throw<ProtocolException>();
+        act.Should().Throw<PropertyEncryptionException>();
+    }
+
+    [Fact]
+    public void Decode_WhenTheStructureCodecRejectsTheBytes_ThrowsPropertyEncryptionExceptionWrappingIt()
+    {
+        var rejection = new ProtocolException("bad structure");
+        _structureCodec.Setup(c => c.Decode(It.IsAny<byte[]>())).Throws(rejection);
+
+        var act = () => CreateSubject().Decode([0x01, 0xAA]);
+
+        act.Should().Throw<PropertyEncryptionException>().WithInnerException<ProtocolException>();
     }
 }
