@@ -86,7 +86,6 @@ public class PackStreamMemorySerializerTests
             .Returns((MessageFormat _, MemoryStream stream) =>
             {
                 streamContents = stream.ToArray();
-                stream.Seek(0, SeekOrigin.End);
                 return Mock.Of<IPackStreamReader>();
             });
 

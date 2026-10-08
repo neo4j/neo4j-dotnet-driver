@@ -271,18 +271,18 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Decrypt_WithBytesTrailingTheStructure_Throws()
+    public async Task Decrypt_WithBytesTrailingTheStructure_IgnoresThem()
     {
         var token = TestContext.Current.CancellationToken;
         var encrypted = await EncryptByAliasAsync("value", token);
         byte[] withTrailingByte = [..encrypted, 0x01];
 
-        var act = () => _propertyEncryption.DecryptRequest()
+        var decrypted = await _propertyEncryption.DecryptRequest()
             .FromValue(withTrailingByte)
             .WithPersistedAad()
             .DecryptAsync(token);
 
-        await act.Should().ThrowAsync<PropertyEncryptionException>();
+        decrypted.Should().Be("value");
     }
 
     [Fact]
