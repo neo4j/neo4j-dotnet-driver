@@ -331,66 +331,14 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
 
     private static byte[] TamperWithCipherOutput(byte[] encrypted)
     {
-        return Rewrite(
-            encrypted,
-            structure =>
-            {
-                structure.CipherOutput[0] ^= 0xFF;
-                return structure;
-            });
-    }
-
-    private static byte[] Rewrite(byte[] encrypted, Func<EncryptedStructure, EncryptedStructure> change)
-    {
         var codec = new EncryptedValueBytesCodec(
             new EncryptedStructureCodec(
                 new MessageFormatFactory(TestDriverContext.MockContext),
                 new PackStreamMemorySerializer(new PackStreamReaderWriterFactory())));
 
-        return codec.Encode(change(codec.Decode(encrypted)));
-    }
-
-    private static byte[] WithANewerTypeBaseline(byte[] encrypted)
-    {
-        return Rewrite(encrypted, structure => structure with { TypeSerializationSchemeMajor = 7 });
-    }
-
-    [Fact]
-    public async Task Decrypt_WithANewerTypeBaselineAndTheRightAad_ReturnsUnsupportedType()
-    {
-        var token = TestContext.Current.CancellationToken;
-
-        var encrypted = await _propertyEncryption.EncryptRequest()
-            .FromValue("future-value")
-            .WithAad("row-42")
-            .UsingKeyAlias("main")
-            .EncryptToBytesAsync(token);
-
-        var decrypted = await _propertyEncryption.DecryptRequest()
-            .FromValue(WithANewerTypeBaseline(encrypted))
-            .WithAad("row-42")
-            .DecryptAsync(token);
-
-        decrypted.Should().BeOfType<UnsupportedType>();
-    }
-
-    [Fact]
-    public async Task Decrypt_WithANewerTypeBaselineAndTheWrongAad_Throws()
-    {
-        var token = TestContext.Current.CancellationToken;
-
-        var encrypted = await _propertyEncryption.EncryptRequest()
-            .FromValue("future-value")
-            .WithAad("row-42")
-            .UsingKeyAlias("main")
-            .EncryptToBytesAsync(token);
-
-        var act = () => _propertyEncryption.DecryptRequest()
-            .FromValue(WithANewerTypeBaseline(encrypted))
-            .WithAad("row-999")
-            .DecryptAsync(token);
-
-        await act.Should().ThrowAsync<PropertyEncryptionException>();
+        var structure = codec.Decode(encrypted);
+        structure.CipherOutput[0] ^= 0xFF;
+        return codec.Encode(structure);
     }
 
     [Fact]

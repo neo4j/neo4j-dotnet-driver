@@ -154,6 +154,11 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
             throw new UnsupportedEncryptionProfileVersionException(structure.ProfileVersion);
         }
 
+        if (_baselineCompatibilityGuard.IsUnsupportedBaselineType(structure, out var unsupported))
+        {
+            return unsupported;
+        }
+
         var metadata = _envelopeMetadataExtractor.Extract(structure.Metadata);
         _baselineCompatibilityGuard.EnsureAadEncodingSchemeCompatibility(aad, metadata);
 
@@ -163,12 +168,6 @@ internal class EnvelopeEncryptionEngine : IEncryptionEngine
 
         var aadToUse = aad ?? metadata.Aad;
         var plaintext = _aeadCipher.Decrypt(dataKey, metadata.Iv, structure.CipherOutput, aadToUse);
-
-        if (_baselineCompatibilityGuard.IsUnsupportedBaselineType(structure, out var unsupported))
-        {
-            return unsupported;
-        }
-
         return _plaintextCodec.Deserialize(plaintext);
     }
 }

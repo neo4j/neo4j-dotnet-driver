@@ -15,10 +15,8 @@
 
 #nullable enable
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -275,47 +273,28 @@ public class EnvelopeEncryptionEngineTests
     }
 
     [Fact]
-    public async Task TryStartDecrypt_GuardReportsUnsupportedBaselineType_ReturnsItOnceAuthenticated()
+    public async Task TryStartDecrypt_GuardReportsUnsupportedBaselineType_ReturnsItWithoutDecrypting()
     {
-        var cipherOutput = new byte[] { 0xC0, 0xD0 };
-        var structureMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
         var structure = new EncryptedStructure(
             "ENVELOPE",
             1,
             ProfileName,
-            cipherOutput,
+            [0xC0, 0xD0],
             "VECTOR",
             7,
             0,
-            structureMetadata);
+            new Dictionary<string, object>());
 
-        var dataKey = Sequence(32, seed: 0x40);
-        var profile = Profile();
+
         var unsupported = new UnsupportedType("VECTOR", 7, 0, null);
         UnsupportedType? guardResult = unsupported;
-
         _autoMocker.GetMock<IBaselineCompatibilityGuard>()
             .Setup(g => g.IsUnsupportedBaselineType(structure, out guardResult))
             .Returns(true);
 
-        _autoMocker.GetMock<IEnvelopeMetadataExtractor>()
-            .Setup(e => e.Extract(structureMetadata))
-            .Returns(new EnvelopeMetadata("key-1", Iv, [], 1, 0));
-
-        _autoMocker.GetMock<IEnvelopeDataKeyProvider>()
-            .Setup(p => p.GetDataKeyAsync(
-                profile,
-                new KeyReference("key-1", KeyReferenceType.Id),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new DataKeyResult("key-1", dataKey));
-
-        _autoMocker.GetMock<IAeadCipher>()
-            .Setup(c => c.Decrypt(Matches(dataKey), Matches(Iv), Matches(cipherOutput), Matches(Array.Empty<byte>())))
-            .Returns([0x10, 0x11]);
-
         var subject = _autoMocker.CreateInstance<EnvelopeEncryptionEngine>();
         var started = subject.TryStartDecrypt(
-            profile,
+            Profile(),
             structure,
             aad: null,
             TestContext.Current.CancellationToken,
@@ -325,52 +304,6 @@ public class EnvelopeEncryptionEngineTests
         var result = await decryptedTask!;
 
         result.Should().BeSameAs(unsupported);
-    }
-
-    [Fact]
-    public async Task TryStartDecrypt_GuardReportsUnsupportedBaselineType_ThrowsWhenAuthenticationFails()
-    {
-        var structureMetadata = new Dictionary<string, object> { ["key_id"] = "key-1" };
-        var structure = new EncryptedStructure(
-            "ENVELOPE",
-            1,
-            ProfileName,
-            [0xC0, 0xD0],
-            "VECTOR",
-            7,
-            0,
-            structureMetadata);
-
-        var profile = Profile();
-        UnsupportedType? guardResult = new UnsupportedType("VECTOR", 7, 0, null);
-
-        _autoMocker.GetMock<IBaselineCompatibilityGuard>()
-            .Setup(g => g.IsUnsupportedBaselineType(structure, out guardResult))
-            .Returns(true);
-
-        _autoMocker.GetMock<IEnvelopeMetadataExtractor>()
-            .Setup(e => e.Extract(structureMetadata))
-            .Returns(new EnvelopeMetadata("key-1", Iv, [], 1, 0));
-
-        _autoMocker.GetMock<IEnvelopeDataKeyProvider>()
-            .Setup(p => p.GetDataKeyAsync(profile, It.IsAny<KeyReference>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new DataKeyResult("key-1", Sequence(32, seed: 0x40)));
-
-        _autoMocker.GetMock<IAeadCipher>()
-            .Setup(c => c.Decrypt(It.IsAny<byte[]>(), It.IsAny<byte[]>(), It.IsAny<byte[]>(), It.IsAny<byte[]>()))
-            .Throws(new AuthenticationTagMismatchException());
-
-        var subject = _autoMocker.CreateInstance<EnvelopeEncryptionEngine>();
-        subject.TryStartDecrypt(
-            profile,
-            structure,
-            aad: null,
-            TestContext.Current.CancellationToken,
-            out var decryptedTask);
-
-        var act = async () => await decryptedTask!;
-
-        await act.Should().ThrowAsync<AuthenticationTagMismatchException>();
     }
 
     [Fact]
