@@ -61,7 +61,7 @@ public class DecryptRequestBuilderTests
     }
 
     [Fact]
-    public async Task DecryptAsync_WithPersistedAad_LeavesAadNull()
+    public async Task DecryptAsync_WithoutExternalAad_LeavesAadNull()
     {
         var token = TestContext.Current.CancellationToken;
         var encrypted = new byte[] { 0xEE };
@@ -70,7 +70,7 @@ public class DecryptRequestBuilderTests
 
         var builder = CreateSubject();
 
-        var result = await builder.FromValue(encrypted).WithPersistedAad().DecryptAsync(token);
+        var result = await builder.FromValue(encrypted).WithoutExternalAad().DecryptAsync(token);
 
         result.Should().BeSameAs(expected);
     }

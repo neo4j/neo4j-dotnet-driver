@@ -95,7 +95,7 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
 
         var decrypted = await _propertyEncryption.DecryptRequest()
             .FromValue(encrypted)
-            .WithPersistedAad()
+            .WithoutExternalAad()
             .DecryptAsync(token);
 
         decrypted.Should().BeEquivalentTo(value);
@@ -113,7 +113,7 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
 
         var decrypted = await _propertyEncryption.DecryptRequest()
             .FromValue(encrypted)
-            .WithPersistedAad()
+            .WithoutExternalAad()
             .DecryptAsync(token);
 
         decrypted.Should().Be(42L);
@@ -131,7 +131,7 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
 
         var decrypted = await _propertyEncryption.DecryptRequest()
             .FromValue(encrypted)
-            .WithPersistedAad()
+            .WithoutExternalAad()
             .DecryptAsync(token);
 
         decrypted.Should().Be("by-id");
@@ -169,7 +169,7 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
 
         var decrypted = await _propertyEncryption.DecryptRequest()
             .FromValue(encrypted)
-            .WithPersistedAad()
+            .WithoutExternalAad()
             .DecryptAsync(token);
 
         decrypted.Should().Be("aad-bound");
@@ -187,7 +187,7 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
 
         var decrypted = await _propertyEncryption.DecryptRequest()
             .FromValue(encrypted)
-            .WithPersistedAad()
+            .WithoutExternalAad()
             .DecryptAsync(token);
 
         decrypted.Should().BeNull();
@@ -264,7 +264,7 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
 
         var act = () => _propertyEncryption.DecryptRequest()
             .FromValue(malformed)
-            .WithPersistedAad()
+            .WithoutExternalAad()
             .DecryptAsync(token);
 
         await act.Should().ThrowAsync<PropertyEncryptionException>();
@@ -279,7 +279,7 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
 
         var decrypted = await _propertyEncryption.DecryptRequest()
             .FromValue(withTrailingByte)
-            .WithPersistedAad()
+            .WithoutExternalAad()
             .DecryptAsync(token);
 
         decrypted.Should().Be("value");
@@ -295,7 +295,7 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
 
         var act = () => _propertyEncryption.DecryptRequest()
             .FromValue(withNinthField)
-            .WithPersistedAad()
+            .WithoutExternalAad()
             .DecryptAsync(token);
 
         await act.Should().ThrowAsync<PropertyEncryptionException>();
@@ -310,7 +310,7 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
 
         var act = () => _propertyEncryption.DecryptRequest()
             .FromValue(encrypted)
-            .WithPersistedAad()
+            .WithoutExternalAad()
             .DecryptAsync(token);
 
         await act.Should().ThrowAsync<PropertyEncryptionException>();
@@ -338,7 +338,7 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
 
         var act = () => _propertyEncryption.DecryptRequest()
             .FromValue(tampered)
-            .WithPersistedAad()
+            .WithoutExternalAad()
             .DecryptAsync(token);
 
         await act.Should().ThrowAsync<PropertyEncryptionException>();
@@ -415,7 +415,7 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
 
         var act = () => otherDriver.PropertyEncryption().DecryptRequest()
             .FromValue(encrypted)
-            .WithPersistedAad()
+            .WithoutExternalAad()
             .DecryptAsync(token);
 
         await act.Should().ThrowAsync<EncryptionProfileNotFoundException>().WithMessage("*'test-profile'*");
@@ -452,7 +452,7 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
 
         var decrypted = await propertyEncryption.DecryptRequest()
             .FromValue(encrypted)
-            .WithPersistedAad()
+            .WithoutExternalAad()
             .DecryptAsync(token);
 
         decrypted.Should().Be("profile-b-value");

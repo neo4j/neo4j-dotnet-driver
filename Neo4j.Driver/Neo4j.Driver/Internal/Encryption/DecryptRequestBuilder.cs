@@ -53,7 +53,7 @@ internal class DecryptRequestBuilder :
         return this;
     }
 
-    public IDecryptRequestExecuteStep WithPersistedAad()
+    public IDecryptRequestExecuteStep WithoutExternalAad()
     {
         _aad = null;
         return this;

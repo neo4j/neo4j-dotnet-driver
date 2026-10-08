@@ -49,7 +49,7 @@ public class DecryptHandlerTests
     {
         var (driverMock, aadStepMock) = DriverAcceptingValue();
         var executeStepMock = new Mock<IDecryptRequestExecuteStep>();
-        aadStepMock.Setup(a => a.WithPersistedAad()).Returns(executeStepMock.Object);
+        aadStepMock.Setup(a => a.WithoutExternalAad()).Returns(executeStepMock.Object);
         executeStepMock.Setup(e => e.DecryptAsync(It.IsAny<CancellationToken>())).ReturnsAsync("hello world");
         _autoMocker.GetMock<INativeToCypherMapper>().Setup(m => m.Map("hello world")).Returns(new CypherString("hello world"));
 

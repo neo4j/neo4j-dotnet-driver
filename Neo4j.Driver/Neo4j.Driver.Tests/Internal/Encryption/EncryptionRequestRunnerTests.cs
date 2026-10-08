@@ -117,7 +117,7 @@ public class EncryptionRequestRunnerTests
     }
 
     [Fact]
-    public async Task DecryptAsync_WithPersistedAad_DispatchesWithNullAad()
+    public async Task DecryptAsync_WithoutExternalAad_DispatchesWithNullAad()
     {
         var token = TestContext.Current.CancellationToken;
         var encrypted = new byte[] { 0xEE };

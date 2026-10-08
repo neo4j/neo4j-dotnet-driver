@@ -63,7 +63,7 @@ internal class DecryptHandler : MessageHandler<DecryptRequest>
         var aadStep = message.Driver.PropertyEncryption().DecryptRequest().FromValue(message.Value);
 
         var executeStep = message.UsePersistedAad
-            ? aadStep.WithPersistedAad()
+            ? aadStep.WithoutExternalAad()
             : aadStep.WithAad(_cypherToNativeMapper.Map(message.Aad!)!);
 
         var decrypted = await executeStep.DecryptAsync();

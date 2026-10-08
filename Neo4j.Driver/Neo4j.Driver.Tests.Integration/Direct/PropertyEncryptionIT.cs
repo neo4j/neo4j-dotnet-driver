@@ -71,7 +71,7 @@ public sealed class PropertyEncryptionIT : DirectDriverTestBase
 
         var decrypted = await propertyEncryption.DecryptRequest()
             .FromValue(storedBytes)
-            .WithPersistedAad()
+            .WithoutExternalAad()
             .DecryptAsync(token);
 
         decrypted.Should().Be("hello from a real database");

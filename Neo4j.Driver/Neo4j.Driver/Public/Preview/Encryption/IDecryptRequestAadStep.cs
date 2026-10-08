@@ -19,13 +19,13 @@ namespace Neo4j.Driver.Preview.Encryption;
 
 /// <summary>
 /// The stage of building a decrypt request where the additional authenticated data (AAD) to reproduce must be
-/// supplied - either explicitly, or by using the AAD persisted alongside the encrypted value. This
+/// chosen - either supplied explicitly, or taken from the encrypted value itself. This
 /// interface is part of the Encryption Preview feature, and is subject to change or removal.
 /// </summary>
 public interface IDecryptRequestAadStep
 {
     /// <summary>
-    /// Supplies the additional authenticated data (AAD) to reproduce, instead of the persisted AAD.
+    /// Supplies the additional authenticated data (AAD) to reproduce, binding the decryption to external context.
     /// This method is part of the Encryption Preview feature, and is subject to change or removal.
     /// </summary>
     /// <param name="aad">
@@ -45,9 +45,11 @@ public interface IDecryptRequestAadStep
     IDecryptRequestExecuteStep WithAad(object aad);
 
     /// <summary>
-    /// Uses the additional authenticated data (AAD) that was persisted alongside the encrypted value.
+    /// Decrypts without external additional authenticated data (AAD), using the AAD configuration recorded in the
+    /// encrypted value: the AAD persisted at encryption, or none if none was used. The value is then not bound to any
+    /// external context, so it still decrypts if it is moved elsewhere.
     /// This method is part of the Encryption Preview feature, and is subject to change or removal.
     /// </summary>
     /// <returns>The next stage of the request.</returns>
-    IDecryptRequestExecuteStep WithPersistedAad();
+    IDecryptRequestExecuteStep WithoutExternalAad();
 }
