@@ -49,6 +49,7 @@ internal class GetFeaturesHandler : MessageHandler<GetFeaturesRequest>
         "Feature:API:Driver:GetServerInfo",
         "Feature:API:Driver:NotificationsConfig",
         "Feature:API:Liveness.Check",
+        "Feature:API:PropertyEncryption",
         "Feature:API:Result.List",
         "Feature:API:Result.Peek",
         "Feature:API:Result.Single",

@@ -38,6 +38,7 @@ internal class NewDriverConfigMapper : INewDriverConfigMapper
         nameof(NewDriverRequest.ClientCertificate),
         nameof(NewDriverRequest.ClientCertificateProviderId),
         nameof(NewDriverRequest.ResolverRegistered),
+        nameof(NewDriverRequest.PropertyEncryptionProfiles),
         nameof(NewDriverRequest.Uri),
         nameof(NewDriverRequest.AuthorizationToken),
         nameof(NewDriverRequest.AuthTokenManagerId),

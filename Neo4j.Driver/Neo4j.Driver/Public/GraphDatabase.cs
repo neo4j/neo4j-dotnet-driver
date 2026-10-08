@@ -268,6 +268,7 @@ public static class GraphDatabase
                 context);
 
         var server = new BoltProtocolAdapter(connectionProvider, context);
-        return new Internal.Driver(parsedUri, server, context);
+        var composition = new DriverComposition(context);
+        return new Internal.Driver(parsedUri, server, context, composition);
     }
 }

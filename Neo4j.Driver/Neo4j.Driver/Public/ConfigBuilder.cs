@@ -19,8 +19,10 @@ using System.Linq;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using Neo4j.Driver.Internal.Auth;
+using Neo4j.Driver.Internal.Encryption;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Types;
+using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver;
 
@@ -613,6 +615,41 @@ public sealed class ConfigBuilder
     public ConfigBuilder WithTlsNegotiator<T>() where T : ITlsNegotiator, new()
     {
         _config.TlsNegotiator = new T();
+        return this;
+    }
+
+    internal ConfigBuilder Preview_WithPropertyEncryptionProfiles(
+        IReadOnlyList<IPropertyEncryptionProfile> propertyEncryptionProfiles)
+    {
+        ArgumentNullException.ThrowIfNull(propertyEncryptionProfiles);
+
+        if (propertyEncryptionProfiles.Any(x => x is null))
+        {
+            throw new ArgumentNullException(
+                nameof(propertyEncryptionProfiles),
+                "Encryption profiles must not contain null.");
+        }
+
+        if (!propertyEncryptionProfiles.All(x => x is IInternalEncryptionProfile))
+        {
+            throw new ArgumentException(
+                "Encryption profiles must be built using a factory method in the PropertyEncryptionProfile class.",
+                nameof(propertyEncryptionProfiles));
+        }
+
+        var duplicateName = propertyEncryptionProfiles
+            .GroupBy(x => x.Name)
+            .FirstOrDefault(names => names.Count() > 1)
+            ?.Key;
+
+        if (duplicateName is not null)
+        {
+            throw new ArgumentException(
+                $"Duplicate encryption profile name '{duplicateName}'.",
+                nameof(propertyEncryptionProfiles));
+        }
+
+        _config.PropertyEncryptionProfiles = [..propertyEncryptionProfiles];
         return this;
     }
 }

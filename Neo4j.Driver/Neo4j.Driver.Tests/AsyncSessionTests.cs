@@ -442,7 +442,8 @@ public class AsyncSessionTests
             var driver = new Driver.Internal.Driver(
                 new Uri("neo4j://myTest.org"),
                 server,
-                context);
+                context,
+                Mock.Of<IDriverComposition>());
 
             return driver;
         }

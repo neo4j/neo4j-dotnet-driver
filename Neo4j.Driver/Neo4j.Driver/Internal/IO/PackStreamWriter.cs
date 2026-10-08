@@ -23,7 +23,7 @@ using static Neo4j.Driver.Internal.IO.PackStream;
 
 namespace Neo4j.Driver.Internal.IO;
 
-internal sealed class PackStreamWriter
+internal sealed class PackStreamWriter : IPackStreamWriter
 {
     private readonly MessageFormat _format;
     private readonly Stream _stream;

@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal.IO;
 
 // we don't use the return value of Read() in most cases, so suppress the warning
 [SuppressMessage("ReSharper", "MustUseReturnValue")]
-internal sealed class PackStreamReader
+internal sealed class PackStreamReader : IPackStreamReader
 {
     public MemoryStream Stream;
 

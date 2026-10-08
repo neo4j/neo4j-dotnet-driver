@@ -1,0 +1,121 @@
+// Copyright (c) "Neo4j"
+// Neo4j Sweden AB [https://neo4j.com]
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#nullable enable
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using FluentAssertions;
+using Moq;
+using Neo4j.Driver.Tests.Internal.Core;
+using Moq.AutoMock;
+using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Encryption;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.Protocol;
+using Xunit;
+
+namespace Neo4j.Driver.Tests.Internal.Encryption;
+
+public class EncryptedStructureCodecTests
+{
+    private readonly AutoMocker _autoMocker = AutoMocker.ForTesting<EncryptedStructureCodec>();
+    private readonly Mock<IMessageFormatFactory> _messageFormatFactory;
+    private readonly Mock<IPackStreamMemorySerializer> _packStreamMemorySerializer;
+
+    private readonly MessageFormat _format = new MessageFormatFactory(TestDriverContext.MockContext)
+        .CreateMessageFormat(BoltProtocolVersion.V6_0);
+
+    public EncryptedStructureCodecTests()
+    {
+        _messageFormatFactory = _autoMocker.GetMock<IMessageFormatFactory>();
+        _packStreamMemorySerializer = _autoMocker.GetMock<IPackStreamMemorySerializer>();
+    }
+
+    private static EncryptedStructure Sample()
+    {
+        return new(
+            ProfileType: "ENVELOPE",
+            ProfileVersion: 1,
+            ProfileName: "Envelope",
+            CipherOutput: new byte[] { 0xDE, 0xAD, 0xBE, 0xEF },
+            TypeName: "Integer",
+            TypeSerializationSchemeMajor: 6,
+            TypeSerializationSchemeMinor: 0,
+            Metadata: new Dictionary<string, object>
+            {
+                ["keyId"] = "key-1",
+                ["iv"] = new byte[] { 1, 2, 3 }
+            });
+    }
+
+    private EncryptedStructureCodec CreateSubject()
+    {
+        _messageFormatFactory.Setup(f => f.CreateMessageFormat(It.IsAny<BoltProtocolVersion>())).Returns(_format);
+        return _autoMocker.CreateInstance<EncryptedStructureCodec>();
+    }
+
+    private void StubHelperRead(IPackStreamReader reader)
+    {
+        _packStreamMemorySerializer
+            .Setup(h => h.Deserialize(_format, It.IsAny<byte[]>(), It.IsAny<Func<IPackStreamReader, EncryptedStructure>>()))
+            .Returns((MessageFormat _, byte[] _, Func<IPackStreamReader, EncryptedStructure> read) => read(reader));
+    }
+
+    private void StubHelperReadString(IPackStreamReader reader)
+    {
+        _packStreamMemorySerializer
+            .Setup(h => h.Deserialize(_format, It.IsAny<byte[]>(), It.IsAny<Func<IPackStreamReader, string>>()))
+            .Returns((MessageFormat _, byte[] _, Func<IPackStreamReader, string> read) => read(reader));
+    }
+
+    [Fact]
+    public void Encode_WritesMetadataKeysInAscendingOrdinalOrder()
+    {
+        var structure = Sample() with
+        {
+            Metadata = new Dictionary<string, object> { ["a"] = 1L, ["B"] = 2L }
+        };
+        var writer = new Mock<IPackStreamWriter>();
+
+        _packStreamMemorySerializer
+            .Setup(h => h.Serialize(_format, It.IsAny<Action<IPackStreamWriter>>()))
+            .Returns((MessageFormat _, Action<IPackStreamWriter> write) =>
+            {
+                write(writer.Object);
+                return Array.Empty<byte>();
+            });
+
+        CreateSubject().Encode(structure);
+
+        writer.Verify(
+            w => w.Write(
+                It.Is<IDictionary<string, object>>(d => d.Keys.SequenceEqual(new[] { "B", "a" }))),
+            Times.Once);
+    }
+
+    [Fact]
+    public void Decode_WrongSignature_ThrowsProtocolException()
+    {
+        var reader = new Mock<IPackStreamReader>();
+        reader.Setup(r => r.ReadStructSignature()).Returns((byte)0x99);
+        StubHelperRead(reader.Object);
+
+        var act = () => CreateSubject().Decode([]);
+
+        act.Should().Throw<ProtocolException>();
+    }
+}

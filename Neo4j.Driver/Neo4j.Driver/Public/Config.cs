@@ -15,6 +15,7 @@
 
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Reflection;
 using System.Security.Authentication;
@@ -22,6 +23,7 @@ using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Util;
+using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver;
 
@@ -257,6 +259,12 @@ public class Config
     /// negotiator.|
     /// </summary>
     public ITlsNegotiator TlsNegotiator { get; internal set; }
+
+    /// <summary>
+    /// The property encryption profiles available through <c>driver.PropertyEncryption()</c>. This property is part
+    /// of the Encryption Preview feature, and is subject to change or removal.
+    /// </summary>
+    public IReadOnlyList<IPropertyEncryptionProfile> PropertyEncryptionProfiles { get; internal set; } = [];
 }
 
 /// <summary>The configuration for the driver's underlying message reading from the network.</summary>

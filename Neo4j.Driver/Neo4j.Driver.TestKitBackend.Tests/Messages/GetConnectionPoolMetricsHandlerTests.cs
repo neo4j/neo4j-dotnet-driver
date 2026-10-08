@@ -40,7 +40,11 @@ public class GetConnectionPoolMetricsHandlerTests
         pool.SetupGet(p => p.NumberOfIdleConnections).Returns(idle);
         context.Metrics.PutPoolMetrics(poolId, pool.Object);
 
-        return new Internal.Driver(context.InitialUri, Mock.Of<IProtocolAdapter>(), context);
+        return new Internal.Driver(
+            context.InitialUri,
+            Mock.Of<IProtocolAdapter>(),
+            context,
+            Mock.Of<IDriverComposition>());
     }
 
     [Fact]

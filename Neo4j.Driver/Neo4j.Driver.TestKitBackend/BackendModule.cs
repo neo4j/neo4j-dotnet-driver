@@ -14,9 +14,11 @@
 // limitations under the License.
 
 using System.Reflection;
+using System.Security.Cryptography;
 using Autofac;
 using Autofac.Core;
 using Autofac.Core.Registration;
+using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Infrastructure;
@@ -26,6 +28,8 @@ namespace Neo4j.Driver.TestKitBackend;
 
 internal class BackendModule : Module
 {
+    private const int KekLength = 32;
+
     private static readonly LoggerMiddleware LoggerMiddleware = new();
 
     protected override void Load(ContainerBuilder builder)
@@ -51,6 +55,9 @@ internal class BackendModule : Module
         builder
             .Register((_, parameters) => new ConnectionInput(new LineReader(parameters.TypedAs<TextReader>())))
             .As<IConnectionInput>();
+
+        builder.Register<Func<byte[]?, IKeyEncapsulationService>>(
+            _ => kek => KeyEncapsulationServices.Local(kek ?? RandomNumberGenerator.GetBytes(KekLength)));
     }
 
     protected override void AttachToComponentRegistration(
