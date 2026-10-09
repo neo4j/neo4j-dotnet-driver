@@ -13,9 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
+
 namespace Neo4j.Driver.TestKitBackend.Cypher;
 
-internal record CypherPoint(string System, double X, double Y, double? Z) : ICypherValue
+internal record CypherPoint : ICypherValue
 {
     private static readonly Dictionary<(string System, bool Is3D), int> SystemToSrId = new()
     {
@@ -28,15 +31,30 @@ internal record CypherPoint(string System, double X, double Y, double? Z) : ICyp
     private static readonly Dictionary<int, string> SrIdToSystem =
         SystemToSrId.ToDictionary(kv => kv.Value, kv => kv.Key.System);
 
+    public required string System { get; init; }
+
+    [JsonConverter(typeof(CypherFloatValueConverter))]
+    public required double X { get; init; }
+
+    [JsonConverter(typeof(CypherFloatValueConverter))]
+    public required double Y { get; init; }
+
+    [JsonConverter(typeof(CypherFloatValueConverter))]
+    public required double? Z { get; init; }
+
     private bool Is3d => Z is not null;
 
-    internal CypherPoint(Point point)
-        : this(
-            SrIdToSystem[point.SrId],
-            point.X,
-            point.Y,
-            point.Dimension == Point.TwoD ? null : point.Z)
+    public CypherPoint()
     {
+    }
+
+    [SetsRequiredMembers]
+    internal CypherPoint(Point point)
+    {
+        System = SrIdToSystem[point.SrId];
+        X = point.X;
+        Y = point.Y;
+        Z = point.Dimension == Point.TwoD ? null : point.Z;
     }
 
     internal Point ToPoint()
