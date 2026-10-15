@@ -35,6 +35,7 @@ public class ReverseRequestEncapsulatedKeyRepositoryRoundTripTests
         _expectationStore = _autoMocker.CreateInstance<ExpectationStore>();
         _autoMocker.Use(_expectationStore);
         _autoMocker.Use<IOutboundRoundTrip>(_autoMocker.CreateInstance<OutboundRoundTrip>());
+        _autoMocker.Use("repo-1");
     }
 
     private void ReplyToEachRequestWith(Func<string, Task> reply)

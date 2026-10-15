@@ -19,25 +19,15 @@ using Neo4j.Driver.TestKitBackend.Messages;
 
 namespace Neo4j.Driver.TestKitBackend.PropertyEncryption;
 
-internal class ReverseRequestEncapsulatedKeyRepository : ITestKitEncapsulatedKeyRepository
+internal class ReverseRequestEncapsulatedKeyRepository : IEncapsulatedKeyRecordRepository
 {
     private readonly IOutboundRoundTrip _roundTrip;
     private readonly string _repositoryId;
 
-    public ReverseRequestEncapsulatedKeyRepository(IOutboundRoundTrip roundTrip)
-        : this(roundTrip, Guid.NewGuid().ToString("N"))
-    {
-    }
-
-    internal ReverseRequestEncapsulatedKeyRepository(IOutboundRoundTrip roundTrip, string repositoryId)
+    public ReverseRequestEncapsulatedKeyRepository(IOutboundRoundTrip roundTrip, string repositoryId)
     {
         _roundTrip = roundTrip;
         _repositoryId = repositoryId;
-    }
-
-    public string RepositoryId()
-    {
-        return _repositoryId;
     }
 
     public async Task<EncapsulatedKeyRecord?> FindByIdAsync(string id, CancellationToken cancellationToken = default)
@@ -78,17 +68,5 @@ internal class ReverseRequestEncapsulatedKeyRepository : ITestKitEncapsulatedKey
     {
         await _roundTrip.SendExpectingAsync<EncapsulatedKeyRepositoryDeleteCompleted>(
             new EncapsulatedKeyRepositoryDeleteRequest(_repositoryId, id));
-    }
-
-    public async Task<EncapsulatedKeyRecord> ImportAsync(
-        string id,
-        string alias,
-        byte[] encapsulation,
-        IReadOnlyDictionary<string, string> metadata)
-    {
-        var reply = await _roundTrip.SendExpectingAsync<EncapsulatedKeyRepositoryImportCompleted>(
-            new EncapsulatedKeyRepositoryImportRequest(_repositoryId, id, alias, encapsulation, metadata));
-
-        return reply.Record.ToRecord();
     }
 }

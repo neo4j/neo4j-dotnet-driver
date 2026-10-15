@@ -30,10 +30,10 @@ public class DriverEncryptionSetupTests
     public DriverEncryptionSetupTests()
     {
         _autoMocker.Use<Func<byte[]?, IKeyEncapsulationService>>(_ => Mock.Of<IKeyEncapsulationService>());
-        _autoMocker.Use<Func<ITestKitEncapsulatedKeyRepository>>(() => Mock.Of<ITestKitEncapsulatedKeyRepository>());
+        _autoMocker.Use<Func<string, IEncapsulatedKeyRecordRepository>>(_ => Mock.Of<IEncapsulatedKeyRecordRepository>());
     }
 
-    private DriverEncryptionObjects Prepare(params PropertyEncryptionProfileInput[] profiles)
+    private IReadOnlyList<IPropertyEncryptionProfile> Prepare(params PropertyEncryptionProfileInput[] profiles)
     {
         var setup = _autoMocker.CreateInstance<DriverEncryptionSetup>();
         return setup.Prepare(profiles);
@@ -52,7 +52,7 @@ public class DriverEncryptionSetupTests
                 return Mock.Of<IKeyEncapsulationService>();
             });
 
-        Prepare(new PropertyEncryptionProfileInput("profile-1", null));
+        Prepare(new PropertyEncryptionProfileInput("profile-1", "repo-1", null));
 
         requested.Should().BeTrue();
         requestedKek.Should().BeNull();
@@ -69,35 +69,37 @@ public class DriverEncryptionSetupTests
                 return Mock.Of<IKeyEncapsulationService>();
             });
 
-        Prepare(new PropertyEncryptionProfileInput("profile-1", new HexBytes([0x01, 0x02, 0x0a, 0xff])));
+        Prepare(new PropertyEncryptionProfileInput("profile-1", "repo-1", new HexBytes([0x01, 0x02, 0x0a, 0xff])));
 
         requestedKek.Should().Equal(0x01, 0x02, 0x0a, 0xff);
     }
 
     [Fact]
-    public void Keys_the_repository_dictionary_by_profile_name()
+    public void Creates_each_profiles_repository_with_the_repository_id_testkit_assigned()
     {
-        var repository1 = Mock.Of<ITestKitEncapsulatedKeyRepository>();
-        var repository2 = Mock.Of<ITestKitEncapsulatedKeyRepository>();
-        var repositories = new Queue<ITestKitEncapsulatedKeyRepository>(new[] { repository1, repository2 });
-        _autoMocker.Use<Func<ITestKitEncapsulatedKeyRepository>>(repositories.Dequeue);
+        var requestedIds = new List<string>();
+        _autoMocker.Use<Func<string, IEncapsulatedKeyRecordRepository>>(
+            repositoryId =>
+            {
+                requestedIds.Add(repositoryId);
+                return Mock.Of<IEncapsulatedKeyRecordRepository>();
+            });
 
-        var result = Prepare(
-            new PropertyEncryptionProfileInput("profile-1", null),
-            new PropertyEncryptionProfileInput("profile-2", null));
+        Prepare(
+            new PropertyEncryptionProfileInput("profile-1", "repo-1", null),
+            new PropertyEncryptionProfileInput("profile-2", "repo-2", null));
 
-        result.RepositoriesByProfileName["profile-1"].Should().BeSameAs(repository1);
-        result.RepositoriesByProfileName["profile-2"].Should().BeSameAs(repository2);
+        requestedIds.Should().Equal("repo-1", "repo-2");
     }
 
     [Fact]
     public void Returns_a_profile_for_each_input_with_the_matching_name()
     {
         var result = Prepare(
-            new PropertyEncryptionProfileInput("profile-1", null),
-            new PropertyEncryptionProfileInput("profile-2", null));
+            new PropertyEncryptionProfileInput("profile-1", "repo-1", null),
+            new PropertyEncryptionProfileInput("profile-2", "repo-2", null));
 
-        var names = result.Profiles.Select(p => p.Name);
+        var names = result.Select(p => p.Name);
 
         names.Should().Equal("profile-1", "profile-2");
     }

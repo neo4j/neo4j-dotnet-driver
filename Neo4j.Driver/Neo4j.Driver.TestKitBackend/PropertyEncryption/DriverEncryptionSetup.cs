@@ -18,47 +18,35 @@ using Neo4j.Driver.TestKitBackend.Types;
 
 namespace Neo4j.Driver.TestKitBackend.PropertyEncryption;
 
-internal record PropertyEncryptionProfileInput(string Name, HexBytes? Kek = null);
-
-internal record DriverEncryptionObjects(
-    IReadOnlyList<IPropertyEncryptionProfile> Profiles,
-    IReadOnlyDictionary<string, ITestKitEncapsulatedKeyRepository> RepositoriesByProfileName);
+internal record PropertyEncryptionProfileInput(string Name, string RepositoryId, HexBytes? Kek = null);
 
 internal interface IDriverEncryptionSetup
 {
-    DriverEncryptionObjects Prepare(IReadOnlyList<PropertyEncryptionProfileInput> profiles);
+    IReadOnlyList<IPropertyEncryptionProfile> Prepare(IReadOnlyList<PropertyEncryptionProfileInput> profiles);
 }
 
 internal class DriverEncryptionSetup : IDriverEncryptionSetup
 {
     private readonly Func<byte[]?, IKeyEncapsulationService> _keyEncapsulationServiceFactory;
-    private readonly Func<ITestKitEncapsulatedKeyRepository> _repositoryFactory;
+    private readonly Func<string, IEncapsulatedKeyRecordRepository> _repositoryFactory;
 
     public DriverEncryptionSetup(
         Func<byte[]?, IKeyEncapsulationService> keyEncapsulationServiceFactory,
-        Func<ITestKitEncapsulatedKeyRepository> repositoryFactory)
+        Func<string, IEncapsulatedKeyRecordRepository> repositoryFactory)
     {
         _keyEncapsulationServiceFactory = keyEncapsulationServiceFactory;
         _repositoryFactory = repositoryFactory;
     }
 
-    public DriverEncryptionObjects Prepare(IReadOnlyList<PropertyEncryptionProfileInput> profiles)
+    public IReadOnlyList<IPropertyEncryptionProfile> Prepare(IReadOnlyList<PropertyEncryptionProfileInput> profiles)
     {
-        var repositories = new Dictionary<string, ITestKitEncapsulatedKeyRepository>();
-        var resultProfiles = new List<IPropertyEncryptionProfile>();
-
-        foreach (var profile in profiles)
-        {
-            var keyEncapsulationService = _keyEncapsulationServiceFactory(profile.Kek);
-            var repository = _repositoryFactory();
-
-            repositories[profile.Name] = repository;
-            resultProfiles.Add(
-                PropertyEncryptionProfile
-                    .EnvelopeBuilder(profile.Name, keyEncapsulationService, repository)
-                    .Build());
-        }
-
-        return new DriverEncryptionObjects(resultProfiles, repositories);
+        return profiles
+            .Select(profile => PropertyEncryptionProfile
+                .EnvelopeBuilder(
+                    profile.Name,
+                    _keyEncapsulationServiceFactory(profile.Kek),
+                    _repositoryFactory(profile.RepositoryId))
+                .Build())
+            .ToList();
     }
 }

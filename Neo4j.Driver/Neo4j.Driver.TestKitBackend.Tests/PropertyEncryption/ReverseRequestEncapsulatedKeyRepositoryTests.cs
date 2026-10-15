@@ -108,22 +108,6 @@ public class ReverseRequestEncapsulatedKeyRepositoryTests
     }
 
     [Fact]
-    public async Task ImportAsync_sends_an_import_request_and_parses_the_reply()
-    {
-        var wire = new EncapsulatedKeyRepositoryRecord("fixed-id", "a1", Encapsulation, Metadata);
-        CaptureRequest(new EncapsulatedKeyRepositoryImportCompleted { RequestId = "req-1", Record = wire });
-
-        var result = await Subject().ImportAsync("fixed-id", "a1", Encapsulation, Metadata);
-
-        var request = _lastRequest.Should().BeOfType<EncapsulatedKeyRepositoryImportRequest>().Subject;
-        request.RepositoryId.Should().Be(RepositoryId);
-        request.KeyId.Should().Be("fixed-id");
-        request.Alias.Should().Be("a1");
-
-        result.Should().Be(new EncapsulatedKeyRecord("fixed-id", "a1", Encapsulation, Metadata));
-    }
-
-    [Fact]
     public async Task SetAliasByIdAsync_sends_a_set_alias_request()
     {
         CaptureRequest(new EncapsulatedKeyRepositorySetAliasCompleted { RequestId = "req-1" });

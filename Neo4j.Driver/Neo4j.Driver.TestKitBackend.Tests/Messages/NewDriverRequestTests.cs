@@ -123,14 +123,15 @@ public class NewDriverRequestTests
         const string json =
             """
             {"name": "NewDriver", "data": {"uri": "bolt://x", "propertyEncryptionProfiles":
-            [{"name": "profile-a", "kek": "0102030405060708"}, {"name": "profile-b", "kek": null}]}}
+            [{"name": "profile-a", "repositoryId": "repo-a", "kek": "0102030405060708"},
+             {"name": "profile-b", "repositoryId": "repo-b", "kek": null}]}}
             """;
 
         var request = (NewDriverRequest)Serializer().Deserialize(json);
 
         request.PropertyEncryptionProfiles.Should().Equal(
-            new PropertyEncryptionProfileInput("profile-a", new HexBytes([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08])),
-            new PropertyEncryptionProfileInput("profile-b", null));
+            new PropertyEncryptionProfileInput("profile-a", "repo-a", new HexBytes([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08])),
+            new PropertyEncryptionProfileInput("profile-b", "repo-b", null));
     }
 
     [Fact]

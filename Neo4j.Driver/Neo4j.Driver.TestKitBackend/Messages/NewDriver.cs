@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.TestKitBackend.Connection;
@@ -50,11 +49,7 @@ internal record NewDriverRequest : IProtocolMessage
     public IReadOnlyList<PropertyEncryptionProfileInput>? PropertyEncryptionProfiles { get; init; }
 }
 
-internal record DriverResponse(string Id) : IProtocolMessage
-{
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public IReadOnlyList<string>? KeyRepositories { get; init; }
-}
+internal record DriverResponse(string Id) : IProtocolMessage;
 
 internal class NewDriverHandler : MessageHandler<NewDriverRequest>
 {
@@ -64,7 +59,6 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
     private readonly IResponseWriter _responseWriter;
     private readonly ILogger _logger;
     private readonly IDriverEncryptionSetup _driverEncryptionSetup;
-    private readonly IDriverEncryptionObjectStore _driverEncryptionObjectStore;
 
     public NewDriverHandler(
         IObjectStore objectStore,
@@ -72,8 +66,7 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
         INeo4jLogger neo4JLogger,
         IResponseWriter responseWriter,
         ILogger logger,
-        IDriverEncryptionSetup driverEncryptionSetup,
-        IDriverEncryptionObjectStore driverEncryptionObjectStore)
+        IDriverEncryptionSetup driverEncryptionSetup)
     {
         _objectStore = objectStore;
         _configMapper = configMapper;
@@ -81,17 +74,13 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
         _responseWriter = responseWriter;
         _logger = logger;
         _driverEncryptionSetup = driverEncryptionSetup;
-        _driverEncryptionObjectStore = driverEncryptionObjectStore;
     }
 
     public override async Task ProcessAsync(NewDriverRequest message)
     {
-        DriverEncryptionObjects? encryptionSetup = null;
-        var hasEncryptionProfiles = message.PropertyEncryptionProfiles is not null;
-        if (hasEncryptionProfiles)
-        {
-            encryptionSetup = _driverEncryptionSetup.Prepare(message.PropertyEncryptionProfiles!);
-        }
+        var encryptionProfiles = message.PropertyEncryptionProfiles is null
+            ? null
+            : _driverEncryptionSetup.Prepare(message.PropertyEncryptionProfiles);
 
         IDriver driver;
         if (message.AuthTokenManagerId is not null)
@@ -104,17 +93,9 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
             driver = GraphDatabase.Driver(message.Uri, message.AuthorizationToken?.ToAuthToken(), Configure);
         }
 
-        if (hasEncryptionProfiles)
-        {
-            _driverEncryptionObjectStore.StoreObjects(driver, encryptionSetup!);
-        }
-
         var id = _objectStore.Store(driver);
         _logger.LogDebug("Created driver with id '{Id}'", id);
-        var keyRepositories = encryptionSetup?.Profiles
-            .Select(profile => encryptionSetup.RepositoriesByProfileName[profile.Name].RepositoryId())
-            .ToList();
-        await _responseWriter.WriteAsync(new DriverResponse(id) { KeyRepositories = keyRepositories });
+        await _responseWriter.WriteAsync(new DriverResponse(id));
 
         return;
 
@@ -123,9 +104,9 @@ internal class NewDriverHandler : MessageHandler<NewDriverRequest>
             _configMapper.Apply(message, new ConfigBuilderAdapter(builder));
             builder.WithLogger(_neo4JLogger);
             builder.WithMetricsEnabled(true);
-            if (encryptionSetup is not null)
+            if (encryptionProfiles is not null)
             {
-                builder.WithPropertyEncryptionProfiles(encryptionSetup.Profiles);
+                builder.WithPropertyEncryptionProfiles(encryptionProfiles);
             }
         }
     }

@@ -109,28 +109,6 @@ internal class EncapsulatedKeyRepositoryCreateCompletedHandler
     }
 }
 
-internal record EncapsulatedKeyRepositoryImportRequest(
-    string RepositoryId,
-    string KeyId,
-    string Alias,
-    HexBytes Encapsulation,
-    IReadOnlyDictionary<string, string> Metadata) : IProtocolMessage;
-
-internal record EncapsulatedKeyRepositoryImportCompleted : IEncapsulatedKeyRepositoryReply
-{
-    public required string RequestId { get; init; }
-    public required EncapsulatedKeyRepositoryRecord Record { get; init; }
-}
-
-internal class EncapsulatedKeyRepositoryImportCompletedHandler
-    : EncapsulatedKeyRepositoryReplyHandler<EncapsulatedKeyRepositoryImportCompleted>
-{
-    public EncapsulatedKeyRepositoryImportCompletedHandler(IExpectationStore expectationStore)
-        : base(expectationStore)
-    {
-    }
-}
-
 internal record EncapsulatedKeyRepositorySetAliasRequest(string RepositoryId, string KeyId, string? Alias)
     : IProtocolMessage;
 
