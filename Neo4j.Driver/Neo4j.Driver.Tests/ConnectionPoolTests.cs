@@ -1170,6 +1170,34 @@ public class ConnectionPoolTests
         }
     }
 
+    public class VerifyConnectivityAndGetInfoMethod
+    {
+        [Fact]
+        public async Task ShouldThrowClientExceptionWhenInitDoesNotCompleteWithinAcquisitionTimeout()
+        {
+            var connection = new Mock<IConnection>();
+            connection
+                .Setup(x => x.InitAsync(It.IsAny<SessionConfig>(), It.IsAny<CancellationToken>()))
+                .Returns(new TaskCompletionSource().Task);
+
+            var pool = new ConnectionPool(
+                new MockedConnectionFactory(connection.Object),
+                validator: new TestConnectionValidator(),
+                driverContext: TestDriverContext.With(
+                    config: x => x.WithConnectionAcquisitionTimeout(TimeSpan.FromMilliseconds(250))));
+
+            var verify = pool.VerifyConnectivityAndGetInfoAsync();
+            var finished = await Task.WhenAny(verify, Task.Delay(TimeSpan.FromSeconds(5)));
+
+            finished.Should().BeSameAs(verify);
+            var exception = await Record.ExceptionAsync(() => verify);
+            exception.Should()
+                .BeOfType<ClientException>()
+                .Which.Message.Should()
+                .StartWith("Failed to obtain a connection from pool");
+        }
+    }
+
     public class CloseMethod
     {
         [Fact]

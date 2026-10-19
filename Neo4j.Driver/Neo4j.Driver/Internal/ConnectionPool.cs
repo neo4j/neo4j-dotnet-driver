@@ -230,7 +230,7 @@ internal sealed class ConnectionPool : IConnectionPool
 
     public async Task<IServerInfo> VerifyConnectivityAndGetInfoAsync()
     {
-        var connection = await AcquireAsync(AccessMode.Read, null, null, CancellationToken.None)
+        var connection = await AcquireOrTimeoutAsync(null, null, AccessMode.Read, ConnectionAcquisitionTimeout)
             .ConfigureAwait(false);
 
         try
