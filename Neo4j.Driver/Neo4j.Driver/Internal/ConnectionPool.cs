@@ -246,7 +246,15 @@ internal sealed class ConnectionPool : IConnectionPool
 
         try
         {
-            await connection.ResetAsync().ConfigureAwait(false);
+            using var resetTimeoutSource = new CancellationTokenSource(ConnectionTimeout);
+            await connection.ResetAsync(resetTimeoutSource.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException ex)
+        {
+            throw new ServiceUnavailableException(
+                "Unable to connect to database, " +
+                "ensure the database is running and that there is a working network connection to it.",
+                ex);
         }
         finally
         {
