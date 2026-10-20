@@ -1173,7 +1173,7 @@ public class ConnectionPoolTests
     public class VerifyConnectivityAndGetInfoMethod
     {
         [Fact]
-        public async Task ShouldThrowClientExceptionWhenInitDoesNotCompleteWithinAcquisitionTimeout()
+        public async Task ShouldThrowServiceUnavailableExceptionWhenInitDoesNotCompleteWithinAcquisitionTimeout()
         {
             var connection = new Mock<IConnection>();
             connection
@@ -1192,9 +1192,9 @@ public class ConnectionPoolTests
             finished.Should().BeSameAs(verify);
             var exception = await Record.ExceptionAsync(() => verify);
             exception.Should()
-                .BeOfType<ClientException>()
-                .Which.Message.Should()
-                .StartWith("Failed to obtain a connection from pool");
+                .BeOfType<ServiceUnavailableException>()
+                .Which.InnerException.Should()
+                .BeOfType<ClientException>();
         }
     }
 
