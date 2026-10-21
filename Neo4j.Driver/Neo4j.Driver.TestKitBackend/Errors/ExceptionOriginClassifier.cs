@@ -30,6 +30,11 @@ internal class ExceptionOriginClassifier : IExceptionOriginClassifier
 
     public bool OriginatesInDriver(Exception exception)
     {
+        if (exception is Neo4jException)
+        {
+            return true;
+        }
+
         foreach (var frame in new StackTrace(exception, false).GetFrames())
         {
             var assembly = frame.GetMethod()?.DeclaringType?.Assembly;

@@ -25,15 +25,29 @@ namespace Neo4j.Driver.Internal.IO;
 
 // we don't use the return value of Read() in most cases, so suppress the warning
 [SuppressMessage("ReSharper", "MustUseReturnValue")]
-internal sealed class PackStreamReader
+internal sealed class PackStreamReader : IPackStreamReader
 {
+    private readonly bool _untrustedInput;
+
+    private int _nestingDepth;
+
+    internal const int MaxNestingDepth = 16;
+
+    private const int MinimumBytesPerMapEntry = 2;
+    private const int MinimumBytesPerListItem = 1;
+
     public MemoryStream Stream;
 
-    internal PackStreamReader(MessageFormat format, MemoryStream stream, ByteBuffers buffers)
+    internal PackStreamReader(
+        MessageFormat format,
+        MemoryStream stream,
+        ByteBuffers buffers,
+        bool untrustedInput = false)
     {
         Format = format;
         Stream = stream;
         Buffers = buffers;
+        _untrustedInput = untrustedInput;
     }
 
     public ByteBuffers Buffers { get; }
@@ -41,8 +55,10 @@ internal sealed class PackStreamReader
 
     public object Read()
     {
+        EnsureWithinNestingLimit();
         var type = PeekNextType();
         var result = ReadValue(type);
+        _nestingDepth--;
         return result;
     }
 
@@ -61,7 +77,9 @@ internal sealed class PackStreamReader
 
     public Dictionary<string, object> ReadMap()
     {
-        var size = (int)ReadMapHeader();
+        var declaredSize = ReadMapHeader();
+        EnsureInputHolds(declaredSize, MinimumBytesPerMapEntry);
+        var size = (int)declaredSize;
         if (size == 0)
         {
             return new Dictionary<string, object>(0);
@@ -79,7 +97,9 @@ internal sealed class PackStreamReader
 
     public object ReadList()
     {
-        var size = (int)ReadListHeader();
+        var declaredSize = ReadListHeader();
+        EnsureInputHolds(declaredSize, MinimumBytesPerListItem);
+        var size = (int)declaredSize;
         var vals = new object[size];
         for (var j = 0; j < size; j++)
         {
@@ -299,9 +319,27 @@ internal sealed class PackStreamReader
             return Array.Empty<byte>();
         }
 
+        EnsureInputHolds(size, 1);
         var heapBuffer = new byte[size];
         Stream.ReadExactly(heapBuffer);
         return heapBuffer;
+    }
+
+    private void EnsureWithinNestingLimit()
+    {
+        if (++_nestingDepth > MaxNestingDepth && _untrustedInput)
+        {
+            throw new ProtocolException($"Values are nested deeper than the limit of {MaxNestingDepth}");
+        }
+    }
+
+    private void EnsureInputHolds(long count, int minimumBytesEach)
+    {
+        if (_untrustedInput && count * minimumBytesEach > Stream.Length - Stream.Position)
+        {
+            throw new ProtocolException(
+                $"Declared size {count} exceeds the {Stream.Length - Stream.Position} bytes of input remaining");
+        }
     }
 
     private byte[] ReadUtf8(byte markerByte)
