@@ -1170,6 +1170,64 @@ public class ConnectionPoolTests
         }
     }
 
+    public class VerifyConnectivityAndGetInfoMethod
+    {
+        [Fact]
+        public async Task ShouldThrowServiceUnavailableExceptionWhenInitDoesNotCompleteWithinAcquisitionTimeout()
+        {
+            var connection = new Mock<IConnection>();
+            connection
+                .Setup(x => x.InitAsync(It.IsAny<SessionConfig>(), It.IsAny<CancellationToken>()))
+                .Returns(new TaskCompletionSource().Task);
+
+            var pool = new ConnectionPool(
+                new MockedConnectionFactory(connection.Object),
+                validator: new TestConnectionValidator(),
+                driverContext: TestDriverContext.With(
+                    config: x => x.WithConnectionAcquisitionTimeout(TimeSpan.FromMilliseconds(250))));
+
+            var verify = pool.VerifyConnectivityAndGetInfoAsync();
+            var finished = await Task.WhenAny(verify, Task.Delay(TimeSpan.FromSeconds(5)));
+
+            finished.Should().BeSameAs(verify);
+            var exception = await Record.ExceptionAsync(() => verify);
+            exception.Should()
+                .BeOfType<ServiceUnavailableException>()
+                .Which.InnerException.Should()
+                .BeOfType<ClientException>();
+        }
+    }
+
+    public class VerifyConnectivityResetMethod
+    {
+        [Fact]
+        public async Task ShouldThrowServiceUnavailableExceptionWhenResetDoesNotCompleteWithinConnectionTimeout()
+        {
+            var protocol = new Mock<IBoltProtocol>();
+            protocol
+                .Setup(x => x.ResetAsync(It.IsAny<IConnection>(), It.IsAny<CancellationToken>()))
+                .Returns<IConnection, CancellationToken>((_, token) => Task.Delay(Timeout.Infinite, token));
+
+            var connection = new Mock<IConnection>();
+            connection.SetupGet(x => x.BoltProtocol).Returns(protocol.Object);
+
+            var pool = new ConnectionPool(
+                new MockedConnectionFactory(connection.Object),
+                validator: new TestConnectionValidator(),
+                driverContext: TestDriverContext.With(
+                    config: x => x
+                        .WithConnectionTimeout(TimeSpan.FromMilliseconds(250))
+                        .WithConnectionAcquisitionTimeout(TimeSpan.FromSeconds(30))));
+
+            var verify = pool.VerifyConnectivityAndGetInfoAsync();
+            var finished = await Task.WhenAny(verify, Task.Delay(TimeSpan.FromSeconds(5)));
+
+            finished.Should().BeSameAs(verify);
+            var exception = await Record.ExceptionAsync(() => verify);
+            exception.Should().BeOfType<ServiceUnavailableException>();
+        }
+    }
+
     public class CloseMethod
     {
         [Fact]

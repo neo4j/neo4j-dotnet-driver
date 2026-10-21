@@ -230,12 +230,31 @@ internal sealed class ConnectionPool : IConnectionPool
 
     public async Task<IServerInfo> VerifyConnectivityAndGetInfoAsync()
     {
-        var connection = await AcquireAsync(AccessMode.Read, null, null, CancellationToken.None)
-            .ConfigureAwait(false);
+        IPooledConnection connection;
+        try
+        {
+            connection = await AcquireOrTimeoutAsync(null, null, AccessMode.Read, ConnectionAcquisitionTimeout)
+                .ConfigureAwait(false);
+        }
+        catch (ClientException ex)
+        {
+            throw new ServiceUnavailableException(
+                "Unable to connect to database, " +
+                "ensure the database is running and that there is a working network connection to it.",
+                ex);
+        }
 
         try
         {
-            await connection.ResetAsync().ConfigureAwait(false);
+            using var resetTimeoutSource = new CancellationTokenSource(ConnectionTimeout);
+            await connection.ResetAsync(resetTimeoutSource.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException ex)
+        {
+            throw new ServiceUnavailableException(
+                "Unable to connect to database, " +
+                "ensure the database is running and that there is a working network connection to it.",
+                ex);
         }
         finally
         {

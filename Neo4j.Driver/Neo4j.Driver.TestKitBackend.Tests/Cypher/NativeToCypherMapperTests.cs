@@ -235,7 +235,7 @@ public class NativeToCypherMapperTests
     {
         var point = new Point(7203, 1.0, 2.0);
 
-        _mapper.Map(point).Should().Be(new CypherPoint("cartesian", 1.0, 2.0, null));
+        _mapper.Map(point).Should().Be(new CypherPoint { System = "cartesian", X = 1.0, Y = 2.0, Z = null });
     }
 
     [Fact]
@@ -243,7 +243,7 @@ public class NativeToCypherMapperTests
     {
         var point = new Point(4979, 1.0, 2.0, 3.0);
 
-        _mapper.Map(point).Should().Be(new CypherPoint("wgs84", 1.0, 2.0, 3.0));
+        _mapper.Map(point).Should().Be(new CypherPoint { System = "wgs84", X = 1.0, Y = 2.0, Z = 3.0 });
     }
 
     [Fact]

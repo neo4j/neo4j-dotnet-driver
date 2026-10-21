@@ -197,13 +197,13 @@ public class CypherToNativeMapperTests
     [Fact]
     public void Maps_cypher_point_to_a_2d_cartesian_point()
     {
-        _mapper.Map(new CypherPoint("cartesian", 1.0, 2.0, null)).Should().Be(new Point(7203, 1.0, 2.0));
+        _mapper.Map(new CypherPoint { System = "cartesian", X = 1.0, Y = 2.0, Z = null }).Should().Be(new Point(7203, 1.0, 2.0));
     }
 
     [Fact]
     public void Maps_cypher_point_to_a_3d_wgs84_point()
     {
-        _mapper.Map(new CypherPoint("wgs84", 1.0, 2.0, 3.0)).Should().Be(new Point(4979, 1.0, 2.0, 3.0));
+        _mapper.Map(new CypherPoint { System = "wgs84", X = 1.0, Y = 2.0, Z = 3.0 }).Should().Be(new Point(4979, 1.0, 2.0, 3.0));
     }
 
     [Fact]
