@@ -65,6 +65,8 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
 
     bool SsrEnabled { get; set; }
 
+    bool SystemReportsDead();
+
     void ConfigureMode(AccessMode? mode);
     void Configure(string database, AccessMode? mode);
 

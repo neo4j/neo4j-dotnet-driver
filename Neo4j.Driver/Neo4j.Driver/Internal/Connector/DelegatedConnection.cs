@@ -153,6 +153,8 @@ internal abstract class DelegatedConnection : IConnection
 
     public virtual bool IsOpen => Delegate.IsOpen;
 
+    public bool SystemReportsDead() => Delegate.SystemReportsDead();
+
     public IServerInfo Server => Delegate.Server;
 
     public IBoltProtocol BoltProtocol => Delegate.BoltProtocol;
