@@ -39,6 +39,11 @@ internal sealed class CertificateTrustManager : TrustManager
         X509Chain chain,
         SslPolicyErrors sslPolicyErrors)
     {
+        if (TryRejectMissingCertificate(uri, certificate, sslPolicyErrors))
+        {
+            return false;
+        }
+
         var now = DateTime.Now;
 
         if (_verifyHostname)
