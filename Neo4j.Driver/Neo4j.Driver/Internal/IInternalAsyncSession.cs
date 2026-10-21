@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal;
 
-internal interface IInternalAsyncSession : IAsyncSession
+internal interface IInternalAsyncSession : IAsyncSession, IAsyncNotifyingDisposable
 {
     Task<IAsyncTransaction> BeginTransactionAsync(
         Action<TransactionConfigBuilder> action,

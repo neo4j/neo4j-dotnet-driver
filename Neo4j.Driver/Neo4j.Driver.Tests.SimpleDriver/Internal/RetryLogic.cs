@@ -32,15 +32,12 @@ internal class RetryLogic : IRetryLogic
     private readonly double _initialDelay;
     private readonly INeo4jLogger _neo4JLogger;
     private readonly int _maxRetryTimeout;
-    private readonly Random _random;
-
     public RetryLogic(TimeSpan maxRetryTimeout, INeo4jLogger neo4JLogger)
     {
         _maxRetryTimeout = (int)maxRetryTimeout.TotalMilliseconds;
         _initialDelay = TimeSpan.FromSeconds(1).TotalMilliseconds;
         _delayMultiplier = 2.0;
         _delayJitter = 0.2;
-        _random = new Random(Guid.NewGuid().GetHashCode());
         _neo4JLogger = neo4JLogger;
     }
 
@@ -86,6 +83,6 @@ internal class RetryLogic : IRetryLogic
     private double ComputeNextDelay(double delay)
     {
         var jitter = delay * _delayJitter;
-        return delay - jitter + 2 * jitter * _random.NextDouble();
+        return delay - jitter + 2 * jitter * Random.Shared.NextDouble();
     }
 }

@@ -28,7 +28,7 @@ public abstract class DirectDriverTestBase : IDisposable
     {
         Output = output;
         Server = fixture.StandAloneSharedInstance;
-        ServerEndPoint = Server.BoltUri;
+        ServerEndPoint = DefaultInstallation.UseQueryApi ? Server.HttpUri : Server.BoltUri;
         AuthToken = Server.AuthToken;
     }
 
@@ -39,18 +39,13 @@ public abstract class DirectDriverTestBase : IDisposable
 
     public void Dispose()
     {
-        switch (_disposed)
+        if (_disposed)
         {
-            case true: return;
-
-            case false:
-            {
-                using var session = Server.Driver.Session();
-                session.Run("MATCH (n) DETACH DELETE n").Consume();
-                break;
-            }
+            return;
         }
 
+        using var session = Server.Driver.Session();
+        session.Run("MATCH (n) DETACH DELETE n").Consume();
         _disposed = true;
     }
 }

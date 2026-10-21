@@ -28,7 +28,9 @@ public sealed class LocalStandAloneInstance : SingleInstance, IStandAlone
             null,
             DefaultInstallation.Password)
     {
-        Driver = DefaultInstallation.NewBoltDriver(BoltUri, AuthToken);
+        Driver = DefaultInstallation.NewDriver(
+            DefaultInstallation.UseQueryApi ? HttpUri : BoltUri,
+            AuthToken);
     }
 
     public void Dispose()

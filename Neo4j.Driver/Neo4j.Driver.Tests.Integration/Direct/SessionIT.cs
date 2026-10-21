@@ -173,6 +173,7 @@ public sealed class SessionIT : DirectDriverTestBase
     }
 
     [RequireServerFact]
+    [BoltSpecific]
     public async Task RollBackTxIfErrorWithoutConsume()
     {
         // Given

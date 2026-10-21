@@ -51,7 +51,7 @@ public sealed class StandAlone : IStandAlone
             throw;
         }
 
-        NewBoltDriver();
+        NewDriver();
     }
 
     public StandAlone(Pkcs12Store store)
@@ -76,20 +76,21 @@ public sealed class StandAlone : IStandAlone
             throw;
         }
 
-        NewBoltDriver();
+        NewDriver();
     }
 
     public IDriver Driver { private set; get; }
 
     public Uri HttpUri => _delegator?.HttpUri;
     public Uri BoltUri => _delegator?.BoltUri;
+    private Uri ActiveUri => DefaultInstallation.UseQueryApi ? HttpUri : BoltUri;
     public Uri BoltRoutingUri => _delegator?.BoltRoutingUri;
     public string HomePath => _delegator?.HomePath;
     public IAuthToken AuthToken => _delegator?.AuthToken;
 
     public void Dispose()
     {
-        DisposeBoltDriver();
+        DisposeDriver();
 
         try
         {
@@ -121,12 +122,12 @@ public sealed class StandAlone : IStandAlone
         }
     }
 
-    private void NewBoltDriver()
+    private void NewDriver()
     {
-        Driver = DefaultInstallation.NewBoltDriver(BoltUri, AuthToken);
+        Driver = DefaultInstallation.NewDriver(ActiveUri, AuthToken);
     }
 
-    private void DisposeBoltDriver()
+    private void DisposeDriver()
     {
         Driver?.Dispose();
     }
@@ -138,7 +139,7 @@ public sealed class StandAlone : IStandAlone
 
     public void RestartServerWithCertificate(Pkcs12Store store)
     {
-        DisposeBoltDriver();
+        DisposeDriver();
         try
         {
             _installer.EnsureCertificate(store);
@@ -157,7 +158,7 @@ public sealed class StandAlone : IStandAlone
             throw;
         }
 
-        NewBoltDriver();
+        NewDriver();
     }
 
     public void UpdateCertificate(Pkcs12Store store)

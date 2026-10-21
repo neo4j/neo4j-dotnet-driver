@@ -1,0 +1,90 @@
+// Copyright (c) "Neo4j"
+// Neo4j Sweden AB [https://neo4j.com]
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#nullable enable
+
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Neo4j.Driver.Internal.QueryApi;
+
+internal class QueryApiRequestBuilder : IQueryApiRequestBuilder
+{
+    private readonly IEnumerable<IHttpRequestEnricher> _requestEnrichers;
+    private readonly IQueryApiJsonSerializer _jsonSerializer;
+    private readonly IQueryApiRequestHeaderWriter _headerWriter;
+    private readonly ISessionContext _sessionContext;
+    private readonly IQueryApiUrlBuilder _urlBuilder;
+
+    public QueryApiRequestBuilder(
+        IQueryApiUrlBuilder urlBuilder,
+        ISessionContext sessionContext,
+        IEnumerable<IHttpRequestEnricher> requestEnrichers,
+        IQueryApiJsonSerializer jsonSerializer,
+        IQueryApiRequestHeaderWriter headerWriter)
+    {
+        _urlBuilder = urlBuilder;
+        _sessionContext = sessionContext;
+        _requestEnrichers = requestEnrichers;
+        _jsonSerializer = jsonSerializer;
+        _headerWriter = headerWriter;
+    }
+
+    public Task<HttpRequestMessage> PostAsync(
+        string path,
+        IQueryApiRequestBody? body,
+        CancellationToken cancellationToken = default)
+    {
+        return BuildAsync(HttpMethod.Post, path, body, cancellationToken);
+    }
+
+    public Task<HttpRequestMessage> DeleteAsync(string path, CancellationToken cancellationToken = default)
+    {
+        return BuildAsync(HttpMethod.Delete, path, null, cancellationToken);
+    }
+
+    private async Task<HttpRequestMessage> BuildAsync(
+        HttpMethod method,
+        string path,
+        IQueryApiRequestBody? body,
+        CancellationToken cancellationToken)
+    {
+        var request = new HttpRequestMessage(method, _urlBuilder.Build($"db/{_sessionContext.Database}/{path}"));
+        foreach (var enricher in _requestEnrichers)
+        {
+            await enricher.Enrich(request, cancellationToken).ConfigureAwait(false);
+        }
+
+        var version = QueryApiMediaVersion.V1_0;
+        if (method == HttpMethod.Post)
+        {
+            if (body is null)
+            {
+                request.Content = new ByteArrayContent([]);
+            }
+            else
+            {
+                var serialized = _jsonSerializer.Serialize(body);
+                version = serialized.Version;
+                request.Content = new StringContent(serialized.Json);
+            }
+        }
+
+        _headerWriter.ApplyMediaType(request, version);
+        return request;
+    }
+}

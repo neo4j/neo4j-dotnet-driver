@@ -30,56 +30,66 @@ internal static class ErrorExtensions
         return _exceptionFactory.GetException(failureMessage);
     }
 
-    public static bool CanBeRetried(this Exception error)
+    extension(Exception exception)
     {
-        return error is Neo4jException { IsRetriable: true };
-    }
+        public bool CanBeRetried()
+        {
+            return exception is Neo4jException { IsRetriable: true };
+        }
 
-    /// <summary>
-    /// Returns true if the server marked the failure as idempotent — i.e. guaranteed that no state
-    /// change occurred, so the request can be safely retried (e.g. admission control rejection).
-    /// </summary>
-    public static bool IsIdempotentFailure(this Exception error)
-    {
-        return error is Neo4jException { GqlDiagnosticRecord: { } dr }
-            && dr.TryGetValue("_idempotent", out var v)
-            && v is true;
-    }
+        /// <summary>
+        /// Returns true if the server marked the failure as idempotent — i.e. guaranteed that no state
+        /// change occurred, so the request can be safely retried (e.g. admission control rejection).
+        /// </summary>
+        public bool IsIdempotentFailure()
+        {
+            return
+                exception is Neo4jException { GqlDiagnosticRecord: {} dr } &&
+                dr.TryGetValue("_idempotent", out var v) &&
+                v is true;
+        }
 
-    public static bool IsRecoverableError(this Exception error)
-    {
-        return error is ClientException or TransientException;
-    }
+        public bool IsRecoverableError()
+        {
+            return exception is ClientException or TransientException;
+        }
 
-    public static bool IsConnectionError(this Exception error)
-    {
-        return error is IOException or SocketException ||
-            error.GetBaseException() is IOException or SocketException;
-    }
+        public bool IsConnectionError()
+        {
+            return
+                exception is IOException or SocketException || 
+                exception.GetBaseException() is IOException or SocketException;
+        }
 
-    public static bool HasErrorCode(this Exception error, string errorCode)
-    {
-        return error is Neo4jException ne && ne.Code == errorCode;
-    }
+        public bool HasErrorCode(string errorCode)
+        {
+            return exception is Neo4jException ne && ne.Code == errorCode;
+        }
 
-    public static bool IsDatabaseUnavailableError(this Exception error)
-    {
-        return error.HasErrorCode("Neo.TransientError.General.DatabaseUnavailable");
-    }
+        public bool HasServerErrorCode()
+        {
+            return exception is Neo4jException { Code.Length: > 0 };
+        }
 
-    public static bool IsClusterError(this Exception error)
-    {
-        return IsClusterNotALeaderError(error) || IsForbiddenOnReadOnlyDatabaseError(error);
-    }
+        public bool IsDatabaseUnavailableError()
+        {
+            return exception.HasErrorCode("Neo.TransientError.General.DatabaseUnavailable");
+        }
 
-    private static bool IsClusterNotALeaderError(this Exception error)
-    {
-        return error.HasErrorCode("Neo.ClientError.Cluster.NotALeader");
-    }
+        public bool IsClusterError()
+        {
+            return IsClusterNotALeaderError(exception) || IsForbiddenOnReadOnlyDatabaseError(exception);
+        }
 
-    private static bool IsForbiddenOnReadOnlyDatabaseError(this Exception error)
-    {
-        return error.HasErrorCode("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase");
+        private bool IsClusterNotALeaderError()
+        {
+            return exception.HasErrorCode("Neo.ClientError.Cluster.NotALeader");
+        }
+
+        private bool IsForbiddenOnReadOnlyDatabaseError()
+        {
+            return exception.HasErrorCode("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase");
+        }
     }
 
     public static ResultConsumedException NewResultConsumedException()
