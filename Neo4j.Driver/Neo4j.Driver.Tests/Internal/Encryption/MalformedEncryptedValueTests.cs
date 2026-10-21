@@ -79,6 +79,15 @@ public class MalformedEncryptedValueTests
         };
     }
 
+    private static byte[] WithMetadataNestedLists(int depth)
+    {
+        byte[] singleEntryMapWithKeyK = [0xA1, 0x81, 0x6B];
+        var nesting = new byte[depth];
+        Array.Fill(nesting, (byte)0x91);
+        nesting[^1] = 0x90;
+        return [..HeaderThroughSchemeVersions, ..singleEntryMapWithKeyK, ..nesting];
+    }
+
     [Theory]
     [MemberData(nameof(DeclaredSizesBeyondTheInput))]
     public void Decode_RejectsASizeBeyondTheRemainingInputWithoutAllocatingIt(string _, byte[] bytes)
@@ -90,5 +99,35 @@ public class MalformedEncryptedValueTests
         act.Should().Throw<PropertyEncryptionException>();
         var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
         allocated.Should().BeLessThan(AllocationBudgetBytes);
+    }
+
+    [Fact]
+    public void Decode_AcceptsMetadataNestedAtTheLimit()
+    {
+        var bytes = WithMetadataNestedLists(PackStreamReader.MaxNestingDepth);
+
+        var act = () => _subject.Decode(bytes);
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Decode_RejectsMetadataNestedBeyondTheLimit()
+    {
+        var bytes = WithMetadataNestedLists(PackStreamReader.MaxNestingDepth + 1);
+
+        var act = () => _subject.Decode(bytes);
+
+        act.Should().Throw<PropertyEncryptionException>();
+    }
+
+    [Fact]
+    public void Decode_RejectsMetadataNestedFarEnoughToOverflowTheStack()
+    {
+        var bytes = WithMetadataNestedLists(1_000_000);
+
+        var act = () => _subject.Decode(bytes);
+
+        act.Should().Throw<PropertyEncryptionException>();
     }
 }
