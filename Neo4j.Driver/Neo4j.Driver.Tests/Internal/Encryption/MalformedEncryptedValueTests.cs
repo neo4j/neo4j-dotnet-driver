@@ -101,6 +101,26 @@ public class MalformedEncryptedValueTests
         allocated.Should().BeLessThan(AllocationBudgetBytes);
     }
 
+    public static TheoryData<string, byte[]> InputsThatEndOrOverflowWithoutAProtocolError()
+    {
+        return new TheoryData<string, byte[]>
+        {
+            { "only the encoding version", [0x01] },
+            { "a structure header and signature with no fields", [0x01, 0xB8, 0x65] },
+            { "an Int32 profile version cut short", [0x01, 0xB8, 0x65, 0x81, 0x78, 0xCA, 0x00, 0x00] },
+            { "an Int64 profile version", [0x01, 0xB8, 0x65, 0x81, 0x78, 0xCB, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00] },
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(InputsThatEndOrOverflowWithoutAProtocolError))]
+    public void Decode_ThrowsPropertyEncryptionExceptionWhenTheReaderEndsOrOverflows(string _, byte[] bytes)
+    {
+        var act = () => _subject.Decode(bytes);
+
+        act.Should().Throw<PropertyEncryptionException>();
+    }
+
     [Fact]
     public void Decode_AcceptsMetadataNestedAtTheLimit()
     {

@@ -16,6 +16,7 @@
 #nullable enable
 
 using System;
+using System.IO;
 using Neo4j.Driver.Preview.Encryption;
 
 namespace Neo4j.Driver.Internal.Encryption;
@@ -48,7 +49,7 @@ internal class EncryptedValueBytesCodec : IEncryptedValueBytesCodec
         {
             return _structureCodec.Decode(bytes[1..]);
         }
-        catch (ProtocolException e)
+        catch (Exception e) when (e is ProtocolException or EndOfStreamException or OverflowException)
         {
             throw new PropertyEncryptionException($"The encrypted value is malformed: {e.Message}", e);
         }
