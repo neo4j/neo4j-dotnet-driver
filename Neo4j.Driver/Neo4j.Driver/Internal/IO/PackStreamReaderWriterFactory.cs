@@ -30,6 +30,6 @@ internal class PackStreamReaderWriterFactory : IPackStreamReaderWriterFactory
 
     public IPackStreamReader CreateReader(MessageFormat format, MemoryStream stream)
     {
-        return new PackStreamReader(format, stream, new ByteBuffers());
+        return new PackStreamReader(format, stream, new ByteBuffers(), rejectSizesBeyondInput: true);
     }
 }

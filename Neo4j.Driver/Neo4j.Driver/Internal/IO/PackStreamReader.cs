@@ -27,13 +27,23 @@ namespace Neo4j.Driver.Internal.IO;
 [SuppressMessage("ReSharper", "MustUseReturnValue")]
 internal sealed class PackStreamReader : IPackStreamReader
 {
+    private readonly bool _rejectSizesBeyondInput;
+
+    private const int MinimumBytesPerMapEntry = 2;
+    private const int MinimumBytesPerListItem = 1;
+
     public MemoryStream Stream;
 
-    internal PackStreamReader(MessageFormat format, MemoryStream stream, ByteBuffers buffers)
+    internal PackStreamReader(
+        MessageFormat format,
+        MemoryStream stream,
+        ByteBuffers buffers,
+        bool rejectSizesBeyondInput = false)
     {
         Format = format;
         Stream = stream;
         Buffers = buffers;
+        _rejectSizesBeyondInput = rejectSizesBeyondInput;
     }
 
     public ByteBuffers Buffers { get; }
@@ -61,7 +71,9 @@ internal sealed class PackStreamReader : IPackStreamReader
 
     public Dictionary<string, object> ReadMap()
     {
-        var size = (int)ReadMapHeader();
+        var declaredSize = ReadMapHeader();
+        EnsureInputHolds(declaredSize, MinimumBytesPerMapEntry);
+        var size = (int)declaredSize;
         if (size == 0)
         {
             return new Dictionary<string, object>(0);
@@ -79,7 +91,9 @@ internal sealed class PackStreamReader : IPackStreamReader
 
     public object ReadList()
     {
-        var size = (int)ReadListHeader();
+        var declaredSize = ReadListHeader();
+        EnsureInputHolds(declaredSize, MinimumBytesPerListItem);
+        var size = (int)declaredSize;
         var vals = new object[size];
         for (var j = 0; j < size; j++)
         {
@@ -299,9 +313,19 @@ internal sealed class PackStreamReader : IPackStreamReader
             return Array.Empty<byte>();
         }
 
+        EnsureInputHolds(size, 1);
         var heapBuffer = new byte[size];
         Stream.ReadExactly(heapBuffer);
         return heapBuffer;
+    }
+
+    private void EnsureInputHolds(long count, int minimumBytesEach)
+    {
+        if (_rejectSizesBeyondInput && count * minimumBytesEach > Stream.Length - Stream.Position)
+        {
+            throw new ProtocolException(
+                $"Declared size {count} exceeds the {Stream.Length - Stream.Position} bytes of input remaining");
+        }
     }
 
     private byte[] ReadUtf8(byte markerByte)
