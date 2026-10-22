@@ -491,10 +491,10 @@ internal sealed class ConnectionPool : IConnectionPool
                 ThrowServerUnavailableExceptionDueToDeactivated();
             }
 
-            var connection =
+            var (connection, fromPool) =
                 await GetPooledOrNewConnectionAsync(sessionConfig, cancellationToken).ConfigureAwait(false);
 
-            var acquireStatus = _connectionValidator.GetConnectionLifetimeStatus(connection);
+            var acquireStatus = _connectionValidator.GetConnectionLifetimeStatus(connection, fromPool);
 
             if (acquireStatus == AcquireStatus.Unhealthy)
             {
@@ -551,7 +551,7 @@ internal sealed class ConnectionPool : IConnectionPool
             "Failed to acquire a new connection as the driver has already been disposed.");
     }
 
-    private Task<IPooledConnection> GetPooledOrNewConnectionAsync(
+    private Task<(IPooledConnection Connection, bool FromPool)> GetPooledOrNewConnectionAsync(
         SessionConfig sessionConfig,
         CancellationToken cancellationToken)
     {
@@ -562,13 +562,13 @@ internal sealed class ConnectionPool : IConnectionPool
                 connection.AuthorizationStatus = AuthorizationStatus.Pooled;
             }
 
-            return Task.FromResult(connection);
+            return Task.FromResult((connection, true));
         }
 
         return CreateNewConnectionOrGetIdleAsync(sessionConfig, cancellationToken);
     }
 
-    private async Task<IPooledConnection> CreateNewConnectionOrGetIdleAsync(
+    private async Task<(IPooledConnection Connection, bool FromPool)> CreateNewConnectionOrGetIdleAsync(
         SessionConfig sessionConfig,
         CancellationToken cancellationToken)
     {
@@ -581,7 +581,7 @@ internal sealed class ConnectionPool : IConnectionPool
 
                 if (connection != null)
                 {
-                    return connection;
+                    return (connection, false);
                 }
             }
 
@@ -593,7 +593,7 @@ internal sealed class ConnectionPool : IConnectionPool
                     idle.AuthorizationStatus = AuthorizationStatus.Pooled;
                 }
 
-                return idle;
+                return (idle, true);
             }
         }
 

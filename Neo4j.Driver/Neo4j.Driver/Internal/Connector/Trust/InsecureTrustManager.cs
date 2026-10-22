@@ -34,6 +34,11 @@ internal sealed class InsecureTrustManager : TrustManager
         X509Chain chain,
         SslPolicyErrors sslPolicyErrors)
     {
+        if (TryRejectMissingCertificate(uri, certificate, sslPolicyErrors))
+        {
+            return false;
+        }
+
         if (VerifyHostName)
         {
             if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))

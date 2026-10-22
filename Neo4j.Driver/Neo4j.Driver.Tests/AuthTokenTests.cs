@@ -121,5 +121,21 @@ public class AuthTokenTests
             dict.ContainsKey("parameters").Should().BeFalse();
             dict.ContainsKey("principal").Should().BeFalse();
         }
+
+        [Fact]
+        public void ShouldNotExposeCredentialsOrParametersInToString()
+        {
+            var authToken = AuthTokens.Custom(
+                "zhenli",
+                "toufu",
+                "foo",
+                "custom",
+                new Dictionary<string, object> { { "apiSecret", "hunter2" } });
+
+            var text = authToken.ToString();
+
+            text.Should().NotContain("toufu");
+            text.Should().NotContain("hunter2");
+        }
     }
 }
