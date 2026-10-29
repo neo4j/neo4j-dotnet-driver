@@ -53,7 +53,9 @@ public class BaselineCompatibilityGuardTests
     [Theory]
     [InlineData(7, 0, "7.0")]
     [InlineData(1, 1, "1.1")]
-    public void IsUnsupportedBaselineType_BaselineNewerThanLatestKnown_ReturnsUnsupportedType(
+    [InlineData(0, 0, "0.0")]
+    [InlineData(0, 9, "0.9")]
+    public void IsUnsupportedBaselineType_BaselineNotSupported_ReturnsUnsupportedType(
         int typeSchemeMajor,
         int typeSchemeMinor,
         string expectedMinimumVersion)
@@ -86,6 +88,16 @@ public class BaselineCompatibilityGuardTests
     public void EnsureAadEncodingSchemeCompatibility_SuppliedAadWithNewerPersistedBaseline_Throws()
     {
         var act = () => _subject.EnsureAadEncodingSchemeCompatibility([0x99], Metadata(7, 0));
+
+        act.Should().Throw<PropertyEncryptionException>();
+    }
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(0, 9)]
+    public void EnsureAadEncodingSchemeCompatibility_SuppliedAadWithEarlierMajorBaseline_Throws(int major, int minor)
+    {
+        var act = () => _subject.EnsureAadEncodingSchemeCompatibility([0x99], Metadata(major, minor));
 
         act.Should().Throw<PropertyEncryptionException>();
     }

@@ -21,11 +21,16 @@ internal readonly record struct BoltValueSerializationSchemeVersion(int Major, i
 {
     public static readonly BoltValueSerializationSchemeVersion Latest = new(1, 0);
 
+    public bool IsSupported()
+    {
+        return Major == Latest.Major && Minor <= Latest.Minor;
+    }
+
     public static bool operator >(BoltValueSerializationSchemeVersion left, BoltValueSerializationSchemeVersion right)
     {
-        return left.Major != right.Major
-            ? left.Major > right.Major
-            : left.Minor > right.Minor;
+        return left.Major == right.Major
+            ? left.Minor > right.Minor
+            : left.Major > right.Major;
     }
 
     public static bool operator <(BoltValueSerializationSchemeVersion left, BoltValueSerializationSchemeVersion right)

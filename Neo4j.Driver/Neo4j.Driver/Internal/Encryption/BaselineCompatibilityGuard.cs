@@ -30,7 +30,7 @@ internal class BaselineCompatibilityGuard : IBaselineCompatibilityGuard
             structure.TypeSerializationSchemeMajor,
             structure.TypeSerializationSchemeMinor);
 
-        if (typeBaseline > BoltValueSerializationSchemeVersion.Latest)
+        if (!typeBaseline.IsSupported())
         {
             unsupported = new UnsupportedType(
                 structure.TypeName,
@@ -53,11 +53,11 @@ internal class BaselineCompatibilityGuard : IBaselineCompatibilityGuard
         }
 
         var aadBaseline = new BoltValueSerializationSchemeVersion(metadata.AadEncodingSchemeMajor, metadata.AadEncodingSchemeMinor);
-        if (aadBaseline > BoltValueSerializationSchemeVersion.Latest)
+        if (!aadBaseline.IsSupported())
         {
             throw new PropertyEncryptionException(
-                $"Cannot reproduce AAD bytes: recorded AAD protocol version {aadBaseline} is newer than " +
-                $"the maximum supported version {BoltValueSerializationSchemeVersion.Latest}.");
+                $"Cannot reproduce AAD bytes: recorded AAD protocol version {aadBaseline} is not compatible with " +
+                $"the supported version {BoltValueSerializationSchemeVersion.Latest}.");
         }
     }
 }
