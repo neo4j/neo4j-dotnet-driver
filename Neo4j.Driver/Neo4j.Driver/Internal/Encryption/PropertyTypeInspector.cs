@@ -88,7 +88,8 @@ internal class PropertyTypeInspector : IPropertyTypeInspector
     {
         var typeName = value?.GetType().FullName ?? "null";
         return new ArgumentException(
-            $"Value of type '{typeName}' is not a supported Neo4j property type.",
+            $"Value of type '{typeName}' cannot be encrypted. Supported values are null, bool, integers, " +
+            "floating-point numbers, string, byte[] and homogeneous lists of these.",
             nameof(value));
     }
 }

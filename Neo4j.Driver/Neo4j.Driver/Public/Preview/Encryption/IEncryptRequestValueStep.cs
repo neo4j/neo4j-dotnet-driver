@@ -27,7 +27,10 @@ public interface IEncryptRequestValueStep
     /// Sets the value to encrypt. This method is part of the Encryption Preview feature, and is
     /// subject to change or removal.
     /// </summary>
-    /// <param name="value">The property value to encrypt.</param>
+    /// <param name="value">
+    /// The property value to encrypt: null, bool, an integer, a floating-point number, a string, a byte[],
+    /// or a homogeneous list of these. Temporal, spatial, vector and UUID values are not yet supported.
+    /// </param>
     /// <returns>The next stage of the request.</returns>
     IEncryptRequestKeyStep FromValue(object? value);
 }

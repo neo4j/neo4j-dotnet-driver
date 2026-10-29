@@ -157,6 +157,18 @@ public class PropertyTypeInspectorTests
     }
 
     [Theory]
+    [InlineData(typeof(LocalDate))]
+    [InlineData(typeof(Dictionary<string, object>))]
+    public void GetPropertyTypeInfo_ExplainsThatTheTypeCannotBeEncrypted(Type type)
+    {
+        var value = type == typeof(LocalDate) ? new LocalDate(2026, 10, 6) : (object)new Dictionary<string, object>();
+
+        var act = () => _subject.GetPropertyTypeInfo(value);
+
+        act.Should().Throw<ArgumentException>().WithMessage($"*'{type.FullName}' cannot be encrypted*");
+    }
+
+    [Theory]
     [MemberData(nameof(UnsupportedValues))]
     public void GetPropertyTypeInfo_Throws_ForUnsupportedType(object value)
     {
