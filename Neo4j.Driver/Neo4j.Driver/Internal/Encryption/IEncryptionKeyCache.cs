@@ -23,4 +23,5 @@ internal interface IEncryptionKeyCache
 {
     bool TryGet(IEnvelopeEncryptionProfile profile, string keyId, [NotNullWhen(true)] out byte[]? key);
     void Set(IEnvelopeEncryptionProfile profile, string keyId, byte[] key);
+    void Remove(IEnvelopeEncryptionProfile profile, string keyId);
 }

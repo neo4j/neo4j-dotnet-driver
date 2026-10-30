@@ -22,10 +22,12 @@ namespace Neo4j.Driver.Internal.Encryption;
 
 internal class EnvelopeEncapsulatedKeyManagerProvider : IEncapsulatedKeyManagerProvider
 {
+    private readonly IEncryptionKeyCache _encryptionKeyCache;
     private readonly IEncryptionErrorPolicy _errorPolicy;
 
-    public EnvelopeEncapsulatedKeyManagerProvider(IEncryptionErrorPolicy errorPolicy)
+    public EnvelopeEncapsulatedKeyManagerProvider(IEncryptionKeyCache encryptionKeyCache, IEncryptionErrorPolicy errorPolicy)
     {
+        _encryptionKeyCache = encryptionKeyCache;
         _errorPolicy = errorPolicy;
     }
 
@@ -40,8 +42,10 @@ internal class EnvelopeEncapsulatedKeyManagerProvider : IEncapsulatedKeyManagerP
         }
 
         manager = new EnvelopeEncapsulatedKeyManager(
+            envelopeProfile,
             envelopeProfile.KeyEncapsulationService,
             envelopeProfile.KeyRepository,
+            _encryptionKeyCache,
             _errorPolicy);
         return true;
     }

@@ -388,6 +388,33 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Encrypt_ByKeyId_AfterTheKeyIsDeleted_Throws()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await _propertyEncryption.EncryptRequest().FromValue("warm").UsingKeyId(_keyId).EncryptToBytesAsync(token);
+        await _propertyEncryption.KeyManager().DeleteByIdAsync(_keyId, token);
+
+        var act = () => _propertyEncryption.EncryptRequest()
+            .FromValue("value")
+            .UsingKeyId(_keyId)
+            .EncryptToBytesAsync(token);
+
+        await act.Should().ThrowAsync<EncapsulatedKeyNotFoundException>();
+    }
+
+    [Fact]
+    public async Task Encrypt_ByKeyAlias_AfterTheKeyIsDeleted_Throws()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await EncryptByAliasAsync("warm", token);
+        await _propertyEncryption.KeyManager().DeleteByIdAsync(_keyId, token);
+
+        var act = () => EncryptByAliasAsync("value", token);
+
+        await act.Should().ThrowAsync<EncapsulatedAliasNotFoundException>();
+    }
+
+    [Fact]
     public async Task Encrypt_WithAnUnknownKeyAlias_Throws()
     {
         var token = TestContext.Current.CancellationToken;

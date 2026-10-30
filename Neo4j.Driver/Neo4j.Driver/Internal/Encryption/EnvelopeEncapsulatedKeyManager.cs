@@ -28,17 +28,23 @@ internal class EnvelopeEncapsulatedKeyManager : IEncapsulatedKeyManager
     private static readonly IKeyEncapsulationOptions EmptyOptions =
         new MapKeyEncapsulationOptions(new Dictionary<string, string>());
 
+    private readonly IEnvelopeEncryptionProfile _profile;
     private readonly IKeyEncapsulationService _keyEncapsulationService;
     private readonly IEncapsulatedKeyRecordRepository _keyRepository;
+    private readonly IEncryptionKeyCache _encryptionKeyCache;
     private readonly IEncryptionErrorPolicy _errorPolicy;
 
     public EnvelopeEncapsulatedKeyManager(
+        IEnvelopeEncryptionProfile profile,
         IKeyEncapsulationService keyEncapsulationService,
         IEncapsulatedKeyRecordRepository keyRepository,
+        IEncryptionKeyCache encryptionKeyCache,
         IEncryptionErrorPolicy errorPolicy)
     {
+        _profile = profile;
         _keyEncapsulationService = keyEncapsulationService;
         _keyRepository = keyRepository;
+        _encryptionKeyCache = encryptionKeyCache;
         _errorPolicy = errorPolicy;
     }
 
@@ -100,6 +106,7 @@ internal class EnvelopeEncapsulatedKeyManager : IEncapsulatedKeyManager
         try
         {
             await _keyRepository.DeleteByIdAsync(id, cancellationToken).ConfigureAwait(false);
+            _encryptionKeyCache.Remove(_profile, id);
         }
         catch (Exception e)
         {

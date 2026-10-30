@@ -30,7 +30,7 @@ public class EnvelopeEncapsulatedKeyManagerProviderTests
 {
     private static EnvelopeEncapsulatedKeyManagerProvider CreateSubject()
     {
-        return new EnvelopeEncapsulatedKeyManagerProvider(new EncryptionErrorPolicy());
+        return new EnvelopeEncapsulatedKeyManagerProvider(Mock.Of<IEncryptionKeyCache>(), new EncryptionErrorPolicy());
     }
 
     [Fact]
