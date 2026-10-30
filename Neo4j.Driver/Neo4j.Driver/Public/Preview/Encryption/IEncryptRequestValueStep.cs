@@ -28,8 +28,8 @@ public interface IEncryptRequestValueStep
     /// subject to change or removal.
     /// </summary>
     /// <param name="value">
-    /// The property value to encrypt: null, bool, an integer, a floating-point number, a string, a byte[],
-    /// or a homogeneous list of these. Temporal, spatial, vector and UUID values are not yet supported.
+    /// The property value to encrypt: any Neo4j property type, namely null, bool, an integer, a floating-point
+    /// number, a string, a byte[], a Guid, a temporal value, a Point, a Vector, or a homogeneous list of these.
     /// </param>
     /// <returns>The next stage of the request.</returns>
     IEncryptRequestKeyStep FromValue(object? value);

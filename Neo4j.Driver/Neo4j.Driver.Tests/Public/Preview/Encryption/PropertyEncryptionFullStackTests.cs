@@ -76,8 +76,30 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
             "hello",
             "",
             new byte[] { 0x01, 0x02, 0x03 },
+            Guid.Parse("d3b07384-d9a0-4c19-8a3e-1f5c6a7b8c9d"),
+            new LocalDate(2026, 10, 6),
+            new LocalTime(12, 30, 15, 123456789),
+            new LocalDateTime(2026, 10, 6, 12, 30, 15, 123456789),
+            new OffsetTime(12, 30, 15, 123456789, 3600),
+            new Duration(14, 3, 3723, 500_000_000),
+            new Point(7203, 1.5, 2.5),
+            new Point(9157, 1.5, 2.5, 3.5),
+            new ZonedDateTime(new DateTime(2026, 10, 6, 12, 30, 15), 3600),
+            new ZonedDateTime(new DateTime(2026, 10, 6, 12, 30, 15), "Europe/Stockholm"),
             new List<object> { 1L, 2L, 3L },
             new List<object> { "a", "b" },
+            new List<object> { Guid.Parse("d3b07384-d9a0-4c19-8a3e-1f5c6a7b8c9d"), Guid.Empty },
+            new List<object> { new LocalDate(2026, 10, 6), new LocalDate(2026, 10, 7) },
+            new List<object> { new LocalTime(12, 30, 0), new LocalTime(13, 45, 10, 5) },
+            new List<object> { new LocalDateTime(2026, 10, 6, 12, 30, 0), new LocalDateTime(2026, 10, 7, 1, 2, 3) },
+            new List<object> { new OffsetTime(12, 30, 0, 3600), new OffsetTime(1, 2, 3, -7200) },
+            new List<object>
+            {
+                new ZonedDateTime(new DateTime(2026, 10, 6, 12, 30, 0), 3600),
+                new ZonedDateTime(new DateTime(2026, 10, 6, 12, 30, 0), "Europe/Stockholm")
+            },
+            new List<object> { new Duration(1, 2, 3, 4), new Duration(0, 0, 0, 0) },
+            new List<object> { new Point(7203, 1.0, 2.0), new Point(7203, 3.0, 4.0) },
             new List<object>()
         };
     }
@@ -99,6 +121,110 @@ public class PropertyEncryptionFullStackTests : IAsyncLifetime
             .DecryptAsync(token);
 
         decrypted.Should().BeEquivalentTo(value);
+    }
+
+    [Fact]
+    public async Task EncryptThenDecrypt_ADateOnly_DecryptsAsALocalDate()
+    {
+        var token = TestContext.Current.CancellationToken;
+
+        var encrypted = await EncryptByAliasAsync(new DateOnly(2026, 10, 6), token);
+        var decrypted = await _propertyEncryption.DecryptRequest()
+            .FromValue(encrypted)
+            .WithoutExternalAad()
+            .DecryptAsync(token);
+
+        decrypted.Should().Be(new LocalDate(2026, 10, 6));
+    }
+
+    [Fact]
+    public async Task EncryptThenDecrypt_ATimeOnly_DecryptsAsALocalTime()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var timeOnly = new TimeOnly(12, 30, 15).Add(TimeSpan.FromTicks(1234567));
+
+        var encrypted = await EncryptByAliasAsync(timeOnly, token);
+        var decrypted = await _propertyEncryption.DecryptRequest()
+            .FromValue(encrypted)
+            .WithoutExternalAad()
+            .DecryptAsync(token);
+
+        decrypted.Should().Be(new LocalTime(12, 30, 15, 123456700));
+    }
+
+    [Fact]
+    public async Task EncryptThenDecrypt_AnUnzonedDateTime_DecryptsAsALocalDateTime()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var dateTime = new DateTime(2026, 10, 6, 12, 30, 15, DateTimeKind.Unspecified).AddTicks(1234567);
+
+        var encrypted = await EncryptByAliasAsync(dateTime, token);
+        var decrypted = await _propertyEncryption.DecryptRequest()
+            .FromValue(encrypted)
+            .WithoutExternalAad()
+            .DecryptAsync(token);
+
+        decrypted.Should().Be(new LocalDateTime(2026, 10, 6, 12, 30, 15, 123456700));
+    }
+
+    [Fact]
+    public async Task EncryptThenDecrypt_ADateTimeOffset_DecryptsAsAZonedDateTime()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var dateTimeOffset = new DateTimeOffset(2026, 10, 6, 12, 30, 15, TimeSpan.FromHours(1));
+
+        var encrypted = await EncryptByAliasAsync(dateTimeOffset, token);
+        var decrypted = await _propertyEncryption.DecryptRequest()
+            .FromValue(encrypted)
+            .WithoutExternalAad()
+            .DecryptAsync(token);
+
+        decrypted.Should().Be(new ZonedDateTime(dateTimeOffset));
+    }
+
+    [Fact]
+    public async Task EncryptThenDecrypt_AUtcDateTime_DecryptsAsAZonedDateTimeAtUtc()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var utc = new DateTime(2026, 10, 6, 12, 30, 15, DateTimeKind.Utc);
+
+        var encrypted = await EncryptByAliasAsync(utc, token);
+        var decrypted = await _propertyEncryption.DecryptRequest()
+            .FromValue(encrypted)
+            .WithoutExternalAad()
+            .DecryptAsync(token);
+
+        decrypted.Should().Be(new ZonedDateTime(utc, 0));
+    }
+
+    public static TheoryData<Vector> Vectors()
+    {
+        return new()
+        {
+            Vector.Create(new[] { 1.5f, -2.5f, 3.25f }),
+            Vector.Create(new[] { 1.5, -2.5, 3.25 }),
+            Vector.Create(new long[] { 1, -2, 3 }),
+            Vector.Create(new[] { 1, -2, 3 }),
+            Vector.Create(new short[] { 1, -2, 3 }),
+            Vector.Create(new sbyte[] { 1, -2, 3 })
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(Vectors))]
+    public async Task EncryptThenDecrypt_AVector_RoundTripsTheElementsAndTheirType(Vector vector)
+    {
+        var token = TestContext.Current.CancellationToken;
+
+        var encrypted = await EncryptByAliasAsync(vector, token);
+        var decrypted = await _propertyEncryption.DecryptRequest()
+            .FromValue(encrypted)
+            .WithoutExternalAad()
+            .DecryptAsync(token);
+
+        var roundTripped = decrypted.Should().BeAssignableTo<Vector>().Subject;
+        roundTripped.ElementType.Should().Be(vector.ElementType);
+        roundTripped.Equals(vector).Should().BeTrue();
     }
 
     [Fact]

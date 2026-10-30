@@ -40,6 +40,16 @@ internal class PropertyTypeInspector : IPropertyTypeInspector
             double or float => new PropertyTypeInfo("FLOAT", Baseline1_0),
             string => new PropertyTypeInfo("STRING", Baseline1_0),
             byte[] => new PropertyTypeInfo("BYTES", Baseline1_0),
+            Guid => new PropertyTypeInfo("UUID", Baseline1_0),
+            LocalDate or DateOnly => new PropertyTypeInfo("DATE", Baseline1_0),
+            LocalTime or TimeOnly => new PropertyTypeInfo("LOCAL TIME", Baseline1_0),
+            OffsetTime => new PropertyTypeInfo("ZONED TIME", Baseline1_0),
+            Duration => new PropertyTypeInfo("DURATION", Baseline1_0),
+            Point => new PropertyTypeInfo("POINT", Baseline1_0),
+            Vector => new PropertyTypeInfo("VECTOR", Baseline1_0),
+            LocalDateTime => new PropertyTypeInfo("LOCAL DATETIME", Baseline1_0),
+            DateTime { Kind: not DateTimeKind.Utc } => new PropertyTypeInfo("LOCAL DATETIME", Baseline1_0),
+            ZonedDateTime or DateTimeOffset or DateTime => new PropertyTypeInfo("ZONED DATETIME", Baseline1_0),
             IList list when allowList => GetListTypeInfo(list),
 
             _ => throw Unsupported(value)
@@ -62,15 +72,33 @@ internal class PropertyTypeInspector : IPropertyTypeInspector
     private static PropertyTypeInfo GetListTypeInfo(IList list)
     {
         PropertyTypeInfo? elementInfo = null;
+        Point? firstPoint = null;
 
         foreach (var item in list)
         {
             var itemInfo = GetPropertyTypeInfo(item, allowList: false, allowNull: false);
+
+            if (itemInfo.Name == "VECTOR")
+            {
+                throw new ArgumentException("VECTOR values cannot be stored in a list property.", "value");
+            }
             elementInfo ??= itemInfo;
 
             if (itemInfo != elementInfo)
             {
                 throw Heterogeneous(elementInfo, itemInfo);
+            }
+
+            if (item is Point point)
+            {
+                firstPoint ??= point;
+
+                if (point.Dimension != firstPoint.Dimension || point.SrId != firstPoint.SrId)
+                {
+                    throw new ArgumentException(
+                        "POINT values in a list property must have the same dimensionality and SRID.",
+                        "value");
+                }
             }
         }
 
@@ -89,7 +117,8 @@ internal class PropertyTypeInspector : IPropertyTypeInspector
         var typeName = value?.GetType().FullName ?? "null";
         return new ArgumentException(
             $"Value of type '{typeName}' cannot be encrypted. Supported values are null, bool, integers, " +
-            "floating-point numbers, string, byte[] and homogeneous lists of these.",
+            "floating-point numbers, string, byte[], Guid, temporal types, Point, Vector and homogeneous lists " +
+            "of these.",
             nameof(value));
     }
 }

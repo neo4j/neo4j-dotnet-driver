@@ -139,6 +139,102 @@ public class PropertyTypeInspectorTests
     }
 
     [Fact]
+    public void GetPropertyTypeInfo_ReturnsDateAndBaseline1_0_ForLocalDateAndDateOnly()
+    {
+        var infos = new[]
+        {
+            _subject.GetPropertyTypeInfo(new LocalDate(2026, 10, 6)),
+            _subject.GetPropertyTypeInfo(new DateOnly(2026, 10, 6))
+        };
+
+        infos.Should().AllBeEquivalentTo(new PropertyTypeInfo("DATE", Baseline1_0));
+    }
+
+    [Fact]
+    public void GetPropertyTypeInfo_ReturnsLocalTimeAndBaseline1_0_ForLocalTimeAndTimeOnly()
+    {
+        var infos = new[]
+        {
+            _subject.GetPropertyTypeInfo(new LocalTime(12, 30, 0)),
+            _subject.GetPropertyTypeInfo(new TimeOnly(12, 30, 0))
+        };
+
+        infos.Should().AllBeEquivalentTo(new PropertyTypeInfo("LOCAL TIME", Baseline1_0));
+    }
+
+    [Fact]
+    public void GetPropertyTypeInfo_ReturnsLocalDateTimeAndBaseline1_0_ForLocalDateTimeAndUnzonedDateTime()
+    {
+        var infos = new[]
+        {
+            _subject.GetPropertyTypeInfo(new LocalDateTime(2026, 10, 6, 12, 30, 0)),
+            _subject.GetPropertyTypeInfo(new DateTime(2026, 10, 6, 12, 30, 0, DateTimeKind.Unspecified)),
+            _subject.GetPropertyTypeInfo(new DateTime(2026, 10, 6, 12, 30, 0, DateTimeKind.Local))
+        };
+
+        infos.Should().AllBeEquivalentTo(new PropertyTypeInfo("LOCAL DATETIME", Baseline1_0));
+    }
+
+    [Fact]
+    public void GetPropertyTypeInfo_ReturnsZonedTimeAndBaseline1_0_ForOffsetTime()
+    {
+        var info = _subject.GetPropertyTypeInfo(new OffsetTime(12, 30, 0, 3600));
+
+        info.Should().Be(new PropertyTypeInfo("ZONED TIME", Baseline1_0));
+    }
+
+    [Fact]
+    public void GetPropertyTypeInfo_ReturnsZonedDateTimeAndBaseline1_0_ForZonedValues()
+    {
+        var infos = new[]
+        {
+            _subject.GetPropertyTypeInfo(new ZonedDateTime(new DateTime(2026, 10, 6, 12, 30, 0), 3600)),
+            _subject.GetPropertyTypeInfo(new ZonedDateTime(new DateTime(2026, 10, 6, 12, 30, 0), "Europe/Stockholm")),
+            _subject.GetPropertyTypeInfo(new DateTimeOffset(2026, 10, 6, 12, 30, 0, TimeSpan.FromHours(1))),
+            _subject.GetPropertyTypeInfo(new DateTime(2026, 10, 6, 12, 30, 0, DateTimeKind.Utc))
+        };
+
+        infos.Should().AllBeEquivalentTo(new PropertyTypeInfo("ZONED DATETIME", Baseline1_0));
+    }
+
+    [Fact]
+    public void GetPropertyTypeInfo_ReturnsDurationAndBaseline1_0_ForDuration()
+    {
+        var info = _subject.GetPropertyTypeInfo(new Duration(1, 2, 3, 4));
+
+        info.Should().Be(new PropertyTypeInfo("DURATION", Baseline1_0));
+    }
+
+    [Fact]
+    public void GetPropertyTypeInfo_ReturnsPointAndBaseline1_0_ForTwoAndThreeDimensionalPoints()
+    {
+        var infos = new[]
+        {
+            _subject.GetPropertyTypeInfo(new Point(7203, 1.0, 2.0)),
+            _subject.GetPropertyTypeInfo(new Point(9157, 1.0, 2.0, 3.0))
+        };
+
+        infos.Should().AllBeEquivalentTo(new PropertyTypeInfo("POINT", Baseline1_0));
+    }
+
+    [Fact]
+    public void GetPropertyTypeInfo_ReturnsVectorAndBaseline1_0_ForVector()
+    {
+        var info = _subject.GetPropertyTypeInfo(Vector.Create(new[] { 1.0f, 2.0f }));
+
+        info.Should().Be(new PropertyTypeInfo("VECTOR", Baseline1_0));
+    }
+
+    [Fact]
+    public void GetPropertyTypeInfo_ReturnsUuidAndBaseline1_0_ForGuid()
+    {
+        var info = _subject.GetPropertyTypeInfo(Guid.NewGuid());
+
+        info.Name.Should().Be("UUID");
+        info.Baseline.Should().Be(Baseline1_0);
+    }
+
+    [Fact]
     public void GetPropertyTypeInfo_ReturnsListAndBaseline1_0_ForHomogeneousList()
     {
         var info = _subject.GetPropertyTypeInfo(new List<long> { 1, 2 });
@@ -156,16 +252,12 @@ public class PropertyTypeInspectorTests
         info.Baseline.Should().Be(Baseline1_0);
     }
 
-    [Theory]
-    [InlineData(typeof(LocalDate))]
-    [InlineData(typeof(Dictionary<string, object>))]
-    public void GetPropertyTypeInfo_ExplainsThatTheTypeCannotBeEncrypted(Type type)
+    [Fact]
+    public void GetPropertyTypeInfo_ExplainsThatTheTypeCannotBeEncrypted()
     {
-        var value = type == typeof(LocalDate) ? new LocalDate(2026, 10, 6) : (object)new Dictionary<string, object>();
+        var act = () => _subject.GetPropertyTypeInfo(new Dictionary<string, object>());
 
-        var act = () => _subject.GetPropertyTypeInfo(value);
-
-        act.Should().Throw<ArgumentException>().WithMessage($"*'{type.FullName}' cannot be encrypted*");
+        act.Should().Throw<ArgumentException>().WithMessage("*'System.Collections.Generic.Dictionary*cannot be encrypted*");
     }
 
     [Theory]
@@ -184,6 +276,40 @@ public class PropertyTypeInspectorTests
         var act = () => _subject.GetPropertyTypeInfo(value);
 
         act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void GetPropertyTypeInfo_Throws_ForAListOfVectors()
+    {
+        var act = () => _subject.GetPropertyTypeInfo(new List<object> { Vector.Create(new[] { 1.0f }) });
+
+        act.Should().Throw<ArgumentException>().WithMessage("*VECTOR*list*");
+    }
+
+    public static TheoryData<object> ListsOfMismatchedPoints()
+    {
+        return new()
+        {
+            new List<object> { new Point(7203, 1.0, 2.0), new Point(7203, 1.0, 2.0, 3.0) },
+            new List<object> { new Point(7203, 1.0, 2.0), new Point(4326, 1.0, 2.0) }
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(ListsOfMismatchedPoints))]
+    public void GetPropertyTypeInfo_Throws_ForAListOfPointsWithDifferentDimensionalityOrSrid(object value)
+    {
+        var act = () => _subject.GetPropertyTypeInfo(value);
+
+        act.Should().Throw<ArgumentException>().WithMessage("*POINT*dimensionality*SRID*");
+    }
+
+    [Fact]
+    public void GetPropertyTypeInfo_ReturnsList_ForPointsOfTheSameDimensionalityAndSrid()
+    {
+        var info = _subject.GetPropertyTypeInfo(new List<object> { new Point(7203, 1.0, 2.0), new Point(7203, 3.0, 4.0) });
+
+        info.Name.Should().Be("LIST");
     }
 
     [Fact]
