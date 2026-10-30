@@ -99,4 +99,21 @@ public class LocalTimeSerializerTests : PackStreamSerializerTests
         reader.ReadStructSignature().Should().Be((byte)'t');
         reader.Read().Should().Be(45359128000000L);
     }
+
+    [Fact]
+    public void ShouldSerializeTimeOnlyWithSubMillisecondPrecision()
+    {
+        var time = new TimeOnly(12, 0, 0).Add(TimeSpan.FromTicks(1234));
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
+
+        writer.Write(time);
+
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+
+        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructSignature().Should().Be((byte)'t');
+        reader.Read().Should().Be(43200000123400L);
+    }
 }

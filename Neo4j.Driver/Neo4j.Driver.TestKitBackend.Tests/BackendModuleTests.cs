@@ -20,8 +20,10 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Security.Cryptography;
 using Moq;
 using Neo4j.Driver.Internal.Services;
+using Neo4j.Driver.Preview.Encryption;
 using Neo4j.Driver.TestKitBackend.Connection;
 using Neo4j.Driver.TestKitBackend.Dispatch;
 using Neo4j.Driver.TestKitBackend.Logging;
@@ -272,6 +274,36 @@ public class BackendModuleTests
 
         scope.Resolve<IResponseWriter>().Should().BeSameAs(scope.Resolve<IResponseWriter>());
     }
+
+    [Fact]
+    public async Task Key_encapsulation_services_are_local_services_wrapping_under_the_supplied_kek()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var kek = RandomNumberGenerator.GetBytes(32);
+        using var scope = BuildContainer().BeginLifetimeScope();
+        var createService = scope.Resolve<Func<byte[]?, IKeyEncapsulationService>>();
+
+        var encapsulated = await createService(kek).EncapsulateAsync(NoOptions, token);
+        var decapsulated = await KeyEncapsulationServices.Local(kek)
+            .DecapsulateAsync(encapsulated.Encapsulation, encapsulated.Metadata, token);
+
+        decapsulated.Should().Equal(encapsulated.Key);
+    }
+
+    [Fact]
+    public async Task Key_encapsulation_services_without_a_kek_each_generate_their_own()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var scope = BuildContainer().BeginLifetimeScope();
+        var createService = scope.Resolve<Func<byte[]?, IKeyEncapsulationService>>();
+
+        var encapsulated = await createService(null).EncapsulateAsync(NoOptions, token);
+        var act = () => createService(null).DecapsulateAsync(encapsulated.Encapsulation, encapsulated.Metadata, token);
+
+        await act.Should().ThrowAsync<CryptographicException>();
+    }
+
+    private static readonly IKeyEncapsulationOptions NoOptions = Mock.Of<IKeyEncapsulationOptions>();
 
     private record Request
     {

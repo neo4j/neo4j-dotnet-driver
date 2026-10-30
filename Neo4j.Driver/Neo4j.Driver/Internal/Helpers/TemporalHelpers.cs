@@ -401,10 +401,7 @@ internal static class TemporalHelpers
 
     public static long ToNanoOfDay(this TimeOnly time)
     {
-        return time.Hour * NanosPerHour +
-            time.Minute * NanosPerMinute +
-            time.Second * NanosPerSecond +
-            time.Millisecond * NanosPerMillisecond;
+        return time.Ticks * NanosecondsPerTick;
     }
 
     public static long ToEpochDays(this DateOnly date)

@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -13,34 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using Neo4j.Driver.Internal.Connector;
+namespace Neo4j.Driver.Internal;
 
-namespace Neo4j.Driver.Internal.Services;
-
-internal interface IDateTimeProvider
+internal interface IBase64Codec
 {
-    DateTime Now();
-    ITimer NewTimer();
-}
-
-internal class DateTimeProvider : IDateTimeProvider
-{
-    internal static IDateTimeProvider StaticInstance = new DateTimeProvider();
-
-    private DateTimeProvider()
-    {
-    }
-
-    internal static IDateTimeProvider Instance => StaticInstance;
-
-    public DateTime Now()
-    {
-        return DateTime.UtcNow;
-    }
-
-    public ITimer NewTimer()
-    {
-        return new StopwatchBasedTimer();
-    }
+    string Encode(byte[] bytes);
+    byte[] Decode(string text);
 }

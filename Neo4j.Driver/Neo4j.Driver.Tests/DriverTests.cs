@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Preview.Encryption;
 using Xunit;
 using InternalDriver = Neo4j.Driver.Internal.Driver;
 
@@ -141,7 +142,12 @@ public class DriverTests
         mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
             .Returns(Task.FromResult(new Mock<IServerInfo>().Object));
 
-        var driver = new InternalDriver(new Uri("bolt://localhost"), mock.Object, TestDriverContext.MockContext);
+        var driver = new InternalDriver(
+            new Uri("bolt://localhost"),
+            mock.Object,
+            TestDriverContext.MockContext,
+            Mock.Of<IDriverComposition>());
+
         await driver.VerifyConnectivityAsync();
 
         mock.Verify(x => x.VerifyConnectivityAndGetInfoAsync(), Times.Once);
@@ -157,7 +163,8 @@ public class DriverTests
         var driver = (IDriver)new InternalDriver(
             new Uri("bolt://localhost"),
             mock.Object,
-            TestDriverContext.MockContext);
+            TestDriverContext.MockContext,
+            Mock.Of<IDriverComposition>());
 
         var connects = await driver.TryVerifyConnectivityAsync();
 
@@ -174,7 +181,8 @@ public class DriverTests
         var driver = (IDriver)new InternalDriver(
             new Uri("bolt://localhost"),
             mock.Object,
-            TestDriverContext.MockContext);
+            TestDriverContext.MockContext,
+            Mock.Of<IDriverComposition>());
 
         var connects = await driver.TryVerifyConnectivityAsync();
 
@@ -192,7 +200,8 @@ public class DriverTests
         var driver = new InternalDriver(
             new Uri("bolt://localhost"),
             mock.Object,
-            TestDriverContext.MockContext);
+            TestDriverContext.MockContext,
+            Mock.Of<IDriverComposition>());
 
         var info = await driver.GetServerInfoAsync();
 
@@ -208,7 +217,8 @@ public class DriverTests
         var driver = new InternalDriver(
             new Uri("bolt://localhost"),
             mock.Object,
-            TestDriverContext.MockContext);
+            TestDriverContext.MockContext,
+            Mock.Of<IDriverComposition>());
 
         await driver.SupportsMultiDbAsync();
 
