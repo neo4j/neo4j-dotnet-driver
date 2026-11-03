@@ -30,6 +30,7 @@ internal interface IRoutingTableManager
     Task<IServerInfo> GetServerInfoAsync(Uri uri, string database);
     Task<IRoutingTable> ForceUpdateAsync(string database, SessionConfig sessionConfig, Bookmarks bookmarks);
     void Clear();
+    void ForgetServer(Uri uri);
     void ForgetServer(Uri uri, string database);
     void ForgetWriter(Uri uri, string database);
     IRoutingTable RoutingTableFor(string database);

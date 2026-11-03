@@ -51,7 +51,7 @@ internal class ClusterConnection : DelegatedConnection
         }
         else if (error.IsDatabaseUnavailableError())
         {
-            await _errorHandler.OnConnectionErrorAsync(_uri, Database, error).ConfigureAwait(false);
+            _errorHandler.OnDatabaseUnavailable(_uri, Database);
         }
         else
         {

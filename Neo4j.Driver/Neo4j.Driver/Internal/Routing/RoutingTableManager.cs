@@ -184,6 +184,14 @@ internal class RoutingTableManager : IRoutingTableManager
         _routingTableLocks.Clear();
     }
 
+    public void ForgetServer(Uri uri)
+    {
+        foreach (var routingTable in _routingTables.Values)
+        {
+            routingTable.Remove(uri);
+        }
+    }
+
     public void ForgetServer(Uri uri, string database)
     {
         var routingTable = RoutingTableFor(database);
@@ -227,11 +235,17 @@ internal class RoutingTableManager : IRoutingTableManager
             _ => UpdateRoutingTable(null, newRoutingTable, out addedServers, out removedServers),
             (_, oldTable) => UpdateRoutingTable(oldTable, newRoutingTable, out addedServers, out removedServers));
 
-        await _poolManager.UpdateConnectionPoolAsync(addedServers, removedServers).ConfigureAwait(false);
+        var unreferencedServers = removedServers.Where(uri => !IsInAnyRoutingTable(uri)).ToArray();
+        await _poolManager.UpdateConnectionPoolAsync(addedServers, unreferencedServers).ConfigureAwait(false);
 
         PurgeAged();
 
         _neo4JLogger.Info("Routing table is updated => {0}", newRoutingTable);
+    }
+
+    private bool IsInAnyRoutingTable(Uri uri)
+    {
+        return _routingTables.Values.Any(routingTable => routingTable.All().Contains(uri));
     }
 
     private void PurgeAged()
