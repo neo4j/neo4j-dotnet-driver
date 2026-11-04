@@ -236,20 +236,16 @@ internal class RoutingTableManager : IRoutingTableManager
             (_, oldTable) => UpdateRoutingTable(oldTable, newRoutingTable, out addedServers, out removedServers));
 
         var purgedServers = PurgeAged();
+        var referencedServers = _routingTables.Values.SelectMany(routingTable => routingTable.All()).ToHashSet();
         var unreferencedServers = removedServers
             .Concat(purgedServers)
+            .Where(uri => !referencedServers.Contains(uri))
             .Distinct()
-            .Where(uri => !IsInAnyRoutingTable(uri))
             .ToArray();
 
         await _poolManager.UpdateConnectionPoolAsync(addedServers, unreferencedServers).ConfigureAwait(false);
 
         _neo4JLogger.Info("Routing table is updated => {0}", newRoutingTable);
-    }
-
-    private bool IsInAnyRoutingTable(Uri uri)
-    {
-        return _routingTables.Values.Any(routingTable => routingTable.All().Contains(uri));
     }
 
     private List<Uri> PurgeAged()
