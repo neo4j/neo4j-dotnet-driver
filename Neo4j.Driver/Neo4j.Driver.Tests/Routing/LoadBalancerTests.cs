@@ -38,23 +38,42 @@ public class LoadBalancerTests
         public class OnConnectionErrorMethod
         {
             [Fact]
-            public async Task ShouldRemoveFromLoadBalancer()
+            public async Task ShouldDeactivatePoolThenForgetServerFromEveryRoutingTable()
             {
-                var clusterPoolMock = new Mock<IClusterConnectionPool>();
-                var routingTableMock = new Mock<IRoutingTable>();
                 var uri = new Uri("https://neo4j.com");
+                var calls = new List<string>();
+                var clusterPoolMock = new Mock<IClusterConnectionPool>();
+                clusterPoolMock.Setup(x => x.DeactivateAsync(uri))
+                    .Callback(() => calls.Add("deactivate"))
+                    .Returns(Task.CompletedTask);
+
                 var routingTableManagerMock = new Mock<IRoutingTableManager>();
-                routingTableManagerMock
-                    .Setup(x => x.EnsureRoutingTableForModeAsync(AccessMode.Read, null, false, null, Bookmarks.Empty))
-                    .ReturnsAsync(routingTableMock.Object);
+                routingTableManagerMock.Setup(x => x.ForgetServer(uri))
+                    .Callback(() => calls.Add("forget"));
 
                 var loadBalancer = new LoadBalancer(clusterPoolMock.Object, routingTableManagerMock.Object);
 
-                await loadBalancer.OnConnectionErrorAsync(uri, null, new ClientException());
+                await loadBalancer.OnConnectionErrorAsync(uri, "neo4j", new ClientException());
 
-                clusterPoolMock.Verify(x => x.DeactivateAsync(uri), Times.Once);
-                routingTableManagerMock.Verify(x => x.ForgetServer(uri, null), Times.Once);
-                routingTableManagerMock.Verify(x => x.ForgetWriter(uri, null), Times.Never);
+                calls.Should().Equal("deactivate", "forget");
+            }
+        }
+
+        public class OnDatabaseUnavailableMethod
+        {
+            [Fact]
+            public void ShouldForgetServerForThatDatabaseOnlyAndKeepPoolActive()
+            {
+                var clusterPoolMock = new Mock<IClusterConnectionPool>();
+                var uri = new Uri("https://neo4j.com");
+                var routingTableManagerMock = new Mock<IRoutingTableManager>();
+                var loadBalancer = new LoadBalancer(clusterPoolMock.Object, routingTableManagerMock.Object);
+
+                loadBalancer.OnDatabaseUnavailable(uri, "neo4j");
+
+                routingTableManagerMock.Verify(x => x.ForgetServer(uri, "neo4j"), Times.Once);
+                routingTableManagerMock.Verify(x => x.ForgetServer(uri), Times.Never);
+                clusterPoolMock.Verify(x => x.DeactivateAsync(uri), Times.Never);
             }
         }
 
@@ -202,8 +221,8 @@ public class LoadBalancerTests
                         It.IsAny<Bookmarks>()))
                 .ReturnsAsync(routingTableMock.Object);
 
-            mock.Setup(x => x.ForgetServer(It.IsAny<Uri>(), It.IsAny<string>()))
-                .Callback((Uri u, string _) => routingTableMock.Object.Remove(u));
+            mock.Setup(x => x.ForgetServer(It.IsAny<Uri>()))
+                .Callback((Uri u) => routingTableMock.Object.Remove(u));
 
             mock.Setup(x => x.ForgetWriter(It.IsAny<Uri>(), It.IsAny<string>()))
                 .Callback((Uri u, string _) => routingTableMock.Object.RemoveWriter(u));

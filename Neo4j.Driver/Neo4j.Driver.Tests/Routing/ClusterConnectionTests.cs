@@ -46,7 +46,7 @@ public class ClusterConnectionTests
         }
 
         [Fact]
-        public async Task TreatsDatabaseUnavailableAsConnectionError()
+        public async Task ReportsDatabaseUnavailableWithoutTreatingItAsConnectionError()
         {
             var handlerMock = new Mock<IErrorHandler>();
             var clusterConn =
@@ -56,7 +56,8 @@ public class ClusterConnectionTests
             var outError = await Record.ExceptionAsync(() => clusterConn.OnErrorAsync(inError));
             outError.Should().BeEquivalentTo(inError);
 
-            handlerMock.Verify(x => x.OnConnectionErrorAsync(Uri, null, inError));
+            handlerMock.Verify(x => x.OnDatabaseUnavailable(Uri, null), Times.Once);
+            handlerMock.Verify(x => x.OnConnectionErrorAsync(Uri, null, inError), Times.Never);
         }
 
         [Theory]

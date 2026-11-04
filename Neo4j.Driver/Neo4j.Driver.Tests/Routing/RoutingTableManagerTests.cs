@@ -753,6 +753,35 @@ public static class RoutingTableManagerTests
         }
 
         [Fact]
+        public void ShouldRemoveFromEveryRoutingTable()
+        {
+            var defaultRoutingTable =
+                new RoutingTable(null, new[] { server01 }, new[] { server02, server05 }, new[] { server03 }, 60);
+
+            var fooRoutingTable =
+                new RoutingTable("foo", new[] { server04, server05 }, new[] { server05 }, new[] { server06 }, 80);
+
+            var barRoutingTable =
+                new RoutingTable("bar", new[] { server07 }, new[] { server08 }, new[] { server09, server05 }, 100);
+
+            var manager = new RoutingTableManager(
+                Mock.Of<IInitialServerAddressProvider>(),
+                Mock.Of<IDiscovery>(),
+                Mock.Of<IClusterConnectionPoolManager>(),
+                Mock.Of<INeo4jLogger>(),
+                TimeSpan.MaxValue,
+                defaultRoutingTable,
+                fooRoutingTable,
+                barRoutingTable);
+
+            manager.ForgetServer(server05);
+
+            manager.RoutingTableFor("").All().Should().NotContain(server05);
+            manager.RoutingTableFor("foo").All().Should().NotContain(server05);
+            manager.RoutingTableFor("bar").All().Should().NotContain(server05);
+        }
+
+        [Fact]
         public void ShouldRemoveWriterFromCorrectRoutingTable()
         {
             var defaultRoutingTable =
@@ -1176,6 +1205,135 @@ public static class RoutingTableManagerTests
                     bookmark,
                     It.IsAny<IHomeDbCache>()),
                 Times.Once);
+        }
+    }
+
+    public class ConnectionPoolUpdate
+    {
+        [Fact]
+        public async Task ShouldReportForgottenServerAsAddedWhenRediscovered()
+        {
+            var expiredRoutingTable =
+                new RoutingTable("neo4j", new[] { server01 }, new[] { server01 }, new[] { server01 }, 0);
+
+            var refreshedRoutingTable =
+                new RoutingTable("neo4j", new[] { server01 }, new[] { server01 }, new[] { server01 }, 1000);
+
+            var discovery = new Mock<IDiscovery>();
+            discovery.Setup(
+                    x => x.DiscoverAsync(
+                        It.IsAny<IConnection>(),
+                        "neo4j",
+                        null,
+                        Bookmarks.Empty,
+                        It.IsAny<IHomeDbCache>()))
+                .ReturnsAsync(refreshedRoutingTable);
+
+            List<Uri> addedServers = null;
+            var poolManager = new Mock<IClusterConnectionPoolManager>();
+            poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), It.IsAny<SessionConfig>()))
+                .ReturnsAsync(Mock.Of<IConnection>);
+
+            poolManager.Setup(x => x.UpdateConnectionPoolAsync(It.IsAny<IEnumerable<Uri>>(), It.IsAny<IEnumerable<Uri>>()))
+                .Callback<IEnumerable<Uri>, IEnumerable<Uri>>((added, _) => addedServers = added.ToList())
+                .Returns(Task.CompletedTask);
+
+            var manager = NewRoutingTableManager(expiredRoutingTable, poolManager.Object, discovery.Object);
+            manager.ForgetServer(server01);
+
+            await manager.EnsureRoutingTableForModeAsync(AccessMode.Write, "neo4j", false, null, Bookmarks.Empty);
+
+            addedServers.Should().Contain(server01);
+        }
+
+        [Fact]
+        public async Task ShouldNotReportServerAsRemovedWhileAnotherRoutingTableStillHasIt()
+        {
+            var expiredFooRoutingTable =
+                new RoutingTable("foo", new[] { server04 }, new[] { server05 }, new[] { server06 }, 0);
+
+            var barRoutingTable =
+                new RoutingTable("bar", new[] { server07 }, new[] { server05 }, new[] { server09 }, 1000);
+
+            var refreshedFooRoutingTable =
+                new RoutingTable("foo", new[] { server04 }, new[] { server04 }, new[] { server04 }, 1000);
+
+            var discovery = new Mock<IDiscovery>();
+            discovery.Setup(
+                    x => x.DiscoverAsync(
+                        It.IsAny<IConnection>(),
+                        "foo",
+                        null,
+                        Bookmarks.Empty,
+                        It.IsAny<IHomeDbCache>()))
+                .ReturnsAsync(refreshedFooRoutingTable);
+
+            List<Uri> removedServers = null;
+            var poolManager = new Mock<IClusterConnectionPoolManager>();
+            poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), It.IsAny<SessionConfig>()))
+                .ReturnsAsync(Mock.Of<IConnection>);
+
+            poolManager.Setup(x => x.UpdateConnectionPoolAsync(It.IsAny<IEnumerable<Uri>>(), It.IsAny<IEnumerable<Uri>>()))
+                .Callback<IEnumerable<Uri>, IEnumerable<Uri>>((_, removed) => removedServers = removed.ToList())
+                .Returns(Task.CompletedTask);
+
+            var manager = new RoutingTableManager(
+                Mock.Of<IInitialServerAddressProvider>(),
+                discovery.Object,
+                poolManager.Object,
+                Mock.Of<INeo4jLogger>(),
+                TimeSpan.MaxValue,
+                expiredFooRoutingTable,
+                barRoutingTable);
+
+            await manager.EnsureRoutingTableForModeAsync(AccessMode.Write, "foo", false, null, Bookmarks.Empty);
+
+            removedServers.Should().BeEquivalentTo(new[] { server06 });
+        }
+
+        [Fact]
+        public async Task ShouldReportServersOnlyInPurgedRoutingTablesAsRemoved()
+        {
+            var expiredFooRoutingTable =
+                new RoutingTable("foo", new[] { server04 }, new[] { server05 }, new[] { server06 }, 0);
+
+            var agedBarRoutingTable =
+                new RoutingTable("bar", new[] { server07 }, new[] { server05 }, new[] { server09 }, 0);
+
+            var refreshedFooRoutingTable =
+                new RoutingTable("foo", new[] { server04 }, new[] { server04 }, new[] { server04 }, 1000);
+
+            var discovery = new Mock<IDiscovery>();
+            discovery.Setup(
+                    x => x.DiscoverAsync(
+                        It.IsAny<IConnection>(),
+                        "foo",
+                        null,
+                        Bookmarks.Empty,
+                        It.IsAny<IHomeDbCache>()))
+                .ReturnsAsync(refreshedFooRoutingTable);
+
+            List<Uri> removedServers = null;
+            var poolManager = new Mock<IClusterConnectionPoolManager>();
+            poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), It.IsAny<SessionConfig>()))
+                .ReturnsAsync(Mock.Of<IConnection>);
+
+            poolManager.Setup(x => x.UpdateConnectionPoolAsync(It.IsAny<IEnumerable<Uri>>(), It.IsAny<IEnumerable<Uri>>()))
+                .Callback<IEnumerable<Uri>, IEnumerable<Uri>>((_, removed) => removedServers = removed.ToList())
+                .Returns(Task.CompletedTask);
+
+            var manager = new RoutingTableManager(
+                Mock.Of<IInitialServerAddressProvider>(),
+                discovery.Object,
+                poolManager.Object,
+                Mock.Of<INeo4jLogger>(),
+                TimeSpan.Zero,
+                expiredFooRoutingTable,
+                agedBarRoutingTable);
+
+            await manager.EnsureRoutingTableForModeAsync(AccessMode.Write, "foo", false, null, Bookmarks.Empty);
+
+            removedServers.Should().BeEquivalentTo(new[] { server05, server06, server07, server09 });
         }
     }
 

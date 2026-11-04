@@ -22,4 +22,5 @@ internal interface IErrorHandler
 {
     Task OnConnectionErrorAsync(Uri uri, string database, Exception e);
     void OnWriteError(Uri uri, string database);
+    void OnDatabaseUnavailable(Uri uri, string database);
 }

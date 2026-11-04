@@ -184,6 +184,14 @@ internal class RoutingTableManager : IRoutingTableManager
         _routingTableLocks.Clear();
     }
 
+    public void ForgetServer(Uri uri)
+    {
+        foreach (var routingTable in _routingTables.Values)
+        {
+            routingTable.Remove(uri);
+        }
+    }
+
     public void ForgetServer(Uri uri, string database)
     {
         var routingTable = RoutingTableFor(database);
@@ -227,15 +235,22 @@ internal class RoutingTableManager : IRoutingTableManager
             _ => UpdateRoutingTable(null, newRoutingTable, out addedServers, out removedServers),
             (_, oldTable) => UpdateRoutingTable(oldTable, newRoutingTable, out addedServers, out removedServers));
 
-        await _poolManager.UpdateConnectionPoolAsync(addedServers, removedServers).ConfigureAwait(false);
+        var purgedServers = PurgeAged();
+        var referencedServers = _routingTables.Values.SelectMany(routingTable => routingTable.All()).ToHashSet();
+        var unreferencedServers = removedServers
+            .Concat(purgedServers)
+            .Where(uri => !referencedServers.Contains(uri))
+            .Distinct()
+            .ToArray();
 
-        PurgeAged();
+        await _poolManager.UpdateConnectionPoolAsync(addedServers, unreferencedServers).ConfigureAwait(false);
 
         _neo4JLogger.Info("Routing table is updated => {0}", newRoutingTable);
     }
 
-    private void PurgeAged()
+    private List<Uri> PurgeAged()
     {
+        var purgedServers = new List<Uri>();
         foreach (var routingTable in _routingTables.Values)
         {
             if (!routingTable.IsExpiredFor(_routingTablePurgeDelay))
@@ -245,7 +260,10 @@ internal class RoutingTableManager : IRoutingTableManager
 
             _routingTables.TryRemove(routingTable.Database, out _);
             _routingTableLocks.TryRemove(routingTable.Database, out _);
+            purgedServers.AddRange(routingTable.All());
         }
+
+        return purgedServers;
     }
 
     private Task PrependRoutersAsync(IRoutingTable routingTable, ISet<Uri> uris)

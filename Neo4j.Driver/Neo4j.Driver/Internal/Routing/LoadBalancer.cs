@@ -234,11 +234,17 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         return default;
     }
 
-    public Task OnConnectionErrorAsync(Uri uri, string database, Exception e)
+    public async Task OnConnectionErrorAsync(Uri uri, string database, Exception e)
     {
         _neo4JLogger.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
+        await _clusterConnectionPool.DeactivateAsync(uri).ConfigureAwait(false);
+        _routingTableManager.ForgetServer(uri);
+    }
+
+    public void OnDatabaseUnavailable(Uri uri, string database)
+    {
+        _neo4JLogger.Info($"Database '{database}' is unavailable on server at {uri}.");
         _routingTableManager.ForgetServer(uri, database);
-        return _clusterConnectionPool.DeactivateAsync(uri);
     }
 
     public void OnWriteError(Uri uri, string database)
