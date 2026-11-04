@@ -235,10 +235,14 @@ internal class RoutingTableManager : IRoutingTableManager
             _ => UpdateRoutingTable(null, newRoutingTable, out addedServers, out removedServers),
             (_, oldTable) => UpdateRoutingTable(oldTable, newRoutingTable, out addedServers, out removedServers));
 
-        var unreferencedServers = removedServers.Where(uri => !IsInAnyRoutingTable(uri)).ToArray();
-        await _poolManager.UpdateConnectionPoolAsync(addedServers, unreferencedServers).ConfigureAwait(false);
+        var purgedServers = PurgeAged();
+        var unreferencedServers = removedServers
+            .Concat(purgedServers)
+            .Distinct()
+            .Where(uri => !IsInAnyRoutingTable(uri))
+            .ToArray();
 
-        PurgeAged();
+        await _poolManager.UpdateConnectionPoolAsync(addedServers, unreferencedServers).ConfigureAwait(false);
 
         _neo4JLogger.Info("Routing table is updated => {0}", newRoutingTable);
     }
@@ -248,8 +252,9 @@ internal class RoutingTableManager : IRoutingTableManager
         return _routingTables.Values.Any(routingTable => routingTable.All().Contains(uri));
     }
 
-    private void PurgeAged()
+    private List<Uri> PurgeAged()
     {
+        var purgedServers = new List<Uri>();
         foreach (var routingTable in _routingTables.Values)
         {
             if (!routingTable.IsExpiredFor(_routingTablePurgeDelay))
@@ -259,7 +264,10 @@ internal class RoutingTableManager : IRoutingTableManager
 
             _routingTables.TryRemove(routingTable.Database, out _);
             _routingTableLocks.TryRemove(routingTable.Database, out _);
+            purgedServers.AddRange(routingTable.All());
         }
+
+        return purgedServers;
     }
 
     private Task PrependRoutersAsync(IRoutingTable routingTable, ISet<Uri> uris)

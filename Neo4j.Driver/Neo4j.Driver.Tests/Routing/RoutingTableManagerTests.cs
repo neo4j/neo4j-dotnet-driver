@@ -1290,6 +1290,51 @@ public static class RoutingTableManagerTests
 
             removedServers.Should().BeEquivalentTo(new[] { server06 });
         }
+
+        [Fact]
+        public async Task ShouldReportServersOnlyInPurgedRoutingTablesAsRemoved()
+        {
+            var expiredFooRoutingTable =
+                new RoutingTable("foo", new[] { server04 }, new[] { server05 }, new[] { server06 }, 0);
+
+            var agedBarRoutingTable =
+                new RoutingTable("bar", new[] { server07 }, new[] { server05 }, new[] { server09 }, 0);
+
+            var refreshedFooRoutingTable =
+                new RoutingTable("foo", new[] { server04 }, new[] { server04 }, new[] { server04 }, 1000);
+
+            var discovery = new Mock<IDiscovery>();
+            discovery.Setup(
+                    x => x.DiscoverAsync(
+                        It.IsAny<IConnection>(),
+                        "foo",
+                        null,
+                        Bookmarks.Empty,
+                        It.IsAny<IHomeDbCache>()))
+                .ReturnsAsync(refreshedFooRoutingTable);
+
+            List<Uri> removedServers = null;
+            var poolManager = new Mock<IClusterConnectionPoolManager>();
+            poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), It.IsAny<SessionConfig>()))
+                .ReturnsAsync(Mock.Of<IConnection>);
+
+            poolManager.Setup(x => x.UpdateConnectionPoolAsync(It.IsAny<IEnumerable<Uri>>(), It.IsAny<IEnumerable<Uri>>()))
+                .Callback<IEnumerable<Uri>, IEnumerable<Uri>>((_, removed) => removedServers = removed.ToList())
+                .Returns(Task.CompletedTask);
+
+            var manager = new RoutingTableManager(
+                Mock.Of<IInitialServerAddressProvider>(),
+                discovery.Object,
+                poolManager.Object,
+                Mock.Of<INeo4jLogger>(),
+                TimeSpan.Zero,
+                expiredFooRoutingTable,
+                agedBarRoutingTable);
+
+            await manager.EnsureRoutingTableForModeAsync(AccessMode.Write, "foo", false, null, Bookmarks.Empty);
+
+            removedServers.Should().BeEquivalentTo(new[] { server05, server06, server07, server09 });
+        }
     }
 
     public class ForceUpdateAsyncMethod
